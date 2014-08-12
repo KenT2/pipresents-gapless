@@ -1,30 +1,27 @@
 import time
 import copy
-from Tkinter import *
-import Tkinter as tk
-import os
 import datetime
-import ConfigParser
 from pp_utils import Monitor
 
-class TimeOfDay:
+class TimeOfDay(object):
 
-# add to a list of times with
-# time, show id, callback  (should go to the calling show I think)
+    """
+    add to a list of times with
+    time, show id, callback  (should go to the calling show I think)
 
-# cancel events with specific tag
-# remove a specific event
-#terminate tod
+    cancel events with specific tag
+    remove a specific event
+    terminate tod
 
-#keep time ticker one second tick time
-# do callback when time is reached 24 hour clock, just rotates
+    keep time ticker one second tick time
+    do callback when time is reached 24 hour clock, just rotates
 
-# needs ticker to run from main program but events to be added/cancelled from a number of instances.
+    needs ticker to run from main program but events to be added/cancelled from a number of instances.
 
-#Its the sequemcer in reverse.
-
+    Its the sequemcer in reverse.
+    """
     
-# CLASS VARIABLES
+    # CLASS VARIABLES
 
    # fields of the times list
     TIME=0            # time at which trigger is to be generated - seconds from midnight
@@ -35,11 +32,11 @@ class TimeOfDay:
 
     TEMPLATE = [0,'',None,'',False]
 
-    times=[]  #list of times of day used to generate callbacks, earliest first
+    times=[]  # list of times of day used to generate callbacks, earliest first
     last_scheduler_time=long(time.time())
     now_seconds=0
     
-    #executed by main program and by each object using tod
+    # executed by main program and by each object using tod
     def __init__(self):
         self.mon=Monitor()
         self.mon.on()
@@ -53,7 +50,7 @@ class TimeOfDay:
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         self.tod_tick=tod_tick
-        #init variables
+        # init variables
         self.tick_timer=None
         TimeOfDay.last_poll_time=long(time.time())
         midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -77,7 +74,7 @@ class TimeOfDay:
 
      # called by main program only           
     def terminate(self):
-        if self.tick_timer<>None:
+        if self.tick_timer is not None:
             TimeOfDay.widget.after_cancel(self.tick_timer)
         self.clear_times_list(None)
 
@@ -94,7 +91,7 @@ class TimeOfDay:
         # print 'scheduler time', TimeOfDay.now_seconds, ' diff ', diff
         for index, item in enumerate(TimeOfDay.times):
             # print item[TimeOfDay.TIME]
-            if item[TimeOfDay.TIME]==TimeOfDay.now_seconds:
+            if item[TimeOfDay.TIME]  ==  TimeOfDay.now_seconds:
                 # print 'event fired'
                 self.do_event(item)
 
@@ -105,7 +102,7 @@ class TimeOfDay:
         event[TimeOfDay.CALLBACK]()
 
     def next_event_time(self):
-        #look for next event
+        # look for next event
         for index, item in enumerate(TimeOfDay.times):
             # print 'trying ',item[TimeOfDay.SOURCE]
             if TimeOfDay.now_seconds < item[TimeOfDay.TIME]:
@@ -121,28 +118,28 @@ class TimeOfDay:
 # ************************************************
 
     def add_times(self,text,tag,callback,quiet_text):
-        if quiet_text=='time-quiet':
+        if quiet_text == 'time-quiet':
             quiet=True
         else:
             quiet=False
         lines = text.split("\n")
         for line in lines:
             error_text=self.parse_tod_fields(line,tag,callback,quiet)
-            if error_text <>'':
+            if error_text  != '':
                 return error_text
         # print TimeOfDay.times
         return ''
    
     def parse_tod_fields(self,line,tag,callback,quiet):
         fields = line.split()
-        if len(fields)==0:
+        if len(fields) == 0:
             return ''
         for field in fields:
             self.parse_event_text(field,tag,callback,quiet)
         return ''
 
     def parse_event_text(self,time_text,tag,callback,quiet):
-        if time_text[0]=='+':
+        if time_text[0] == '+':
             seconds=TimeOfDay.now_seconds+int(time_text.lstrip('+'))
         else:
             fields=time_text.split(':')
@@ -185,17 +182,17 @@ class TimeOfDay:
     # remove an event
     def remove_event(self,event):
         for index, item in enumerate(PPIO.events):
-            if event==item:
+            if event == item:
                 del PPIO.events[index]
                 return True
         return False
 
 
-    #clear times list
+    # clear times list
     def clear_times_list(self,tag):
         self.mon.log(self,'clear time of day list ' + str(tag))
         # empty event list
-        if tag==None:
+        if tag is  None:
             TimeOfDay.events=[]
         else:
             self.remove_events(tag)
@@ -204,56 +201,8 @@ class TimeOfDay:
     def remove_events(self,tag):
         left=[]
         for item in TimeOfDay.times:
-            if tag<>item[TimeOfDay.TAG]:
+            if tag != item[TimeOfDay.TAG]:
                 left.append(item)
         TimeOfDay.times= left
-        #self.print_times()
-
-
-
-# ******************************
-# test harness
-# ******************************
-
-class Show:
-
-    def __init__(self,show_name):
-        self.show_name=show_name
-        tod = TimeOfDay()
-
-    def callback(self):
-        print 'callback ',self.show_name
-
-    def add_event_text(self,time):
-        tag='tag'
-        tod.add_event_text(time,tag,self.callback)
-        
-
-
-if __name__ == '__main__':
-    
-
-    pp_dir='/home/pi/pipresents'
-    pp_dir="C:\Users\Ken\Documents\Develop\Rpi\pipresents"
-    Monitor.log_path=pp_dir
-    Monitor.global_enable=True
-    pp_home='/home/pi'
-    print "runnning"
-    my_window=Tk()
-    my_window.title("TimeOfDay Test Harness")
-    tod=TimeOfDay()
-    tod.init(pp_dir,pp_home,my_window,500)
-    tod.poll()
-    # create a show instance
-    show1=Show('show 1')
-    show1.add_event_text('22:17')
-    show2=Show('show 2')
-    show2.add_event_text('22:18:1')
-    my_window.mainloop()
-
-
-    
-
-
-
+        # self.print_times()
 

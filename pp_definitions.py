@@ -1,4 +1,4 @@
-class PPdefinitions:
+class PPdefinitions(object):
 
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
     VIDEO_FILES=('Video files','.mp4','.mkv','.avi','.mp2','.wmv','.m4v')
@@ -468,7 +468,6 @@ class PPdefinitions:
                                        'values':['hdmi','local','']},
                             'mplayer-other-options':{'param':'mplayer-other-options','shape':'entry','text':'Audio Player Options','must':'no','read-only':'no'},
                             'mplayer-volume':{'param':'mplayer-volume','shape':'entry','text':'Audio Player Volume','must':'no','read-only':'no'},
-                            'links':{'param':'links','shape':'text','text':'Links','must':'no','read-only':'no'},
                             'omx-audio':{'param':'omx-audio','shape':'option-menu','text':'Video Player Audio','must':'no','read-only':'no',
                                        'values':['hdmi','local','']},
                             'omx-other-options':{'param':'omx-other-options','shape':'entry','text':'Video Player Options','must':'no','read-only':'no'},

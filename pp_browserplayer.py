@@ -32,14 +32,17 @@ class BrowserPlayer:
 # ***************************************
 
     def __init__(self,
-                        show_id,
-                         root,
-                        canvas,
-                        show_params,
-                        track_params,
-                     pp_dir,
-                        pp_home,
-                        pp_profile):
+                 show_id,
+                 showlist,
+                 root,
+                 canvas,
+                 show_params,
+                 track_params ,
+                 pp_dir,
+                 pp_home,
+                 pp_profile,
+                 end_callback):
+
 
         self.mon=Monitor()
         self.mon.on()
@@ -47,6 +50,7 @@ class BrowserPlayer:
         
         #instantiate arguments
         self.show_id=show_id
+        self.showlist=showlist
         self.root=root,
         self.canvas = canvas
         self.show_params=show_params  
@@ -54,6 +58,7 @@ class BrowserPlayer:
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         self.pp_profile=pp_profile
+        self.end_callback=end_callback
 
         # get duration limit (secs ) from profile
         if self.track_params['duration']<>"":

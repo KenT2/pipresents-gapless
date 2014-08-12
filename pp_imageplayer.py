@@ -1,8 +1,7 @@
 import os
-from Tkinter import *
+from Tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
-from PIL import ImageEnhance
 from pp_utils import StopWatch
 from pp_utils import Monitor
 from pp_player import Player
@@ -17,16 +16,16 @@ class ImagePlayer(Player):
     """
  
     def __init__(self,
-                    show_id,
-                    showlist,
-                    root,
-                    canvas,
-                    show_params,
-                    track_params ,
-                    pp_dir,
-                    pp_home,
-                    pp_profile,
-                    end_callback):
+                 show_id,
+                 showlist,
+                 root,
+                 canvas,
+                 show_params,
+                 track_params ,
+                 pp_dir,
+                 pp_home,
+                 pp_profile,
+                 end_callback):
                     
         # must be true if player is being used with the test harness
         self.testing=False
@@ -38,13 +37,13 @@ class ImagePlayer(Player):
         self.mon=Monitor()
         self.mon.on()
         
-        #stopwatch for timing functions
+        # stopwatch for timing functions
         StopWatch.global_enable=False
         self.sw=StopWatch()
         self.sw.off()
 
         
-        #initialise items common to all players   
+        # initialise items common to all players   
         Player.__init__( self,
                          show_id,
                          showlist,
@@ -61,20 +60,20 @@ class ImagePlayer(Player):
         # and initialise things for this player
         
         # get duration from profile
-        if self.track_params['duration']<>"":
+        if self.track_params['duration'] != '':
             self.duration= int(self.track_params['duration'])
         else:
             self.duration= int(self.show_params['duration'])
             
         # get  image window from profile
-        if self.track_params['image-window'].strip()<>"":
+        if self.track_params['image-window'].strip() != '':
             self.image_window= self.track_params['image-window'].strip()
         else:
             self.image_window= self.show_params['image-window'].strip()
 
-        #parse the image_window
+        # parse the image_window
         status,self.command,self.has_coords,self.image_x1,self.image_y1,self.image_x2,self.image_y2,self.filter=self.parse_window(self.image_window)
-        if status =='error':
+        if status  == 'error':
             self.mon.err(self,'image window error: '+self.image_window)
             self.end('error','image window error')
         
@@ -84,14 +83,14 @@ class ImagePlayer(Player):
             
     # LOAD - loads the images and text
     def load(self,track,loaded_callback,enable_menu):  
-        #instantiate arguments
+        # instantiate arguments
         self.track=track
-        self.loaded_callback=loaded_callback   #callback when loaded
+        self.loaded_callback=loaded_callback   # callback when loaded
         self.enable_menu=enable_menu
         if self.trace: print '    Imageplayer/load ',self
         
         # load the plugin, this may modify self.track and enable the plugin drawign to canvas
-        if self.track_params['plugin']<>'':
+        if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
@@ -106,7 +105,7 @@ class ImagePlayer(Player):
             self=None
         else:
             self.play_state='loaded'
-            if self.loaded_callback<>None:
+            if self.loaded_callback is not None:
                 self.loaded_callback('loaded','image track loaded')
 
             
@@ -126,14 +125,14 @@ class ImagePlayer(Player):
                 closed_callback,
                 enable_menu=False):
                          
-        #instantiate arguments
+        # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
         self.enable_menu = enable_menu
         if self.trace: print '    Imageplayer/show ',self
         
-        #init state and signals  
+        # init state and signals  
         self.tick = 100 # tick time for image display (milliseconds)
         self.dwell = 10*self.duration
         self.dwell_counter=0
@@ -143,13 +142,13 @@ class ImagePlayer(Player):
 
         self.show_x_content()
         
-        if self.ready_callback<>None:
+        if self.ready_callback is not None:
             self.ready_callback()
 
         # do common bits
         Player.pre_show(self)
         
-        #start show state machine
+        # start show state machine
         self.start_dwell()
 
 
@@ -159,15 +158,15 @@ class ImagePlayer(Player):
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'
-        if self.closed_callback<>None:
+        if self.closed_callback is not None:
             self.closed_callback('normal','imageplayer closed')
 
 
     def input_pressed(self,symbol):
         if self.trace: print '    Imageplayer/input_pressed ',symbol
-        if symbol =='pause':
+        if symbol  == 'pause':
             self.pause()
-        elif symbol=='stop':
+        elif symbol == 'stop':
             self.stop()
 
       
@@ -193,32 +192,32 @@ class ImagePlayer(Player):
 
         
     def do_dwell(self):
-        if self.quit_signal == True:
+        if self.quit_signal is  True:
             self.mon.log(self,"quit received")
             self.play_state='pause_at_end'
-            if self.finished_callback<>None:
+            if self.finished_callback is not None:
                 self.finished_callback('pause_at_end','user quit or duration exceeded')
                 # use finish so that the show will call close
         else:
-            if self.paused == False:
+            if self.paused is False:
                 self.dwell_counter=self.dwell_counter+1
 
             # one time flipping of pause text
-            if self.paused==True and self.pause_text==None:
+            if self.paused is True and self.pause_text is None:
                 self.pause_text=self.canvas.create_text(100,100, anchor=NW,
                                                       text=self.resource('imageplayer','m01'),
                                                       fill="white",
                                                       font="arial 25 bold")
                 self.canvas.update_idletasks( )
                 
-            if self.paused==False and self.pause_text<>None:
+            if self.paused is False and self.pause_text is not None:
                     self.canvas.delete(self.pause_text)
                     self.pause_text=None
                     self.canvas.update_idletasks( )
 
-            if self.dwell<>0 and self.dwell_counter==self.dwell:
+            if self.dwell != 0 and self.dwell_counter == self.dwell:
                 self.play_state='pause_at_end'
-                if self.finished_callback<>None:
+                if self.finished_callback is not None:
                     self.finished_callback('pause_at_end','user quit or duration exceeded')
                     # use finish so that the show will call close
             else:
@@ -236,8 +235,8 @@ class ImagePlayer(Player):
         self.canvas_centre_x = int(self.canvas['width'])/2
         self.canvas_centre_y = int(self.canvas['height'])/2
         
-        #get the track to be displayed
-        if os.path.exists(self.track)==True:
+        # get the track to be displayed
+        if os.path.exists(self.track) is True:
             pil_image=Image.open(self.track)
         else:
             pil_image=None
@@ -245,12 +244,12 @@ class ImagePlayer(Player):
             self.track_image_obj=None
 
         # display track image                                    
-        if pil_image<>None:
+        if pil_image is not None:
             self.image_width,self.image_height=pil_image.size
 
-            if self.command=='original':
+            if self.command == 'original':
                 # display image at its original size
-                if self.has_coords==False:
+                if self.has_coords is False:
                     # load and display the unmodified image in centre
                     self.tk_img=ImageTk.PhotoImage(pil_image)
                     del pil_image
@@ -265,7 +264,7 @@ class ImagePlayer(Player):
 
             elif self.command in ('fit','shrink'):
                     # shrink fit the window or screen preserving aspect
-                    if self.has_coords==True:
+                    if self.has_coords is True:
                         window_width=self.image_x2 - self.image_x1
                         window_height=self.image_y2 - self.image_y1
                         window_centre_x=(self.image_x2+self.image_x1)/2
@@ -276,7 +275,7 @@ class ImagePlayer(Player):
                         window_centre_x=self.canvas_centre_x
                         window_centre_y=self.canvas_centre_y
                     
-                    if (self.image_width > window_width or self.image_height > window_height and self.command=='fit') or (self.command=='shrink') :
+                    if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
                         # original image is larger or , shrink it to fit the screen preserving aspect
                         pil_image.thumbnail((window_width,window_height),eval(self.filter))                 
                         self.tk_img=ImageTk.PhotoImage(pil_image)
@@ -303,7 +302,7 @@ class ImagePlayer(Player):
 
             elif self.command in ('warp'):
                     # resize to window or screen without preserving aspect
-                    if self.has_coords==True:
+                    if self.has_coords is True:
                         window_width=self.image_x2 - self.image_x1
                         window_height=self.image_y2 - self.image_y1
                         window_centre_x=(self.image_x2+self.image_x1)/2
@@ -340,12 +339,12 @@ class ImagePlayer(Player):
                 
             # deal with original whch has 0 or 2 arguments
             filter=''
-            if fields[0]=='original':
+            if fields[0] == 'original':
                 if len(fields) not in (1,3):
                         return 'error','',False,0,0,0,0,''       
                 # deal with window coordinates    
-                if len(fields) == 3:
-                    #window is specified
+                if len(fields)  ==  3:
+                    # window is specified
                     if not (fields[1].isdigit() and fields[2].isdigit()):
                         return 'error','',False,0,0,0,0,''
                     has_window=True
@@ -357,24 +356,24 @@ class ImagePlayer(Player):
 
 
 
-            #deal with remainder which has 1, 2, 5 or  6arguments
+            # deal with remainder which has 1, 2, 5 or  6arguments
             # check basic syntax
             if  fields[0] not in ('shrink','fit','warp'):
                     return 'error','',False,0,0,0,0,'' 
             if len(fields) not in (1,2,5,6):
                     return 'error','',False,0,0,0,0,''
-            if len(fields)==6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
                     return 'error','',False,0,0,0,0,''
-            if len(fields)==2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
                     return 'error','',False,0,0,0,0,''
             
             # deal with window coordinates    
             if len(fields) in (5,6):
-                #window is specified
+                # window is specified
                 if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
                     return 'error','',False,0,0,0,0,''
                 has_window=True
-                if len(fields)==6:
+                if len(fields) == 6:
                     filter=fields[5]
                 else:
                     filter='Image.NEAREST'
@@ -382,7 +381,7 @@ class ImagePlayer(Player):
             else:
                 # no window
                 has_window=False
-                if len(fields)==2:
+                if len(fields) == 2:
                     filter=fields[1]
                 else:
                     filter='Image.NEAREST'

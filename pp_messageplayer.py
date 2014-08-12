@@ -1,9 +1,4 @@
-
-import os
-from Tkinter import *
-from PIL import Image
-from PIL import ImageTk
-from PIL import ImageEnhance
+from Tkinter import NW
 from pp_utils import StopWatch
 from pp_utils import Monitor
 from pp_player import Player
@@ -20,16 +15,16 @@ class MessagePlayer(Player):
     """
  
     def __init__(self,
-                    show_id,
-                    showlist,
-                    root,
-                    canvas,
-                    show_params,
-                    track_params ,
-                    pp_dir,
-                    pp_home,
-                    pp_profile,
-                    end_callback):
+                 show_id,
+                 showlist,
+                 root,
+                 canvas,
+                 show_params,
+                 track_params ,
+                 pp_dir,
+                 pp_home,
+                 pp_profile,
+                 end_callback):
                     
         # must be true if player is being used with the test harness
         self.testing=False
@@ -41,30 +36,30 @@ class MessagePlayer(Player):
         self.mon=Monitor()
         self.mon.off()
         
-        #stopwatch for timing functions
+        # stopwatch for timing functions
         StopWatch.global_enable=False
         self.sw=StopWatch()
         self.sw.off()
 
         
-        #initialise items common to all players   
+        # initialise items common to all players   
         Player.__init__( self,
                          show_id,
                          showlist,
                          root,
-                        canvas,
-                        show_params,
-                        track_params ,
+                         canvas,
+                         show_params,
+                         track_params ,
                          pp_dir,
-                        pp_home,
-                        pp_profile,
+                         pp_home,
+                         pp_profile,
                          end_callback)
 
         if self.trace: print '    Messageplayer/init ',self
         # and initilise things for this player
         
         # get duration from profile
-        if self.track_params['duration']<>"":
+        if self.track_params['duration'] != "":
             self.duration= int(self.track_params['duration'])
         else:
             self.duration= int(self.show_params['duration'])       
@@ -75,14 +70,14 @@ class MessagePlayer(Player):
             
     # LOAD - loads the images and text
     def load(self,text,loaded_callback,enable_menu):  
-        #instantiate arguments
+        # instantiate arguments
         self.track=text
-        self.loaded_callback=loaded_callback   #callback when loaded
+        self.loaded_callback=loaded_callback   # callback when loaded
         self.enable_menu=enable_menu
         if self.trace: print '    Messageplayer/load ',self
 
         # load the plugin, this may modify self.ttack and enable the plugin drawign to canvas
-        if self.track_params['plugin']<>'':
+        if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
@@ -97,7 +92,7 @@ class MessagePlayer(Player):
             self=None
         else:
             self.play_state='loaded'
-            if self.loaded_callback<>None:
+            if self.loaded_callback is not None:
                 self.loaded_callback('loaded','image track loaded')
 
             
@@ -124,19 +119,19 @@ class MessagePlayer(Player):
         self.enable_menu = enable_menu
         if self.trace: print '    Messageplayer/show ',self
         
-        #init state and signals  
+        # init state and signals  
         self.tick = 100 # tick time for image display (milliseconds)
         self.dwell = 10*self.duration
         self.dwell_counter=0
         self.quit_signal=False
         self.show_x_content()
-        if self.ready_callback<>None:
+        if self.ready_callback is not None:
             self.ready_callback()
 
         # do common bits
         Player.pre_show(self)
         
-        #start show state machine
+        # start show state machine
         self.start_dwell()
 
     # CLOSE - nothing ot do in messageplayer - x content is removed by ready callback
@@ -145,12 +140,12 @@ class MessagePlayer(Player):
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'
-        if self.closed_callback<>None:
+        if self.closed_callback is not None:
             self.closed_callback('normal','Messageplayer closed')
 
 
     def input_pressed(self,symbol):
-        if symbol=='stop':
+        if symbol ==  'stop':
             self.stop()
 
 
@@ -170,18 +165,18 @@ class MessagePlayer(Player):
 
         
     def do_dwell(self):
-        if self.quit_signal == True:
+        if self.quit_signal  is   True:
             self.mon.log(self,"quit received")
             self.play_state='pause_at_end'
-            if self.finished_callback<>None:
+            if self.finished_callback is not None:
                 self.finished_callback('pause_at_end','user quit or duration exceeded')
                 # use finish so that the show will call close
         else:
             self.dwell_counter=self.dwell_counter+1
 
-            if self.dwell<>0 and self.dwell_counter==self.dwell:
+            if self.dwell != 0 and self.dwell_counter ==  self.dwell:
                 self.play_state='pause_at_end'
-                if self.finished_callback<>None:
+                if self.finished_callback is not None:
                     self.finished_callback('pause_at_end','user quit or duration exceeded')
                     # use finish so that the show will call close
             else:
@@ -194,13 +189,13 @@ class MessagePlayer(Player):
     # called from Player, load_x_content       
     def load_track_content(self):
         # load message text
-        if self.track_params['message-x']<>'':
+        if self.track_params['message-x'] != '':
              self.track_obj=self.canvas.create_text(int(self.track_params['message-x']), int(self.track_params['message-y']),
                                                     text=self.track.rstrip('\n'),
                                                     fill=self.track_params['message-colour'],
                                                     font=self.track_params['message-font'],
                                                     justify=self.track_params['message-justify'],
-                                                    anchor = 'nw',
+                                                    anchor = NW,
                                                     tag='pp-content')
         else:
             self.track_obj=self.canvas.create_text(int(self.canvas['width'])/2, int(self.canvas['height'])/2,
@@ -214,7 +209,7 @@ class MessagePlayer(Player):
     
 
     def hide_track_content(self):
-        #print 'deleting track image ',self.track_image_obj
+        # print 'deleting track image ',self.track_image_obj
         self.canvas.itemconfig(self.track_obj,state='hidden')
         self.canvas.delete(self.track_obj)
 

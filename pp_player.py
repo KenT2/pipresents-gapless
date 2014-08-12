@@ -1,33 +1,27 @@
-import time
 import os
-import string
-import gc
-
-from Tkinter import *
-# import Tkinter as tk
+from Tkinter import CENTER, NW
 from PIL import Image
 from PIL import ImageTk
-# import PIL.ImageEnhance
 
 from pp_showmanager import ShowManager
 from pp_pluginmanager import PluginManager
 from pp_gpio import PPIO
 from pp_resourcereader import ResourceReader
 
-class Player:
+class Player(object):
 
     # common bits of __init__(...)
     def __init__(self,
-                         show_id,
-                         showlist,
-                         root,
-                        canvas,
-                        show_params,
-                        track_params ,
-                         pp_dir,
-                        pp_home,
-                        pp_profile,
-                        end_callback):
+                 show_id,
+                 showlist,
+                 root,
+                 canvas,
+                 show_params,
+                 track_params,
+                 pp_dir,
+                 pp_home,
+                 pp_profile,
+                 end_callback):
 
         # method call trace for this class and for subclasses
         self.ptrace=True
@@ -53,19 +47,19 @@ class Player:
                         
         # get background image from profile.
         self.background_file=''
-        if self.track_params['background-image']<>"":
+        if self.track_params['background-image'] != '':
             self.background_file= self.track_params['background-image']
         else:
-            if self.track_params['display-show-background']=='yes':
+            if self.track_params['display-show-background'] == 'yes':
                 self.background_file= self.show_params['background-image']
             
         # get background colour from profile.
-        if self.track_params['background-colour']<>"":
+        if self.track_params['background-colour'] != '':
             self.background_colour= self.track_params['background-colour']
         else:
             self.background_colour= self.show_params['background-colour']
         
-        #get animation instructions from profile
+        # get animation instructions from profile
         self.animate_begin_text=self.track_params['animate-begin']
         self.animate_end_text=self.track_params['animate-end']
 
@@ -111,7 +105,7 @@ class Player:
                 reason,message=self.ppio.animate(self.animate_begin_text,id(self))
             else:
                 reason='normal'
-            if reason=='error':
+            if reason  ==  'error':
                 self.mon.err(self,message)
                 self.end(reason,message)
                 self=None
@@ -126,48 +120,48 @@ class Player:
 # *****************
 
     def hide(self):
-            if self.ptrace: print '    Player/hide ',self
+        if self.ptrace: print '    Player/hide ',self
 
-            # abort the timer
-            if self.tick_timer<>None:
-                self.canvas.after_cancel(self.tick_timer)
-                self.tick_timer=None
-            
-            self.hide_x_content()
-            
-            # stop the plugin
-            if not self.testing:
-                if self.track_params['plugin']<>'':
-                    self.pim.stop_plugin()
+        # abort the timer
+        if self.tick_timer is not None:
+            self.canvas.after_cancel(self.tick_timer)
+            self.tick_timer=None
+        
+        self.hide_x_content()
+        
+        # stop the plugin
+        if not self.testing:
+            if self.track_params['plugin'] != '':
+                self.pim.stop_plugin()
 
-            # Control concurrent shows at end
-            if not self.testing:
-                reason,message=self.show_manager.show_control(self.track_params['show-control-end'])
+        # Control concurrent shows at end
+        if not self.testing:
+            reason,message=self.show_manager.show_control(self.track_params['show-control-end'])
+        else:
+            reason='normal'
+        if reason  == 'error':
+            self.mon.err(self,message)
+            self.end_callback(reason,message)
+            self=None
+        else:
+            
+           # clear events list for this track
+            if  not self.testing:
+                if self.track_params['animate-clear'] == 'yes':
+                    self.ppio.clear_events_list(id(self))
+                    
+            # create animation events for ending
+            if  not self.testing:
+                reason,message=self.ppio.animate(self.animate_end_text,id(self))
             else:
                 reason='normal'
-            if reason =='error':
+                
+            if reason == 'error':
                 self.mon.err(self,message)
                 self.end_callback(reason,message)
                 self=None
             else:
-                
-               # clear events list for this track
-                if  not self.testing:
-                    if self.track_params['animate-clear']=='yes':
-                        self.ppio.clear_events_list(id(self))
-                        
-                # create animation events for ending
-                if  not self.testing:
-                    reason,message=self.ppio.animate(self.animate_end_text,id(self))
-                else:
-                    reason='normal'
-                    
-                if reason=='error':
-                    self.mon.err(self,message)
-                    self.end_callback(reason,message)
-                    self=None
-                else:
-                    return
+                return
 
 
 
@@ -187,16 +181,16 @@ class Player:
 # *****************
 
     def end(self,reason,message):
-            if self.ptrace: print '    Player/end ',self
-            # stop the plugin
+        if self.ptrace: print '    Player/end ',self
+        # stop the plugin
 
-            if self.terminate_signal==True:
-                reason='killed'
-                self.terminate_signal=False
-                self.hide()
+        if self.terminate_signal is True:
+            reason='killed'
+            self.terminate_signal=False
+            self.hide()
 
-            self.end_callback(reason,message)
-            self=None
+        self.end_callback(reason,message)
+        self=None
 
 
 # *****************
@@ -205,7 +199,7 @@ class Player:
 
     def load_plugin(self):
         # load the plugin if required
-        if self.track_params['plugin']<>'':
+        if self.track_params['plugin'] != '':
             reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'],)
             return reason,message
 
@@ -220,22 +214,21 @@ class Player:
 
         
         # background image
-        if self.background_file<>'':
+        if self.background_file != '':
             background_img_file = self.complete_path(self.background_file)
             if not os.path.exists(background_img_file):
                 self.mon.err(self,"Trackbackground file not found: "+ background_img_file)
                 self.end('error',"Track background file not found")
             else:
                 pil_background_img=Image.open(background_img_file)
-                #print 'pil_background_img ',pil_background_img
+                # print 'pil_background_img ',pil_background_img
                 self.background = ImageTk.PhotoImage(pil_background_img)
                 del pil_background_img
                 # print 'self.background ',self.background
                 self.background_obj = self.canvas.create_image(int(self.canvas['width'])/2,
-                                             int(self.canvas['height'])/2,
-                                             image=self.background,
-                                            anchor=CENTER
-                                            )
+                                                               int(self.canvas['height'])/2,
+                                                               image=self.background,
+                                                               anchor=CENTER)
                 # print '\nloaded background_obj: ',self.background_obj
 
 
@@ -245,33 +238,32 @@ class Player:
         self.load_track_content()
                           
         # load show text if enabled
-        if self.show_params['show-text']<> '' and self.track_params['display-show-text']=='yes':
-            self.show_text_obj=self.canvas.create_text(int(self.show_params['show-text-x']),int(self.show_params['show-text-y']),
-                                                    anchor=NW,
-                                                  text=self.show_params['show-text'],
-                                                  fill=self.show_params['show-text-colour'],
-                                                  font=self.show_params['show-text-font']
-                                                 )
+        if self.show_params['show-text'] !=  '' and self.track_params['display-show-text'] == 'yes':
+            self.show_text_obj=self.canvas.create_text(int(self.show_params['show-text-x']),
+                                                       int(self.show_params['show-text-y']),
+                                                       anchor=NW,
+                                                       text=self.show_params['show-text'],
+                                                       fill=self.show_params['show-text-colour'],
+                                                       font=self.show_params['show-text-font'])
 
 
         # load track text if enabled
-        if self.track_params['track-text']<> '':
-            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x']),int(self.track_params['track-text-y']),
-                                                    anchor=NW,
-                                                  text=self.track_params['track-text'],
-                                                  fill=self.track_params['track-text-colour'],
-                                                  font=self.track_params['track-text-font']
-                                                  )
+        if self.track_params['track-text'] !=  '':
+            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x']),
+                                                        int(self.track_params['track-text-y']),
+                                                        anchor=NW,
+                                                        text=self.track_params['track-text'],
+                                                        fill=self.track_params['track-text-colour'],
+                                                        font=self.track_params['track-text-font'])
 
         # load instructions if enabled
-        if self.enable_menu== True:
+        if self.enable_menu is  True:
             self.hint_obj=self.canvas.create_text(int(self.show_params['hint-x']),
-                                                    int(self.show_params['hint-y']),
+                                                  int(self.show_params['hint-y']),
                                                   text=self.show_params['hint-text'],
                                                   fill=self.show_params['hint-colour'],
-                                                font=self.show_params['hint-font'],
-                                                anchor=NW
-                                                )
+                                                  font=self.show_params['hint-font'],
+                                                  anchor=NW)
 
         self.canvas.tag_raise('pp-click-area')
         self.canvas.itemconfig(self.background_obj,state='hidden')
@@ -298,9 +290,9 @@ class Player:
 
     def show_x_content(self):
         if self.ptrace: print '    Player/show_x_content ',self
-        #background colour
-        if  self.background_colour<>'':   
-           self.canvas.config(bg=self.background_colour)
+        # background colour
+        if  self.background_colour != '':
+            self.canvas.config(bg=self.background_colour)
         # print 'showing background_obj: ', self.background_obj
         # reveal background image and text
         self.canvas.itemconfig(self.background_obj,state='normal')
@@ -340,15 +332,15 @@ class Player:
     # produce an absolute path from the relative one in track paramters
     def complete_path(self,track_file):
         #  complete path of the filename of the selected entry
-        if track_file[0]=="+":
-                track_file=self.pp_home+track_file[1:]
+        if track_file[0] == "+":
+            track_file=self.pp_home+track_file[1:]
         self.mon.log(self,"Background image is "+ track_file)
         return track_file
         
     # get a text string from resources.cfg
     def resource(self,section,item):
         value=self.rr.get(section,item)
-        if value==False:
+        if value is False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
             self.end('error','resource not found')
         else:

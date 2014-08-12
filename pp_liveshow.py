@@ -7,14 +7,14 @@ from pp_options import command_options
 class LiveShow(GapShow):
 
     def __init__(self,
-                             show_id,
-                            show_params,
-                             root,
-                            canvas,
-                            showlist,
-                             pp_dir,
-                            pp_home,
-                            pp_profile):
+                 show_id,
+                 show_params,
+                 root,
+                 canvas,
+                 showlist,
+                 pp_dir,
+                 pp_home,
+                 pp_profile):
 
         self.mon=Monitor()
         self.mon.on()
@@ -26,7 +26,7 @@ class LiveShow(GapShow):
             os.mkdir(self.pp_live_dir1)
 
         self.pp_live_dir2=''   
-        if self.options['liveshow'] <>"":
+        if self.options['liveshow'] != '':
             self.pp_live_dir2 = self.options['liveshow']
             if not os.path.exists(self.pp_live_dir2):
                 self.mon.err(self,"live tracks directory not found " + self.pp_live_dir2)
@@ -36,19 +36,19 @@ class LiveShow(GapShow):
         # use the appropriate medialist
         self.medialist=LiveList()
 
-        #and pass directories to livelist
+        # and pass directories to livelist
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
         
         # init the common bits
         GapShow.__init__(self,
-                            show_id,
-                            show_params,
-                             root,
-                            canvas,
-                            showlist,
-                             pp_dir,
-                            pp_home,
-                            pp_profile)
+                         show_id,
+                         show_params,
+                         root,
+                         canvas,
+                         showlist,
+                         pp_dir,
+                         pp_home,
+                         pp_profile)
 
         self.trace=True
         self.trace=False

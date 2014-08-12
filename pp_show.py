@@ -45,7 +45,7 @@ class Show(object):
         # open resources
         self.rr=ResourceReader()
 
-        #create and instance of TimeOfDay scheduler so we can add events
+        # create and instance of TimeOfDay scheduler so we can add events
         self.tod=TimeOfDay()
         
         # create an  instance of showmanager so we can init child/subshows
@@ -122,7 +122,7 @@ class Show(object):
 
     def base_shuffle(self):
         self.previous_player=self.current_player
-        self.current_player is None
+        self.current_player = None
         if self.trace: print '\n\n\nshow/LOOP STARTS WITH current is', self.current_player
         if self.trace: print '                     previous is', self.previous_player
 
@@ -160,8 +160,8 @@ class Show(object):
             if self.trace: print 'show/load_track_or_show  - track is - ',track_file
             if self.trace: print 'show/load_track_or_show - current_player is',self.current_player   
             self.current_player.load(track_file,
-                                        loaded_callback,
-                                        enable_menu=enable_menu)
+                                     loaded_callback,
+                                     enable_menu=enable_menu)
 
 
 
@@ -318,7 +318,7 @@ class Show(object):
     # dummy, normally overidden by derived class
     def end(self,reason,message):
         self.mon.err(self,"end not overidden")
-        self.base_end(self,reason,message)
+        self.base_end('error',message)
 
     def base_end(self,reason,message):
         if self.trace: print 'show/end at level ',self.level
@@ -367,6 +367,11 @@ class Show(object):
         else:
             self.end('normal','stopped by Show Timeout')
 
+
+    # dummy, normally overidden by derived class
+    def terminate(self,reason,message):
+        self.mon.err(self,"terminate not overidden")
+        self.base_end('error',message)
 
     # terminate Pi Presents
     def base_terminate(self,reason):
@@ -417,8 +422,8 @@ class Show(object):
                                                    text= text,
                                                    fill=self.show_params['eggtimer-colour'],
                                                    font=self.show_params['eggtimer-font'],
-                                                   anchor='nw'
-                                                   )
+                                                   anchor='nw')
+            
             self.canvas.update_idletasks( )
 
 

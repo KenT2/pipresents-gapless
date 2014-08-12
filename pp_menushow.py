@@ -7,14 +7,14 @@ from pp_utils import Monitor
 class MenuShow(Show):
 
     def __init__(self,
-                             show_id,
-                            show_params,
-                             root,
-                            canvas,
-                            showlist,
-                             pp_dir,
-                            pp_home,
-                            pp_profile):
+                 show_id,
+                 show_params,
+                 root,
+                 canvas,
+                 showlist,
+                 pp_dir,
+                 pp_home,
+                 pp_profile):
         """
             show_id - index of the top level show caling this (for debug only)
             show_params - dictionary section for the menu
@@ -70,7 +70,7 @@ class MenuShow(Show):
         Show.base_get_previous_player_from_parent(self)
         
         # and delete eggtimer
-        if self.previous_shower != None:
+        if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()
 
         # and display the menu 
@@ -116,60 +116,60 @@ class MenuShow(Show):
             self.do_operation(operation,edge,source)
 
     def do_operation(self,operation,edge,source):
-            if self.shower != None:
-                # if next lower show is running pass down operation to  the show and lower levels
-                self.shower.input_pressed(operation,source,edge) 
-            else:
-                #service the standard inputs for this show
-                if self.trace: print 'menushow/input_pressed ',operation
-                if operation=='stop':
-                    # stop show timeout
-                    if self.show_timeout_timer != None:
-                        self.canvas.after_cancel(self.show_timeout_timer)
-                        self.show_timeout_timer=None
-                    if self.current_player != None:
-                        self.current_player.input_pressed('stop')
-                    else:
-                        # not at top so end the show because menu is usually got to by user request
-                        if  self.level != 0:
-                            self.end('normal',"exit by stop command from non-top show")
+        if self.shower is not None:
+            # if next lower show is running pass down operation to  the show and lower levels
+            self.shower.input_pressed(operation,source,edge) 
+        else:
+            # service the standard inputs for this show
+            if self.trace: print 'menushow/input_pressed ',operation
+            if operation=='stop':
+                # stop show timeout
+                if self.show_timeout_timer is not None:
+                    self.canvas.after_cancel(self.show_timeout_timer)
+                    self.show_timeout_timer=None
+                if self.current_player is not None:
+                    self.current_player.input_pressed('stop')
+                else:
+                    # not at top so end the show because menu is usually got to by user request
+                    if  self.level != 0:
+                        self.end('normal',"exit by stop command from non-top show")
 
-              
-                elif operation in ('up','down'):
-                    # stop show timeout
-                    if self.show_timeout_timer != None:
-                        self.canvas.after_cancel(self.show_timeout_timer)
-                        # and start it again
-                        if self.show_timeout_value != 0:
-                            self.show_timeout_timer=self.canvas.after(self.show_timeout_value,self.show_timeout_stop)
-                    if operation=='up':
-                        self.previous()
-                    else:
-                        self.next()
-                        
-                elif operation =='play':
-                    self.next_track_signal=True
-                    self.next_track=self.medialist.selected_track()
+          
+            elif operation in ('up','down'):
+                # stop show timeout
+                if self.show_timeout_timer is not None:
+                    self.canvas.after_cancel(self.show_timeout_timer)
+                    # and start it again
+                    if self.show_timeout_value != 0:
+                        self.show_timeout_timer=self.canvas.after(self.show_timeout_value,self.show_timeout_stop)
+                if operation=='up':
+                    self.previous()
+                else:
+                    self.next()
+                    
+            elif operation =='play':
+                self.next_track_signal=True
+                self.next_track=self.medialist.selected_track()
 
-                    # cancel show timeout
-                    if self.show_timeout_timer != None:
-                        self.canvas.after_cancel(self.show_timeout_timer)
-                        self.show_timeout_timer=None
+                # cancel show timeout
+                if self.show_timeout_timer is not None:
+                    self.canvas.after_cancel(self.show_timeout_timer)
+                    self.show_timeout_timer=None
 
-                    # stop current track (the menuplayer) if running or just start the next track
-                    if self.current_player != None:
-                        self.current_player.input_pressed('stop')
-                    else:
-                        self.what_next_after_showing()
+                # stop current track (the menuplayer) if running or just start the next track
+                if self.current_player is not None:
+                    self.current_player.input_pressed('stop')
+                else:
+                    self.what_next_after_showing()
 
 
-                elif operation == 'pause':
-                    if self.current_player != None:
-                        self.current_player.input_pressed(operation)
-                        
-                elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5]=='uzbl-':
-                    if self.current_player != None:
-                        self.current_player.input_pressed(operation)
+            elif operation == 'pause':
+                if self.current_player is not None:
+                    self.current_player.input_pressed(operation)
+                    
+            elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5]=='uzbl-':
+                if self.current_player is not None:
+                    self.current_player.input_pressed(operation)
 
         
     def next(self):
@@ -294,7 +294,7 @@ class MenuShow(Show):
         if self.trace: print 'menushow/what_next_after_showing '
 
         # cancel track timeout timer
-        if self.track_timeout_timer != None:
+        if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
             self.track_timeout_timer=None
             
@@ -360,10 +360,10 @@ class MenuShow(Show):
 
 
     def stop_timers(self):
-        if self.track_timeout_timer != None:
+        if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
             self.track_timeout_timer=None
-        if self.show_timeout_timer != None:
+        if self.show_timeout_timer is not None:
             self.canvas.after_cancel(self.show_timeout_timer)
             self.show_timeout_timer=None    
 

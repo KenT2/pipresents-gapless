@@ -1,9 +1,7 @@
-import os
 import copy
-from pp_utils import Monitor
 
 
-class PathManager:
+class PathManager(object):
 
     def __init__(self):
         self.debug=False
@@ -21,13 +19,13 @@ class PathManager:
     def back_to(self,stop_at,):
         if self.debug: print 'pathmanager command   -    back_to: ',stop_at
         for page in self.path_stack:
-            if page[0]==stop_at:
+            if page[0] ==  stop_at:
                 break
         else:
             return ''
         
         # found, so pop until we reach it
-        while self.path_stack[len(self.path_stack)-1][0]<>stop_at:
+        while self.path_stack[len(self.path_stack)-1][0] != stop_at:
             self.path_stack.pop()
         track_to_play = self.path_stack[len(self.path_stack)-1][0]
         self.path_stack.pop()
@@ -44,13 +42,13 @@ class PathManager:
         if self.debug:  print 'pathmanager command    -    back by: ',back_by_text,' or stop at: ',stop_at
         back_by=int(back_by_text)
         count=0
-        while self.path_stack<>[]:
+        while self.path_stack != []:
             top = self.path_stack.pop()
-            if top[0]==stop_at or count==back_by-1:
+            if top[0] ==  stop_at or count ==  back_by-1:
                 break
             count=count+1
         # go back 1 if not empty
-        if self.path_stack<>[]:
+        if self.path_stack != []:
             top=self.path_stack.pop()
         track_to_play = top[0]
         if self.debug: 
@@ -88,11 +86,11 @@ class PathManager:
         lines = links_text.split('\n')
         num_lines=0
         for line in lines:
-            if line.strip()=="":
+            if line.strip() ==  "":
                 continue
             num_lines+=1
             error_text,link=self.parse_link(line)
-            if error_text<>"":
+            if error_text != "":
                 return 'error',error_text,links
             links.append(copy.deepcopy(link))
         #print "\nreading"
@@ -100,29 +98,29 @@ class PathManager:
         return 'normal','',links
 
     def parse_link(self,line):
-            fields = line.split()
-            if len(fields)<2 or len(fields)>3:
-                return "incorrect number of fields in link",['','','']
-            symbol=fields[0]
-            operation=fields[1]
-            if operation not in ('return','home','call','null','exit','goto','play','jump','repeat'):
-                return "unknown operation",['','','']
-            if len(fields)==3:
-                arg=fields[2]
-            else:
-                arg=''
-            return '',[symbol,operation,arg]
+        fields = line.split()
+        if len(fields)<2 or len(fields)>3:
+            return "incorrect number of fields in link",['','','']
+        symbol=fields[0]
+        operation=fields[1]
+        if operation not in ('return','home','call','null','exit','goto','play','jump','repeat'):
+            return "unknown operation",['','','']
+        if len(fields) ==  3:
+            arg=fields[2]
+        else:
+            arg=''
+        return '',[symbol,operation,arg]
 
     def merge_links(self,current_links,track_links):
         for track_link in track_links:
             for link in current_links:
-                if track_link[0]==link[0]:
-                        # link exists so overwrite
-                        link[1]=track_link[1]
-                        link[2]=track_link[2]
-                        break
+                if track_link[0] ==  link[0]:
+                    # link exists so overwrite
+                    link[1]=track_link[1]
+                    link[2]=track_link[2]
+                    break
             else:
-            # new link so append it
+                # new link so append it
                 current_links.append(track_link)
         #print "\n merging"
         #print current_links
@@ -130,7 +128,7 @@ class PathManager:
     def find_link(self,symbol,links):
         for link in links:
             #print link
-            if symbol==link[0]:
+            if symbol ==  link[0]:
                 return True,link[1],link[2]
         return False,'',''
 

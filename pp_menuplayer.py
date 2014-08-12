@@ -1,8 +1,7 @@
 import os
-from Tkinter import *
+from Tkinter import N, CENTER, LEFT, NW, W
 from PIL import Image
 from PIL import ImageTk
-from PIL import ImageEnhance
 from pp_utils import Monitor
 from pp_player import Player
 
@@ -20,16 +19,16 @@ class MenuPlayer(Player):
     """
  
     def __init__(self,
-                    show_id,
-                    showlist,
-                    root,
-                    canvas,
-                    show_params,
-                    track_params ,
-                    pp_dir,
-                    pp_home,
-                    pp_profile,
-                    end_callback):
+                 show_id,
+                 showlist,
+                 root,
+                 canvas,
+                 show_params,
+                 track_params ,
+                 pp_dir,
+                 pp_home,
+                 pp_profile,
+                 end_callback):
                     
         # comment out self.trace=False to get a detailed trace of the module.
         self.trace=True
@@ -41,17 +40,17 @@ class MenuPlayer(Player):
 
         self.testing=False
 
-        #initialise items common to all players   
+        # initialise items common to all players   
         Player.__init__( self,
                          show_id,
                          showlist,
                          root,
-                        canvas,
-                        show_params,
-                        track_params ,
+                         canvas,
+                         show_params,
+                         track_params ,
                          pp_dir,
-                        pp_home,
-                        pp_profile,
+                         pp_home,
+                         pp_profile,
                          end_callback)
 
         if self.trace: print '    Menuplayer/init ',self
@@ -67,7 +66,7 @@ class MenuPlayer(Player):
 
     # LOAD - loads the images and text
     def load(self,track,loaded_callback,enable_menu):  
-        #instantiate arguments
+        # instantiate arguments
         self.track=track                   # not used
         self.loaded_callback=loaded_callback   #callback when loaded
         self.enable_menu=enable_menu
@@ -83,7 +82,7 @@ class MenuPlayer(Player):
             self=None
         else:
             self.play_state='loaded'
-            if self.loaded_callback != None:
+            if self.loaded_callback is not None:
                 self.loaded_callback('loaded','image track loaded')
 
             
@@ -97,13 +96,9 @@ class MenuPlayer(Player):
 
 
      # SHOW - show the menu from its loaded state 
-    def show(self,
-                ready_callback,
-                finished_callback,
-                closed_callback,
-                enable_menu=False):
+    def show(self,ready_callback,finished_callback,closed_callback,enable_menu=False):
                          
-        #instantiate arguments
+        # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
@@ -114,7 +109,7 @@ class MenuPlayer(Player):
         
         self.show_x_content()
         
-        if self.ready_callback != None:
+        if self.ready_callback is not  None:
             self.ready_callback()
 
         # do common bits
@@ -129,14 +124,14 @@ class MenuPlayer(Player):
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'
-        if self.closed_callback != None:
+        if self.closed_callback is not None:
             self.closed_callback('normal','menuplayer closed')
 
 
 
     def input_pressed(self,symbol):
         if self.trace: print '    Menuplayer/input_pressed ',symbol
-        if symbol=='stop':
+        if symbol == 'stop':
             self.stop()
 
 
@@ -160,7 +155,7 @@ class MenuPlayer(Player):
             self.quit_signal=False
             self.mon.log(self,"quit received")
             self.play_state='pause_at_end'
-            if self.finished_callback != None:
+            if self.finished_callback is not  None:
                 self.finished_callback('pause_at_end','user quit')
                 # use finish so that the show will call close 
         else:
@@ -181,20 +176,21 @@ class MenuPlayer(Player):
 
         # display menu text if enabled
         if self.track_params['menu-text'] != '':
-            self.menu_text_obj=self.canvas.create_text(int(self.track_params['menu-text-x']),int(self.track_params['menu-text-y']),
-                                                    anchor=NW,
-                                                  text=self.track_params['menu-text'],
-                                                  fill=self.track_params['menu-text-colour'],
-                                                  font=self.track_params['menu-text-font'])
+            self.menu_text_obj=self.canvas.create_text(int(self.track_params['menu-text-x']),
+                                                       int(self.track_params['menu-text-y']),
+                                                       anchor=NW,
+                                                       text=self.track_params['menu-text'],
+                                                       fill=self.track_params['menu-text-colour'],
+                                                       font=self.track_params['menu-text-font'])
 
         # display instructions (hint)
         hint_text=self.track_params['hint-text']
         if hint_text != '':
             self.hint_text_obj=self.canvas.create_text(int(self.track_params['hint-x']),
-                                int(self.track_params['hint-y']),
-                                anchor=NW,
-                                text=hint_text,
-                                fill=self.track_params['hint-colour'])
+                                                       int(self.track_params['hint-y']),
+                                                       anchor=NW,
+                                                       text=hint_text,
+                                                       fill=self.track_params['hint-colour'])
             
         self.canvas.itemconfig(self.menu_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_text_obj,state='hidden')
@@ -248,23 +244,23 @@ class MenuPlayer(Player):
         self.text_id_index=2 # the text - need when no icon is displayed - object
         # and 5 other to do with the strip
 
-        #select the startof the medialist
+        # select the startof the medialist
         self.medialist.start()
 
-        #loop through menu entries
+        # loop through menu entries
         while True:
-            #display the entry
-            #calculate top left corner of entry
+            # display the entry
+            # calculate top left corner of entry
             self.calculate_entry_position(column_index,row_index)
 
 
             # display the button strip
             top_id,bottom_id,left_id,right_id,rectangle_id=self.display_entry_strip()
 
-            #display the selected entry highlight
+            # display the selected entry highlight
             icon_id=self.display_icon_rectangle()
 
-            #display the image in the icon
+            # display the image in the icon
             image_id=self.display_icon_image()
 
             if self.track_params['menu-text-mode'] != 'none':
@@ -272,16 +268,16 @@ class MenuPlayer(Player):
             else:
                 text_id=None
 
-            #append id's to the list
+            # append id's to the list
             self.menu_entry_id.append([icon_id,image_id,text_id,top_id,bottom_id,left_id,right_id,rectangle_id])
             
-            #and loop
+            # and loop
             if self.medialist.at_end():
                 break
             self.menu_length+=1
             self.medialist.next('ordered')
 
-            if self.direction=='horizontal':
+            if self.direction == 'horizontal':
                 column_index+=1
                 if column_index>=self.menu_columns:
                     column_index=0
@@ -320,7 +316,7 @@ class MenuPlayer(Player):
 
         
     # ------------------------------------------------------------------
-    #calculate menu entry size and separation between menu entries
+    # calculate menu entry size and separation between menu entries
     # ------------------------------------------------------------------
     def calculate_geometry(self):
 
@@ -328,7 +324,7 @@ class MenuPlayer(Player):
         self.screen_width=int(self.canvas['width'])
         self.screen_height=int(self.canvas['height'])
         
-        if self.display_strip=='yes':
+        if self.display_strip == 'yes':
             self.strip_padding=int(self.track_params['menu-strip-padding'])
         else:
             self.strip_padding=0
@@ -338,9 +334,9 @@ class MenuPlayer(Player):
         if error != 'normal':
             return 'error',"Menu Window error: "+ reason
 
-        if self.track_params['menu-icon-mode']=='none' and self.track_params['menu-text-mode']=='none':
+        if self.track_params['menu-icon-mode'] == 'none' and self.track_params['menu-text-mode'] == 'none':
             return 'error','Icon and Text are both None'
-        if self.track_params['menu-icon-mode']=='none' and self.track_params['menu-text-mode']=='overlay':
+        if self.track_params['menu-icon-mode'] == 'none' and self.track_params['menu-text-mode'] == 'overlay':
             return 'error','cannot overlay none icon'
 
         self.direction=self.track_params['menu-direction']
@@ -351,15 +347,15 @@ class MenuPlayer(Player):
         self.list_length=self.medialist.display_length()
 
         # get or calculate rows and columns
-        if self.direction=='horizontal':
-            if self.track_params['menu-columns']=='':
+        if self.direction == 'horizontal':
+            if self.track_params['menu-columns'] == '':
                 return 'error','blank columns for horizontal direction'
             self.menu_columns=int(self.track_params['menu-columns'])
             self.menu_rows=self.list_length//self.menu_columns
             if self.list_length % self.menu_columns != 0:
                 self.menu_rows+=1
         else:
-            if self.track_params['menu-rows']=='':
+            if self.track_params['menu-rows'] == '':
                 return 'error','blank rows for vertical direction'
             self.menu_rows=int(self.track_params['menu-rows'])
             self.menu_columns=self.list_length//self.menu_rows
@@ -370,17 +366,17 @@ class MenuPlayer(Player):
         self.y_separation=int(self.track_params['menu-vertical-separation'])
 
         # get size of padding depending on exitence of icon and text
-        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet') and self.track_params['menu-text-mode'] == 'right':
+        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet') and self.track_params['menu-text-mode']  ==  'right':
             self.menu_horizontal_padding=int(self.track_params['menu-horizontal-padding'])
         else:
             self.menu_horizontal_padding=0
 
-        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet') and self.track_params['menu-text-mode'] == 'below':
+        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet') and self.track_params['menu-text-mode']  ==  'below':
             self.menu_vertical_padding=int(self.track_params['menu-vertical-padding'])
         else:
             self.menu_vertical_padding=0
             
-        #calculate size of icon depending on use
+        # calculate size of icon depending on use
         if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
             self.icon_width=int(self.track_params['menu-icon-width'])
             self.icon_height=int(self.track_params['menu-icon-height'])
@@ -388,7 +384,7 @@ class MenuPlayer(Player):
             self.icon_width=0
             self.icon_height=0
 
-        #calculate size of text box depending on mode
+        # calculate size of text box depending on mode
         if self.track_params['menu-text-mode'] != 'none':
             self.text_width=int(self.track_params['menu-text-width'])
             self.text_height=int(self.track_params['menu-text-height'])
@@ -400,7 +396,7 @@ class MenuPlayer(Player):
         if self.track_params['menu-text-mode'] == 'right':
             self.entry_width=self.icon_width+self.menu_horizontal_padding+self.text_width
             self.entry_height=max(self.text_height,self.icon_height)
-        elif self.track_params['menu-text-mode']=='below':
+        elif self.track_params['menu-text-mode'] == 'below':
             self.entry_width=max(self.text_width,self.icon_width)
             self.entry_height=self.icon_height + self.menu_vertical_padding + self.text_height 
         else:
@@ -410,7 +406,7 @@ class MenuPlayer(Player):
                 self.entry_width=self.icon_width
                 self.entry_height=self.icon_height
             else:
-                #text only
+                # text only
                 self.entry_width=self.text_width
                 self.entry_height=self.text_height
 
@@ -429,153 +425,151 @@ class MenuPlayer(Player):
 
         # display guidelines and debgging text if there is a problem     
         if total_width>self.menu_width and self.display_guidelines != 'never':
-                self.display_guidelines='always'
-                self.mon.log(self,'\nMENU IS WIDER THAN THE WINDOW')
-                self.print_geometry(total_width,total_height)
+            self.display_guidelines='always'
+            self.mon.log(self,'\nMENU IS WIDER THAN THE WINDOW')
+            self.print_geometry(total_width,total_height)
 
 
         if total_height>self.menu_height and self.display_guidelines != 'never':
-                self.display_guidelines='always'
-                self.mon.log(self,'\nMENU IS TALLER THAN THE WINDOW')
-                self.print_geometry(total_width,total_height)            
+            self.display_guidelines='always'
+            self.mon.log(self,'\nMENU IS TALLER THAN THE WINDOW')
+            self.print_geometry(total_width,total_height)            
 
         # display calculated total rectangle guidelines for debugging
-        if self.display_guidelines=='always':
+        if self.display_guidelines == 'always':
             points=[self.menu_x_left,self.menu_y_top, self.menu_x_left+total_width,self.menu_y_top+total_height]
 
             # and display the icon rectangle
             self.canvas.create_rectangle(points,
-                                           outline='red',
-                                           fill='',
-                                           tag='pp-content')
+                                         outline='red',
+                                         fill='',
+                                         tag='pp-content')
 
         
         # display menu rectangle guidelines for debugging
-        if self.display_guidelines=='always':
+        if self.display_guidelines == 'always':
             points=[self.menu_x_left,self.menu_y_top, self.menu_x_right,self.menu_y_bottom]
             self.canvas.create_rectangle(points,
-                                           outline='blue',
-                                           fill='',
-                                           tag='pp-content')
+                                         outline='blue',
+                                         fill='',
+                                         tag='pp-content')
                 
         return 'normal',''
 
     def calculate_entry_position(self,column_index,row_index):
-            self.entry_x=self.menu_x_left+ column_index*(self.x_separation+self.entry_width)
-            self.entry_y=self.menu_y_top+ row_index*(self.y_separation+self.entry_height)
+        self.entry_x=self.menu_x_left+ column_index*(self.x_separation+self.entry_width)
+        self.entry_y=self.menu_y_top+ row_index*(self.y_separation+self.entry_height)
 
             
     def display_entry_strip(self):
-        if self.display_strip=='yes':
-            if self.direction=='vertical':
-                    #display the strip
-                    strip_points=[self.entry_x - self.strip_padding -1 ,
-                                  self.entry_y - self.strip_padding - 1,
-                                  self.entry_x+ self.entry_width + self.strip_padding - 1,
-                                  self.entry_y+self.entry_height+ self.strip_padding - 1]
-                    rectangle_id=self.canvas.create_rectangle(strip_points,
-                                                       outline='',
-                                                        fill='gray',
-                                                       stipple='gray12',                                 
-                                                       tag='pp-content')
+        if self.display_strip == 'yes':
+            if self.direction == 'vertical':
+                #display the strip
+                strip_points=[self.entry_x - self.strip_padding -1 ,
+                              self.entry_y - self.strip_padding - 1,
+                              self.entry_x+ self.entry_width + self.strip_padding - 1,
+                              self.entry_y+self.entry_height+ self.strip_padding - 1]
+                rectangle_id=self.canvas.create_rectangle(strip_points,
+                                                          outline='',
+                                                          fill='gray',
+                                                          stipple='gray12',
+                                                          tag='pp-content')
 
-                    top_l_points=[self.entry_x - self.strip_padding,
-                                  self.entry_y - self.strip_padding,
-                                  self.entry_x + self.entry_width + self.strip_padding ,
-                                  self.entry_y - self.strip_padding]
-                    
-                    top_id=self.canvas.create_line(top_l_points,
-                                            fill='light gray',
-                                            tag='pp-content')
-                    
-                    bottom_l_points=[self.entry_x - self.strip_padding,
-                                     self.entry_y + self.entry_height + self.strip_padding,
-                                     self.entry_x+ self.entry_width + self.strip_padding ,
-                                     self.entry_y+ self.entry_height + self.strip_padding]
-                    
-                    bottom_id=self.canvas.create_line(bottom_l_points,
-                                            fill='dark gray',
-                                            tag='pp-content')
+                top_l_points=[self.entry_x - self.strip_padding,
+                              self.entry_y - self.strip_padding,
+                              self.entry_x + self.entry_width + self.strip_padding ,
+                              self.entry_y - self.strip_padding]
+                
+                top_id=self.canvas.create_line(top_l_points,
+                                               fill='light gray',
+                                               tag='pp-content')
+                
+                bottom_l_points=[self.entry_x - self.strip_padding,
+                                 self.entry_y + self.entry_height + self.strip_padding,
+                                 self.entry_x+ self.entry_width + self.strip_padding ,
+                                 self.entry_y+ self.entry_height + self.strip_padding]
+                
+                bottom_id=self.canvas.create_line(bottom_l_points,
+                                                  fill='dark gray',
+                                                  tag='pp-content')
 
-                    left_l_points=[self.entry_x - self.strip_padding,
-                                   self.entry_y - self.strip_padding,
-                                   self.entry_x - self.strip_padding,
-                                   self.entry_y + self.entry_height + self.strip_padding]
-                    
-                    left_id=self.canvas.create_line(left_l_points,
-                                            fill='gray',
-                                            tag='pp-content')
-                    right_id=None
+                left_l_points=[self.entry_x - self.strip_padding,
+                               self.entry_y - self.strip_padding,
+                               self.entry_x - self.strip_padding,
+                               self.entry_y + self.entry_height + self.strip_padding]
+                
+                left_id=self.canvas.create_line(left_l_points,
+                                                fill='gray',
+                                                tag='pp-content')
+                right_id=None
 
             else:
-                    #display the strip vertically
-                    strip_points=[self.entry_x - self.strip_padding +1 ,
-                                  self.entry_y - self.strip_padding +1,
-                                  self.entry_x+self.entry_width + self.strip_padding -1,
-                                  self.entry_y + self.entry_height+ self.strip_padding -1]
-                    
-                    rectangle_id=self.canvas.create_rectangle(strip_points,
-                                                       outline='',
-                                                        fill='gray',
-                                                       stipple='gray12',                                 
-                                                       tag='pp-content')
+                # display the strip vertically
+                strip_points=[self.entry_x - self.strip_padding +1 ,
+                              self.entry_y - self.strip_padding +1,
+                              self.entry_x+self.entry_width + self.strip_padding -1,
+                              self.entry_y + self.entry_height+ self.strip_padding -1]
+                
+                rectangle_id=self.canvas.create_rectangle(strip_points,
+                                                          outline='',
+                                                          fill='gray',
+                                                          stipple='gray12',
+                                                          tag='pp-content')
 
-                    top_l_points=[self.entry_x - self.strip_padding,
-                                  self.entry_y - self.strip_padding,
-                                  self.entry_x + self.entry_width + self.strip_padding,
-                                  self.entry_y - self.strip_padding]
-                    
-                    top_id=self.canvas.create_line(top_l_points,
-                                            fill='light gray',
-                                            tag='pp-content')
-                    
-                    left_l_points=[self.entry_x - self.strip_padding,
-                                   self.entry_y - self.strip_padding,
-                                   self.entry_x - self.strip_padding,
-                                   self.entry_y + self.entry_height+ self.strip_padding]
-                    
-                    left_id=self.canvas.create_line(left_l_points,
-                                            fill='gray',
-                                            tag='pp-content')
+                top_l_points=[self.entry_x - self.strip_padding,
+                              self.entry_y - self.strip_padding,
+                              self.entry_x + self.entry_width + self.strip_padding,
+                              self.entry_y - self.strip_padding]
+                
+                top_id=self.canvas.create_line(top_l_points,
+                                               fill='light gray',
+                                               tag='pp-content')
+                
+                left_l_points=[self.entry_x - self.strip_padding,
+                               self.entry_y - self.strip_padding,
+                               self.entry_x - self.strip_padding,
+                               self.entry_y + self.entry_height+ self.strip_padding]
+                
+                left_id=self.canvas.create_line(left_l_points,
+                                                fill='gray',
+                                                tag='pp-content')
 
-                    right_l_points=[self.entry_x +self.entry_width + self.strip_padding,
-                                     self.entry_y - self.strip_padding,
-                                     self.entry_x +self.entry_width + self.strip_padding,
-                                     self.entry_y + self.entry_height+ self.strip_padding]
-                    
-                    right_id=self.canvas.create_line(right_l_points,
-                                            fill='dark gray',
-                                            tag='pp-content')
+                right_l_points=[self.entry_x +self.entry_width + self.strip_padding,
+                                 self.entry_y - self.strip_padding,
+                                 self.entry_x +self.entry_width + self.strip_padding,
+                                 self.entry_y + self.entry_height+ self.strip_padding]
+                
+                right_id=self.canvas.create_line(right_l_points,
+                                                 fill='dark gray',
+                                                 tag='pp-content')
 
-                    bottom_id=None
+                bottom_id=None
+                
             return top_id,bottom_id,left_id,right_id,rectangle_id
+
 
     # display the rectangle that goes arond the icon when the entry is selected
     def display_icon_rectangle(self):
             if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
 
-                #calculate icon parameters
-                if self.icon_width<self.text_width and self.track_params['menu-text-mode']=='below':
+                # calculate icon parameters
+                if self.icon_width<self.text_width and self.track_params['menu-text-mode'] == 'below':
                         self.icon_x_left=self.entry_x+abs(self.icon_width-self.text_width)/2
                 else:
                         self.icon_x_left=self.entry_x
                 self.icon_x_right=self.icon_x_left+self.icon_width
 
-                if self.icon_height<self.text_height and self.track_params['menu-text-mode']=='right':
+                if self.icon_height<self.text_height and self.track_params['menu-text-mode'] == 'right':
                         self.icon_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
                 else:
                         self.icon_y_top=self.entry_y
                 self.icon_y_bottom=self.icon_y_top+self.icon_height
 
                 
-                req_horiz_sep=self.menu_horizontal_padding
-                req_vert_sep=self.menu_vertical_padding
-
-                
                 points=[self.icon_x_left,self.icon_y_top,self.icon_x_right,self.icon_y_top,self.icon_x_right,self.icon_y_bottom,self.icon_x_left,self.icon_y_bottom]
 
                 # display guidelines make it white when not selected for debugging
-                if self.display_guidelines=='always':
+                if self.display_guidelines == 'always':
                     outline='white'
                 else:
                     outline=''
@@ -591,13 +585,11 @@ class MenuPlayer(Player):
                 # not using icon so set starting point for text to zero icon size
                 self.icon_x_right=self.entry_x
                 self.icon_y_bottom=self.entry_y
-                req_horiz_sep=0
-                req_vert_sep=0
                 icon_id=None
             return icon_id
         
 
-    #display the image in a menu entry
+    # display the image in a menu entry
     def  display_icon_image(self):
             image_id=None
             if self.track_params['menu-icon-mode'] == 'thumbnail':
@@ -606,11 +598,11 @@ class MenuPlayer(Player):
                     self.pil_image=Image.open(self.complete_path(self.medialist.selected_track()['thumbnail']))
                 else:
                     #cannot find thumbnail get the image if its an image track
-                    if self.medialist.selected_track()['type'] =='image':
+                    if self.medialist.selected_track()['type']  == 'image':
                         self.track=self.complete_path(self.medialist.selected_track()['location'])
                     else:
                         self.track=''
-                    if self.medialist.selected_track()['type']=='image' and os.path.exists(self.track) is True: 
+                    if self.medialist.selected_track()['type'] == 'image' and os.path.exists(self.track) is True: 
                         self.pil_image=Image.open(self.track)
                     else:
                         #use a standard thumbnail
@@ -623,7 +615,7 @@ class MenuPlayer(Player):
                             self.pil_image=None
 
                 # display the image                
-                if self.pil_image != None:
+                if self.pil_image  is not  None:
                     self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                     image_id=ImageTk.PhotoImage(self.pil_image)
                     self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
@@ -633,13 +625,13 @@ class MenuPlayer(Player):
                 else:
                     image_id=None
                         
-            elif self.track_params['menu-icon-mode'] =='bullet':
+            elif self.track_params['menu-icon-mode']  == 'bullet':
                     bullet=self.complete_path(self.track_params['menu-bullet'])                  
                     if os.path.exists(bullet) is False:
                         self.pil_image=None                          
                     else:
                         self.pil_image=Image.open(bullet)
-                    if self.pil_image != None:
+                    if self.pil_image is not None:
                         self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                         image_id=ImageTk.PhotoImage(self.pil_image)
                         self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
@@ -651,11 +643,11 @@ class MenuPlayer(Player):
             return image_id
 
             
-    #display the text of a menu entry
+    # display the text of a menu entry
     def display_icon_text(self):
             text_mode=self.track_params['menu-text-mode']
             if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
-                if text_mode=='right':
+                if text_mode == 'right':
                     if self.icon_height>self.text_height:
                         text_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
                     else:
@@ -668,7 +660,7 @@ class MenuPlayer(Player):
                     text_x=text_x_left
                     text_y=text_y_top+(self.text_height/2)
 
-                elif text_mode=='below':
+                elif text_mode == 'below':
                     text_y_top=self.icon_y_bottom+self.menu_vertical_padding
                     text_y_bottom=text_y_top+self.text_height
                     
@@ -691,7 +683,7 @@ class MenuPlayer(Player):
                     text_y=(text_y_top+text_y_bottom)/2                    
 
             else:
-                    #no icon text only
+                    # no icon text only
                     text_y_top=self.entry_y
                     text_y_bottom=text_y_top+self.text_height
                     text_x_left=self.entry_x
@@ -700,18 +692,18 @@ class MenuPlayer(Player):
                     text_y=self.entry_y+self.text_height/2
 
 
-            #display the guidelines for debugging
-            if self.display_guidelines=='always':
+            # display the guidelines for debugging
+            if self.display_guidelines == 'always':
                 points=[text_x_left,text_y_top,text_x_right,text_y_top,text_x_right,text_y_bottom,text_x_left,text_y_bottom]
                 self.canvas.create_polygon(points,fill= '' ,
                                               outline='white',
                                               tag='pp-content')
 
             # display the text
-            if text_mode=='below' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
+            if text_mode == 'below' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
                 anchor=N
                 justify=CENTER
-            elif text_mode=='overlay' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
+            elif text_mode == 'overlay' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
                 anchor=CENTER
                 justify=CENTER
             else:
@@ -755,17 +747,17 @@ class MenuPlayer(Player):
                 fields = line.split()
                 if len(fields) not in  (1, 2,4):
                     return 'error','wrong number of fields',0,0,0,0
-                if len(fields)==1:
-                    if fields[0]=='fullscreen':
+                if len(fields) == 1:
+                    if fields[0] == 'fullscreen':
                         return 'normal','',0,0,self.screen_width - 1, self.screen_height - 1
                     else:
                         return 'error','single field is not fullscreen',0,0,0,0
-                if len(fields)==2:                    
+                if len(fields) == 2:                    
                     if fields[0].isdigit() and fields[1].isdigit():
                         return 'normal','',int(fields[0]),int(fields[1]),self.screen_width, self.screen_height
                     else:
                         return 'error','field is not a digit',0,0,0,0
-                if len(fields)==4:                    
+                if len(fields) == 4:                    
                     if fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit():
                         return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
                 else:
