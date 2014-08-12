@@ -26,22 +26,20 @@ class MenuShow(Show):
         
         self.mon=Monitor()
         self.mon.on()
-        self.trace=True
-        # self.trace=False
-        
-        # instantiate arguments
-        self.show_id=show_id
-        self.show_params=show_params
-        self.root=root
-        self.canvas=canvas
-        self.showlist=showlist
-        self.pp_dir=pp_dir
-        self.pp_home=pp_home
-        self.pp_profile=pp_profile
-
+    
         # init the common bits
-        Show.base__init__(self)
-        
+        Show.base__init__(self,
+                          show_id,
+                          show_params,
+                          root,
+                          canvas,
+                          showlist,
+                          pp_dir,
+                          pp_home,
+                          pp_profile)
+
+        self.trace=True
+        # self.trace=False        
  
         # init variables
         self.show_timeout_timer=None

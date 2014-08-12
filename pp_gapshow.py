@@ -12,10 +12,26 @@ class GapShow(Show):
 # External interface
 # ********************
 
-    def __init__(self):
+    def __init__(self,
+                            show_id,
+                            show_params,
+                             root,
+                            canvas,
+                            showlist,
+                             pp_dir,
+                            pp_home,
+                            pp_profile):
 
         # init the common bits
-        Show.base__init__(self)
+        Show.base__init__(self,
+                            show_id,
+                            show_params,
+                             root,
+                            canvas,
+                            showlist,
+                             pp_dir,
+                            pp_home,
+                            pp_profile)
 
 
         # Init variables special to this show

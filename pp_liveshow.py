@@ -18,21 +18,6 @@ class LiveShow(GapShow):
 
         self.mon=Monitor()
         self.mon.on()
-        self.trace=True
-        self.trace=False
-
-
-        
-        #instantiate arguments
-        self.show_id=show_id
-        self.show_params =show_params
-        self.showlist=showlist
-        self.root=root
-        self.canvas=canvas
-        self.pp_dir=pp_dir
-        self.pp_home=pp_home
-        self.pp_profile=pp_profile
-
 
         self.options=command_options()
                
@@ -55,4 +40,15 @@ class LiveShow(GapShow):
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
         
         # init the common bits
-        GapShow.__init__(self)
+        GapShow.__init__(self,
+                            show_id,
+                            show_params,
+                             root,
+                            canvas,
+                            showlist,
+                             pp_dir,
+                            pp_home,
+                            pp_profile)
+
+        self.trace=True
+        self.trace=False
