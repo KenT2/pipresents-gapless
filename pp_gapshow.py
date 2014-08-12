@@ -22,6 +22,10 @@ class GapShow(Show):
                  pp_home,
                  pp_profile):
 
+        # initi things that will be reinitialised by derived classes
+        self.medialist=None
+        Show.__init__(self)
+
         # init the common bits
         Show.base__init__(self,
                           show_id,
@@ -57,7 +61,7 @@ class GapShow(Show):
         if self.trace: print '\n\nGAPSHOW/play ',self.show_params['show-ref']
         Show.base_play(self,end_callback,show_ready_callback,direction_command, level)
 
-        #set up the time of day triggers for the show
+        # set up the time of day triggers for the show
         if self.show_params['trigger-start-type']in('time','time-quiet'):
             error_text=self.tod.add_times(self.show_params['trigger-start-param'],id(self),self.tod_start_callback,self.show_params['trigger-start-type'])
             if error_text != '':
@@ -206,6 +210,7 @@ class GapShow(Show):
         
     # wait for trigger sets the state to waiting so that events can do a start show.    
     def wait_for_trigger(self):
+        text=''  # to keep landscape.io happy
         self.state='waiting'
 
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Waiting for trigger: "+ self.show_params['trigger-start-type'])

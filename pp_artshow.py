@@ -23,6 +23,12 @@ class ArtShow(Show):
                  pp_home,
                  pp_profile):
 
+        # init items that are then initialised in the derived class.
+        self.medialist=None
+        self.load_delay=2000
+        Show.__init__(self)
+        
+
         # init the common bits
         Show.base__init__(self,
                           show_id,
@@ -164,6 +170,7 @@ class ArtShow(Show):
 # ***************************
     def wait_for_trigger(self):
         self.state='waiting'
+        text='' # to please landscape.io
 
 
         self.mon.log(self,"Waiting for trigger: "+ self.show_params['trigger-start-type'])
@@ -218,7 +225,7 @@ class ArtShow(Show):
             # otherwise load the first track
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
-                self.mon.err(self,"Unknown Track Type: "+ track_type)
+                self.mon.err(self,"Unknown Track Type")
                 self.terminate_signal=True
                 self.what_next()
             else:

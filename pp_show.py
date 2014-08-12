@@ -14,9 +14,15 @@ from pp_utils import Monitor
 class Show(object):
 
 
+
+
     # ******************************
     # init a show
     # ******************************
+
+    def __init__(self):
+        # init things that will then be reinitialised by derived classes
+        self.medialist=None
 
     def base__init__(self,
                      show_id,
@@ -369,7 +375,7 @@ class Show(object):
 
 
     # dummy, normally overidden by derived class
-    def terminate(self,reason,message):
+    def terminate(self,reason):
         self.mon.err(self,"terminate not overidden")
         self.base_end('error',message)
 

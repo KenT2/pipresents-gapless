@@ -1,23 +1,14 @@
-from glob import glob
 import os
-import csv
 import copy
 import json
 import string
-import ConfigParser
 from pp_utils import Monitor
 
-# *************************************
-# SHOWLIST CLASS
-# ************************************
 
-class ShowList:
+class ShowList(object):
     """
     manages a list of show and the show selected from the showlist
     """
-    IMAGE_FILES=('Image files', '.gif','.GIF','.jpg','.JPG','.jpeg','.JPEG')
-    VIDEO_FILES=('video files','.mp4','.MP4','.mkv','.MKV','.avi','.AVI')
-    AUDIO_FILES=('audio files','.mp3','.MP3')
 
     def __init__(self):
         self.mon=Monitor()
@@ -48,11 +39,11 @@ class ShowList:
             return False
 
     def show_is_selected(self):
-            if self._selected_show_index>=0:
-                return True
-            else:
-                return False
-            
+        if self._selected_show_index>=0:
+            return True
+        else:
+            return False
+        
     def selected_show_index(self):
         return self._selected_show_index
         
@@ -110,7 +101,7 @@ class ShowList:
     def index_of_show(self,wanted_show):
         index = 0
         for show in self._shows:
-            if show['show-ref']==wanted_show:
+            if show['show-ref'] == wanted_show:
                 return index
             index +=1
         return -1
@@ -130,7 +121,7 @@ class ShowList:
         showlists are stored in files as json arrays within a object 'shows'.
         shows are stored internally as a list of dictionaries in self._shows
         """
-        if filename !="" and os.path.exists(filename):
+        if filename != '' and os.path.exists(filename):
             ifile  = open(filename, 'rb')
             sdict= json.load(ifile)
             ifile.close()
@@ -163,57 +154,3 @@ class ShowList:
         ofile.close()
         return
             
-# =====================================================
-# old stuff
-    def open_cfg(self,filename):
-        """
-        opens a saved showlist
-        each show is a section of a confiParser file
-        shows are stored as a list of dictionaries in self._shows
-        """
-        if filename !="" and os.path.exists(filename):
-            self.config=ConfigParser.ConfigParser()
-            self.config.read(filename)
-            self._shows=[]
-            for section in self.sections():
-                self._shows.append(self.dictionary_of(section))
-            self._num_shows=len(self._shows)
-            self._selected_show_index=-1
-            return True
-        else:
-            return False
-    def has_show(self,section):
-        return self.config.has_section(section)
-
-    def sections(self):
-        return self.config.sections()
-    
-    def get(self,section,item):
-        return self.config.get(section,item,0)
-
-    def dictionary_of(self,section):
-        return dict(self.config.items(section))
-
-
-
-
-
-
-
-# **************
-# Test Harness
-# *************
-
-if __name__ == '__main__':
-    # make form a directory of files
-    ml=MediaList()
-    ml.make_list_from_dir("/home/pi/pipresents/media")
-    #ml.print_list
-    ml.save_list("/home/pi/pipresents/temp/test_ml.json")
-    
-    # make from a csv file. Fields - location,title,type
-    ml=MediaList()
-    ml.open_csv("/home/pi/pipresents/pp_profiles/pp_profile/images.csv")
-    #ml.print_list
-    ml.save_list("/home/pi/pipresents/temp/test_mlccsv.json")
-    

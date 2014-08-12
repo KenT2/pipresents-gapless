@@ -89,7 +89,7 @@ class TimeOfDay(object):
         TimeOfDay.now_seconds= TimeOfDay.delta.seconds-diff
         TimeOfDay.synced=True
         # print 'scheduler time', TimeOfDay.now_seconds, ' diff ', diff
-        for index, item in enumerate(TimeOfDay.times):
+        for item in TimeOfDay.times:
             # print item[TimeOfDay.TIME]
             if item[TimeOfDay.TIME]  ==  TimeOfDay.now_seconds:
                 # print 'event fired'
@@ -103,7 +103,7 @@ class TimeOfDay(object):
 
     def next_event_time(self):
         # look for next event
-        for index, item in enumerate(TimeOfDay.times):
+        for item in TimeOfDay.times:
             # print 'trying ',item[TimeOfDay.SOURCE]
             if TimeOfDay.now_seconds < item[TimeOfDay.TIME]:
                 break
@@ -181,9 +181,9 @@ class TimeOfDay(object):
     
     # remove an event
     def remove_event(self,event):
-        for index, item in enumerate(PPIO.events):
+        for index, item in enumerate(TimeOfDay.times):
             if event == item:
-                del PPIO.events[index]
+                del TimeOfDay.times[index]
                 return True
         return False
 

@@ -17,10 +17,6 @@ class MediaShow(GapShow):
         self.mon=Monitor()
         self.mon.on()
 
-
-        # use the appropriate medialist
-        self.medialist=MediaList()
-
         # init the common bits
         GapShow.__init__(self,
                          show_id,
@@ -32,6 +28,9 @@ class MediaShow(GapShow):
                          pp_home,
                          pp_profile)
 
+        # use the appropriate medialist
+        self.medialist=MediaList()
+        
         self.trace=True
         # self.trace=False
 

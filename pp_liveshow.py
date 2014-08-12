@@ -20,7 +20,8 @@ class LiveShow(GapShow):
         self.mon.on()
 
         self.options=command_options()
-               
+
+        # get the livetracks directories
         self.pp_live_dir1 = self.pp_home + os.sep + 'pp_live_tracks'
         if not os.path.exists(self.pp_live_dir1):
             os.mkdir(self.pp_live_dir1)
@@ -33,12 +34,6 @@ class LiveShow(GapShow):
                 self.end('error',"live tracks directory not found")
 
 
-        # use the appropriate medialist
-        self.medialist=LiveList()
-
-        # and pass directories to livelist
-        self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
-        
         # init the common bits
         GapShow.__init__(self,
                          show_id,
@@ -49,6 +44,12 @@ class LiveShow(GapShow):
                          pp_dir,
                          pp_home,
                          pp_profile)
+
+        # use the appropriate medialist
+        self.medialist=LiveList()
+
+        # and pass directories to livelist
+        self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
 
         self.trace=True
         self.trace=False

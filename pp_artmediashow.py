@@ -22,9 +22,6 @@ class ArtMediaShow(ArtShow):
         # can be reduced if animation is not required
         self.load_delay = 2000
         
-        # use the appropriate medialist
-        self.medialist=MediaList()
-
         # init the common bits
         ArtShow.__init__(self,
                          show_id,
@@ -36,6 +33,9 @@ class ArtMediaShow(ArtShow):
                          pp_home,
                          pp_profile)
 
+        # use the appropriate medialist
+        self.medialist=MediaList()
+        
         self.trace=True
         # self.trace=False
 
