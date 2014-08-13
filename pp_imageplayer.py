@@ -26,15 +26,24 @@ class ImagePlayer(Player):
                  pp_home,
                  pp_profile,
                  end_callback):
-                    
-        # must be true if player is being used with the test harness
-        self.testing=False
-        
-        self.trace=True
-        # self.trace=False
-        
-        # debugging trace
-        self.mon=Monitor()
+
+        # initialise items common to all players   
+        Player.__init__( self,
+                         show_id,
+                         showlist,
+                         root,
+                         canvas,
+                         show_params,
+                         track_params ,
+                         pp_dir,
+                         pp_home,
+                         pp_profile,
+                         end_callback)
+
+        # comment this out to turn the trace off          
+        # self.trace=True
+
+        # control debugging trace
         self.mon.on()
         
         # stopwatch for timing functions
@@ -43,19 +52,6 @@ class ImagePlayer(Player):
         self.sw.off()
 
         
-        # initialise items common to all players   
-        Player.__init__( self,
-                         show_id,
-                         showlist,
-                         root,
-                        canvas,
-                        show_params,
-                        track_params ,
-                         pp_dir,
-                        pp_home,
-                        pp_profile,
-                         end_callback)
-
         if self.trace: print '    Imageplayer/init ',self
         # and initialise things for this player
         
@@ -86,7 +82,6 @@ class ImagePlayer(Player):
         # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   # callback when loaded
-        self.enable_menu=enable_menu
         if self.trace: print '    Imageplayer/load ',self
         
         # load the plugin, this may modify self.track and enable the plugin drawign to canvas
@@ -98,7 +93,7 @@ class ImagePlayer(Player):
                 self=None
 
         # load the images and text
-        status,message=self.load_x_content()
+        status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -119,13 +114,13 @@ class ImagePlayer(Player):
             
 
      # SHOW - show a track from its loaded state 
-    def show(self,ready_callback,finished_callback,closed_callback,enable_menu=False):
+    def show(self,ready_callback,finished_callback,closed_callback):
                          
         # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
-        self.enable_menu = enable_menu
+
         if self.trace: print '    Imageplayer/show ',self
         
         # init state and signals  
@@ -334,60 +329,60 @@ class ImagePlayer(Player):
 
     def parse_window(self,line):
         
-            fields = line.split()
-            # check there is a command field
-            if len(fields) < 1:
-                    return 'error','',False,0,0,0,0,''
-                
-            # deal with original whch has 0 or 2 arguments
-            image_filter=''
-            if fields[0] == 'original':
-                if len(fields) not in (1,3):
-                    return 'error','',False,0,0,0,0,''       
-                # deal with window coordinates    
-                if len(fields)  ==  3:
-                    # window is specified
-                    if not (fields[1].isdigit() and fields[2].isdigit()):
-                        return 'error','',False,0,0,0,0,''
-                    has_window=True
-                    return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),0,0,image_filter
-                else:
-                    # no window
-                    has_window=False 
-                    return 'normal',fields[0],has_window,0,0,0,0,image_filter
-
-
-
-            # deal with remainder which has 1, 2, 5 or  6arguments
-            # check basic syntax
-            if  fields[0] not in ('shrink','fit','warp'):
-                return 'error','',False,0,0,0,0,'' 
-            if len(fields) not in (1,2,5,6):
-                return 'error','',False,0,0,0,0,''
-            if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-                return 'error','',False,0,0,0,0,''
-            if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+        fields = line.split()
+        # check there is a command field
+        if len(fields) < 1:
                 return 'error','',False,0,0,0,0,''
             
+        # deal with original whch has 0 or 2 arguments
+        image_filter=''
+        if fields[0] == 'original':
+            if len(fields) not in (1,3):
+                return 'error','',False,0,0,0,0,''       
             # deal with window coordinates    
-            if len(fields) in (5,6):
+            if len(fields)  ==  3:
                 # window is specified
-                if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
+                if not (fields[1].isdigit() and fields[2].isdigit()):
                     return 'error','',False,0,0,0,0,''
                 has_window=True
-                if len(fields) == 6:
-                    image_filter=fields[5]
-                else:
-                    image_filter='Image.NEAREST'
-                    return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4]),image_filter
+                return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),0,0,image_filter
             else:
                 # no window
-                has_window=False
-                if len(fields) == 2:
-                    image_filter=fields[1]
-                else:
-                    image_filter='Image.NEAREST'
+                has_window=False 
                 return 'normal',fields[0],has_window,0,0,0,0,image_filter
-                
+
+
+
+        # deal with remainder which has 1, 2, 5 or  6arguments
+        # check basic syntax
+        if  fields[0] not in ('shrink','fit','warp'):
+            return 'error','',False,0,0,0,0,'' 
+        if len(fields) not in (1,2,5,6):
+            return 'error','',False,0,0,0,0,''
+        if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            return 'error','',False,0,0,0,0,''
+        if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            return 'error','',False,0,0,0,0,''
+        
+        # deal with window coordinates    
+        if len(fields) in (5,6):
+            # window is specified
+            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
+                return 'error','',False,0,0,0,0,''
+            has_window=True
+            if len(fields) == 6:
+                image_filter=fields[5]
+            else:
+                image_filter='Image.NEAREST'
+                return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4]),image_filter
+        else:
+            # no window
+            has_window=False
+            if len(fields) == 2:
+                image_filter=fields[1]
+            else:
+                image_filter='Image.NEAREST'
+            return 'normal',fields[0],has_window,0,0,0,0,image_filter
+            
 
     

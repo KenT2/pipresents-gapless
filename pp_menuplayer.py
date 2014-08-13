@@ -29,16 +29,6 @@ class MenuPlayer(Player):
                  pp_home,
                  pp_profile,
                  end_callback):
-                    
-        # comment out self.trace=False to get a detailed trace of the module.
-        self.trace=True
-        # self.trace=False
-        
-        # debugging trace
-        self.mon=Monitor()
-        self.mon.on()
-
-        self.testing=False
 
         # initialise items common to all players   
         Player.__init__( self,
@@ -52,6 +42,14 @@ class MenuPlayer(Player):
                          pp_home,
                          pp_profile,
                          end_callback)
+
+                    
+        # comment this out to turn the trace off          
+        # self.trace=True
+        
+        # control debugging log
+        self.mon.on()
+
 
         if self.trace: print '    Menuplayer/init ',self
         
@@ -69,13 +67,11 @@ class MenuPlayer(Player):
         # instantiate arguments
         self.track=track                   # not used
         self.loaded_callback=loaded_callback   #callback when loaded
-        self.enable_menu=enable_menu
+        
         if self.trace: print '    Menuplayer/load ',self
 
-        
-
         # load the images and text
-        status,message=self.load_x_content()
+        status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -96,13 +92,12 @@ class MenuPlayer(Player):
 
 
      # SHOW - show the menu from its loaded state 
-    def show(self,ready_callback,finished_callback,closed_callback,enable_menu=False):
+    def show(self,ready_callback,finished_callback,closed_callback):
                          
         # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
-        self.enable_menu = enable_menu
         if self.trace: print '    Menuplayer/show ',self
 
         self.quit_signal=False
@@ -464,7 +459,7 @@ class MenuPlayer(Player):
     def display_entry_strip(self):
         if self.display_strip == 'yes':
             if self.direction == 'vertical':
-                #display the strip
+                # display the strip
                 strip_points=[self.entry_x - self.strip_padding -1 ,
                               self.entry_y - self.strip_padding - 1,
                               self.entry_x+ self.entry_width + self.strip_padding - 1,
@@ -535,9 +530,9 @@ class MenuPlayer(Player):
                                                 tag='pp-content')
 
                 right_l_points=[self.entry_x +self.entry_width + self.strip_padding,
-                                 self.entry_y - self.strip_padding,
-                                 self.entry_x +self.entry_width + self.strip_padding,
-                                 self.entry_y + self.entry_height+ self.strip_padding]
+                                self.entry_y - self.strip_padding,
+                                self.entry_x +self.entry_width + self.strip_padding,
+                                self.entry_y + self.entry_height+ self.strip_padding]
                 
                 right_id=self.canvas.create_line(right_l_points,
                                                  fill='dark gray',
@@ -550,220 +545,224 @@ class MenuPlayer(Player):
 
     # display the rectangle that goes arond the icon when the entry is selected
     def display_icon_rectangle(self):
-            if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
+        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
 
-                # calculate icon parameters
-                if self.icon_width<self.text_width and self.track_params['menu-text-mode'] == 'below':
-                        self.icon_x_left=self.entry_x+abs(self.icon_width-self.text_width)/2
-                else:
-                        self.icon_x_left=self.entry_x
-                self.icon_x_right=self.icon_x_left+self.icon_width
-
-                if self.icon_height<self.text_height and self.track_params['menu-text-mode'] == 'right':
-                        self.icon_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
-                else:
-                        self.icon_y_top=self.entry_y
-                self.icon_y_bottom=self.icon_y_top+self.icon_height
-
-                
-                points=[self.icon_x_left,self.icon_y_top,self.icon_x_right,self.icon_y_top,self.icon_x_right,self.icon_y_bottom,self.icon_x_left,self.icon_y_bottom]
-
-                # display guidelines make it white when not selected for debugging
-                if self.display_guidelines == 'always':
-                    outline='white'
-                else:
-                    outline=''
-
-                # and display the icon rectangle
-                icon_id=self.canvas.create_polygon(points,
-                                                   outline=outline,
-                                                   fill='',
-                                                   tag='pp-content')
-
-
+            # calculate icon parameters
+            if self.icon_width<self.text_width and self.track_params['menu-text-mode'] == 'below':
+                self.icon_x_left=self.entry_x+abs(self.icon_width-self.text_width)/2
             else:
-                # not using icon so set starting point for text to zero icon size
-                self.icon_x_right=self.entry_x
-                self.icon_y_bottom=self.entry_y
-                icon_id=None
-            return icon_id
-        
+                self.icon_x_left=self.entry_x
+                
+            self.icon_x_right=self.icon_x_left+self.icon_width
+
+            if self.icon_height<self.text_height and self.track_params['menu-text-mode'] == 'right':
+                self.icon_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
+            else:
+                self.icon_y_top=self.entry_y
+                
+            self.icon_y_bottom=self.icon_y_top+self.icon_height
+
+            
+            points=[self.icon_x_left,self.icon_y_top,self.icon_x_right,self.icon_y_top,self.icon_x_right,self.icon_y_bottom,self.icon_x_left,self.icon_y_bottom]
+
+            # display guidelines make it white when not selected for debugging
+            if self.display_guidelines == 'always':
+                outline='white'
+            else:
+                outline=''
+
+            # and display the icon rectangle
+            icon_id=self.canvas.create_polygon(points,
+                                               outline=outline,
+                                               fill='',
+                                               tag='pp-content')
+
+
+        else:
+            # not using icon so set starting point for text to zero icon size
+            self.icon_x_right=self.entry_x
+            self.icon_y_bottom=self.entry_y
+            icon_id=None
+        return icon_id
+    
 
     # display the image in a menu entry
     def  display_icon_image(self):
-            image_id=None
-            if self.track_params['menu-icon-mode'] == 'thumbnail':
-                # try for the thumbnail
-                if self.medialist.selected_track()['thumbnail'] != '' and os.path.exists(self.complete_path(self.medialist.selected_track()['thumbnail'])):
-                    self.pil_image=Image.open(self.complete_path(self.medialist.selected_track()['thumbnail']))
+        image_id=None
+        if self.track_params['menu-icon-mode'] == 'thumbnail':
+            # try for the thumbnail
+            if self.medialist.selected_track()['thumbnail'] != '' and os.path.exists(self.complete_path(self.medialist.selected_track()['thumbnail'])):
+                self.pil_image=Image.open(self.complete_path(self.medialist.selected_track()['thumbnail']))
+            else:
+                #cannot find thumbnail get the image if its an image track
+                if self.medialist.selected_track()['type']  == 'image':
+                    self.track=self.complete_path(self.medialist.selected_track()['location'])
                 else:
-                    #cannot find thumbnail get the image if its an image track
-                    if self.medialist.selected_track()['type']  == 'image':
-                        self.track=self.complete_path(self.medialist.selected_track()['location'])
+                    self.track=''
+                if self.medialist.selected_track()['type'] == 'image' and os.path.exists(self.track) is True: 
+                    self.pil_image=Image.open(self.track)
+                else:
+                    #use a standard thumbnail
+                    icon_type=self.medialist.selected_track()['type']
+                    standard=self.pp_dir+os.sep+'pp_home'+os.sep+'pp_resources'+os.sep+icon_type+'.png'
+                    if os.path.exists(standard) is True:
+                        self.pil_image=Image.open(standard)
+                        self.mon.log(self,'WARNING: default thumbnail used for '+self.medialist.selected_track()['title'])
                     else:
-                        self.track=''
-                    if self.medialist.selected_track()['type'] == 'image' and os.path.exists(self.track) is True: 
-                        self.pil_image=Image.open(self.track)
-                    else:
-                        #use a standard thumbnail
-                        type=self.medialist.selected_track()['type']
-                        standard=self.pp_dir+os.sep+'pp_home'+os.sep+'pp_resources'+os.sep+type+'.png'
-                        if os.path.exists(standard) is True:
-                            self.pil_image=Image.open(standard)
-                            self.mon.log(self,'WARNING: default thumbnail used for '+self.medialist.selected_track()['title'])
-                        else:
-                            self.pil_image=None
+                        self.pil_image=None
 
-                # display the image                
-                if self.pil_image  is not  None:
-                    self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
-                    image_id=ImageTk.PhotoImage(self.pil_image)
-                    self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
-                                                image=image_id, anchor=NW,
-                                                 tag='pp-content')
-                    del self.pil_image
-                else:
-                    image_id=None
-                        
-            elif self.track_params['menu-icon-mode']  == 'bullet':
-                    bullet=self.complete_path(self.track_params['menu-bullet'])                  
-                    if os.path.exists(bullet) is False:
-                        self.pil_image=None                          
-                    else:
-                        self.pil_image=Image.open(bullet)
-                    if self.pil_image is not None:
-                        self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
-                        image_id=ImageTk.PhotoImage(self.pil_image)
-                        self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
-                                                      image=image_id, anchor=NW,
-                                                      tag='pp-content')
-                        del self.pil_image
+            # display the image                
+            if self.pil_image  is not  None:
+                self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
+                image_id=ImageTk.PhotoImage(self.pil_image)
+                self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
+                                            image=image_id, anchor=NW,
+                                             tag='pp-content')
+                del self.pil_image
             else:
                 image_id=None
-            return image_id
+                    
+        elif self.track_params['menu-icon-mode']  == 'bullet':
+                bullet=self.complete_path(self.track_params['menu-bullet'])                  
+                if os.path.exists(bullet) is False:
+                    self.pil_image=None                          
+                else:
+                    self.pil_image=Image.open(bullet)
+                if self.pil_image is not None:
+                    self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
+                    image_id=ImageTk.PhotoImage(self.pil_image)
+                    self.canvas.create_image(self.icon_x_left+1,
+                                             self.icon_y_top+1,
+                                             image=image_id,
+                                             anchor=NW,
+                                             tag='pp-content')
+                    del self.pil_image
+        else:
+            image_id=None
+        return image_id
 
             
     # display the text of a menu entry
     def display_icon_text(self):
-            text_mode=self.track_params['menu-text-mode']
-            if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
-                if text_mode == 'right':
-                    if self.icon_height>self.text_height:
-                        text_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
-                    else:
-                        text_y_top=self.entry_y
-                    text_y_bottom=text_y_top+self.text_height
-                    
-                    text_x_left=self.icon_x_right+self.menu_horizontal_padding
-                    text_x_right=text_x_left+self.text_width
-                    
-                    text_x=text_x_left
-                    text_y=text_y_top+(self.text_height/2)
-
-                elif text_mode == 'below':
-                    text_y_top=self.icon_y_bottom+self.menu_vertical_padding
-                    text_y_bottom=text_y_top+self.text_height
-                    
-                    if self.icon_width>self.text_width:
-                        text_x_left=self.entry_x+abs(self.icon_width-self.text_width)/2
-                    else:
-                        text_x_left=self.entry_x
-                    text_x_right=text_x_left+self.text_width
-                    
-                    text_x=text_x_left+(self.text_width/2)
-                    text_y=text_y_top
-
+        text_mode=self.track_params['menu-text-mode']
+        if self.track_params['menu-icon-mode'] in ('thumbnail','bullet'):
+            if text_mode == 'right':
+                if self.icon_height>self.text_height:
+                    text_y_top=self.entry_y+abs(self.icon_height-self.text_height)/2
                 else:
-                    # icon with text_mode=overlay or none
-                    text_x_left=self.icon_x_left
-                    text_x_right= self.icon_x_right
-                    text_y_top=self.icon_y_top
-                    text_y_bottom=self.icon_y_bottom
-                    text_x=(text_x_left+text_x_right)/2
-                    text_y=(text_y_top+text_y_bottom)/2                    
-
-            else:
-                    # no icon text only
                     text_y_top=self.entry_y
-                    text_y_bottom=text_y_top+self.text_height
+                text_y_bottom=text_y_top+self.text_height
+                
+                text_x_left=self.icon_x_right+self.menu_horizontal_padding
+                text_x_right=text_x_left+self.text_width
+                
+                text_x=text_x_left
+                text_y=text_y_top+(self.text_height/2)
+
+            elif text_mode == 'below':
+                text_y_top=self.icon_y_bottom+self.menu_vertical_padding
+                text_y_bottom=text_y_top+self.text_height
+                
+                if self.icon_width>self.text_width:
+                    text_x_left=self.entry_x+abs(self.icon_width-self.text_width)/2
+                else:
                     text_x_left=self.entry_x
-                    text_x_right=text_x_left+self.text_width
-                    text_x=self.entry_x
-                    text_y=self.entry_y+self.text_height/2
+                text_x_right=text_x_left+self.text_width
+                
+                text_x=text_x_left+(self.text_width/2)
+                text_y=text_y_top
 
-
-            # display the guidelines for debugging
-            if self.display_guidelines == 'always':
-                points=[text_x_left,text_y_top,text_x_right,text_y_top,text_x_right,text_y_bottom,text_x_left,text_y_bottom]
-                self.canvas.create_polygon(points,fill= '' ,
-                                              outline='white',
-                                              tag='pp-content')
-
-            # display the text
-            if text_mode == 'below' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
-                anchor=N
-                justify=CENTER
-            elif text_mode == 'overlay' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
-                anchor=CENTER
-                justify=CENTER
             else:
-                anchor=W
-                justify=LEFT
-            text_id=self.canvas.create_text(text_x,text_y,
-                                       text=self.medialist.selected_track()['title'],
-                                       anchor=anchor,
-                                       fill=self.track_params['entry-colour'],
-                                       font=self.track_params['entry-font'],
-                                       width=self.text_width,
-                                       justify=justify,
+                # icon with text_mode=overlay or none
+                text_x_left=self.icon_x_left
+                text_x_right= self.icon_x_right
+                text_y_top=self.icon_y_top
+                text_y_bottom=self.icon_y_bottom
+                text_x=(text_x_left+text_x_right)/2
+                text_y=(text_y_top+text_y_bottom)/2                    
+
+        else:
+            # no icon text only
+            text_y_top=self.entry_y
+            text_y_bottom=text_y_top+self.text_height
+            text_x_left=self.entry_x
+            text_x_right=text_x_left+self.text_width
+            text_x=self.entry_x
+            text_y=self.entry_y+self.text_height/2
+
+
+        # display the guidelines for debugging
+        if self.display_guidelines == 'always':
+            points=[text_x_left,text_y_top,text_x_right,text_y_top,text_x_right,text_y_bottom,text_x_left,text_y_bottom]
+            self.canvas.create_polygon(points,
+                                       fill= '' ,
+                                       outline='white',
                                        tag='pp-content')
-            return text_id
-        
+
+        # display the text
+        if text_mode == 'below' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
+            anchor=N
+            justify=CENTER
+        elif text_mode == 'overlay' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):
+            anchor=CENTER
+            justify=CENTER
+        else:
+            anchor=W
+            justify=LEFT
+        text_id=self.canvas.create_text(text_x,
+                                        text_y,
+                                        text=self.medialist.selected_track()['title'],
+                                        anchor=anchor,
+                                        fill=self.track_params['entry-colour'],
+                                        font=self.track_params['entry-font'],
+                                        width=self.text_width,
+                                        justify=justify,
+                                        tag='pp-content')
+        return text_id
+    
 
     def highlight_menu_entry(self,index,state):
         if self.track_params['menu-icon-mode'] != 'none':
             if state is True:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.icon_id_index],
                                        outline=self.track_params['entry-select-colour'],
-                                       width=4,
-                                       )
+                                       width=4)
             else:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.icon_id_index],
-                                        outline='',
-                                       width=1
-                                       )
+                                       outline='',
+                                       width=1)
         else:
             if state is True:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.text_id_index],
                                        fill=self.track_params['entry-select-colour'])
             else:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.text_id_index],
-                                    fill=self.track_params['entry-colour'])
+                                       fill=self.track_params['entry-colour'])
                 
 
     
     def parse_menu_window(self,line):
-            if line != '':
-                fields = line.split()
-                if len(fields) not in  (1, 2,4):
-                    return 'error','wrong number of fields',0,0,0,0
-                if len(fields) == 1:
-                    if fields[0] == 'fullscreen':
-                        return 'normal','',0,0,self.screen_width - 1, self.screen_height - 1
-                    else:
-                        return 'error','single field is not fullscreen',0,0,0,0
-                if len(fields) == 2:                    
-                    if fields[0].isdigit() and fields[1].isdigit():
-                        return 'normal','',int(fields[0]),int(fields[1]),self.screen_width, self.screen_height
-                    else:
-                        return 'error','field is not a digit',0,0,0,0
-                if len(fields) == 4:                    
-                    if fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit():
-                        return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
+        if line != '':
+            fields = line.split()
+            if len(fields) not in  (1, 2,4):
+                return 'error','wrong number of fields',0,0,0,0
+            if len(fields) == 1:
+                if fields[0] == 'fullscreen':
+                    return 'normal','',0,0,self.screen_width - 1, self.screen_height - 1
                 else:
-                     return 'error','field is not a digit',0,0,0,0
+                    return 'error','single field is not fullscreen',0,0,0,0
+            if len(fields) == 2:                    
+                if fields[0].isdigit() and fields[1].isdigit():
+                    return 'normal','',int(fields[0]),int(fields[1]),self.screen_width, self.screen_height
+                else:
+                    return 'error','field is not a digit',0,0,0,0
+            if len(fields) == 4:                    
+                if fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit():
+                    return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
             else:
-                     return 'error','line is blank',0,0,0,0
+                return 'error','field is not a digit',0,0,0,0
+        else:
+            return 'error','line is blank',0,0,0,0
 
 
 

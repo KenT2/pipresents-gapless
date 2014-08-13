@@ -7,6 +7,7 @@ from pp_showmanager import ShowManager
 from pp_pluginmanager import PluginManager
 from pp_gpio import PPIO
 from pp_resourcereader import ResourceReader
+from pp_utils import Monitor
 
 class Player(object):
 
@@ -23,13 +24,17 @@ class Player(object):
                  pp_profile,
                  end_callback):
 
-        # method call trace for this class and for subclasses
-        self.ptrace=True
-        # self.ptrace=False
-        
-        if self.ptrace: print '    Player/init ',self
+        # init trace to off, derived classes can turn it on
+        self.trace=False
 
+        # create debugging log object
+        self.mon=Monitor()
+
+        # must be true if player is being used with the test harness
+        # it removes all the subsiduary functions such as animation
+        self.testing=False
         
+        if self.trace: print '    Player/init ',self
         # instantiate arguments
         self.show_id=show_id
         self.showlist=showlist
@@ -81,11 +86,12 @@ class Player(object):
         self.tick_timer=None
         self.terminate_signal=False
         self.previous_player=None
+        self.play_state=''
 
               
     # common bits of show(....) 
     def pre_show(self):
-        if self.ptrace: print '    Player/pre-show ',self
+        if self.trace: print '    Player/pre-show ',self
         # show_x_content moved to just before ready_callback to improve flicker.
 
         # but pim needs to be done here as it uses the pp-plugin-content tag which needs to be created later
@@ -120,7 +126,7 @@ class Player(object):
 # *****************
 
     def hide(self):
-        if self.ptrace: print '    Player/hide ',self
+        if self.trace: print '    Player/hide ',self
 
         # abort the timer
         if self.tick_timer is not None:
@@ -166,7 +172,7 @@ class Player(object):
 
 
     def terminate(self,reason):
-        if self.ptrace:  print '    Player/terminate ',self
+        if self.trace:  print '    Player/terminate ',self
         self.terminate_signal=True
         if self.play_state in ('showing','pause_at_end'):
             # call the derived class's stop method
@@ -181,7 +187,7 @@ class Player(object):
 # *****************
 
     def end(self,reason,message):
-        if self.ptrace: print '    Player/end ',self
+        if self.trace: print '    Player/end ',self
         # stop the plugin
 
         if self.terminate_signal is True:
@@ -203,8 +209,8 @@ class Player(object):
             reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'],)
             return reason,message
 
-    def load_x_content(self):
-        if self.ptrace: print '    Player/load_x_content ',self
+    def load_x_content(self,enable_menu):
+        if self.trace: print '    Player/load_x_content ',self
         self.background_obj=None
         self.background=None
         self.track_text_obj=None
@@ -257,7 +263,7 @@ class Player(object):
                                                         font=self.track_params['track-text-font'])
 
         # load instructions if enabled
-        if self.enable_menu is  True:
+        if enable_menu is  True:
             self.hint_obj=self.canvas.create_text(int(self.show_params['hint-x']),
                                                   int(self.show_params['hint-y']),
                                                   text=self.show_params['hint-text'],
@@ -289,7 +295,7 @@ class Player(object):
         pass
 
     def show_x_content(self):
-        if self.ptrace: print '    Player/show_x_content ',self
+        if self.trace: print '    Player/show_x_content ',self
         # background colour
         if  self.background_colour != '':
             self.canvas.config(bg=self.background_colour)
@@ -305,7 +311,7 @@ class Player(object):
 
 
     def hide_x_content(self):
-        if self.ptrace: print '    Player/hide_x_content ',self
+        if self.trace: print '    Player/hide_x_content ',self
         self.hide_track_content()
         # print 'hide background obj', self.background_obj
         self.canvas.itemconfig(self.background_obj,state='hidden')

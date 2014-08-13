@@ -25,23 +25,7 @@ class MessagePlayer(Player):
                  pp_home,
                  pp_profile,
                  end_callback):
-                    
-        # must be true if player is being used with the test harness
-        self.testing=False
-        
-        self.trace=True
-        self.trace=False
-        
-        # debugging trace
-        self.mon=Monitor()
-        self.mon.off()
-        
-        # stopwatch for timing functions
-        StopWatch.global_enable=False
-        self.sw=StopWatch()
-        self.sw.off()
 
-        
         # initialise items common to all players   
         Player.__init__( self,
                          show_id,
@@ -53,7 +37,18 @@ class MessagePlayer(Player):
                          pp_dir,
                          pp_home,
                          pp_profile,
-                         end_callback)
+                         end_callback)                    
+
+        # comment this out to turn the trace off          
+        # self.trace=True
+
+        # control debugging log
+        self.mon.on()
+        
+        # stopwatch for timing functions
+        StopWatch.global_enable=False
+        self.sw=StopWatch()
+        self.sw.off()
 
         if self.trace: print '    Messageplayer/init ',self
         # and initilise things for this player
@@ -73,7 +68,6 @@ class MessagePlayer(Player):
         # instantiate arguments
         self.track=text
         self.loaded_callback=loaded_callback   # callback when loaded
-        self.enable_menu=enable_menu
         if self.trace: print '    Messageplayer/load ',self
 
         # load the plugin, this may modify self.ttack and enable the plugin drawign to canvas
@@ -85,7 +79,7 @@ class MessagePlayer(Player):
                 self=None
 
         # load the images and text including message text
-        status,message=self.load_x_content()
+        status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -106,17 +100,13 @@ class MessagePlayer(Player):
             
 
      # SHOW - show a track from its loaded state 
-    def show(self,
-                ready_callback,
-                finished_callback,
-                closed_callback,
-                enable_menu=False):
+    def show(self,ready_callback,finished_callback,closed_callback):
                          
         #instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by Messageplayer
-        self.enable_menu = enable_menu
+
         if self.trace: print '    Messageplayer/show ',self
         
         # init state and signals  

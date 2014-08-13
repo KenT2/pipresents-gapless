@@ -31,15 +31,6 @@ class AudioPlayer(Player):
                  pp_profile,
                  end_callback):
 
-        # this must be true when using the test harness
-        self.testing=False
-
-        self.trace=True
-        self.trace=False
-
-        self.mon=Monitor()
-        self.mon.off()
-
         # initialise items common to all players   
         Player.__init__( self,
                          show_id,
@@ -52,6 +43,13 @@ class AudioPlayer(Player):
                          pp_home,
                          pp_profile,
                          end_callback)
+
+        # comment this out to turn the trace off          
+        # self.trace=True
+
+        # control debugging log
+        self.mon.on()
+
 
         if self.trace: print '    Audioplayer/init ',self
         # get duration limit (secs ) from profile
@@ -98,7 +96,6 @@ class AudioPlayer(Player):
         #instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
-        self.enable_menu=enable_menu
 
         if self.trace: print '    Audioplayer/load ',self
         
@@ -111,7 +108,7 @@ class AudioPlayer(Player):
                 self=None
 
         # load the images and text
-        status,message=self.load_x_content()
+        status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -131,13 +128,12 @@ class AudioPlayer(Player):
 
 
     
-    def show(self,ready_callback,finished_callback,closed_callback,enable_menu=False):
+    def show(self,ready_callback,finished_callback,closed_callback):
                        
         #instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show video
         self.finished_callback=finished_callback         # callback when finished showing
         self.closed_callback=closed_callback
-        self.enable_menu = enable_menu
 
         if self.trace: print '    Audioplayer/show ',self
 
