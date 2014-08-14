@@ -228,10 +228,10 @@ class VideoPlayer(Player):
             self.quit_signal=True
             self.tick_timer=self.canvas.after(0, self.show_state_machine)
         elif self.play_state == 'showing':
-          # just quit omxplayer as state machine is already running
-          self.quit_signal=True
+            # just quit omxplayer as state machine is already running
+            self.quit_signal=True
         else:
-          self.mon.log(self,"!<stop rejected")
+            self.mon.log(self,"!<stop rejected")
 
 
     # toggle pause
@@ -312,7 +312,7 @@ class VideoPlayer(Player):
         self.duration=duration
         self.track=track
         # initialise all the state machine variables
-        self.loading_count=0     #initialise loading timeout counter
+        self.loading_count=0     # initialise loading timeout counter
         self.play_state='loading'
         
         # load the selected track

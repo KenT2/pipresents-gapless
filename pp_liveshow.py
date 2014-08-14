@@ -16,8 +16,24 @@ class LiveShow(GapShow):
                  pp_home,
                  pp_profile):
 
-        self.mon=Monitor()
+
+        # init the common bits
+        GapShow.__init__(self,
+                         show_id,
+                         show_params,
+                         root,
+                         canvas,
+                         showlist,
+                         pp_dir,
+                         pp_home,
+                         pp_profile)
+
+        # control logging
         self.mon.on()
+        
+        # remove comment to trace this bottom level derived class
+        # self.trace=True
+
 
         self.options=command_options()
 
@@ -33,23 +49,9 @@ class LiveShow(GapShow):
                 self.mon.err(self,"live tracks directory not found " + self.pp_live_dir2)
                 self.end('error',"live tracks directory not found")
 
-
-        # init the common bits
-        GapShow.__init__(self,
-                         show_id,
-                         show_params,
-                         root,
-                         canvas,
-                         showlist,
-                         pp_dir,
-                         pp_home,
-                         pp_profile)
-
         # use the appropriate medialist
         self.medialist=LiveList()
 
         # and pass directories to livelist
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
 
-        self.trace=True
-        self.trace=False

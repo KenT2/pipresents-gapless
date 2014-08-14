@@ -22,9 +22,6 @@ class GapShow(Show):
                  pp_home,
                  pp_profile):
 
-        # initi things that will be reinitialised by derived classes
-        self.medialist=None
-        Show.__init__(self)
 
         # init the common bits
         Show.base__init__(self,

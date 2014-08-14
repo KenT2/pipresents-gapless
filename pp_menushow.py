@@ -15,6 +15,7 @@ class MenuShow(Show):
                  pp_dir,
                  pp_home,
                  pp_profile):
+        
         """
             show_id - index of the top level show caling this (for debug only)
             show_params - dictionary section for the menu
@@ -22,11 +23,9 @@ class MenuShow(Show):
             showlist  - the showlist
             pp_dir - Pi Presents directory
             pp_home - Pi presents data_home directory
-            pp_profile - Pi presents profile directory"""
-        
-        self.mon=Monitor()
-        self.mon.on()
-    
+            pp_profile - Pi presents profile directory
+        """
+
         # init the common bits
         Show.base__init__(self,
                           show_id,
@@ -37,10 +36,14 @@ class MenuShow(Show):
                           pp_dir,
                           pp_home,
                           pp_profile)
+        
 
-        self.trace=True
-        # self.trace=False        
- 
+        # remove comment to turn the trace on          
+        # self.trace=True
+
+        # control debugging log
+        self.mon.on()
+
         # init variables
         self.show_timeout_timer=None
         self.track_timeout_timer=None

@@ -44,7 +44,7 @@ class AudioPlayer(Player):
                          pp_profile,
                          end_callback)
 
-        # comment this out to turn the trace off          
+        # remove comment to turn the trace on          
         # self.trace=True
 
         # control debugging log

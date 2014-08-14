@@ -14,15 +14,9 @@ from pp_utils import Monitor
 class Show(object):
 
 
-
-
     # ******************************
     # init a show
     # ******************************
-
-    def __init__(self):
-        # init things that will then be reinitialised by derived classes
-        self.medialist=None
 
     def base__init__(self,
                      show_id,
@@ -44,10 +38,15 @@ class Show(object):
         self.pp_home=pp_home
         self.pp_profile=pp_profile
 
-        self.trace=False
+        # init things that will then be reinitialised by derived classes
+        self.medialist=None
+
+        # set up logging 
         self.mon=Monitor()
-        self.mon.on()
-        
+
+        # trace is off by default
+        self.trace=False        
+
         # open resources
         self.rr=ResourceReader()
 

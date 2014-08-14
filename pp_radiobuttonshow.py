@@ -25,8 +25,6 @@ class RadioButtonShow(Show):
         * subshow_ended_callback - called at the start of a parent show to get the last track of the subshow
         
     """
-
-
     def __init__(self,
                  show_id,
                  show_params,
@@ -36,33 +34,34 @@ class RadioButtonShow(Show):
                  pp_dir,
                  pp_home,
                  pp_profile):
-        """ 
+        
+        """
             show_id - index of the top level show caling this (for debug only)
-            show_params - the name of the configuration dictionary section for the radiobuttonshow
-            root - tkinter root window, useful for tk.after
-            canvas - the canvas that the tracks of the show are to be written on
-            showlist  - the showlist, to enable runningn of show type tracks.
-            pp_home - Pi Presents data_home directory
+            show_params - dictionary section for the menu
+            canvas - the canvas that the menu is to be written on
+            showlist  - the showlist
+            pp_dir - Pi Presents directory
+            pp_home - Pi presents data_home directory
             pp_profile - Pi presents profile directory
         """
-        
-        self.mon=Monitor()
-        self.mon.on()
-        self.trace=True
-        # self.trace=False
-        
-        # instantiate arguments
-        self.show_id=show_id
-        self.show_params=show_params
-        self.root=root
-        self.canvas=canvas
-        self.showlist=showlist
-        self.pp_dir=pp_dir
-        self.pp_home=pp_home
-        self.pp_profile=pp_profile
 
         # init the common bits
-        Show.base__init__(self)
+        Show.base__init__(self,
+                          show_id,
+                          show_params,
+                          root,
+                          canvas,
+                          showlist,
+                          pp_dir,
+                          pp_home,
+                          pp_profile)
+        
+
+        # remove comment to turn the trace on          
+        # self.trace=True
+
+        # control debugging log
+        self.mon.on()
 
         # create an instance of PathManager -  only used to parse the links.
         self.path = PathManager()
@@ -72,7 +71,6 @@ class RadioButtonShow(Show):
         self.show_timeout_timer=None
         self.next_track_signal=False
         self.current_track_ref=''
-
 
 
     def play(self,end_callback,show_ready_callback,direction_command,level):
@@ -89,7 +87,7 @@ class RadioButtonShow(Show):
         
         if self.trace: print '\n\nRADIOBUTTONSHOW/play ',self.show_params['show-ref']
         
-        #read the show links. Track links will NOT be added by ready_callback
+        # read the show links. Track links will NOT be added by ready_callback
         links_text=self.show_params['links']
         reason,message,self.links=self.path.parse_links(links_text)
         if reason == 'error':
@@ -100,7 +98,7 @@ class RadioButtonShow(Show):
         Show.base_get_previous_player_from_parent(self)
         
         # and delete eggtimer
-        if self.previous_shower != None:
+        if self.previous_shower is not  None:
             self.previous_shower.delete_eggtimer()
             
         self.do_first_track()
@@ -130,7 +128,7 @@ class RadioButtonShow(Show):
 
         self.mon.log(self,"received symbol: " + symbol)
 
-        #does the symbol match a link, if so execute it
+        # does the symbol match a link, if so execute it
         if self.try_link(symbol,edge,source) is True:
             return
 
@@ -151,29 +149,29 @@ class RadioButtonShow(Show):
 
 
     def do_operation(self,operation,edge,source):
-        if self.shower != None:
+        if self.shower  is not   None:
             # if next lower show is running pass down to stop the show and lower level
             self.shower.input_pressed(operation,edge,source)
         else:
-            #control this show and its tracks
+            # control this show and its tracks
             if self.trace: print 'radiobuttonshow/input_pressed ',operation
             
-            #service the standard inputs for this show
+            # service the standard inputs for this show
             # ??????? should stop from first_track ref get out of the show
             if operation == 'stop':
                 self.stop_timers()
-                if self.current_player != None:
+                if self.current_player is not None:
                     if self.current_track_ref == self.first_track_ref and self.level != 0:
                         self.user_stop_signal=True
                     self.current_player.input_pressed('stop')
 
             elif operation == 'pause':
-                if self.current_player != None:
+                if self.current_player is not None:
                     self.current_player.input_pressed(operation)
 
                 
             elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5] == 'uzbl-':
-                if self.current_player != None:
+                if self.current_player is not None:
                     self.current_player.input_pressed(operation)
 
 
@@ -181,7 +179,7 @@ class RadioButtonShow(Show):
     def try_link(self,symbol,edge,source):
         # we have links which locally define symbolic names to be converted to radiobuttonshow operations
         # find the first entry in links that matches the symbol and execute its operation
-        #print 'radiobuttonshow ',symbol
+        # print 'radiobuttonshow ',symbol
         found,link_op,link_arg=self.path.find_link(symbol,self.links)                    
         if link_op == 'play':
             self.do_play(link_arg,edge,source)
@@ -204,16 +202,16 @@ class RadioButtonShow(Show):
     def do_play(self,track_ref,edge,source):
         if track_ref != self.current_track_ref:
             print 'executing play ',track_ref
-            #cancel the show timeout when playing another track
-            if self.show_timeout_timer != None:
+            # cancel the show timeout when playing another track
+            if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
             self.next_track_signal=True
             self.next_track_op='play'
             self.next_track_arg=track_ref
-            if self.shower != None:
+            if self.shower is not None:
                 self.shower.input_pressed('stop',edge,source)
-            elif self.current_player != None:
+            elif self.current_player is not None:
                 self.current_player.input_pressed('stop')
             else:
                 self.what_next_after_showing()
@@ -227,10 +225,10 @@ class RadioButtonShow(Show):
         # find the track-ref in the medialisst
         index = self.medialist.index_of_track(self.first_track_ref)
         if index >=0:
-            #don't use select the track as not using selected_track in radiobuttonshow
+            # don't use select the track as not using selected_track in radiobuttonshow
             self.current_track_ref=self.first_track_ref
             # start the show timer when displaying the first track
-            if self.show_timeout_timer != None:
+            if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
             if int(self.show_params['show-timeout']) != 0:
@@ -255,11 +253,11 @@ class RadioButtonShow(Show):
         
         self.display_eggtimer(Show.base_resource(self,'radiobuttonshow','m01'))
 
-        if self.track_timeout_timer != None:
+        if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
             self.track_timeout_timer=None
 
-        #start timeout for the track if required           
+        # start timeout for the track if required           
         if self.current_track_ref != self.first_track_ref and int(self.show_params['track-timeout']) != 0:
             self.track_timeout_timer=self.canvas.after(int(self.show_params['track-timeout'])*1000,self.track_timeout_callback)
             
@@ -341,7 +339,7 @@ class RadioButtonShow(Show):
             self.current_track_ref=self.next_track_arg                         
             index = self.medialist.index_of_track(self.current_track_ref)
             if index >=0:
-                #don't use select the track as not using selected_track in radiobuttonshow
+                # don't use select the track as not using selected_track in radiobuttonshow
                 # and load it
                 self.start_load_show_loop(self.medialist.track(index))
             else:
@@ -349,7 +347,7 @@ class RadioButtonShow(Show):
                 self.end('error',"next track not found in medialist")
                     
         else:
-            #track ends naturally or is quit so go back to first track
+            # track ends naturally or is quit so go back to first track
             self.do_first_track()
 
 
@@ -363,7 +361,7 @@ class RadioButtonShow(Show):
         self.delete_eggtimer()
         Show.base_track_ready_callback(self)
 
-    #callback from begining of a subshow, provide previous shower player to called show        
+    # callback from begining of a subshow, provide previous shower player to called show        
     def subshow_ready_callback(self):
         return Show.base_subshow_ready_callback(self)
 
@@ -383,10 +381,10 @@ class RadioButtonShow(Show):
 
 
     def stop_timers(self):
-        if self.show_timeout_timer != None:
+        if self.show_timeout_timer is not None:
             self.canvas.after_cancel(self.show_timeout_timer)
             self.show_timeout_timer=None   
-        if self.track_timeout_timer != None:
+        if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
             self.track_timeout_timer=None  
            

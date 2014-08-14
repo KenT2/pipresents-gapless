@@ -206,7 +206,7 @@ class Player(object):
     def load_plugin(self):
         # load the plugin if required
         if self.track_params['plugin'] != '':
-            reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'],)
+            reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'])
             return reason,message
 
     def load_x_content(self,enable_menu):

@@ -16,8 +16,22 @@ class ArtLiveShow(ArtShow):
                  pp_home,
                  pp_profile):
 
-        self.mon=Monitor()
+        # init the common bits
+        ArtShow.__init__(self,
+                         show_id,
+                         show_params,
+                         root,
+                         canvas,
+                         showlist,
+                         pp_dir,
+                         pp_home,
+                         pp_profile)
+
+        # control the debugging log
         self.mon.on()
+
+        # uncomment to turn trace on 
+        self.trace=True
 
         # delay in mS before next track is loaded after showing a track.
         # can be reduced if animation is not required
@@ -37,22 +51,10 @@ class ArtLiveShow(ArtShow):
                 self.mon.err(self,"live tracks directory not found " + self.pp_live_dir2)
                 self.end('error',"live tracks directory not found")
        
-        # init the common bits
-        ArtShow.__init__(self,
-                         show_id,
-                         show_params,
-                         root,
-                         canvas,
-                         showlist,
-                         pp_dir,
-                         pp_home,
-                         pp_profile)
-
         # use the appropriate medialist
         self.medialist=LiveList()
 
-        # and pass directories to livelist
+        # and pass directories to Livelist
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
 
-        self.trace=True
-        # self.trace=False
+

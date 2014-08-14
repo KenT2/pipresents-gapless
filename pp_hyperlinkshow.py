@@ -2,7 +2,7 @@ from pp_medialist import MediaList
 from pp_pathmanager import PathManager
 from pp_screendriver import ScreenDriver
 from pp_show import Show
-from pp_utils import Monitor
+
 
 class HyperlinkShow(Show):
     """
@@ -68,19 +68,16 @@ class HyperlinkShow(Show):
                  pp_dir,
                  pp_home,
                  pp_profile):
+        
         """
             show_id - index of the top level show caling this (for debug only)
-            show_params - the name of the configuration dictionary section for the radiobuttonshow
-            root - tkinter root window, useful for tk.after
-            canvas - the canvas that the tracks of the show are to be written on
-            showlist  - the showlist, to enable runningn of show type tracks.
-            pp_home - Pi Presents data_home directory
+            show_params - dictionary section for the menu
+            canvas - the canvas that the menu is to be written on
+            showlist  - the showlist
+            pp_dir - Pi Presents directory
+            pp_home - Pi presents data_home directory
             pp_profile - Pi presents profile directory
-
         """
-        
-        self.mon=Monitor()
-        self.mon.on()
 
         # init the common bits
         Show.base__init__(self,
@@ -92,12 +89,14 @@ class HyperlinkShow(Show):
                           pp_dir,
                           pp_home,
                           pp_profile)
-
-
-        self.trace= True
-        # remove # to enable debugging trace
-        # self.trace= False
         
+
+        # remove comment to turn the trace on          
+        # self.trace=True
+
+        # control debugging log
+        self.mon.on()
+
         # create a path stack
         self.path = PathManager()
 
