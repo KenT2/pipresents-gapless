@@ -3,7 +3,7 @@ import ConfigParser
 import copy
 from pp_utils import Monitor
 
-class ControlsManager:
+class ControlsManager(object):
     config=None
     global_controls=[]
 
@@ -12,14 +12,14 @@ class ControlsManager:
         self.mon=Monitor()
         self.mon.on()
                 
-    #read controls.cfg, done once in Pi Presents
+    # read controls.cfg, done once in Pi Presents
     def read(self,pp_dir,pp_home,pp_profile):
-        if ControlsManager.config==None:
+        if ControlsManager.config is None:
             # try inside profile
             tryfile=pp_profile+os.sep+"controls.cfg"
             # self.mon.log(self,"Trying controls.cfg in profile at: "+ tryfile)
             if os.path.exists(tryfile):
-                 filename=tryfile
+                filename=tryfile
             else:
                 # try inside pp_home
                 # self.mon.log(self,"controls.cfg not found at "+ tryfile+ " trying pp_home")
@@ -43,12 +43,12 @@ class ControlsManager:
 
 
     def parse_defaults(self):
-            if ControlsManager.config.has_section('controls'):
-                ControlsManager.global_controls=ControlsManager.config.items('controls')
-                # print 'global controls ',ControlsManager.global_controls
-                return True
-            else:
-                return False
+        if ControlsManager.config.has_section('controls'):
+            ControlsManager.global_controls=ControlsManager.config.items('controls')
+            # print 'global controls ',ControlsManager.global_controls
+            return True
+        else:
+            return False
 
 
     # get the default controls for the show that has been read in by read from controls.cfg
@@ -83,7 +83,7 @@ class ControlsManager:
             # print 'op to change name of: ',show_operation
             # print 'change to ',show_name
             for control in controls_list:              
-                if control[1]==show_operation:
+                if control[1] == show_operation:
                     control[0]=show_name       
         # print 'after rename ',controls_list
 
@@ -96,11 +96,11 @@ class ControlsManager:
             # print 'name to add ',show_name
             found=False
             for control in controls_list:              
-                if control[1]==show_operation:
+                if control[1] == show_operation:
                     found=True
                     
             # if the operation has not been found and it is omx- or mplay- then add it.
-            if found==False and (show_operation[0:4]=='omx-' or show_operation[0:6]=='mplay-'):
+            if found is False and (show_operation[0:4] == 'omx-' or show_operation[0:6] == 'mplay-'):
                #  print 'appending ', show_name,show_operation
                 controls_list.append([show_name,show_operation])
                 
@@ -116,10 +116,10 @@ class ControlsManager:
             for show_control in show_controls:
                 show_name=show_control[0]
                 show_operation=show_control[1]
-                if show_name==name and show_operation=='null':
+                if show_name == name and show_operation == 'null':
                     found=True
                     break
-            if found==False:
+            if found is False:
                 new_controls.append(control)
                 #  print 'preserved ',control
             
@@ -133,25 +133,25 @@ class ControlsManager:
         lines = controls_text.split('\n')
         num_lines=0
         for line in lines:
-            if line.strip()=="":
+            if line.strip() == '':
                 continue
             num_lines+=1
             error_text,control=self.parse_control(line.strip())
-            if error_text<>"":
+            if error_text != '':
                 return 'error',error_text,controls
             controls.append(copy.deepcopy(control))
         return 'normal','',controls
 
     def parse_control(self,line):
-            fields = line.split()
-            if len(fields)<>2:
-                return "incorrect number of fields in control",['','']
-            symbol=fields[0]
-            operation=fields[1]
-            if operation  in ('stop','play','up','down','pause','null') or operation[0:4]=='omx-' or operation[0:6]=='mplay-':
-                return '',[symbol,operation]
-            else:
-                return "unknown operation",['','']
+        fields = line.split()
+        if len(fields) != 2:
+            return "incorrect number of fields in control",['','']
+        symbol=fields[0]
+        operation=fields[1]
+        if operation  in ('stop','play','up','down','pause','null') or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-':
+            return '',[symbol,operation]
+        else:
+            return "unknown operation",['','']
 
         
 

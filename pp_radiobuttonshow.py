@@ -28,14 +28,14 @@ class RadioButtonShow(Show):
 
 
     def __init__(self,
-                             show_id,
-                            show_params,
-                             root,
-                            canvas,
-                            showlist,
-                             pp_dir,
-                            pp_home,
-                            pp_profile):
+                 show_id,
+                 show_params,
+                 root,
+                 canvas,
+                 showlist,
+                 pp_dir,
+                 pp_home,
+                 pp_profile):
         """ 
             show_id - index of the top level show caling this (for debug only)
             show_params - the name of the configuration dictionary section for the radiobuttonshow
@@ -51,7 +51,7 @@ class RadioButtonShow(Show):
         self.trace=True
         # self.trace=False
         
-        #instantiate arguments
+        # instantiate arguments
         self.show_id=show_id
         self.show_params=show_params
         self.root=root
@@ -64,7 +64,7 @@ class RadioButtonShow(Show):
         # init the common bits
         Show.base__init__(self)
 
-        #create an instance of PathManager -  only used to parse the links.
+        # create an instance of PathManager -  only used to parse the links.
         self.path = PathManager()
         
         # init variables

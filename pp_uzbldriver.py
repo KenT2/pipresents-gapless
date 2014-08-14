@@ -1,40 +1,35 @@
 import pexpect
-import re
-import sys
 import os
 from glob import glob
-from os import stat as os_stat, utime, system, kill
-
-from threading import Thread
-from time import sleep
+from os import stat as os_stat, utime, kill
 from pp_utils import Monitor
 from stat import S_ISFIFO
 
 """
- pyomxplayer from https://github.com/jbaiter/pyomxplayer
- extensively modified by KenT
+    based on pyomxplayer from https://github.com/jbaiter/pyomxplayer
+    extensively modified by KenT
 
- uzblDriver hides the detail of using the luakit command  from browserplayer
- This is meant to be used with pp_browserplayer.py
- Its easy to end up with many copies of uzbl running if this class is not used with care.
- use pp_browserplayer.py for a safer interface.
+    uzblDriver hides the detail of using the luakit command  from browserplayer
+    This is meant to be used with pp_browserplayer.py
+    Its easy to end up with many copies of uzbl running if this class is not used with care.
+    use pp_browserplayer.py for a safer interface.
 
 
- External commands
- ----------------------------
- __init__ just creates the instance and initialises variables (e.g. bplayer=uzblDriver())
- play -  opens the browser and plays the first track
- control  - sends commands to uzbl while it is open 
- stop - closes the browser.
- terminate - Stops the browser. Used when aborting an application.
- 
+    External commands
+    ----------------------------
+    __init__ just creates the instance and initialises variables (e.g. bplayer=uzblDriver())
+    play -  opens the browser and plays the first track
+    control  - sends commands to uzbl while it is open 
+    stop - closes the browser.
+    terminate - Stops the browser. Used when aborting an application.
 
-Signals
-----------
- The following signals are produced while the browser is open
+
+    Signals
+    ----------
+    The following signals are produced while the browser is open
          self.start_play_signal = True when the browser is ready to be used
          self.end_play_signal= True when browser has finished due to stop or because it has come to an end
- Also is_running() tests whether the sub-process running uzbl is alive.
+    Also is_running() tests whether the sub-process running uzbl is alive.
 
 """
 
@@ -50,18 +45,18 @@ class uzblDriver(object):
         self.fifo=''
 
     def pause(self):
-            pass
+        pass
 
     def stop(self):
-            self.control('exit')
+        self.control('exit')
 
 
     # kill the subprocess (uzbl). Used for tidy up on exit.
     def terminate(self,reason):
         self.terminate_reason=reason
         if self.exists_fifo():
-           self.control('exit')
-           #self._process.close(force=True)
+            self.control('exit')
+            #self._process.close(force=True)
         self.end_play_signal=True
 
                
@@ -92,10 +87,10 @@ class uzblDriver(object):
         Don't give up until it has been found.
         """
         candidates = glob('/tmp/uzbl_fifo_*')
-        for file in candidates:
-            if S_ISFIFO(os_stat(file).st_mode):
+        for fifo_file in candidates:
+            if S_ISFIFO(os_stat(fifo_file).st_mode):
                 self.mon.log(self, 'Found UZBL fifo  in %s.' % file)
-                self.fifo=file
+                self.fifo=fifo_file
                 self.start_play_signal=True
                 return
         # print 'not found trying again'
