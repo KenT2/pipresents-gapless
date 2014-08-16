@@ -3,7 +3,7 @@ import ConfigParser
 from pp_utils import Monitor
 
 
-class ScreenDriver:
+class ScreenDriver(object):
     config=None
 
     def __init__(self):
@@ -11,14 +11,14 @@ class ScreenDriver:
         self.mon.on()
 
         
-    #read screen.cfg    
+    # read screen.cfg    
     def read(self,pp_dir,pp_home,pp_profile):
-        if ScreenDriver.config==None:
+        if ScreenDriver.config is None:
             # try inside profile
             tryfile=pp_profile+os.sep+"screen.cfg"
             # self.mon.log(self,"Trying screen.cfg in profile at: "+ tryfile)
             if os.path.exists(tryfile):
-                 filename=tryfile
+                filename=tryfile
             else:
                 # try inside pp_home
                 # self.mon.log(self,"screen.cfg not found at "+ tryfile+ " trying pp_home")
@@ -55,15 +55,15 @@ class ScreenDriver:
         reason=''
         for area in self.click_areas():
             reason,message,points = self.parse_points(self.get(area,'points'),self.get(area,'name'))
-            if reason =='error':
+            if reason == 'error':
                 break
             self.canvas.create_polygon(points,
-                                              fill=self.get (area,'fill-colour'),
-                                              outline=self.get (area,'outline-colour'),
-                                              tags=("pp-click-area",self.get(area,'name')),
-                                              state='hidden')
+                                       fill=self.get (area,'fill-colour'),
+                                       outline=self.get (area,'outline-colour'),
+                                       tags=("pp-click-area",self.get(area,'name')),
+                                       state='hidden')
             # write the label at the centroid
-            if self.get(area,'text')<>'':
+            if self.get(area,'text') != '':
                 vertices = len(points)/2
                 # print area, 'vertices',vertices
                 sum_x=0
@@ -84,7 +84,7 @@ class ScreenDriver:
                                         state='hidden')
             self.canvas.bind('<Button-1>',self.click_pressed)
                                                       
-        if reason=='error':
+        if reason == 'error':
             return 'error',message
         else:
             return 'normal',''
@@ -93,8 +93,8 @@ class ScreenDriver:
     def click_pressed(self,event):
         overlapping =  event.widget.find_overlapping(event.x-5,event.y-5,event.x+5,event.y+5)
         for item in overlapping:
-            #print self.canvas.gettags(item)
-            if ('pp-click-area' in self.canvas.gettags(item)) and self.canvas.itemcget(item,'state')=='normal':
+            # print self.canvas.gettags(item)
+            if ('pp-click-area' in self.canvas.gettags(item)) and self.canvas.itemcget(item,'state') == 'normal':
                 self.mon.log(self, "Click on screen: "+ self.canvas.gettags(item)[1])
                 self.callback(self.canvas.gettags(item)[1],'front','screen')                                                     
                                                       
@@ -102,9 +102,9 @@ class ScreenDriver:
     # use links to enable and hide the click areas in a show
     def enable_click_areas(self,links,canvas):
         for link in links:
-            #print 'trying link ',link[0] 
-            if not('key-' in link[0]) and link[1]<>'null':
+            # print 'trying link ',link[0]
             # if not('key-' in link[0]) and link[1]<>'null' and link[0]<>'pp-auto':
+            if not('key-' in link[0]) and link[1] != 'null':
                 # print 'enabling link ',link[0]
                 canvas.itemconfig(link[0],state='normal')
 
@@ -115,12 +115,12 @@ class ScreenDriver:
         
 
     def parse_points(self,points_text,area):
-        if points_text.strip()=='':
+        if points_text.strip() == '':
             return 'error','No points in click area: '+area,[]
         points=points_text.split()
-        if len(points)<6:
+        if len(points) < 6:
             return 'error','Less than 3 vertices in click area: '+area,[]
-        if len(points)%2<>0:
+        if len(points)%2 != 0:
             return 'error','Odd number of points in click area: '+area,[]      
         for point in points:
             if not point.isdigit():

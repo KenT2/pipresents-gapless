@@ -1,6 +1,5 @@
 from pp_artshow import ArtShow
 from pp_medialist import MediaList
-from pp_utils import Monitor
 
 class ArtMediaShow(ArtShow):
 

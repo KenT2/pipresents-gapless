@@ -66,7 +66,7 @@ class PluginManager(object):
 
         error,message,used_track,self.plugin_draw_time=self.plugin.load(track_file,liveshow,track_type)
         # self.canvas.itemconfig('pp-plugin-content',state='hidden')
-        if error  <>  'normal':
+        if error  !=  'normal':
             return error,message,''
         else:
             return 'normal','',used_track

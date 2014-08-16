@@ -7,13 +7,13 @@ import ConfigParser
 from pp_definitions import PPdefinitions
 from pp_utils import Monitor
 
-class LiveList:
+class LiveList(object):
 
     def __init__(self):
         self.mon=Monitor()
         self.mon.on()
 
-    #pass live_track direcotries from child
+    # pass live_track direcotries from child
     def live_tracks(self,dir1,dir2):
         self.pp_live_dir1=dir1
         self.pp_live_dir2=dir2
@@ -118,7 +118,7 @@ class LiveList:
    
     def replace_if_changed(self):
         self.new_livelist_create()
-        if  self.new_livelist<>self._tracks:
+        if  self.new_livelist != self._tracks:
             self._tracks=copy.deepcopy(self.new_livelist)
             self._num_tracks=len(self._tracks)
             self._selected_track_index=-1
@@ -133,25 +133,25 @@ class LiveList:
     def new_livelist_create(self):
         self.new_livelist=[]
         if os.path.exists(self.pp_live_dir1):
-            for file in os.listdir(self.pp_live_dir1):
-                file = self.pp_live_dir1 + os.sep + file
-                (root_file,ext_file)= os.path.splitext(file)
+            for track_file in os.listdir(self.pp_live_dir1):
+                track_file = self.pp_live_dir1 + os.sep + track_file
+                (root_file,ext_file)= os.path.splitext(track_file)
                 if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
-                    self.livelist_add_track(file)
+                    self.livelist_add_track(track_file)
                     
         if os.path.exists(self.pp_live_dir2):
-            for file in os.listdir(self.pp_live_dir2):
-                file = self.pp_live_dir2 + os.sep + file
-                (root_file,ext_file)= os.path.splitext(file)
+            for track_file in os.listdir(self.pp_live_dir2):
+                track_file = self.pp_live_dir2 + os.sep + track_file
+                (root_file,ext_file)= os.path.splitext(track_file)
                 if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
-                    self.livelist_add_track(file)
+                    self.livelist_add_track(track_file)
                     
 
         self.new_livelist= sorted(self.new_livelist, key= lambda track: os.path.basename(track['location']).lower())
-        # print 'LIVELIST'
-        # for it in self.new_livelist:
-            # print 'type: ', it['type'], 'loc: ',it['location'],'\nplugin cfg: ', it['plugin']
-        # print ''
+##        print 'LIVELIST'
+##        for it in self.new_livelist:
+##            print 'type: ', it['type'], 'loc: ',it['location'],'\nplugin cfg: ', it['plugin']
+##        print ''
 
 
         

@@ -178,6 +178,11 @@ class Player(object):
             # call the derived class's stop method
             self.stop()
 
+    # must be overriden by derived class
+    def stop(self):
+        self.mon.err(self,'stop not overidden by derived class')
+        self.terminate_signal=True
+        self.end('error','stop not overidden by derived class')
 
     def get_play_state(self):
         return self.play_state

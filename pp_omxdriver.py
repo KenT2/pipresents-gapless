@@ -1,7 +1,5 @@
-import os
 import pexpect
 import re
-import sys
 import signal
 
 from threading import Thread
@@ -15,7 +13,8 @@ from pp_utils import Monitor
  omxdriver hides the detail of using the omxplayer command  from videoplayer
  This is meant to be used with videoplayer.py
  Its easy to end up with many copies of omxplayer.bin running if this class is not used with care. use pp_videoplayer.py for a safer interface.
- I found overlapping prepare and show did nor completely reduce the gap between tracks. Sometimes, in a test of this, one of my videos ran very fast when it was the second video 
+ I found overlapping prepare and show did nor completely reduce the gap between tracks.
+ Sometimes, in a test of this, one of my videos ran very fast when it was the second video 
 
  External commands
  ----------------------------
@@ -46,12 +45,12 @@ class OMXDriver(object):
 
     _STATUS_REXP = re.compile(r"M:\s*(-?\d*)\s*V:")
     _DONE_REXP = re.compile(r"have a nice day.*")
-    #_DURATION_REXP=re.compile(r"Duration:\s(\d*):(\d*):(\d*)\.(\d*),")
+    # _DURATION_REXP=re.compile(r"Duration:\s(\d*):(\d*):(\d*)\.(\d*),")
     # _DURATION_REXP=re.compile(r"Duration:\s*([\d]{2}:[\d]{2}:[\d]{2}\.[\d]{2}),")
     _DURATION_REXP=re.compile(r"Duration:.*(\d{2}):(\d{2}):(\d{2}\.\d{2}).*,")
-    _LAUNCH_CMD = '/usr/bin/omxplayer -s '  #needs changing if user has installed his own version of omxplayer elsewhere
+    _LAUNCH_CMD = '/usr/bin/omxplayer -s '  # needs changing if user has installed his own version of omxplayer elsewhere
 
-    _DURATION_CMD = '/usr/bin/omxplayer -i '  #needs changing if user has installed his own version of omxplayer elsewhere
+    _DURATION_CMD = '/usr/bin/omxplayer -i '  # needs changing if user has installed his own version of omxplayer elsewhere
 
     def __init__(self,widget):
 
@@ -64,7 +63,7 @@ class OMXDriver(object):
 
         self._process=None
         
-        #PRELOAD add some initilisation to cope with first iteration of preload state machine
+        # PRELOAD add some initilisation to cope with first iteration of preload state machine
         self.start_play_signal=False
         self.end_play_signal=True
         self.end_play_reason='nice_day'
@@ -80,7 +79,7 @@ class OMXDriver(object):
         if not self.paused:
             self.paused = True
             chars=self._process.send('p')
-            if chars !=1:
+            if chars != 1:
                 pass
                 # print 'pause send failed'
         else:
@@ -94,7 +93,7 @@ class OMXDriver(object):
         else:
             self.paused=False
         chars=self._process.send('p')
-        if chars !=1:
+        if chars != 1:
             pass
             # print 'pause send failed'
 
@@ -105,7 +104,7 @@ class OMXDriver(object):
             self.paused = False
             self.mon.log(self,'>unpause for show')
             chars=self._process.send('p')
-            if chars !=1:
+            if chars != 1:
                 # print 'unpause send failed'
                 pass
         else:
@@ -126,7 +125,7 @@ class OMXDriver(object):
 
     def stop(self):
         self.mon.log(self,'>stop received')
-        if self._process != None:
+        if self._process is not None:
             self._process.send('q')
             # print 'quit suceeeded'
         else:
@@ -138,13 +137,13 @@ class OMXDriver(object):
         self.terminate_reason=reason
         self.stop()
         
-    def terminate_reason(self):
+    def get_terminate_reason(self):
         return self.terminate_reason
     
 
    # test of whether _process is running
     def is_running(self):
-            return self._process.isalive()
+        return self._process.isalive()
 
     # kill off omxplayer when it hasn't terminated at the end of a track.
     # send SIGINT (CTRL C) so it has a chance to tidy up daemons and omxplayer.bin
@@ -178,15 +177,15 @@ class OMXDriver(object):
         # self._process.logfile_send = sys.stdout  # send just commands to stdout
         self._process.logfile=fout  # send all communications to log file
          
-        #start the thread that is going to monitor output from omxplayer.
+        # start the thread that is going to monitor output from omxplayer.
         # Presumably needs a thread because of blocking of .expect
         self._position_thread = Thread(target=self._get_position)
         self._position_thread.start()
 
         # moved for PRELOAD as it is too soon to execute here
-        #if pause_before_play:
-         #   print 'PRELOAD - pause before play'
-          #  self.pause()
+##        if pause_before_play:
+##            print 'PRELOAD - pause before play'
+##            self.pause()
 
     def _get_position(self):
 
@@ -198,11 +197,11 @@ class OMXDriver(object):
         self.end_pause=False
         while True:
             index = self._process.expect([OMXDriver._DONE_REXP,
-                                            pexpect.TIMEOUT,
-                                            pexpect.EOF,
-                                          OMXDriver._STATUS_REXP]
-                                            ,timeout=10)
-            if index == 1:     #timeout. omxplayer should not do this
+                                          pexpect.TIMEOUT,
+                                          pexpect.EOF,
+                                          OMXDriver._STATUS_REXP],
+                                         timeout=10)
+            if index == 1:     # timeout. omxplayer should not do this
                 self.end_play_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -210,8 +209,8 @@ class OMXDriver(object):
                 self.end_play_reason='timeout'
                 break
             
-            elif index == 2:       #2 eof. omxplayer should not send this
-                #eof detected
+            elif index == 2:       # 2 eof. omxplayer should not send this
+                # eof detected
                 self.end_play_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -219,8 +218,8 @@ class OMXDriver(object):
                 self.end_play_reason='eof'
                 break
             
-            elif index==0:    #0 is nice day
-                #Have a nice day detected, too late to pause
+            elif index== 0:    #0 is nice day
+                # Have a nice day detected, too late to pause
                 self.end_play_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -248,7 +247,7 @@ class OMXDriver(object):
 
  
             # ????? should sleep be indented
-            #sleep is OK here as it is a seperate thread. self.widget.after has funny effects as its not in the main thread.
+            # sleep is OK here as it is a seperate thread. self.widget.after has funny effects as its not in the main thread.
             sleep(0.05)   # stats output rate seem to be about 170mS.
 
 
@@ -262,13 +261,13 @@ class OMXDriver(object):
         # self.mon.log(self, "Send command to omxplayer: "  + duration_cmd)
         self._process = pexpect.spawn(duration_cmd)
 
-        # uncomment next 2 lines to monitor output to and input from omxplayer.bin (read pexpect manual)
-        #fout= file('durationlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
-        #self._process.logfile=fout  # send all communications to log file
+##        # uncomment next 2 lines to monitor output to and input from omxplayer.bin (read pexpect manual)
+##        fout= file('durationlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
+##        self._process.logfile=fout  # send all communications to log file
         
         # self._process.logfile_send = sys.stdout  # send just commands to stdout
          
-        #start the thread that is going to monitor output from omxplayer.
+        # start the thread that is going to monitor output from omxplayer.
         # Presumably needs a thread because of blocking of .expect
         self._duration_thread = Thread(target=self._get_duration)
         self._duration_thread.start()
@@ -278,16 +277,15 @@ class OMXDriver(object):
     def _get_duration(self):
         while True:
             index = self._process.expect([OMXDriver._DURATION_REXP,
-                                            OMXDriver._DONE_REXP,
-                                            pexpect.TIMEOUT,
-                                            pexpect.EOF
-                                          ]
-                                            ,timeout=10)
+                                          OMXDriver._DONE_REXP,
+                                          pexpect.TIMEOUT,
+                                          pexpect.EOF],
+                                         timeout=10)
             if index == 0:
                 #  - 0 matches _DURATION_REXP so get duration
-                hour,min,sec= self._process.match.groups()
+                hour,minute,second= self._process.match.groups()
                 # print self._process.match.group(1) + ':'+ self._process.match.group(2) +':' + self._process.match.group(3)
-                self.measured_duration=float(3600*hour)+float(60*min)+float(sec)
+                self.measured_duration=float(3600*hour)+float(60*minute)+float(second)
                 # self.duration_signal=True
                 self.duration_reason='normal'
                 # break
@@ -300,7 +298,7 @@ class OMXDriver(object):
                 self.duration_reason='nice_day'
                 break
                 
-            elif index == 2:     #timeout. omxplayer should not do this
+            elif index == 2:     # timeout. omxplayer should not do this
                 self.duration_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -309,7 +307,7 @@ class OMXDriver(object):
                 break
             
             elif index == 3:       # eof. omxplayer should not send this
-                #eof detected
+                # eof detected
                 self.duration_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -319,7 +317,7 @@ class OMXDriver(object):
             
             else:
   
-                #sleep is OK here as it is a seperate thread. self.widget.after has funny effects as its not in the main thread.
+                # sleep is OK here as it is a seperate thread. self.widget.after has funny effects as its not in the main thread.
                 sleep(0.05)   # stats output rate seem to be about 170mS.
 
 

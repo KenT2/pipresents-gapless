@@ -1,4 +1,3 @@
-from glob import glob
 import os
 import csv
 import json
@@ -12,7 +11,7 @@ from pp_utils import Monitor
 # MEDIALIST CLASS
 # ************************************
 
-class MediaList:
+class MediaList(object):
     """
     manages a media list of tracks and the track selected from the medialist
     """
@@ -57,12 +56,12 @@ class MediaList:
         self._selected_track_index=-1
 
     def move_up(self):
-        if self._selected_track_index<>0:
+        if self._selected_track_index != 0:
             self._tracks.insert(self._selected_track_index-1, self._tracks.pop(self._selected_track_index))
             self.select(self._selected_track_index-1)
 
     def move_down(self):
-        if self._selected_track_index<>self._num_tracks-1:
+        if self._selected_track_index != self._num_tracks-1:
             self._tracks.insert(self._selected_track_index+1, self._tracks.pop(self._selected_track_index))
             self.select(self._selected_track_index+1)
 
@@ -74,10 +73,10 @@ class MediaList:
            
 
     def track_is_selected(self):
-            if self._selected_track_index>=0:
-                return True
-            else:
-                return False
+        if self._selected_track_index>=0:
+            return True
+        else:
+            return False
             
     def selected_track_index(self):
         return self._selected_track_index
@@ -191,9 +190,9 @@ class MediaList:
                 end=self._num_tracks-1
             else:
                 end=index-1
-         #search for next anonymous track
+        # search for next anonymous track
         # print 'index', index, 'end',end
-        while index<>end:
+        while index != end:
             if self._tracks[index] ['track-ref'] =="":
                 self.select(index)
                 return True
@@ -217,8 +216,8 @@ class MediaList:
             else:
                 end=index+1
         # print 'index', index, 'end',end                
-        #search for previous anonymous track            
-        while index<>end :
+        # search for previous anonymous track            
+        while index != end :
             if self._tracks[index] ['track-ref'] =="":
                 self.select(index)
                 return True                
@@ -264,10 +263,10 @@ class MediaList:
         else:
             return False
 
-    def issue(self):
+    def get_issue(self):
         return self.issue
 
-    #dummy for mediliast, in livelist the list is created from the live_track directories
+    # dummy for mediliast, in livelist the list is created from the live_track directories
     def make_livelist(self):
         pass
 
@@ -292,25 +291,8 @@ class MediaList:
                 tries+=1
         return
 
-    #for medialist the content of the list never changes so return False
+    # for medialist the content of the list never changes so return False
     def replace_if_changed(self):
             return False
 
-# for the future
-
-    def open_csv(self,filename):
-        """
-        opens a saved csv medialist
-        """
-        if filename !="" and os.path.exists(filename):
-            ifile  = open(filename, 'rb')
-            pl=csv.reader(ifile)
-            for pl_row in pl:
-                if len(pl_row) != 0:
-                    entry=dict([('type',pl_row[2]),('location',pl_row[0]),('title',pl_row[1])])
-                    self.append(copy.deepcopy(entry))
-            ifile.close()
-            return True
-        else:
-            return False
 

@@ -203,7 +203,7 @@ class HyperlinkShow(Show):
                     self.current_player.input_pressed('stop')
 
             elif operation == 'pause':
-                if self.current_player != None:
+                if self.current_player is not  None:
                     self.current_player.input_pressed(operation)
 
             elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
@@ -216,8 +216,8 @@ class HyperlinkShow(Show):
         print 'hyperlinkshow ',symbol
         found,link_op,link_arg=self.path.find_link(symbol,self.links)
         if found is True:
-            #cancel the show timeout when playing another track
-            if self.show_timeout_timer != None:
+            # cancel the show timeout when playing another track
+            if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
             print 'match',link_op
@@ -261,9 +261,9 @@ class HyperlinkShow(Show):
             self.next_track_signal=True
             self.next_track_op='call'
             self.next_track_arg=track_ref
-            if self.shower != None:
+            if self.shower is not None:
                 self.shower.input_pressed('stop',edge,source)
-            elif self.current_player != None:
+            elif self.current_player is not None:
                 self.current_player.input_pressed('stop')
             else:
                 self.what_next_after_showing()
@@ -274,9 +274,9 @@ class HyperlinkShow(Show):
         self.next_track_signal=True
         self.next_track_op='goto'
         self.next_track_arg=to
-        if self.shower != None:
+        if self.shower is not None:
             self.shower.input_pressed('stop',edge,source)
-        elif self.current_player != None:
+        elif self.current_player is not None:
             print 'current stopped',self.current_player
             self.current_player.input_pressed('stop')
         else:
@@ -287,9 +287,9 @@ class HyperlinkShow(Show):
         self.next_track_signal=True
         self.next_track_op='jump'
         self.next_track_arg=to
-        if self.shower != None:
+        if self.shower is not None:
             self.shower.input_pressed('stop',edge,source)
-        elif self.current_player != None:
+        elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
             self.what_next_after_showing()
@@ -298,9 +298,9 @@ class HyperlinkShow(Show):
         self.mon.log(self,'repeat: ')
         self.next_track_signal=True
         self.next_track_op='repeat'
-        if self.shower != None:
+        if self.shower is not None:
             self.shower.input_pressed('stop',edge,source)
-        elif self.current_player != None:
+        elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
             self.what_next_after_showing()
@@ -318,9 +318,9 @@ class HyperlinkShow(Show):
             self.mon.log(self,'hyperlink command - return to: '+to)
             self.next_track_op='return-to'
             self.next_track_arg=to        
-        if self.shower != None:
+        if self.shower is not None:
             self.shower.input_pressed('stop',edge,source)
-        elif self.current_player != None:
+        elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
             self.what_next_after_showing()
@@ -329,9 +329,9 @@ class HyperlinkShow(Show):
         self.mon.log(self,'hyperlink command - home')
         self.next_track_signal=True
         self.next_track_op='home'
-        if self.shower != None:
+        if self.shower is not None:
             self.shower.input_pressed('stop',edge,source)
-        elif self.current_player != None:
+        elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
             self.what_next_after_showing()
@@ -365,7 +365,7 @@ class HyperlinkShow(Show):
 
         # start the show timer when displaying the first track
         if self.current_track_ref == self.first_track_ref:
-            if self.show_timeout_timer != None:
+            if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
             if int(self.show_params['show-timeout']) != 0:
@@ -374,7 +374,7 @@ class HyperlinkShow(Show):
         
        # start timeout for the track if required   ???? differnet to radiobuttonshow
         if self.continue_timeout is False:
-            if self.track_timeout_timer != None:
+            if self.track_timeout_timer is not None:
                 self.canvas.after_cancel(self.track_timeout_timer)
                 self.track_timeout_timer=None
             if self.current_track_ref != self.first_track_ref and int(self.show_params['track-timeout']) != 0:
@@ -501,16 +501,15 @@ class HyperlinkShow(Show):
 
             # repeat is return by 1
             elif self.next_track_op in ('repeat'):
-                    # print 'current', self.current_track_ref
-                    # print 'home', self.home_track_ref
-               # if self.current_track_ref != self.home_track_ref:
-                    self.path.pop_for_sibling()
-                    self.next_track_ref=self.current_track_ref
-                    self.path.append(self.current_track_ref)
-                    self.continue_timeout=True
-                    if self.trace:
-                        print '\nExecuted Repeat'
-                        self.path.print_path()
+                # print 'current', self.current_track_ref
+                # print 'home', self.home_track_ref
+                self.path.pop_for_sibling()
+                self.next_track_ref=self.current_track_ref
+                self.path.append(self.current_track_ref)
+                self.continue_timeout=True
+                if self.trace:
+                    print '\nExecuted Repeat'
+                    self.path.print_path()
 
             # return-to
             elif self.next_track_op in ('return-to'):

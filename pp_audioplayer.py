@@ -1,8 +1,7 @@
 import os
-import time
 from pp_mplayerdriver import mplayerDriver
 from pp_player import Player
-from pp_utils import Monitor
+
 
 class AudioPlayer(Player):
     """       
@@ -72,7 +71,7 @@ class AudioPlayer(Player):
             self.mplayer_volume= self.show_params['mplayer-volume'].strip()
         self.volume_option= 'volume=' + self.mplayer_volume
 
-        #get speaker from profile
+        # get speaker from profile
         if  self.track_params['audio-speaker'] != "":
             self.audio_speaker= self.track_params['audio-speaker']
         else:
@@ -93,7 +92,7 @@ class AudioPlayer(Player):
         
     # LOAD - creates and mplayer instance, loads a track and then pause
     def load(self,track,loaded_callback,enable_menu):
-        #instantiate arguments
+        # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
 
@@ -130,7 +129,7 @@ class AudioPlayer(Player):
     
     def show(self,ready_callback,finished_callback,closed_callback):
                        
-        #instantiate arguments
+        # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show video
         self.finished_callback=finished_callback         # callback when finished showing
         self.closed_callback=closed_callback
@@ -182,7 +181,7 @@ class AudioPlayer(Player):
 
 
 
-    #toggle pause
+    # toggle pause
     def pause(self):
         if self.play_state == 'showing' and self.track != '':
             self.mplayer.pause()
@@ -226,10 +225,10 @@ class AudioPlayer(Player):
 
  
     def start_play_state_machine(self):
-        #initialise all the state machine variables
+        # initialise all the state machine variables
         self.duration_count = 0
 
-        #play the track
+        # play the track
         options = self.show_params['mplayer-other-options'] + '-af '+ self.speaker_option+','+self.volume_option + ' '
         if self.track != '':
             self.mplayer.play(self.track,options)

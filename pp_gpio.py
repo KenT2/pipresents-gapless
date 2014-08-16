@@ -402,7 +402,7 @@ class PPIO(object):
         tryfile=pp_profile+os.sep+"gpio.cfg"
         # self.mon.log(self,"Trying gpio.cfg in profile at: "+ tryfile)
         if os.path.exists(tryfile):
-             filename=tryfile
+            filename=tryfile
         else:
             # try inside pp_home
             # self.mon.log(self,"gpio.cfg not found at "+ tryfile+ " trying pp_home")

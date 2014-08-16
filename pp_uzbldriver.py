@@ -1,7 +1,7 @@
 import pexpect
 import os
 from glob import glob
-from os import stat as os_stat, utime, kill
+from os import stat as os_stat, utime
 from pp_utils import Monitor
 from stat import S_ISFIFO
 
@@ -56,7 +56,7 @@ class uzblDriver(object):
         self.terminate_reason=reason
         if self.exists_fifo():
             self.control('exit')
-            #self._process.close(force=True)
+            # self._process.close(force=True)
         self.end_play_signal=True
 
                

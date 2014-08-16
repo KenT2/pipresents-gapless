@@ -1,6 +1,6 @@
 import pexpect
 import re
-import sys
+
 
 from threading import Thread
 from time import sleep
@@ -56,11 +56,11 @@ class mplayerDriver(object):
         self.paused=False
 
     def control(self,char):
-        if self._process<>None:
+        if self._process is not None:
             self._process.send(char)
 
     def pause(self):
-        if self._process<>None:
+        if self._process is not None:
             self._process.send('p')       
             if not self.paused:
                 self.paused = True
@@ -75,24 +75,24 @@ class mplayerDriver(object):
     
     def show(self):
         # unpause to start playing
-        if self._process<>None:
+        if self._process is not None:
             self._process.send('p')
             self.paused = False
 
     def stop(self):
-        if self._process<>None:
+        if self._process is not None:
             self._process.send('q')
 
     # kill the subprocess (mplayer). Used for tidy up on exit.
     def terminate(self,reason):
         self.terminate_reason=reason
         if self._process<>None:
-           self._process.send('q')
+            self._process.send('q')
         else:
             self.end_play_signal=True
             
         
-    def terminate_reason(self):
+    def get_terminate_reason(self):
         return self.terminate_reason
     
    # test of whether _process is running
@@ -115,35 +115,34 @@ class mplayerDriver(object):
         
         # uncomment to monitor output to and input from mplayer (read pexpect manual)
         fout= file('/home/pi/pipresents/mplayerlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
-        #self._process.logfile_send = sys.stdout  # send just commands to stdout
+        # self._process.logfile_send = sys.stdout  # send just commands to stdout
         self._process.logfile=fout  # send all communications to log file
 
         if pause_before_play:
             self._process.send('p')
             self.paused = True
             
-        #start the thread that is going to monitor sys.stdout. Presumably needs a thread because of blocking
+        # start the thread that is going to monitor sys.stdout. Presumably needs a thread because of blocking
 
         self._position_thread = Thread(target=self._get_position)
         self._position_thread.start()
             
     def _get_position(self):
-        #print 'hang'
-        #while True:
-                #pass
+        # print 'hang'
+        # while True:
+                # pass
         self.start_play_signal = True  
 
         self.audio_position=0.0
         
         while True:
-            index = self._process.expect(
-                                            [mplayerDriver._DONE_REXP,
-                                            pexpect.TIMEOUT,
-                                            pexpect.EOF,
-                                            mplayerDriver._STATUS_REXP]
-                                            ,timeout=10)
-            # mplayer does not produce regular status messages just 'exit' at ebd 
-            if index == 0:   #nice day
+            index = self._process.expect([mplayerDriver._DONE_REXP,
+                                          pexpect.TIMEOUT,
+                                          pexpect.EOF,
+                                          mplayerDriver._STATUS_REXP],
+                                         timeout=10)
+            # mplayer does not produce regular status messages just 'exit' at end 
+            if index == 0:   # nice day
                 # print 'nice day'
                 self.end_play_signal=True
                 break        

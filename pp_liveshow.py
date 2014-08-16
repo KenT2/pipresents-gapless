@@ -1,7 +1,6 @@
 import os
 from pp_gapshow import GapShow
 from pp_livelist import LiveList
-from pp_utils import Monitor
 from pp_options import command_options
 
 class LiveShow(GapShow):

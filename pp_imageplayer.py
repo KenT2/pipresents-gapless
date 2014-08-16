@@ -3,7 +3,6 @@ from Tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
 from pp_utils import StopWatch
-from pp_utils import Monitor
 from pp_player import Player
 
 class ImagePlayer(Player):
@@ -332,7 +331,7 @@ class ImagePlayer(Player):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
-                return 'error','',False,0,0,0,0,''
+            return 'error','',False,0,0,0,0,''
             
         # deal with original whch has 0 or 2 arguments
         image_filter=''

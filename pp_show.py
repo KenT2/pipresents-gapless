@@ -376,7 +376,7 @@ class Show(object):
     # dummy, normally overidden by derived class
     def terminate(self,reason):
         self.mon.err(self,"terminate not overidden")
-        self.base_end('error',message)
+        self.base_end('error',"terminate not overidden")
 
     # terminate Pi Presents
     def base_terminate(self,reason):
@@ -399,7 +399,7 @@ class Show(object):
         value=self.rr.get(section,item)
         if value is False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self.terminate("error",'Cannot find resource')
+            self.terminate('error')
         else:
             return value
 

@@ -1,7 +1,7 @@
 import time
 import tkMessageBox
 
-class StopWatch:
+class StopWatch(object):
     
     global_enable=False
 
@@ -29,7 +29,7 @@ class StopWatch:
             print text + " " + str(self.end-self.sstart) + " secs"
 
 
-class Monitor:
+class Monitor(object):
     # 0  - errors only
     # 1  - errors and warnings
     # 2  - everything
@@ -42,7 +42,7 @@ class Monitor:
     fatals=0
 
     def __init__(self):
-        if Monitor.ofile==None:
+        if Monitor.ofile is None:
             bufsize=0
             Monitor.ofile=open(Monitor.log_path+"/pp_log.log","w",bufsize)          
         self.enable=False
@@ -57,10 +57,7 @@ class Monitor:
     def err(self,caller,text):
         print "%.2f" % (time.time()-Monitor.start_time), " ERROR: ",caller.__class__.__name__," ", text
         Monitor.ofile.write (" ERROR: " + caller.__class__.__name__ + ":  " + text + "\n")
-        tkMessageBox.showwarning(
-                                caller.__class__.__name__ ,
-                                text
-                                        )
+        tkMessageBox.showwarning(caller.__class__.__name__ ,text)
                                         
     def warn(self,caller,text):
         if Monitor.global_enable >0 and self.enable:
@@ -70,10 +67,10 @@ class Monitor:
 
     def log(self,caller,text):
         if Monitor.global_enable >1  and self.enable:
-             print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
-             Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + caller.__class__.__name__ +": " + text+"\n")
+            print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
+            Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + caller.__class__.__name__ +": " + text+"\n")
              
   
     def finish(self):
         Monitor.ofile.close()
-        pass
+

@@ -1,7 +1,6 @@
 import os
 from pp_artshow import ArtShow
 from pp_livelist import LiveList
-from pp_utils import Monitor
 from pp_options import command_options
 
 class ArtLiveShow(ArtShow):

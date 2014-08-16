@@ -106,7 +106,7 @@ class VideoPlayer(Player):
 
     # LOAD - creates and omxplayer instance, loads a track and then pause
     def load(self,track,loaded_callback,enable_menu):  
-        #instantiate arguments
+        # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
 
@@ -180,7 +180,7 @@ class VideoPlayer(Player):
         self.show_x_content()
 
         # hide previous and do animation end etc.
-        if self.ready_callback != None:
+        if self.ready_callback is not  None:
             self.ready_callback()
 
         # show the currrent x contnet and do start animation
@@ -331,7 +331,7 @@ class VideoPlayer(Player):
             # print ' closed so no need to unload'
         else:
             if self.play_state  ==  'loaded':
-                #load already complete so set unload signal and kick off state machine
+                # load already complete so set unload signal and kick off state machine
                 self.play_state='start_unload'
                 self.unloading_count=0
                 self.unload_signal=True
@@ -383,7 +383,7 @@ class VideoPlayer(Player):
                 self.mon.warn(self,'omxplayer now  terminated ')
                 self.play_state = 'load_failed'
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                if self.loaded_callback != None:
+                if self.loaded_callback is not  None:
                     self.loaded_callback('error','omxplayer ended before loading track')      
             else:
                 # end play signal false  - continue waiting for first timestamp
@@ -402,7 +402,7 @@ class VideoPlayer(Player):
                     else:
                         self.play_state = 'loaded'
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                        if self.loaded_callback != None:
+                        if self.loaded_callback is not None:
                             self.loaded_callback('normal','video loaded')
                 else:
                     # start play signal false - continue to wait
@@ -415,7 +415,7 @@ class VideoPlayer(Player):
                         self.mon.warn(self,'omxplayer now  terminated ')
                         self.play_state = 'load_failed'
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                        if self.loaded_callback != None:
+                        if self.loaded_callback is not None:
                             self.loaded_callback('error','omxplayer counted out when loading track')
                     else:
                         self.tick_timer=self.canvas.after(200, self.load_state_machine)
@@ -507,7 +507,7 @@ class VideoPlayer(Player):
                 if self.omx.end_play_reason == 'pause_at_end':
                     self.play_state='pause_at_end'
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                    if self.finished_callback != None:
+                    if self.finished_callback is not None:
                         self.finished_callback('pause_at_end','pause at end')
 
                 else:
@@ -551,7 +551,7 @@ class VideoPlayer(Player):
                 self.play_state = 'closed'
                 self.omx=None
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                if self.closed_callback != None:
+                if self.closed_callback is not  None:
                     self.closed_callback('normal','omxplayer closed')
             else:
                 # process still running
@@ -566,7 +566,7 @@ class VideoPlayer(Player):
                     self.play_state = 'closed'
                     self.omx=None
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                    if self.closed_callback != None:
+                    if self.closed_callback is not None:
                         self.closed_callback('normal','closed omxplayer after sigint')
                 else:
                     self.tick_timer=self.canvas.after(200, self.show_state_machine)
@@ -580,7 +580,7 @@ class VideoPlayer(Player):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
-                return 'error','no type field','',False,0,0,0,0
+            return 'error','no type field','',False,0,0,0,0
             
         # deal with original which has 1
         if fields[0] == 'original':

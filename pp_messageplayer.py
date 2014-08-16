@@ -1,6 +1,5 @@
 from Tkinter import NW
 from pp_utils import StopWatch
-from pp_utils import Monitor
 from pp_player import Player
 
 class MessagePlayer(Player):
@@ -102,7 +101,7 @@ class MessagePlayer(Player):
      # SHOW - show a track from its loaded state 
     def show(self,ready_callback,finished_callback,closed_callback):
                          
-        #instantiate arguments
+        # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by Messageplayer
@@ -180,20 +179,20 @@ class MessagePlayer(Player):
     def load_track_content(self):
         # load message text
         if self.track_params['message-x'] != '':
-             self.track_obj=self.canvas.create_text(int(self.track_params['message-x']), int(self.track_params['message-y']),
-                                                    text=self.track.rstrip('\n'),
-                                                    fill=self.track_params['message-colour'],
-                                                    font=self.track_params['message-font'],
-                                                    justify=self.track_params['message-justify'],
-                                                    anchor = NW,
-                                                    tag='pp-content')
+            self.track_obj=self.canvas.create_text(int(self.track_params['message-x']), int(self.track_params['message-y']),
+                                                   text=self.track.rstrip('\n'),
+                                                   fill=self.track_params['message-colour'],
+                                                   font=self.track_params['message-font'],
+                                                   justify=self.track_params['message-justify'],
+                                                   anchor = NW,
+                                                   tag='pp-content')
         else:
             self.track_obj=self.canvas.create_text(int(self.canvas['width'])/2, int(self.canvas['height'])/2,
-                                                    text=self.track.rstrip('\n'),
-                                                    fill=self.track_params['message-colour'],
-                                                    font=self.track_params['message-font'],
-                                                    justify=self.track_params['message-justify'],
-                                                    tag='pp-content')     
+                                                   text=self.track.rstrip('\n'),
+                                                   fill=self.track_params['message-colour'],
+                                                   font=self.track_params['message-font'],
+                                                   justify=self.track_params['message-justify'],
+                                                   tag='pp-content')     
 
         return self.track_obj
     

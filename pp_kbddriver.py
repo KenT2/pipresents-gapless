@@ -2,7 +2,7 @@ import os
 import ConfigParser
 from pp_utils import Monitor
 
-class KbdDriver:
+class KbdDriver(object):
 
     config=None
 
@@ -37,19 +37,19 @@ class KbdDriver:
     # alphanumeric keys- convert to symbolic by adding pp-key-
     def normal_key(self,callback,event):
         key=event.char
-        if key<>'':
+        if key != '':
             callback('pp-key-'+key,'front','key')
 
 
 
-     #read the key bindings from keys.cfg
+     # read the key bindings from keys.cfg
     def read(self,pp_dir,pp_home,pp_profile):
-        if KbdDriver.config==None:
+        if KbdDriver.config is None:
             # try inside profile
             tryfile=pp_profile+os.sep+"keys.cfg"
             # self.mon.log(self,"Trying keys.cfg in profile at: "+ tryfile)
             if os.path.exists(tryfile):
-                 filename=tryfile
+                filename=tryfile
             else:
                 # try inside pp_home
                 # self.mon.log(self,"keys.cfg not found at "+ tryfile+ " trying pp_home")
@@ -70,13 +70,13 @@ class KbdDriver:
             KbdDriver.config.optionxform=str
             KbdDriver.config.read(filename)
             self.mon.log(self,"keys.cfg read from "+ filename)
-            if KbdDriver.config.has_section('keys')==False:
+            if KbdDriver.config.has_section('keys') is False:
                 self.mon.err(self,"no [keys] section in keys.cfg")
                 return False
             return True
 
     def has_section(self,section):
-        if KbdDriver.config.has_section('keys')==False:
+        if KbdDriver.config.has_section(section) is False:
             return False
 
 

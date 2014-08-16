@@ -1,7 +1,6 @@
 from pp_medialist import MediaList
 from pp_show import Show
 from pp_pathmanager import PathManager
-from pp_utils import Monitor
 
 
 class RadioButtonShow(Show):

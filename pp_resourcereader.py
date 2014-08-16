@@ -3,7 +3,7 @@ import ConfigParser
 from pp_utils import Monitor
 
 
-class ResourceReader:
+class ResourceReader(object):
     config=None
 
     def __init__(self):
@@ -11,12 +11,12 @@ class ResourceReader:
         self.mon.on()
 
     def read(self,pp_dir,pp_home,pp_profile):
-        if ResourceReader.config==None:
+        if ResourceReader.config is None:
             # try inside profile
             tryfile=pp_profile+os.sep+"resources.cfg"
             # self.mon.log(self,"Trying resources.cfg in profile at: "+ tryfile)
             if os.path.exists(tryfile):
-                 filename=tryfile
+                filename=tryfile
             else:
                 # try inside pp_home
                 # self.mon.log(self,"resources.cfg not found at "+ tryfile+ " trying pp_home")
@@ -40,7 +40,7 @@ class ResourceReader:
         
 
     def get(self,section,item):
-        if ResourceReader.config.has_option(section,item)==False:
+        if ResourceReader.config.has_option(section,item) is False:
             return False
         else:
             return ResourceReader.config.get(section,item)

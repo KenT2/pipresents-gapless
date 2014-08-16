@@ -300,14 +300,14 @@ class ShowManager(object):
                              self.pp_profile)
 
         elif selected_show['type'] == "liveshow":    
-           return LiveShow(self.show_id,
-                           selected_show,
-                           self.root,
-                           self.canvas,
-                           self.showlist,
-                           self.pp_dir,
-                           self.pp_home,
-                           self.pp_profile)
+            return LiveShow(self.show_id,
+                            selected_show,
+                            self.root,
+                            self.canvas,
+                            self.showlist,
+                            self.pp_dir,
+                            self.pp_home,
+                            self.pp_profile)
 
 
         elif selected_show['type'] == "radiobuttonshow":

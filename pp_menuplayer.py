@@ -2,7 +2,6 @@ import os
 from Tkinter import N, CENTER, LEFT, NW, W
 from PIL import Image
 from PIL import ImageTk
-from pp_utils import Monitor
 from pp_player import Player
 
 class MenuPlayer(Player):
@@ -594,7 +593,7 @@ class MenuPlayer(Player):
             if self.medialist.selected_track()['thumbnail'] != '' and os.path.exists(self.complete_path(self.medialist.selected_track()['thumbnail'])):
                 self.pil_image=Image.open(self.complete_path(self.medialist.selected_track()['thumbnail']))
             else:
-                #cannot find thumbnail get the image if its an image track
+                # cannot find thumbnail get the image if its an image track
                 if self.medialist.selected_track()['type']  == 'image':
                     self.track=self.complete_path(self.medialist.selected_track()['location'])
                 else:
@@ -602,7 +601,7 @@ class MenuPlayer(Player):
                 if self.medialist.selected_track()['type'] == 'image' and os.path.exists(self.track) is True: 
                     self.pil_image=Image.open(self.track)
                 else:
-                    #use a standard thumbnail
+                    # use a standard thumbnail
                     icon_type=self.medialist.selected_track()['type']
                     standard=self.pp_dir+os.sep+'pp_home'+os.sep+'pp_resources'+os.sep+icon_type+'.png'
                     if os.path.exists(standard) is True:
@@ -615,28 +614,29 @@ class MenuPlayer(Player):
             if self.pil_image  is not  None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                 image_id=ImageTk.PhotoImage(self.pil_image)
-                self.canvas.create_image(self.icon_x_left+1, self.icon_y_top+1,
-                                            image=image_id, anchor=NW,
-                                             tag='pp-content')
+                self.canvas.create_image(self.icon_x_left+1,
+                                         self.icon_y_top+1,
+                                         image=image_id, anchor=NW,
+                                         tag='pp-content')
                 del self.pil_image
             else:
                 image_id=None
                     
         elif self.track_params['menu-icon-mode']  == 'bullet':
-                bullet=self.complete_path(self.track_params['menu-bullet'])                  
-                if os.path.exists(bullet) is False:
-                    self.pil_image=None                          
-                else:
-                    self.pil_image=Image.open(bullet)
-                if self.pil_image is not None:
-                    self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
-                    image_id=ImageTk.PhotoImage(self.pil_image)
-                    self.canvas.create_image(self.icon_x_left+1,
-                                             self.icon_y_top+1,
-                                             image=image_id,
-                                             anchor=NW,
-                                             tag='pp-content')
-                    del self.pil_image
+            bullet=self.complete_path(self.track_params['menu-bullet'])                  
+            if os.path.exists(bullet) is False:
+                self.pil_image=None                          
+            else:
+                self.pil_image=Image.open(bullet)
+            if self.pil_image is not None:
+                self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
+                image_id=ImageTk.PhotoImage(self.pil_image)
+                self.canvas.create_image(self.icon_x_left+1,
+                                         self.icon_y_top+1,
+                                         image=image_id,
+                                         anchor=NW,
+                                         tag='pp-content')
+                del self.pil_image
         else:
             image_id=None
         return image_id

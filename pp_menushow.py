@@ -1,8 +1,6 @@
 import copy
 from pp_medialist import MediaList
 from pp_show import Show
-from pp_utils import Monitor
-
 
 class MenuShow(Show):
 
@@ -109,7 +107,7 @@ class MenuShow(Show):
         # if at top convert symbolic name to operation otherwise lower down we have received an operation
         # look through list of standard symbols to find match (symbolic-name, function name) operation =lookup (symbol
         if self.level == 0:
-            operation=Show.base_lookup_control(symbol,self.controls_list)
+            operation=Show.base_lookup_control(self,symbol,self.controls_list)
         else:
             operation=symbol
             

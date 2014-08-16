@@ -276,7 +276,7 @@ class PiPresents(object):
         # Create list of start shows initialise them and then run them
         self.run_start_shows()
 
-        #start tkinter
+        # start tkinter
         self.root.mainloop( )
 
 
@@ -353,7 +353,7 @@ class PiPresents(object):
          
     def exit_pressed(self):
         self.mon.log(self, "kill received from user")
-        #terminate any running shows and players     
+        # terminate any running shows and players     
         self.mon.log(self,"kill sent to shows")   
         self.terminate('killed')
 
@@ -379,13 +379,13 @@ class PiPresents(object):
         if reason == 'error':
             self.tidy_up()
             self.mon.log(self, "exiting because of error")
-            #close logging files 
+            # close logging files 
             self.mon.finish()
             exit()            
         else:
             self.tidy_up()
             self.mon.log(self,"no error - exiting normally")
-            #close logging files 
+            # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
                 call(['sudo', 'shutdown', '-h', '-t 5','now'])
@@ -428,10 +428,10 @@ class PiPresents(object):
 if __name__ == '__main__':
 
     pp = PiPresents()
-##    try:
-##        pp = PiPresents()
-##    except:
-##        traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
-##        pass
+    ##    try:
+    ##        pp = PiPresents()
+    ##    except:
+    ##        traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
+    ##        pass
 
 

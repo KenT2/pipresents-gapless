@@ -93,8 +93,8 @@ class PathManager(object):
             if error_text != "":
                 return 'error',error_text,links
             links.append(copy.deepcopy(link))
-        #print "\nreading"
-        #print links
+        # print "\nreading"
+        # print links
         return 'normal','',links
 
     def parse_link(self,line):
@@ -122,12 +122,12 @@ class PathManager(object):
             else:
                 # new link so append it
                 current_links.append(track_link)
-        #print "\n merging"
-        #print current_links
+        # print "\n merging"
+        # print current_links
                         
     def find_link(self,symbol,links):
         for link in links:
-            #print link
+            # print link
             if symbol ==  link[0]:
                 return True,link[1],link[2]
         return False,'',''
