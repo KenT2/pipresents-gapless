@@ -40,7 +40,7 @@ class ImagePlayer(Player):
                          end_callback)
 
         # comment this out to turn the trace off          
-        # self.trace=True
+        self.trace=True
 
         # control debugging trace
         self.mon.on()
@@ -83,13 +83,12 @@ class ImagePlayer(Player):
         self.loaded_callback=loaded_callback   # callback when loaded
         if self.trace: print '    Imageplayer/load ',self
         
-        # load the plugin, this may modify self.track and enable the plugin drawign to canvas
+        # load the plugin, this may modify self.track and enable the plugin drawing to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
                 self.end('error',message)
-                self=None
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
@@ -103,7 +102,7 @@ class ImagePlayer(Player):
                 self.loaded_callback('loaded','image track loaded')
 
             
-    # UNLOAD - abort a load when omplayer is loading or loaded
+    # UNLOAD - abort a load when sub-process is loading or loaded
     def unload(self):
         if self.trace: print '    Imageplayer/unload ',self
         # nothing to do for imageplayer

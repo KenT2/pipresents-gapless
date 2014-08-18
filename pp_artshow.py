@@ -98,8 +98,12 @@ class ArtShow(Show):
 
         if self.show_ready_callback is not None:
             # get the previous player from calling show - (current because shuffled before use)
-            self.current_player=self.show_ready_callback()
-            if self.trace: print '************ start of show, getting previous_player from parent show***********',self.current_player
+            self.previous_shower,self.current_player=self.show_ready_callback()
+            if self.trace: print '************ start of show, getting previous_shower and previous_player from parent show***********',self.previous_shower,self.current_player
+
+        # and delete eggtimer started by the parent
+        if self.previous_shower is not None:
+            self.previous_shower.delete_eggtimer()
 
         self.wait_for_trigger()                
 

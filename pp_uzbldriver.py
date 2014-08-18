@@ -89,11 +89,11 @@ class uzblDriver(object):
         candidates = glob('/tmp/uzbl_fifo_*')
         for fifo_file in candidates:
             if S_ISFIFO(os_stat(fifo_file).st_mode):
-                self.mon.log(self, 'Found UZBL fifo  in %s.' % file)
+                self.mon.log(self, 'Found UZBL fifo  in %s.' % fifo_file)
                 self.fifo=fifo_file
                 self.start_play_signal=True
                 return
-        # print 'not found trying again'
+        # print 'fifo not found trying again'
         self.widget.after(500,self.get_fifo)
 
 
@@ -106,7 +106,7 @@ class uzblDriver(object):
     # send commands to uzbl via the fifo
     def control(self,data):
         if self.exists_fifo():
-            self.mon.log(self,'send command to uzbl:'+data)
+            self.mon.log(self,'send command to uzbl:'+ data)
             f = open(self.fifo, 'a')
             f.write('%s\n' % data)
             f.close()

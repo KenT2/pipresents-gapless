@@ -29,7 +29,7 @@ class MediaShow(GapShow):
         self.mon.on()
         
         # remove comment to trace this bottom level derived class
-        # self.trace=True
+        self.trace=True
 
         # use the appropriate medialist
         self.medialist=MediaList()

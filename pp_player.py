@@ -121,7 +121,7 @@ class Player(object):
                 return
 
 # *****************
-# hide content and end animationtion, end show etc.
+# hide content and end animation, show control etc.
 # called by ready calback and end
 # *****************
 

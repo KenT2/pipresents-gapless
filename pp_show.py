@@ -45,7 +45,7 @@ class Show(object):
         self.mon=Monitor()
 
         # trace is off by default
-        self.trace=False        
+        self.trace=True      
 
         # open resources
         self.rr=ResourceReader()
