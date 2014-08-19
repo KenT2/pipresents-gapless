@@ -6,15 +6,6 @@ from pp_player import Player
 
 class BrowserPlayer(Player):
 
-    #state constants
-    _CLOSED = "player_closed"    #probably will not exist
-    _STARTING = "player_starting"  #uzbl beinf loaded and fifo created
-    _WAITING = "wait for timeout" # waiting for browser to appear on the screen
-    _PLAYING = "player_playing"  #track is playing to the screen
-    _ENDING = "player_ending"  #track is in the process of ending due to quit or duration exceeded
-
-
-
 # ***************************************
 # EXTERNAL COMMANDS
 # ***************************************
@@ -55,14 +46,14 @@ class BrowserPlayer(Player):
 
     
         # get duration limit (secs ) from profile
-        if self.track_params['duration']<>"":
+        if self.track_params['duration'] != '':
             self.duration= int(self.track_params['duration'])
         else:
             self.duration= int(self.show_params['duration'])
         self.duration_limit=20*self.duration
 
-        #process web window                  
-        if self.track_params['web-window']<>'':
+        # process web window                  
+        if self.track_params['web-window'] != '':
             self.web_window= self.track_params['web-window']
         else:
             self.web_window= self.show_params['web-window']
@@ -72,14 +63,14 @@ class BrowserPlayer(Player):
             self.mon.err(self,'web window error: '+'  ' + message + ' in ' + self.web_window)
             self.end('error',message)
 
-        #compute web_window size
+        # compute web_window size
         if has_window is False:
             self.geometry = ' --geometry=maximized '
         else:
             width=x2-x1
             height=y2-y1
             self.geometry = "--geometry=%dx%d%+d%+d "  % (width,height,x1,y1)
-
+            
         # parse browser commands to self.command_list
         reason,message=self.parse_commands(self.track_params['browser-commands'])
         if reason != 'normal':
@@ -114,30 +105,28 @@ class BrowserPlayer(Player):
                 self.mon.err(self,message)
                 self.end('error',message)
 
+        # start loading the browser
+        self.bplayer.play(self.track,self.geometry)
+        self.mon.log (self,'Loading browser from show Id: '+ str(self.show_id))
+        self.play_state='loading'
+
         # load the images and text
         status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
             self.end('error',message)
 
-
-        # ???? problem - browser is  loaded with first track before plugin is run
-        #start loading the browser
-        self.bplayer.play(self.track,self.geometry)
-        self.mon.log (self,'Loading browser from show Id: '+ str(self.show_id))
-        self.play_state='loading'
-
         # wait for browser to load
         self.start_load_state_machine()
 
 
     # UNLOAD - abort a load when sub-process is loading or loaded
-    # this is a bodge need to wait for browser to end
+    # ?????? this is a bodge need to wait for browser to end
     def unload(self):
         if self.trace: print '    Browserplayer/unload ',self
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         # exit the browser
-        self.stop_bplayer()
+        self.bplayer.stop()
         self.play_state='unloaded'
 
 
@@ -186,7 +175,7 @@ class BrowserPlayer(Player):
         elif symbol=='stop':
             self.stop()
 
-    #browsers do not do pause
+    # browsers do not do pause
     def pause(self):
         self.mon.log(self,"!<pause rejected")
         return False
@@ -223,7 +212,7 @@ class BrowserPlayer(Player):
 
  
     def start_load_state_machine(self):
-        #initialise all the state machine variables
+        # initialise all the state machine variables
         self.load_state='starting'
         # and start polling for state changes and count duration
         self.tick_timer=self.canvas.after(50, self.load_state_machine)
@@ -236,7 +225,7 @@ class BrowserPlayer(Player):
             return 
                 
         elif self.load_state ==  'starting':
-            self.mon.log(self,"      Load state machine: " + self.load_state)
+            # self.mon.log(self,"      Load state machine: " + self.load_state)
             
             # if uzbl fifo is available can send commands to uzbl but change to wait state to wait for it to appear on screen
             if self.bplayer.start_play_signal is True:
@@ -269,10 +258,10 @@ class BrowserPlayer(Player):
 
 
     def start_show_state_machine(self):
-            self.play_state='showing'
-            self.show_state='showing'
-            self.duration_count=self.duration_limit
-            self.tick_timer=self.canvas.after(50, self.show_state_machine)
+        self.play_state='showing'
+        self.show_state='showing'
+        self.duration_count=self.duration_limit
+        self.tick_timer=self.canvas.after(50, self.show_state_machine)
 
 
     def show_state_machine(self):
@@ -289,18 +278,12 @@ class BrowserPlayer(Player):
             if self.quit_signal is True or (self.duration_limit != 0 and self.duration_count == 0):
                 self.mon.log(self,"      Service stop required signal or timeout")
                 if self.quit_signal  is True: self.quit_signal=False
-                self.stop_bplayer()
+                self.bplayer.stop()
                 self.show_state = 'ending'
-
-            # uzbl reports it is terminating so change to ending state
-            # if self.bplayer.end_play_signal is True:                    
-                #self.mon.log(self,"            <end play signal received")
-                #self.play_state = 'ending'
-
             self.tick_timer=self.canvas.after(50, self.show_state_machine)
 
         elif self.show_state == 'ending':
-            self.mon.log(self,"      Show state machine: " + self.show_state)
+            # self.mon.log(self,"      Show state machine: " + self.show_state)
             # if spawned process has closed can change to closed state
             # self.mon.log (self,"      State machine : is uzbl process running? -  "  + str(self.bplayer.is_running()))
             if self.bplayer.is_running() is False:
@@ -315,9 +298,6 @@ class BrowserPlayer(Player):
                 self.tick_timer=self.canvas.after(50, self.show_state_machine)
                 
                 
-    def stop_bplayer(self):
-            self.bplayer.stop()
-
 
 
 # *******************   
@@ -328,7 +308,7 @@ class BrowserPlayer(Player):
         self.command_list=[]
         lines = command_text.split('\n')
         for line in lines:
-            if line.strip()=="":
+            if line.strip() == '':
                 continue
             reason,entry=self.parse_command(line)
             if reason != 'normal':
@@ -350,7 +330,7 @@ class BrowserPlayer(Player):
         if command not in ('load','refresh','wait','exit','loop'):
             return 'error','unknown command: '+ command
             
-        if command in ('refresh','exit','loop') and len(fields)<>1:
+        if command in ('refresh','exit','loop') and len(fields) !=1:
             return 'error','incorrect number of fields for '+ command + 'in: ' + line
             
         if command == 'load':
@@ -389,10 +369,10 @@ class BrowserPlayer(Player):
             
         # execute command
         if command == 'load':
-            #self.canvas.focus_force()
-            #self.root.lower()
-            file=self.complete_path(arg)
-            self.bplayer.control('uri '+ file)
+            # self.canvas.focus_force()
+            # self.root.lower()
+            url=self.complete_path(arg)
+            self.bplayer.control('uri '+ url)
             self.command_timer=self.canvas.after(10,self.execute_command)
         elif command == 'refresh':
             self.bplayer.control('reload_ign_cache')
@@ -412,31 +392,31 @@ class BrowserPlayer(Player):
 
 # parse the browser window field
     def parse_window(self,line):
-            # parses warp _ or xy2
+        # parses warp _ or xy2
+        
+        fields = line.split()
+        # check there is a command field
+        if len(fields) < 1:
+            return 'error','no type field','',False,0,0,0,0
             
-            fields = line.split()
-            # check there is a command field
-            if len(fields) < 1:
-                    return 'error','no type field','',False,0,0,0,0
-                
 
-            #deal with warp which has 1 or 5  arguments
-            # check basic syntax
-            if  fields[0] <>'warp':
-                    return 'error','not a valid type','',False,0,0,0,0
-            if len(fields) not in (1,5):
-                    return 'error','wrong number of coordinates for warp','',False,0,0,0,0
+        #deal with warp which has 1 or 5  arguments
+        # check basic syntax
+        if  fields[0] <>'warp':
+            return 'error','not a valid type','',False,0,0,0,0
+        if len(fields) not in (1,5):
+            return 'error','wrong number of coordinates for warp','',False,0,0,0,0
 
-            # deal with window coordinates    
-            if len(fields) == 5:
-                #window is specified
-                if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                    return 'error','coordinates are not positive integers','',False,0,0,0,0
-                has_window=True
-                return 'normal','',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4])
-            else:
-                # fullscreen
-                has_window=False
-                return 'normal','',fields[0],has_window,0,0,0,0
+        # deal with window coordinates    
+        if len(fields) == 5:
+            #window is specified
+            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
+                return 'error','coordinates are not positive integers','',False,0,0,0,0
+            has_window=True
+            return 'normal','',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4])
+        else:
+            # fullscreen
+            has_window=False
+            return 'normal','',fields[0],has_window,0,0,0,0
 
 

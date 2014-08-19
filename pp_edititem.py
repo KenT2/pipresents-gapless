@@ -1,5 +1,5 @@
-from Tkinter import *
-from tkColorChooser import *
+from Tkinter import RAISED, FLAT, Frame,Button,Label,OptionMenu,Entry,Spinbox,StringVar,OptionMenu,END,LEFT,TOP,X,BOTTOM,W,YES,ACTIVE
+from tkColorChooser import askcolor
 import ttk
 import tkFont
 import os
@@ -56,7 +56,6 @@ class FontChooser( tkSimpleDialog.Dialog ):
         # Font Families
         fontList = ttk.Combobox( master,  height=10, textvariable=self._family )
         fontList.grid( row=theRow, column=0, columnspan=2, sticky=N+S+E+W, padx=10 )
-        first = None
         rawfamilyList = list(tkFont.families( ))
         rawfamilyList.sort()
         # print rawfamilyList
@@ -110,11 +109,11 @@ class FontChooser( tkSimpleDialog.Dialog ):
 
     def selectionChanged( self, something=None ):
         self._currentFont.configure( family=self._family.get(),
-                    size=self._sizeString.get(),
-                    weight=self._weight.get(),
-                    slant=self._slant.get(),
-                    underline=self._isUnderline.get(),
-                    overstrike=self._isOverstrike.get() )
+                                     size=self._sizeString.get(),
+                                     weight=self._weight.get(),
+                                     slant=self._slant.get(),
+                                     underline=self._isUnderline.get(),
+                                     overstrike=self._isOverstrike.get() )
 
         if self.sampleText:
             self.sampleText.tag_config( 'fontStyle', font=self._currentFont )
@@ -171,13 +170,13 @@ def askChooseFont( parent, defaultfont=None, showstyles=FontChooser.ALL ):
 # www.sunjay-varma.com
 ###################################################
 
-__doc__ = info = '''
+"""
 This script was written by Sunjay Varma - www.sunjay-varma.com
 
 This script has two main classes:
 Tab - Basic tab used by TabBar for main functionality
 TabBar - The tab bar that is placed above tab bodies (Tabs)
-'''
+"""
 
 BASE = RAISED
 SELECTED = FLAT
@@ -213,7 +212,7 @@ class TabBar(Frame):
         self.buttons[tab.tab_name] = b   # add it to the list of buttons
         # print '\n'
         # for xtab in self.tabs:
-            # print xtab
+        #     print xtab
 
 
     def delete(self, tabname):
@@ -247,10 +246,10 @@ class EditItem(tkSimpleDialog.Dialog):
     def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_home_dir,initial_tab):
         self.mon=Monitor()
         self.mon.on()
-        #save the extra arg to instance variable
+        # save the extra arg to instance variable
         self.field_content = field_content   # dictionary - the track parameters to be edited
         self.record_specs= record_specs # list of field names and seps/tabs in the order that they appear
-        self.field_specs=field_specs  # disctionary of specs referenced by field name
+        self.field_specs=field_specs  # dictionary of specs referenced by field name
         
         self.show_refs=show_refs
         self.show_refs.append('')
@@ -261,7 +260,7 @@ class EditItem(tkSimpleDialog.Dialog):
         # list of stringvars from which to get edited values (for optionmenu only??)
         self.entries=[]
 
-        #and call the base class _init_which calls body immeadiately and apply on OK pressed
+        # and call the base class _init_which calls body immeadiately and apply on OK pressed
         tkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self,root):
@@ -284,7 +283,7 @@ class EditItem(tkSimpleDialog.Dialog):
         
         # populate the dialog box using the record fields to determine the order
         for field in record_fields:
-            #get list of values where required
+            # get list of values where required
             values=[]
             if self.field_specs[field]['shape']in("option-menu",'spinbox'):
                 if self.field_specs[field]['param']in ('sub-show','start-show','controlled-show'):
@@ -295,7 +294,7 @@ class EditItem(tkSimpleDialog.Dialog):
                 values=[]
             # make the entry
             obj=self.make_entry(master,self.field_specs[field],values,bar)
-            if obj<>None:
+            if obj != None:
                 self.fields.append(obj)
                 self.field_index +=1
         return None # No initial focus
@@ -320,7 +319,7 @@ class EditItem(tkSimpleDialog.Dialog):
             parameter=field_spec['param']
             # print 'content', parameter, self.field_content[field_spec['param']]
             # is it in the field content dictionary
-            if not parameter in self.field_content:
+            if parameter not in self.field_content:
                 self.mon.log(self,"Value for field not found in opened file: " + parameter)
                 return None
             else:
@@ -329,7 +328,7 @@ class EditItem(tkSimpleDialog.Dialog):
                 else:
                     bg='white'
                     
-                #write the label
+                # write the label
                 Label(self.current_tab,text=field_spec['text'], anchor=W).grid(row=self.tab_row,column=0,sticky=W)
                 
                 # make the editable field
@@ -360,7 +359,7 @@ class EditItem(tkSimpleDialog.Dialog):
                     
                 obj.grid(row=self.tab_row,column=1,sticky=W)
 
-                #display buttons where required
+                # display buttons where required
                 if field_spec['shape']=='browse':
                     but=Button(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.browse(o)))
                     but.grid(row=self.tab_row,column=2,sticky=W)
@@ -413,15 +412,15 @@ class EditItem(tkSimpleDialog.Dialog):
 
     def pick_colour(self,obj):
         rgb,colour=askcolor()
-        #print rgb,colour
-        if colour<>None:
+        # print rgb,colour
+        if colour != None:
             obj.delete(0,END)
             obj.insert(END,colour)
             
     def pick_font(self,obj):
         font=askChooseFont(self.root)
         print font
-        if font<>None:
+        if font != None:
             obj.delete(0,END)
             obj.insert(END,font)
 
@@ -431,18 +430,18 @@ class EditItem(tkSimpleDialog.Dialog):
         if file_path=='':
             return
         file_path=os.path.normpath(file_path)
-        #print "file path ", file_path
+        # print "file path ", file_path
         relpath = os.path.relpath(file_path,self.pp_home_dir)
-        #print "relative path ",relpath
+        # print "relative path ",relpath
         common = os.path.commonprefix([file_path,self.pp_home_dir])
-        #print "common ",common
-        if common.endswith("pp_home") == False:
+        # print "common ",common
+        if common.endswith("pp_home") is False:
             obj.delete(0,END)
             obj.insert(END,file_path)
         else:
             location = "+" + os.sep + relpath
             location = string.replace(location,'\\','/')
-            #print "location ",location
+            # print "location ",location
             obj.delete(0,END)
             obj.insert(END,location)
 
@@ -457,8 +456,8 @@ class EditItem(tkSimpleDialog.Dialog):
         w.pack(side=LEFT, padx=5, pady=5)
         w = Button(box, text="Cancel", width=10, command=self.cancel)
         w.pack(side=LEFT, padx=5, pady=5)
-        #self.bind("<Return>", self.ok)
-        #self.bind("<Escape>", self.cancel)
+        # self.bind("<Return>", self.ok)
+        # self.bind("<Escape>", self.cancel)
         box.pack()
 
 

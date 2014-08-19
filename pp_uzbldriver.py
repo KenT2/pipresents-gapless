@@ -1,7 +1,7 @@
 import pexpect
 import os
 from glob import glob
-from os import stat as os_stat, utime
+from os import stat as os_stat
 from pp_utils import Monitor
 from stat import S_ISFIFO
 
@@ -28,8 +28,8 @@ from stat import S_ISFIFO
     ----------
     The following signals are produced while the browser is open
          self.start_play_signal = True when the browser is ready to be used
-         self.end_play_signal= True when browser has finished due to stop or because it has come to an end
-    Also is_running() tests whether the sub-process running uzbl is alive.
+
+    is_running() tests whether the sub-process running uzbl is alive.
 
 """
 
@@ -57,12 +57,9 @@ class uzblDriver(object):
         if self.exists_fifo():
             self.control('exit')
             # self._process.close(force=True)
-        self.end_play_signal=True
-
-               
+    
     def play(self, track, geometry):
         self.start_play_signal = False
-        self.end_play_signal=False
         # track= "'"+ track.replace("'","'\\''") + "'"
 
         cmd='uzbl-browser '  + geometry + '--uri='+track
@@ -78,9 +75,7 @@ class uzblDriver(object):
 
     # poll for fifo to be available
     # when it is set start_play_signal
-    # then monitor for it to be delted because browser is closed
-    # and the set end_play signal
-    
+    # browser player calls is_running at intervals to test if uzbl is ended after an exit command
     def get_fifo(self):
         """
         Look for UZBL's FIFO-file in /tmp.
