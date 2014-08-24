@@ -1,4 +1,5 @@
-from Tkinter import RAISED, FLAT, Frame,Button,Label,OptionMenu,Entry,Spinbox,StringVar,OptionMenu,END,LEFT,TOP,X,BOTTOM,W,YES,ACTIVE
+from Tkinter import Frame,Button,Label,OptionMenu,Entry,Spinbox,StringVar,Checkbutton,Text,BooleanVar
+from Tkinter import END,LEFT,TOP,X,BOTTOM,W,YES,ACTIVE,RAISED, FLAT,N,INSERT,DISABLED
 from tkColorChooser import askcolor
 import ttk
 import tkFont
@@ -294,7 +295,7 @@ class EditItem(tkSimpleDialog.Dialog):
                 values=[]
             # make the entry
             obj=self.make_entry(master,self.field_specs[field],values,bar)
-            if obj != None:
+            if obj is not  None:
                 self.fields.append(obj)
                 self.field_index +=1
         return None # No initial focus
@@ -319,7 +320,7 @@ class EditItem(tkSimpleDialog.Dialog):
             parameter=field_spec['param']
             # print 'content', parameter, self.field_content[field_spec['param']]
             # is it in the field content dictionary
-            if parameter not in self.field_content:
+            if not parameter in self.field_content:
                 self.mon.log(self,"Value for field not found in opened file: " + parameter)
                 return None
             else:
@@ -413,14 +414,14 @@ class EditItem(tkSimpleDialog.Dialog):
     def pick_colour(self,obj):
         rgb,colour=askcolor()
         # print rgb,colour
-        if colour != None:
+        if colour is not None:
             obj.delete(0,END)
             obj.insert(END,colour)
             
     def pick_font(self,obj):
         font=askChooseFont(self.root)
         print font
-        if font != None:
+        if font is not None:
             obj.delete(0,END)
             obj.insert(END,font)
 

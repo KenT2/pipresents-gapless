@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-from Tkinter import Tk, Canvas, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE
+from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry
+from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
 import tkFileDialog
 import tkMessageBox
 import tkSimpleDialog
@@ -250,7 +251,7 @@ class PPEditor(object):
         # initialise variables      
         self.init()
         
-        #and enter Tkinter event loop
+        # and enter Tkinter event loop
         self.root.mainloop()        
 
 
@@ -406,9 +407,9 @@ class PPEditor(object):
         return True
 
 
-    def save_showlist(self,dir):
+    def save_showlist(self,showlist_dir):
         if self.current_showlist is not None:
-            showlist_file = dir + os.sep + "pp_showlist.json"
+            showlist_file = showlist_dir + os.sep + "pp_showlist.json"
             self.current_showlist.save_list(showlist_file)
             
     def add_eventshow(self):
@@ -520,7 +521,7 @@ class PPEditor(object):
     def open_medialists(self,profile_dir):
         self.medialists = []
         for this_file in os.listdir(profile_dir):
-            if this_file.endswith(".json") and this_file == 'pp_showlist.json':
+            if this_file.endswith(".json") and this_file != 'pp_showlist.json':
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
         for index in range (len(self.medialists)):
