@@ -108,18 +108,18 @@ class GapShow(Show):
         #  check symbol against mediashow triggers, triggers can be used at top or lower level
         # and not affected by disable-controls
 
-        if self.state == 'waiting' and self.show_params['trigger-start-type'] in ('input','input-quiet')and symbol  ==  self.show_params['trigger-start-param']:
+        if self.state == 'waiting' and self.show_params['trigger-start-type'] in ('input','input-quiet') and symbol  ==  self.show_params['trigger-start-param']:
             self.start_show()
         elif self.state == 'playing' and self.show_params['trigger-next-type'] == 'input' and symbol == self.show_params['trigger-next-param']:
             self.next()
 
-       # internal operations are triggered only when disable-controls is  'no'
+        # internal operations are triggered only when disable-controls is  'no'
         if self.show_params['disable-controls'] == 'yes':
             return
 
-        print self.level,symbol
+        # print self.level,symbol
 
-        # if at top (level=0convert symbolic name to operation otherwise lower down we have received an operation
+        # if at top (level=0) convert symbolic name to operation otherwise lower down we have received an operation
         # look through list of symbolic names to find match (symbolic-name, function name) operation =lookup (symbol
         if self.level == 0:
             operation=Show.base_lookup_control(self,symbol,self.controls_list)

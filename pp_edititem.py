@@ -1,5 +1,5 @@
 from Tkinter import Frame,Button,Label,OptionMenu,Entry,Spinbox,StringVar,Checkbutton,Text,BooleanVar
-from Tkinter import END,LEFT,TOP,X,BOTTOM,W,YES,ACTIVE,RAISED, FLAT,N,INSERT,DISABLED
+from Tkinter import END,LEFT,TOP,X,BOTTOM,YES,ACTIVE,RAISED, FLAT,INSERT,DISABLED,N,S,E,W
 from tkColorChooser import askcolor
 import ttk
 import tkFont

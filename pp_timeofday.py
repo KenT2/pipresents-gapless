@@ -1,40 +1,31 @@
-import time
 import copy
-import datetime
+import time
+import os
+from datetime import datetime, date,timedelta
+import json
 from pp_utils import Monitor
+
 
 class TimeOfDay(object):
 
-    """
-    add to a list of times with
-    time, show id, callback  (should go to the calling show I think)
-
-    cancel events with specific tag
-    remove a specific event
-    terminate tod
-
-    keep time ticker one second tick time
-    do callback when time is reached 24 hour clock, just rotates
-
-    needs ticker to run from main program but events to be added/cancelled from a number of instances.
-
-    Its the sequemcer in reverse.
-    """
-    
     # CLASS VARIABLES
 
-   # fields of the times list
-    TIME=0            # time at which trigger is to be generated - seconds from midnight
-    TAG=1             # tag used to delete all matching events, usually a show reference.
-    CALLBACK = 2      # instance of function to call when event is detected
-    SOURCE = 3        # source text
-    QUIET = 4        # whether the next show time should be displayed True,false
+    # change this for another language
+    DAYS_OF_WEEK=['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 
-    TEMPLATE = [0,'',None,'',False]
+    """
+        TimeOfDay.events is a dictionary the keys being show-refs.
+        Each dictionary entry is a list of time_elements sorted by descending time
+        Each time element is a list with the fields:
+        0 - command
+        1 - time, seconds since midnight
 
-    times=[]  # list of times of day used to generate callbacks, earliest first
+    """
+    events={}  # list of times of day used to generate callbacks, earliest first
+
     last_scheduler_time=long(time.time())
     now_seconds=0
+    root = None                 # for root.after
     
     # executed by main program and by each object using tod
     def __init__(self):
@@ -42,74 +33,124 @@ class TimeOfDay(object):
         self.mon.on()
 
 
-     # executed once from main program   
-    def init(self,pp_dir,pp_home,widget,tod_tick):
+     # executed once from main program  only 
+    def init(self,pp_dir,pp_home,pp_profile,root,callback):
        
         # instantiate arguments
-        TimeOfDay.widget=widget
+        TimeOfDay.root=root
         self.pp_dir=pp_dir
         self.pp_home=pp_home
-        self.tod_tick=tod_tick
+        self.pp_profile=pp_profile
+        self.callback=callback
+
         # init variables
+        self.testing=False
+        self.tod_tick=500
         self.tick_timer=None
         TimeOfDay.last_poll_time=long(time.time())
-        midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        now =datetime.datetime.now()
-        TimeOfDay.delta=(now-midnight)
-        TimeOfDay.now_seconds= TimeOfDay.delta.seconds
+
+        # read the schedule
+        self.schedule=self.open_schedule()
+        
+        #create the initial events list
+        if self.testing:
+            now = datetime(day = 31, month =8, year=2014,hour=10, minute=0, second=0)
+            self.sim_now=now
+        else:
+            now = datetime.now()
+        print 'initial simulated time',now.ctime()
+        midnight = now.replace(hour=0, minute=0, second=0)
+        delta=(now-midnight)
+        now_seconds= delta.seconds
+        self.build_schedule_for_today(self.schedule,now)
+        self.print_todays_schedule()
+        self.build_events_lists(now_seconds)
+        self.print_events_lists()
+        # and start any show that should be running at start up time
+        self.catchup=True
 
 
     # called by main program only         
     def poll(self):
-
         poll_time=long(time.time())
+        # print 'poll',poll_time
         # is current time greater than last time the sceduler was run
         # run in a loop to catch up because root.after can get behind when images are being rendered etc.
-        while poll_time>TimeOfDay.last_scheduler_time:
+        # poll time can be the same twice as poll is run at half second intervals.
+        while TimeOfDay.last_scheduler_time<=poll_time:
             self.do_scheduler(poll_time - TimeOfDay.last_scheduler_time)
             TimeOfDay.last_scheduler_time +=1
         # and loop
-        self.tick_timer=TimeOfDay.widget.after(self.tod_tick,self.poll)
+        self.tick_timer=TimeOfDay.root.after(self.tod_tick,self.poll)
 
 
      # called by main program only           
     def terminate(self):
         if self.tick_timer is not None:
-            TimeOfDay.widget.after_cancel(self.tick_timer)
-        self.clear_times_list(None)
+            TimeOfDay.root.after_cancel(self.tick_timer)
+        self.clear_events_lists()
 
 
         
     # execute events at the appropriate time.
     # called by main program only   
     def do_scheduler(self,diff):
-        midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        now =datetime.datetime.now()
-        TimeOfDay.delta=(now-midnight)
-        TimeOfDay.now_seconds= TimeOfDay.delta.seconds-diff
+        if self.testing:
+            self.sim_now += timedelta(seconds=1)
+            now = self.sim_now
+            print 'simulated time',now.ctime()
+        else:
+            now =datetime.now()
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # if its midnight then build the events lists for the new day
+        delta=(now-midnight)
+        now_seconds= delta.seconds-diff
+        if delta.seconds == 0:
+            print 'midnight'
+            self.build_schedule_for_today(self.schedule,now)
+            self.print_todays_schedule()
+            self.build_events_lists(now_seconds)
+            self.print_events_lists()
         TimeOfDay.synced=True
-        # print 'scheduler time', TimeOfDay.now_seconds, ' diff ', diff
-        for item in TimeOfDay.times:
-            # print item[TimeOfDay.TIME]
-            if item[TimeOfDay.TIME]  ==  TimeOfDay.now_seconds:
-                # print 'event fired'
-                self.do_event(item)
+        print 'scheduler time', now_seconds, ' diff ', diff
+        
+      
+        for show_ref in TimeOfDay.events:
+            times = TimeOfDay.events[show_ref]
+            if self.catchup is True:  
+                # go through the list rembering show state until the first future event is found.
+                # then if last command was to start the show send it
+                show_running=False
+                last_start_element=[]
+                for time_element in reversed(times):
+                    # print 'time from events', time_element[1]
+                    if time_element[1]  >=  now_seconds:
+                        break
+                    if time_element[0] == 'start-show':
+                        last_start_element=time_element
+                        show_running=True
+                    elif time_element[0]=='stop-show':
+                        show_running=False
+                if show_running is True:
+                    print 'catch up', show_ref
+                    self.do_event(show_ref,last_start_element,midnight)
+
+            # print show_ref
+            # now send a command if time matches
+            for time_element in reversed(times):
+                # print 'time from events', time_element[1]
+                if time_element[1]  ==  now_seconds:
+                    # print 'event fired'
+                    self.do_event(show_ref,time_element,midnight)
+        self.catchup=False
 
     # execute an event
-    def do_event(self,event):
-        self.mon.log (self,'Event : ' + str(event[TimeOfDay.TIME])+' '+ str(event[TimeOfDay.TAG]) + ' at ' +datetime.datetime.now().ctime())
-        # print 'Event : ' + str(event[TimeOfDay.TIME])+' '+ str(event[TimeOfDay.TAG]) + ' at ' +datetime.datetime.now().ctime()
-        event[TimeOfDay.CALLBACK]()
-
-    def next_event_time(self):
-        # look for next event
-        for item in TimeOfDay.times:
-            # print 'trying ',item[TimeOfDay.SOURCE]
-            if TimeOfDay.now_seconds < item[TimeOfDay.TIME]:
-                break
-        else:
-            return [TimeOfDay.times[0][TimeOfDay.SOURCE],'tomorrow',TimeOfDay.times[0][TimeOfDay.TAG],TimeOfDay.times[0][TimeOfDay.QUIET]]
-        return [item[TimeOfDay.SOURCE],'',item[TimeOfDay.TAG],item[TimeOfDay.QUIET]]
+    def do_event(self,show_ref,time_element,midnight):
+        delta=datetime.now() - midnight
+        self.mon.log (self,'Event : ' + show_ref + ' ' + time_element[0] + ' required ' + str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1]))
+        print 'Event : ' + show_ref + ' ' + time_element[0] + ' required '+ str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1])
+        self.callback(show_ref,time_element[0])
 
 
 #
@@ -117,92 +158,232 @@ class TimeOfDay(object):
 # The methods below can be called from many classes so need to operate on class variables
 # ************************************************
 
-    def add_times(self,text,tag,callback,quiet_text):
-        if quiet_text == 'time-quiet':
-            quiet=True
-        else:
-            quiet=False
-        lines = text.split("\n")
-        for line in lines:
-            error_text=self.parse_tod_fields(line,tag,callback,quiet)
-            if error_text  != '':
-                return error_text
-        # print TimeOfDay.times
-        return ''
-   
-    def parse_tod_fields(self,line,tag,callback,quiet):
-        fields = line.split()
-        if len(fields) == 0:
-            return ''
-        for field in fields:
-            self.parse_event_text(field,tag,callback,quiet)
-        return ''
+    # clear events list
+    def clear_events_lists(self):
+        self.mon.log(self,'clear time of day  events list ')
+        # empty event list
+        TimeOfDay.events={}
 
-    def parse_event_text(self,time_text,tag,callback,quiet):
+
+# ***********************************
+# Preparing schedule and todays events
+# ************************************
+
+    def open_schedule(self):
+        # look for the schedule.json file
+        # try inside profile
+        tryfile=self.pp_profile+os.sep+"schedule.json"
+        # self.mon.log(self,"Trying schedule.json in profile at: "+ tryfile)
+        if os.path.exists(tryfile):
+            filename=tryfile
+        else:
+            # try inside pp_home
+            # self.mon.log(self,"schedule.json not found at "+ tryfile+ " trying pp_home")
+            tryfile=self.pp_home+os.sep+"schedule.json"
+            if os.path.exists(tryfile):
+                filename=tryfile
+            else:
+                # try inside pipresents
+                # self.mon.log(self,"schedule.json not found at "+ tryfile + " trying inside pipresents")
+                tryfile=self.pp_dir+os.sep+'pp_home'+os.sep+"schedule.json"
+                if os.path.exists(tryfile):
+                    filename=tryfile
+                else:
+                    self.mon.log(self,"schedule.json not found at "+ tryfile)
+                    self.mon.err(self,"schedule.json not found  at "+ tryfile)
+                    return False
+        ifile  = open(filename, 'rb')
+        schedule= json.load(ifile)
+        ifile.close()
+        self.mon.log(self,"schedule.json read from "+ filename)
+        return schedule
+
+
+    def build_schedule_for_today(self,schedule,now):
+        this_day=now
+        print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
+        """
+        self.todays_schedule is a dictionary the keys being show-refs.
+        Each dictionary entry is a list of time_elements
+        Each time element is a list with the fields:
+        0 - command
+        1 - time hour:min[:sec]
+
+        """
+        self.todays_schedule={}
+        # start the schedule with what is required everyday by default
+        if 'everyday' in schedule:
+            everyday=schedule['everyday']
+            for day in everyday:
+                #print day['day']
+                for show in day['shows']:
+                    self.todays_schedule[show['show-ref']]=copy.deepcopy(show['times'])
+            # print '\nafter everyday'
+            # print self.todays_schedule
+            # self.print_todays_schedule()
+  
+
+        #override times for shows that have the required day of week
+        if 'weekdays' in schedule:
+            weekdays=schedule['weekdays']
+            for day in  weekdays:
+                #print day['day']
+                if day['day'] == TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]:
+                    # print 'weekday matched', day['day']
+                    for show in day['shows']:
+                        self.todays_schedule[show['show-ref']]=copy.deepcopy(show['times'])
+            #print '\nafter weekday',todays_schedule                           
+                       
+        if 'monthdays' in schedule:
+            monthdays=schedule['monthdays']
+            for day in  monthdays:
+                if int(day['day']) == this_day.day:
+                    print 'month matched', day['day']
+                    for show in day['shows']:
+                        self.todays_schedule[show['show-ref']]=copy.deepcopy(show['times'])
+            #print '\nafter weekday',todays_schedule
+            
+        if 'specialdays' in schedule:
+            specialdays= schedule['specialdays']
+            for day in  specialdays:
+                sdate=datetime.strptime(day['day'],'%Y-%m-%d')
+                if sdate.year == this_day.year and sdate.month==this_day.month and sdate.day == this_day.day:
+                    # print 'special matched', day['day']
+                    for show in day['shows']:
+                        self.todays_schedule[show['show-ref']]=copy.deepcopy(show['times'])
+
+
+
+    def build_events_lists(self,now_seconds):
+        # builds events dictionary from todays_schedule by
+        # converting times in todays schedule from hour:min:sec to secs from midnight
+        # and sorts them earliest last
+        TimeOfDay.events={}
+        for show_ref in self.todays_schedule:
+            # print show_ref
+            times = self.todays_schedule[show_ref]
+            for time_element in times:
+                time_element[1]=self.parse_event_time(time_element[1],now_seconds)
+            sorted_times=sorted(times,key = lambda time_element: time_element[1],reverse=True)
+            TimeOfDay.events[show_ref]=sorted_times
+            # print times
+
+
+    def parse_event_time(self,time_text,now_seconds):
         if time_text[0] == '+':
-            seconds=TimeOfDay.now_seconds+int(time_text.lstrip('+'))
+            seconds=now_seconds+int(time_text.lstrip('+'))
         else:
             fields=time_text.split(':')
             if len(fields)>2:
                 secs=int(fields[2])
             else:
                 secs=0
-                seconds=int(fields[0])*3600+int(fields[1])*60+secs
-        self.add_event(seconds,tag,callback,time_text,quiet)
-    
+            seconds=int(fields[0])*3600+int(fields[1])*60+secs
+        return seconds
 
-    def add_event(self,seconds,tag,callback,source,quiet):
-        # seconds since midnight is integer
-        # find the place in the list and insert
-        # first item in the list is earliest, if two have the same time then last to be added is fired last.
-        for index, item in enumerate(TimeOfDay.times):
-            if seconds<item[TimeOfDay.TIME]:
-                TimeOfDay.times.insert(index,copy.deepcopy(TimeOfDay.TEMPLATE))
-                break
+# *********************
+# print for debug
+# *********************
+
+    def print_schedule(self,frequencies):
+    
+        if 'everyday' in frequencies:
+            self.print_frequency( frequencies,'everyday')
+        if 'weekdays' in frequencies:
+            self.print_frequency(frequencies,'weekdays')
+        if 'monthdays' in frequencies:
+            self.print_frequency(frequencies,'monthdays')
+        if 'specialdays' in frequencies:
+            self.print_frequency(frequencies,'specialdays')
+
+    def print_frequency(self,frequencies,key):
+        frequency=frequencies[key]
+        print '\n',key
+        for day in frequency:
+            print '  ',day['day']
+            shows = day['shows']
+            for show in shows:
+                print '      ',show['show-ref']
+                for time_pair in show['times']:
+                    print '               ' ,time_pair['start-show'],time_pair['stop-show']
+
+                    
+    def print_todays_schedule(self):
+        print '\nschedule for today'
+        for key in self.todays_schedule:
+            print key
+            for show in self.todays_schedule[key]:
+                print show               
+
+    def print_events_lists(self):
+        print '\nevents list for today'
+        for key in self.events:
+            print key
+            for show in self.events[key]:
+                print show
+                
+
+    def save_schedule(self,filename):
+        """ save a schedule """
+        if filename=="":
+            return False
+        if os.name=='nt':
+            filename = string.replace(filename,'/','\\')
         else:
-            TimeOfDay.times.append(copy.deepcopy(TimeOfDay.TEMPLATE))
-            index=len(TimeOfDay.times)-1
+            filename = string.replace(filename,'\\','/')
+        ofile  = open(filename, "wb")
+        json.dump(self.schedule,ofile,sort_keys= False,indent=1)
+        ofile.close()
+        return
             
-        TimeOfDay.times[index][TimeOfDay.CALLBACK]=callback
-        TimeOfDay.times[index][TimeOfDay.TIME]=seconds
-        TimeOfDay.times[index][TimeOfDay.TAG]=tag
-        TimeOfDay.times[index][TimeOfDay.SOURCE]=source
-        TimeOfDay.times[index][TimeOfDay.QUIET]=quiet
-        self.mon.log (self,'create time of day event ' + source + ' for show '+str(tag) + ' ' + str(quiet))
-        # self.print_times()
-        return TimeOfDay.times[index]
+
+# ******************************
+# test harness
+# ******************************
 
 
-    def print_times(self):
-        print
-        for i in TimeOfDay.times:
-            print i
+class Show:
 
+    def __init__(self,show_name):
+        self.show_name=show_name
+        tod = TimeOfDay()
+
+
+
+    def add_event_text(self,time):
+        tag='tag'
+        tod.add_event_text(time,tag,self.callback)
+        
+
+
+if __name__ == '__main__':
+    # from pp_timeofday import TimeOfDay
+    import os
+    from Tkinter import Tk
+    import string
+
+    def callback(show,command):
+        # print 'callback ',show,command
+        pass
+
+                     
+    pp_dir='/home/pi/pipresents'
+    # pp_dir="C:\Users\Ken\Documents\Develop\Rpi\pipresents"
+    pp_home='/home/pi/pp_home/pp_profiles/1p3_timeofday'
+    # pp_home="C:\Users\Ken\Documents\Develop\Rpi\pipresents"
+    pp_profile= pp_home
+    Monitor.log_path=pp_dir
+    Monitor.global_enable=True
+
+    root=Tk()
     
-    # remove an event
-    def remove_event(self,event):
-        for index, item in enumerate(TimeOfDay.times):
-            if event == item:
-                del TimeOfDay.times[index]
-                return True
-        return False
+    print "running"
+                      
+    tod=TimeOfDay()
+    tod.init(pp_dir,pp_home,pp_profile,root,callback)
+    # tod.save_schedule(pp_dir+'/schedule_out.json')
+    tod.poll()
+    root.mainloop()
 
 
-    # clear times list
-    def clear_times_list(self,tag):
-        self.mon.log(self,'clear time of day list ' + str(tag))
-        # empty event list
-        if tag is  None:
-            TimeOfDay.events=[]
-        else:
-            self.remove_events(tag)
-
-    # remove all the events with the same tag, usually a show reference
-    def remove_events(self,tag):
-        left=[]
-        for item in TimeOfDay.times:
-            if tag != item[TimeOfDay.TAG]:
-                left.append(item)
-        TimeOfDay.times= left
-        # self.print_times()
 

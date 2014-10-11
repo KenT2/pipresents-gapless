@@ -3,7 +3,7 @@
 """
 Part of Pi Presents
 Pi Presents is a presentation package, running on the Raspberry Pi, for museum exhibits, galleries, and presentations.
-Copyright 2012/2013, Ken Thompson
+Copyright 2012/2013/2014, Ken Thompson
 
 See manual.pdf for instructions.
 """
@@ -244,7 +244,7 @@ class PiPresents(object):
             self.end('error','cannot find screen.cfg')
 
         # create click areas on the canvas, must be polygon as outline rectangles are not filled as far as find_closest goes
-        reason,message = self.sr.make_click_areas(self.canvas,self.input_pressed)
+        reason,message = self.sr.make_click_areas(self.canvas,self.tod_pressed)
         if reason == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -267,14 +267,14 @@ class PiPresents(object):
             # and start polling gpio
             self.ppio.poll()
 
-        # kick off the time of day scheduler
-        self.tod=TimeOfDay()
-        self.tod.init(pp_dir,self.pp_home,self.canvas,500)
-        self.tod.poll()
-
 
         # Create list of start shows initialise them and then run them
         self.run_start_shows()
+
+        # kick off the time of day scheduler which may run additional shows
+        self.tod=TimeOfDay()
+        self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.tod_pressed)
+        self.tod.poll()
 
         # start tkinter
         self.root.mainloop( )
@@ -287,8 +287,7 @@ class PiPresents(object):
     def run_start_shows(self):
         # start show manager
         show_id=-1 #start show
-        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
-        
+        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)        
         # first time through so empty show register and set callback to terminate Pi Presents if all shows have ended.
         self.show_manager.init(self.all_shows_ended_callback)
 
@@ -317,6 +316,12 @@ class PiPresents(object):
         self.input_pressed(symbol,edge,'gpio')
 
 
+    def tod_pressed(self,show_ref,command):
+        print 'tod pressed',show_ref,command
+        if command=='start-show':
+            self.show_manager.control_a_show([show_ref,'start'])
+        elif command == 'stop-show':
+            self.show_manager.control_a_show([show_ref,'stop'])
     
     # all input events call this callback with a symbolic name.              
     def input_pressed(self,symbol,edge,source):

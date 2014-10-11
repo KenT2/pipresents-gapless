@@ -51,9 +51,9 @@ class Validator(object):
 
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         v_media_lists = []
-        for file in os.listdir(pp_profile):
-            if not file.endswith(".json") and file not in ('gpio.cfg','controls.cfg','screen.cfg','keys.cfg','resources.cfg'):
-                self.result.display('f',"Invalid medialist in profile: "+ file)
+        for medialist_file in os.listdir(pp_profile):
+            if not medialist_file.endswith(".json") and medialist_file not in ('gpio.cfg','controls.cfg','screen.cfg','keys.cfg','resources.cfg'):
+                self.result.display('f',"Invalid medialist in profile: "+ medialist_file)
                 self.result.display('t', "Validation Aborted")
                 return False
                 
@@ -105,8 +105,8 @@ class Validator(object):
                     if track['type'] in ('video','audio','image','menu-background','web'):    
                         track_file=track['location']
                         if track_file.strip() != '' and  track_file[0] == "+":
-                                track_file=pp_home+track_file[1:]
-                                if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " media file not found")
+                            track_file=pp_home+track_file[1:]
+                            if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " media file not found")
 
                     if track['type'] in ('video','audio','message','image','web'):
                         # check common fields
@@ -159,10 +159,10 @@ class Validator(object):
                   
                     # CHECK CROSS REF TRACK TO SHOW
                     if track['type'] == 'show':
-                            if track['sub-show'] == "":
-                                self.result.display('f',"No 'Show to Run'")
-                            else:
-                                if track['sub-show'] not in v_show_labels: self.result.display('f',"show "+track['sub-show'] + " does not exist")
+                        if track['sub-show'] == "":
+                            self.result.display('f',"No 'Show to Run'")
+                        else:
+                            if track['sub-show'] not in v_show_labels: self.result.display('f',"show "+track['sub-show'] + " does not exist")
                             
                 # if anonymous == 0 :self.result.display('w',"zero anonymous tracks in medialist " + file)
 
@@ -298,7 +298,7 @@ class Validator(object):
                 if show['type']in('mediashow','liveshow') and show['has-child'] == 'yes':
                     if 'pp-child-show' not in v_track_labels: self.result.display('f'," pp-child-show track missing in medialist "+show['medialist'])
                 if show['type'] == 'menu' and show['has-background'] == 'yes':
-                     if 'pp-menu-background' not in v_track_labels: self.result.display('f', " pp-menu-background track missing in medialist "+show['medialist'])
+                    if 'pp-menu-background' not in v_track_labels: self.result.display('f', " pp-menu-background track missing in medialist "+show['medialist'])
 
         self.result.display('t', "\nValidation Complete")
         self.result.stats()
@@ -360,8 +360,8 @@ class Validator(object):
             return
         
         else:
-                self.result.display('f','help, do not understaand!: ' + field + ", " + line)
-                return        
+            self.result.display('f','help, do not understaand!: ' + field + ", " + line)
+            return        
         
             
 
@@ -386,7 +386,7 @@ class Validator(object):
                 self.result.display('f','Value of relative time is not positive integer: ' + item)
                 return
         else:
-            #hh:mm;ss
+            # hh:mm;ss
             fields=item.split(':')
             if len(fields) == 0:
                 return
@@ -681,7 +681,7 @@ class Validator(object):
 # ************************************
              
     def read_gpio_cfg(self,pp_dir,pp_home):
-        tryfile=self.pp_home+os.sep+"gpio.cfg"
+        tryfile=pp_home+os.sep+"gpio.cfg"
         if os.path.exists(tryfile):
              filename=tryfile
         else:
@@ -721,7 +721,7 @@ class Validator(object):
         if len(fields) == 0:
             return        
 
-        #deal with warp which has 1 or 5  arguments
+        # deal with warp which has 1 or 5  arguments
         if  fields[0]  != 'warp':
             self.result.display('f','Illegal command: ' + field + ", " + line)
         if len(fields) not in (1,5):
@@ -730,7 +730,7 @@ class Validator(object):
 
         # deal with window coordinates    
         if len(fields) == 5:
-            #window is specified
+            # window is specified
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
                 self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
                 return
@@ -755,7 +755,6 @@ class Validator(object):
             return
 
         # deal with original whch has 0 or 2 arguments
-        filter=''
         if fields[0] == 'original':
             if len(fields) not in (1,3):
                 self.result.display('f','Wrong number of fields for original: ' + field + ", " + line)
@@ -868,7 +867,7 @@ class ResultWindow(object):
         if self.display_it is False: return
         self.textb.config(state=NORMAL)
         if priority == 't':
-             self.textb.insert(END, text+"\n")
+            self.textb.insert(END, text+"\n")
         if priority == 'f':
             self.textb.insert(END, "    ** Error:   "+text+"\n\n")
         if priority == 'w':

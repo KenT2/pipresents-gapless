@@ -1,0 +1,42 @@
+{
+ "issue": "1.2", 
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "radiobuttonshow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "audio-speaker": "stereo", 
+   "background-colour": "", 
+   "background-image": "", 
+   "controls": "", 
+   "disable-controls": "no", 
+   "duration": "5", 
+   "first-track-ref": "first", 
+   "image-window": "original", 
+   "links": "pp-key-1 play track1\npp-key-2 play track2", 
+   "medialist": "page.json", 
+   "mplayer-audio": "hdmi", 
+   "mplayer-other-options": "", 
+   "mplayer-volume": "0", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "omx-volume": "0", 
+   "omx-window": "original", 
+   "show-canvas": "", 
+   "show-ref": "radiobuttonshow", 
+   "show-text": "", 
+   "show-text-colour": "", 
+   "show-text-font": "", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
+   "timeout": "20", 
+   "title": "Radiobuttonshow", 
+   "transition": "cut", 
+   "type": "radiobuttonshow", 
+   "web-window": "warp"
+  }
+ ]
+}

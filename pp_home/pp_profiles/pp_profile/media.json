@@ -1,0 +1,34 @@
+{
+ "issue": "1.2", 
+ "tracks": [
+  {
+   "animate-begin": "", 
+   "animate-clear": "no", 
+   "animate-end": "", 
+   "background-colour": "", 
+   "background-image": "", 
+   "display-show-background": "yes", 
+   "display-show-text": "no", 
+   "duration": "0", 
+   "links": "", 
+   "message-colour": "white", 
+   "message-font": "Helvetica 20 bold", 
+   "message-justify": "left", 
+   "message-x": "", 
+   "message-y": "", 
+   "plugin": "", 
+   "show-control-begin": "", 
+   "show-control-end": "", 
+   "text": "Welcome to Pi Presents\n\nThe command line options specified a profile that does not exist", 
+   "thumbnail": "", 
+   "title": "Hello World", 
+   "track-ref": "", 
+   "track-text": "", 
+   "track-text-colour": "", 
+   "track-text-font": "", 
+   "track-text-x": "0", 
+   "track-text-y": "0", 
+   "type": "message"
+  }
+ ]
+}
