@@ -121,12 +121,11 @@ Usually a plugin will be writtin for a single track type.
 
 import os
 import time
-from Tkinter import *
-import Tkinter
+from Tkinter import NW
 from PIL import Image, ImageDraw, ImageFont
 
 # the class must have the same name as the file.
-class pp_example_plugin:
+class pp_example_plugin(object):
 
     # it must have an __init__ with these arguments
     def __init__(self,root,canvas,plugin_params,track_params,show_params,pp_dir,pp_home,pp_profile):

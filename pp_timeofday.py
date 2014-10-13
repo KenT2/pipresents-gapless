@@ -1,7 +1,7 @@
 import copy
 import time
 import os
-from datetime import datetime, date,timedelta
+from datetime import datetime, timedelta
 import json
 from pp_utils import Monitor
 
@@ -44,7 +44,8 @@ class TimeOfDay(object):
         self.callback=callback
 
         # init variables
-        self.testing=False
+        # if testing is True then time now can be set by line 58 ish.
+        self.testing=True
         self.tod_tick=500
         self.tick_timer=None
         TimeOfDay.last_poll_time=long(time.time())
@@ -56,9 +57,10 @@ class TimeOfDay(object):
         if self.testing:
             now = datetime(day = 31, month =8, year=2014,hour=10, minute=0, second=0)
             self.sim_now=now
+            print 'initial SIMULATED time',now.ctime()
         else:
             now = datetime.now()
-        print 'initial simulated time',now.ctime()
+            print 'initial REAL time',now.ctime()
         midnight = now.replace(hour=0, minute=0, second=0)
         delta=(now-midnight)
         now_seconds= delta.seconds
@@ -336,54 +338,4 @@ class TimeOfDay(object):
         ofile.close()
         return
             
-
-# ******************************
-# test harness
-# ******************************
-
-
-class Show:
-
-    def __init__(self,show_name):
-        self.show_name=show_name
-        tod = TimeOfDay()
-
-
-
-    def add_event_text(self,time):
-        tag='tag'
-        tod.add_event_text(time,tag,self.callback)
-        
-
-
-if __name__ == '__main__':
-    # from pp_timeofday import TimeOfDay
-    import os
-    from Tkinter import Tk
-    import string
-
-    def callback(show,command):
-        # print 'callback ',show,command
-        pass
-
-                     
-    pp_dir='/home/pi/pipresents'
-    # pp_dir="C:\Users\Ken\Documents\Develop\Rpi\pipresents"
-    pp_home='/home/pi/pp_home/pp_profiles/1p3_timeofday'
-    # pp_home="C:\Users\Ken\Documents\Develop\Rpi\pipresents"
-    pp_profile= pp_home
-    Monitor.log_path=pp_dir
-    Monitor.global_enable=True
-
-    root=Tk()
-    
-    print "running"
-                      
-    tod=TimeOfDay()
-    tod.init(pp_dir,pp_home,pp_profile,root,callback)
-    # tod.save_schedule(pp_dir+'/schedule_out.json')
-    tod.poll()
-    root.mainloop()
-
-
 

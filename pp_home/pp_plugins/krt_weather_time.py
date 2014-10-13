@@ -8,12 +8,11 @@ Pi Presents to display its output.
 
 import os
 import time
-from Tkinter import *
-import Tkinter
-import urllib,urllib2,re
+from Tkinter import NW
+import urllib2,re
 from PIL import Image, ImageDraw, ImageFont
 
-class krt_weather_time:
+class krt_weather_time(object):
 
     def __init__(self,root,canvas,plugin_params,track_params,show_params,pp_dir,pp_home,pp_profile):
         self.root=root
@@ -79,7 +78,7 @@ class krt_weather_time:
     def hide(self):
         # called at the end of the track
         # delete the temporary file
-        if self.used_file<>'':
+        if self.used_file !='':
             os.remove(self.used_file)
 
             
@@ -113,7 +112,7 @@ class krt_weather_time:
         else:
             # everything is fine
             link=response.read()
-            response.close
+            response.close()
 
             match2 = re.compile('<span itemprop="feels-like-temperature-fahrenheit">(.+?)</span>').findall(link)
             match3 = re.compile('<div class="wx-wind-label">(.+?)</div>').findall(link)

@@ -6,14 +6,12 @@ Pi Presents to display its output.
 
 """
 
-import os
 import time
-from Tkinter import *
-import Tkinter
-import urllib,urllib2,re
+from Tkinter import NW
+import urllib2,re
 
 
-class krt_time:
+class krt_time(object):
 
     def __init__(self,root,canvas,plugin_params,track_params,show_params,pp_dir,pp_home,pp_profile):
         self.root=root
