@@ -579,7 +579,7 @@ class PPEditor(object):
         # needs forgiving int for possible tkinter upgrade
         if len(self.medialists)>0:
             self.current_medialists_index=int(event.widget.curselection()[0])
-            self.current_medialist=MediaList()
+            self.current_medialist=MediaList('ordered')
             if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
                 self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
                 self.app_exit()        

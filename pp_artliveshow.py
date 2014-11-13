@@ -51,7 +51,7 @@ class ArtLiveShow(ArtShow):
                 self.end('error',"live tracks directory not found")
        
         # use the appropriate medialist
-        self.medialist=LiveList()
+        self.medialist=LiveList(show_params['sequence'])
 
         # and pass directories to Livelist
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)

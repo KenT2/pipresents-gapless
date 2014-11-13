@@ -40,7 +40,7 @@ class ImagePlayer(Player):
                          end_callback)
 
         # comment this out to turn the trace off          
-        self.trace=True
+        # self.trace=True
 
         # control debugging trace
         self.mon.on()
@@ -183,7 +183,6 @@ class ImagePlayer(Player):
     def do_dwell(self):
         if self.quit_signal is  True:
             self.mon.log(self,"quit received")
-            self.play_state='pause_at_end'
             if self.finished_callback is not None:
                 self.finished_callback('pause_at_end','user quit or duration exceeded')
                 # use finish so that the show will call close
@@ -205,7 +204,6 @@ class ImagePlayer(Player):
                 self.canvas.update_idletasks( )
 
             if self.dwell != 0 and self.dwell_counter == self.dwell:
-                self.play_state='pause_at_end'
                 if self.finished_callback is not None:
                     self.finished_callback('pause_at_end','user quit or duration exceeded')
                     # use finish so that the show will call close
@@ -312,8 +310,8 @@ class ImagePlayer(Player):
                 del pil_image
                 self.track_image_obj = self.canvas.create_image(window_centre_x,
                                                                 window_centre_y,
-                                                                image=self.tk_img, anchor=CENTER)
-
+                                                               image=self.tk_img, anchor=CENTER)
+        self.canvas.itemconfig(self.track_image_obj,state='hidden')
 
     def show_track_content(self):
         self.canvas.itemconfig(self.track_image_obj,state='normal')

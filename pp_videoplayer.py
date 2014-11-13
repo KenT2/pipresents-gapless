@@ -1,6 +1,27 @@
 from pp_omxdriver import OMXDriver
 from pp_player import Player
 
+"""
+If freeze at end then
+   on stop - if showing force pause on otherwise ignore stop as too late, end the track
+   video ends naturally- force pause on at video_length-150
+
+   close track will send the q
+
+if not freeze at end
+   on stop - send q and end the track
+   when video ends - do nothing
+
+track_duration
+ -1 (blank) -  don't set alarm, end track when the video ends or on stop
+ 0 never end  - don't set alarm end track on stop only
+ >0 end track when duration is up
+    set alarm > set signal if showing then stop video (freeze taken care of) and end track
+                                             else just end the track
+
+If track does not supply duration then video_duration=-1 and freeze at end is ignored.
+
+"""
 class VideoPlayer(Player):
     """
     plays a track using omxplayer
@@ -69,15 +90,15 @@ class VideoPlayer(Player):
         else:
             self.omx_other_options= self.show_params['omx-other-options']
 
-        if self.track_params['pause-at-end'] != '':
-            pause_at_end_text= self.track_params['pause-at-end']
+        if self.track_params['freeze-at-end'] != '':
+            freeze_at_end_text= self.track_params['freeze-at-end']
         else:
-            pause_at_end_text= self.show_params['pause-at-end']
+            freeze_at_end_text= self.show_params['freeze-at-end']
 
-        if pause_at_end_text == 'yes':
-            self.pause_at_end_required=True
+        if freeze_at_end_text == 'yes':
+            self.freeze_at_end_required=True
         else:
-            self.pause_at_end_required=False
+            self.freeze_at_end_required=False
             
 
         if self.track_params['seamless-loop'] == 'yes':
@@ -85,7 +106,17 @@ class VideoPlayer(Player):
         else:
             self.seamless_loop=''
             
-            
+##        # get duration limit (secs ) from profile
+##        if self.show_params['type'] in ('liveshow','artliveshow'):
+##            duration_text=''
+##        else:
+##            duration_text= self.track_params['duration']
+##        if duration_text != '':
+##            self.track_duration = 20 * int(duration_text)
+##        else:
+##            self.track_duration=-1
+
+        
         # set up video window
         status,message,command,has_window,x1,y1,x2,y2= self.parse_window(self.omx_window)
         if status  == 'error':
@@ -102,7 +133,7 @@ class VideoPlayer(Player):
         self.quit_signal=False
         self.unload_signal=False
         self.play_state='initialised'
-        
+        self.frozen_at_end=False
 
     # LOAD - creates and omxplayer instance, loads a track and then pause
     def load(self,track,loaded_callback,enable_menu):  
@@ -127,19 +158,12 @@ class VideoPlayer(Player):
             self.end('error',message)
             self=None
 
-        # get the duration of the track
-        duration=float(self.track_params['duration'])
-        if duration == 0:
-            # create an  instance of omxdriver to obtain the duration
-            self.omx_dur=OMXDriver(self.canvas)
-            self.omx_dur.get_duration(self.track)
-            self._wait_for_duration(self._load_after_get_duration)
-        else:
-            # othewise we have duration so start the loading part of state machine.
-            self.mon.log(self,">load track received from show Id: "+ str(self.show_id))
-            # create an  instance of omxdriver
-            self.omx=OMXDriver(self.canvas)
-            self.start_state_machine_load(self.track,duration)
+        # get the length of the video
+
+        # create an  instance of omxdriver to obtain the duration
+        self.omx_dur=OMXDriver(self.canvas)
+        self.omx_dur.get_duration(self.track)
+        self._wait_for_duration(self._load_after_get_duration)
 
 
     def _get_duration(self,track):
@@ -157,7 +181,7 @@ class VideoPlayer(Player):
         # print 'got duration from track',duration,status,self.omx_dur.duration_reason
         self.omx_dur=None
         if duration<=0:
-            self.mon.err(self,'Track does not provide duration, must be in track parameters')
+            self.mon.err(self,'Track does not provide duration so cannot play')
             self.end('error','duration of track required')
         else:        
             self.mon.log(self,">load track received from show Id: "+ str(self.show_id) + ' using duration from track')
@@ -179,11 +203,11 @@ class VideoPlayer(Player):
 
         self.show_x_content()
 
-        # hide previous and do animation end etc.
+        # hide previous and do animation at end etc.
         if self.ready_callback is not  None:
             self.ready_callback()
 
-        # show the currrent x contnet and do start animation
+        #  do animation at start etc.
         Player.pre_show(self)
 
 
@@ -220,24 +244,30 @@ class VideoPlayer(Player):
 
     # respond to normal stop
     def stop(self):
-        # send signal to stop the track to the state machine
         self.mon.log(self,">stop received from show Id: "+ str(self.show_id))
-        if self.play_state == 'pause_at_end':
-            # showing already complete so quit omxplayer and kick off state machine
-            self.play_state='showing'
-            self.quit_signal=True
-            self.tick_timer=self.canvas.after(0, self.show_state_machine)
-        elif self.play_state == 'showing':
-            # just quit omxplayer as state machine is already running
-            self.quit_signal=True
+        # send signal to freeze the track - causes either pause or quit depends on freeze at end
+        if self.freeze_at_end_required is True:
+            if self.play_state == 'showing' and self.frozen_at_end is False:
+                self.frozen_at_end=True
+                # pause the track
+                self.omx.pause('freeze at end from user stop')
+                # and return to show so it can end  the track and the video in track ready callback
+                if self.finished_callback is not None:
+                        self.finished_callback('pause_at_end','pause at end')
+            else:
+                self.mon.log(self,"!<stop rejected")
         else:
-            self.mon.log(self,"!<stop rejected")
+            # freeze not required ad its showing just stop the video
+            if self.play_state=='showing':
+                self.quit_signal=True
+            else:
+                self.mon.log(self,"!<stop rejected")                
 
 
     # toggle pause
     def pause(self):
         self.mon.log(self,">toggle pause received from show Id: "+ str(self.show_id))
-        if self.play_state  == 'showing':
+        if self.play_state  == 'showing' and self.frozen_at_end is False:
             self.omx.toggle_pause('user')
             return True
         else:
@@ -246,7 +276,7 @@ class VideoPlayer(Player):
         
     # other control when playing
     def control(self,char):
-        if self.play_state == 'showing' and char not in ('q'):
+        if self.play_state == 'showing' and self.frozen_at_end is False and char not in ('q'):
             self.mon.log(self,"> send control to omx: "+ char)
             self.omx.control(char)
             return True
@@ -278,30 +308,27 @@ class VideoPlayer(Player):
 
     On getting the loaded_callback with status=normal the track can be shown using show
     On getting the loaded_callback with status=load_failed omxplayer has been killed. Calling program needs to recover somehow.
-    load will take the track;s duration from the track paramters. If duration is 0 omxplayer is interogated to find the duration of the track.
-    Duration obtained from track should always cause pause_at_end. if not please tell me aas the fudge factor may need adjusting.
-    Duration set in track parameters can be shorter than the track's real duration. If so videplayer will pause_at end.
-    Duration set in track parameters can be longer than the track's real duration. If so videplayer complete the track and will close.
+    Duration obtained from track should always cause pause_at_end. if not please tell me as the fudge factor may need adjusting.
 
     >show
         show assumes a track has been loaded and is paused.
-       Ongoing - state=showing - video is showing
+       Ongoing - state=showing - video is showing 
     <finished_callback with status = pause_at_end
-            state=pause_at_end - video has reached near the end and has paused
-    <finished_callback with status=nice_day, eof, or timeout
-            state == finished - video has ended omxplayer has terminated.
-            eof and timeout are error conditions and shoudl not happen. vidoeplayer recovers from these and continues.
+            state=showing but frozen_at_end is True
+    <closed_callback with status= normal
+            state = closed - video has ended omxplayer has terminated.
+            eof and timeout are error conditions and should not happen. vidoeplayer recovers from these and continues.
 
-    On getting finished_callback with status=pause_at end a new track can be shown and then use close to quit completed track
-    On getting finished_callback with status= timeout eof or nice_day omxplayer closing should not be attempted as it is already closed/
+    On getting finished_callback with status=pause_at end a new track can be shown and then use close to quit the video when new track is ready
+    On getting closed_callback with status= timeout eof or nice_day omxplayer closing should not be attempted as it is already closed
     
 
     >close
-       Ongoing state - closing - omxplayer processes are dieing due to quit sent
-    <closed_callback with status= normal - omxplayer is dead, can close the instance.
+       Ongoing state - closing - omxplayer processes are dying due to quit sent
+    <closed_callback with status= normal - omxplayer is dead, can close the track instance.
 
     >unload
-        Ongoing states - start_unload and unloading - omxplayer processes are dieing due to quit sent.
+        Ongoing states - start_unload and unloading - omxplayer processes are dying due to quit sent.
         when unloading is complete state=unloaded
         I have not added a callback to unload. its easy to add one if you want.
     
@@ -309,7 +336,7 @@ class VideoPlayer(Player):
 
 
     def start_state_machine_load(self,track,duration):
-        self.duration=duration
+        self.video_duration=duration
         self.track=track
         # initialise all the state machine variables
         self.loading_count=0     # initialise loading timeout counter
@@ -317,7 +344,7 @@ class VideoPlayer(Player):
         
         # load the selected track
         options= ' --no-osd ' + self.omx_audio+ " " + self.omx_volume + ' ' + self.omx_window_processed + ' ' + self.seamless_loop + ' ' + self.omx_other_options +" "
-        self.omx.load(track,options,self.duration)
+        self.omx.load(track,options,self.video_duration)
         self.mon.log (self,'Loading track '+ self.track + 'with options ' + options + 'from show Id: '+ str(self.show_id))
         
         # and start polling for state changes
@@ -348,12 +375,14 @@ class VideoPlayer(Player):
         if self.play_state == 'loaded':
             # print 'start show state machine ' + self.play_state
             self.play_state='showing'
-            self.quit_signal=False     # signal that user has pressed stop
+            self.freeze_signal=False     # signal that user has pressed stop
+            self.must_quit_signal=False
             # show the track and content
-            self.omx.show(self.pause_at_end_required)
+            self.omx.show(self.freeze_at_end_required)
             self.mon.log (self,'>showing track from show Id: '+ str(self.show_id))
 
             # and start polling for state changes
+            print 'start show state machine show'
             self.tick_timer=self.canvas.after(0, self.show_state_machine)
         else:
             self.mon.err(self,'illegal state in show method ' + self.play_state)
@@ -361,13 +390,11 @@ class VideoPlayer(Player):
      
 
     def start_state_machine_close(self):
-        if self.play_state  ==  'pause_at_end':
-            self.play_state='showing'
-            self.quit_signal=True
-            self.tick_timer=self.canvas.after(0, self.show_state_machine)
-        else:
-            self.mon.err(self,'illegal state in close method' + self.play_state)
-            self.end('error','illegal state in close method')    
+        # was pause at end
+        self.quit_signal=True
+        print 'start close state machne close'
+        self.tick_timer=self.canvas.after(0, self.show_state_machine)
+
 
     def load_state_machine(self):
         # print 'vidoeplayer state is'+self.play_state
@@ -490,55 +517,51 @@ class VideoPlayer(Player):
 
 
     def show_state_machine(self):
-        # print 'show state is'+self.play_state
+        if self.play_state != 'showing': print 'show state is '+self.play_state
         if self.play_state == 'showing':
             # service any queued stop signals by sending quit to omxplayer
             # self.mon.log(self,"      State machine: " + self.play_state)
+            # must_quit is set by close when it uses the show state machine by setting state back to showing
             if self.quit_signal is True:
                 self.quit_signal=False
-                self.mon.log(self,"      Send stop to omxdriver")
+                self.mon.log(self,"      quit video - Send stop to omxdriver")
                 self.omx.stop()
+                self.tick_timer=self.canvas.after(50, self.show_state_machine)
 
             # omxplayer reports it is terminating
-            if self.omx.end_play_signal is True:
+            elif self.omx.end_play_signal is True:
                 self.omx.end_play_signal=False
                 self.mon.log(self,"            <end play signal received with reason: " + self.omx.end_play_reason + ' at: ' + str(self.omx.video_position))
                 # paused at end of track so return so calling prog can release the pause
                 if self.omx.end_play_reason == 'pause_at_end':
-                    self.play_state='pause_at_end'
-                    self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
+                    self.frozen_at_end=True
                     if self.finished_callback is not None:
                         self.finished_callback('pause_at_end','pause at end')
 
-                else:
-                    # otherwise omxplayer has been closed so there has been no chance to pause
-                    if self.omx.end_play_reason == 'nice_day':
+                elif self.omx.end_play_reason == 'nice_day':
                         # no problem with omxplayer
                         self.play_state='closing'
                         self.closing_count=0
-                        # print 'hide in closing'
-                        # self.hide_x_content()
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                         self.tick_timer=self.canvas.after(50, self.show_state_machine)
-                        
-                    elif self.omx.end_play_reason in ('eof','timeout'):
-                        # problem with omxplayer
-                        # print 'hide in problem'
-                        # self.hide_x_content()
-                        self.play_state='closing'
-                        self.closing_count=0
-                        self.mon.warn(self,self.track)
-                        self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                        self.mon.warn(self,"            <showing - end detected at: " + str(self.omx.video_position))
-                        self.mon.warn(self,"            <pexpect reports: "+self.omx.end_play_reason)
-                        self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
-                        self.tick_timer=self.canvas.after(50, self.show_state_machine)
-                    else:
-                        # unexpected reason
-                        self.mon.err(self,'unexpected reason at end of show '+self.omx.end_play_reason)
-                        self.end('error','unexpected reason')
+                    
+                elif self.omx.end_play_reason in ('eof','timeout'):
+                    # problem with omxplayer
+                    self.play_state='closing'
+                    self.closing_count=0
+                    self.mon.warn(self,self.track)
+                    self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
+                    self.mon.warn(self,"            <showing - end detected at: " + str(self.omx.video_position))
+                    self.mon.warn(self,"            <pexpect reports: "+self.omx.end_play_reason)
+                    self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
+                    print 'eof'
+                    self.tick_timer=self.canvas.after(50, self.show_state_machine)
+                else:
+                    # unexpected reason
+                    self.mon.err(self,'unexpected reason at end of show '+self.omx.end_play_reason)
+                    self.end('error','unexpected reason')
             else:
-                # end play signal false
+                # nothng to do just try again
                 self.tick_timer=self.canvas.after(50, self.show_state_machine)       
 
 
@@ -549,6 +572,7 @@ class VideoPlayer(Player):
                 # if spawned process has closed can change to closed state
                 self.mon.log(self,"            <omx process is dead")
                 self.play_state = 'closed'
+                print 'settting closed from process dead'
                 self.omx=None
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                 if self.closed_callback is not  None:
@@ -563,16 +587,18 @@ class VideoPlayer(Player):
                     self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                     self.mon.warn(self,'omxplayer should now  be killed ')
                     self.omx.kill()
+                    print 'setting closed from kill'
                     self.play_state = 'closed'
                     self.omx=None
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                     if self.closed_callback is not None:
                         self.closed_callback('normal','closed omxplayer after sigint')
                 else:
+                    print 'not closed'
                     self.tick_timer=self.canvas.after(200, self.show_state_machine)
-                    
+
         else:
-            self.mon.err(self,'unknown state in show state machine' + self.play_state)
+            self.mon.err(self,'unknown state in show state machine ' + self.play_state)
             self.end('error','show state machine in unknown state')
 
 

@@ -44,7 +44,7 @@ class MenuPlayer(Player):
 
                     
         # comment this out to turn the trace off          
-        # self.trace=True
+        self.trace=True
         
         # control debugging log
         self.mon.on()
@@ -197,6 +197,7 @@ class MenuPlayer(Player):
 
     def hide_track_content(self):
         if self.trace: print '    Menuplayer/hide_track_content '
+        print 'Hide Menu content'
         self.canvas.itemconfig(self.menu_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_text_obj,state='hidden')
         self.canvas.delete(self.menu_text_obj)
@@ -255,7 +256,7 @@ class MenuPlayer(Player):
             icon_id=self.display_icon_rectangle()
 
             # display the image in the icon
-            image_id=self.display_icon_image()
+            image_id,photo_image_id=self.display_icon_image()
 
             if self.track_params['menu-text-mode'] != 'none':
                 text_id=self.display_icon_text()
@@ -263,7 +264,7 @@ class MenuPlayer(Player):
                 text_id=None
 
             # append id's to the list
-            self.menu_entry_id.append([icon_id,image_id,text_id,top_id,bottom_id,left_id,right_id,rectangle_id])
+            self.menu_entry_id.append([icon_id,image_id,photo_image_id,text_id,top_id,bottom_id,left_id,right_id,rectangle_id])
             
             # and loop
             if self.medialist.at_end():
@@ -284,9 +285,35 @@ class MenuPlayer(Player):
                     
 
     def hide_menu_entries(self):
+        print 'HIDE MENU ENTRIES'
         for entry in self.menu_entry_id:
-            for entry_id in entry:
-                self.canvas.delete(entry_id)
+            #0 icon_id   polygon
+            self.canvas.itemconfig(entry[0],state='hidden')
+            self.canvas.delete(entry[0])
+            #1image_id image
+            self.canvas.itemconfig(entry[1],state='hidden')
+            self.canvas.delete(entry[1])
+            #2 photo_image_id, the image behind tge image_id
+            entry[2]=None
+            #3 text_id text
+            self.canvas.itemconfig(entry[3],state='hidden')
+            self.canvas.delete(entry[3])
+            #4 top_id  line
+            self.canvas.itemconfig(entry[4],state='hidden')
+            self.canvas.delete(entry[4])
+            #5 bottom_id  line
+            self.canvas.itemconfig(entry[5],state='hidden')
+            self.canvas.delete(entry[5])
+            #6 left_id  line
+            self.canvas.itemconfig(entry[6],state='hidden')
+            self.canvas.delete(entry[6])
+            #7 right_id line
+            self.canvas.itemconfig(entry[7],state='hidden')
+            self.canvas.delete(entry[7])
+            #8 rectangle_id  rectangle (strip)
+            self.canvas.itemconfig(entry[8],state='hidden')
+            self.canvas.delete(entry[8])
+
 
 
     def print_geometry(self,total_width,total_height):
@@ -573,8 +600,7 @@ class MenuPlayer(Player):
             # and display the icon rectangle
             icon_id=self.canvas.create_polygon(points,
                                                outline=outline,
-                                               fill='',
-                                               tag='pp-content')
+                                               fill='')
 
 
         else:
@@ -613,10 +639,11 @@ class MenuPlayer(Player):
             # display the image                
             if self.pil_image  is not  None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
-                image_id=ImageTk.PhotoImage(self.pil_image)
-                self.canvas.create_image(self.icon_x_left+1,
+                photo_image_id=ImageTk.PhotoImage(self.pil_image)
+                image_id=self.canvas.create_image(self.icon_x_left+1,
                                          self.icon_y_top+1,
-                                         image=image_id, anchor=NW,
+                                         image=photo_image_id,
+                                         anchor=NW,
                                          tag='pp-content')
                 del self.pil_image
             else:
@@ -630,16 +657,15 @@ class MenuPlayer(Player):
                 self.pil_image=Image.open(bullet)
             if self.pil_image is not None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
-                image_id=ImageTk.PhotoImage(self.pil_image)
-                self.canvas.create_image(self.icon_x_left+1,
+                photo_image_id=ImageTk.PhotoImage(self.pil_image)
+                image_id=self.canvas.create_image(self.icon_x_left+1,
                                          self.icon_y_top+1,
-                                         image=image_id,
-                                         anchor=NW,
-                                         tag='pp-content')
+                                         image=photo_image_id,
+                                         anchor=NW)
                 del self.pil_image
         else:
             image_id=None
-        return image_id
+        return image_id,photo_image_id
 
             
     # display the text of a menu entry
@@ -696,8 +722,7 @@ class MenuPlayer(Player):
             points=[text_x_left,text_y_top,text_x_right,text_y_top,text_x_right,text_y_bottom,text_x_left,text_y_bottom]
             self.canvas.create_polygon(points,
                                        fill= '' ,
-                                       outline='white',
-                                       tag='pp-content')
+                                       outline='white')
 
         # display the text
         if text_mode == 'below' and self.track_params['menu-icon-mode']  in ('thumbnail','bullet'):

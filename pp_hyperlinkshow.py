@@ -112,7 +112,7 @@ class HyperlinkShow(Show):
         self.current_track_type=''
 
 
-    def play(self,end_callback,show_ready_callback,direction_command,level):
+    def play(self,end_callback,show_ready_callback,direction_command,level,controls_list):
         """ starts the hyperlink show at start-track 
               end_callback - function to be called when the show exits
               show_ready_callback - callback to get previous show and track
@@ -120,9 +120,9 @@ class HyperlinkShow(Show):
               direction_command is not used oassed to subshow
         """
         # need to instantiate the medialist here as in gapshow done in derived class
-        self.medialist=MediaList()        
+        self.medialist=MediaList('ordered')        
 
-        Show.base_play(self,end_callback,show_ready_callback, direction_command,level)
+        Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
         
         if self.trace: print '\n\nHYPERLINKSHOW/play ',self.show_params['show-ref']
         
@@ -163,52 +163,35 @@ class HyperlinkShow(Show):
 
    # respond to inputs
     def input_pressed(self,symbol,edge,source):
+        Show.base_input_pressed(self,symbol,edge,source)
 
-        self.mon.log(self,"received symbol: " + symbol)
-        
+
+    # overrides base
+    # service the links for this show
+    def do_trigger_or_link(self,symbol,edge,source):
         # does the symbol match a link, if so execute it
         if self.try_link(symbol,edge,source) is True:
             return
         
-        # controls are disabled so ignore anything else
-        if self.show_params['disable-controls'] == 'yes':
-            return
-
-        # does it match a control       
-        # if at top convert symbolic name to operation otherwise lower down we have received an operatio    
-        # look through list of controls to find match
-        if self.level == 0:
-            operation=Show.base_lookup_control(self,symbol,self.controls_list)
-        else:
-            operation=symbol
-        # print 'operation',operation 
-        if operation != '':
-            self.do_operation(operation,edge,source)
-
-
 
     def do_operation(self,operation,edge,source):
-        if self.shower is not None:
-            # if next lower show is running pass down to stop the show and lower level
-            self.shower.input_pressed(operation,edge,source) 
-        else:        
-            # control this show and its tracks
-            # ?????? should stop from first track get out of the show
-            if self.trace: print 'hyperlinkshow/input_pressed ',operation
-            if operation == 'stop':
-                self.stop_timers()
-                if self.current_player is not  None:
-                    if self.current_track_ref == self.first_track_ref and self.level != 0:
-                        self.user_stop_signal=True
-                    self.current_player.input_pressed('stop')
+        # control this show and its tracks
+        # ?????? should stop from first track get out of the show
+        if self.trace: print 'hyperlinkshow/input_pressed ',operation
+        if operation == 'stop':
+            self.stop_timers()
+            if self.current_player is not  None:
+                if self.current_track_ref == self.first_track_ref and self.level != 0:
+                    self.user_stop_signal=True
+                self.current_player.input_pressed('stop')
 
-            elif operation == 'pause':
-                if self.current_player is not  None:
-                    self.current_player.input_pressed(operation)
+        elif operation == 'pause':
+            if self.current_player is not  None:
+                self.current_player.input_pressed(operation)
 
-            elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
-                if self.current_player is not None:
-                    self.current_player.input_pressed(operation)
+        elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
+            if self.current_player is not None:
+                self.current_player.input_pressed(operation)
 
    
     def try_link(self,symbol,edge,source):

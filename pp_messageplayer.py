@@ -156,7 +156,6 @@ class MessagePlayer(Player):
     def do_dwell(self):
         if self.quit_signal  is   True:
             self.mon.log(self,"quit received")
-            self.play_state='pause_at_end'
             if self.finished_callback is not None:
                 self.finished_callback('pause_at_end','user quit or duration exceeded')
                 # use finish so that the show will call close
@@ -164,10 +163,9 @@ class MessagePlayer(Player):
             self.dwell_counter=self.dwell_counter+1
 
             if self.dwell != 0 and self.dwell_counter ==  self.dwell:
-                self.play_state='pause_at_end'
                 if self.finished_callback is not None:
                     self.finished_callback('pause_at_end','user quit or duration exceeded')
-                    # use finish so that the show will call close
+                    # use finish and pause_at_end so that the show will call close
             else:
                 self.tick_timer=self.canvas.after(self.tick, self.do_dwell)
 

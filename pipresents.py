@@ -34,7 +34,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.2"
-        self.pipresents_minorissue = '1.2.3c'
+        self.pipresents_minorissue = '1.3.1a'
         self.nonfull_window_width = 0.5 # proportion of width
         self.nonfull_window_height= 0.6 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
@@ -244,7 +244,7 @@ class PiPresents(object):
             self.end('error','cannot find screen.cfg')
 
         # create click areas on the canvas, must be polygon as outline rectangles are not filled as far as find_closest goes
-        reason,message = self.sr.make_click_areas(self.canvas,self.tod_pressed)
+        reason,message = self.sr.make_click_areas(self.canvas,self.input_pressed)
         if reason == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -389,14 +389,15 @@ class PiPresents(object):
             exit()            
         else:
             self.tidy_up()
+            self.root.destroy()
             self.mon.log(self,"no error - exiting normally")
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
                 call(['sudo', 'shutdown', '-h', '-t 5','now'])
-                exit()
+                sys.exit()
             else:
-                exit()
+                sys.exit()
 
 
     

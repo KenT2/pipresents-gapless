@@ -45,7 +45,7 @@ class Show(object):
         self.mon=Monitor()
 
         # trace is off by default
-        self.trace=True      
+        self.trace=False      
 
         # open resources
         self.rr=ResourceReader()
@@ -66,9 +66,11 @@ class Show(object):
         self.terminate_signal=False
         self.show_timeout_signal=False
         self.egg_timer=None
+        self.admin_message=None
         self.ending_reason=''
 
-    def base_play(self,end_callback,show_ready_callback, direction_command,level):
+
+    def base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
 
         """ starts the common parts of the show
               end_callback - function to be called when the show exits- callback gets last player of subshow
@@ -79,8 +81,9 @@ class Show(object):
         # instantiate the arguments
         self.end_callback=end_callback
         self.show_ready_callback=show_ready_callback
-        self.level=level
         self.direction_command=direction_command
+        self.level=level
+        self.controls_list=controls_list
         if self.trace: print 'show/play',self.show_params['show-ref'],' at level ',self.level
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Starting show")
 
@@ -98,10 +101,13 @@ class Show(object):
         # get control bindings for this show if top level
         controlsmanager=ControlsManager()
         if self.level == 0:
-            self.controls_list=controlsmanager.default_controls()
-            # and merge in controls from profile
-            self.controls_list=controlsmanager.merge_show_controls(self.controls_list,self.show_params['controls'])
-
+            if self.show_params['disable-controls'] == 'yes':
+                self.controls_list=[]
+            else:
+                self.controls_list=controlsmanager.default_controls()
+                # and merge in controls from profile
+                self.controls_list=controlsmanager.merge_show_controls(self.controls_list,self.show_params['controls'])
+            
 
     def base_get_previous_player_from_parent(self):
         if self.show_ready_callback is not None:
@@ -151,7 +157,7 @@ class Show(object):
                     self.terminate_signal=True
                     self.what_next_after_showing()
                 else:
-                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.direction_command,self.level+1)
+                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.direction_command,self.level+1,self.controls_list)
         else:
             # dispatch track by type
             self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Track type is: "+ track_type)
@@ -233,7 +239,8 @@ class Show(object):
         if self.previous_player is not  None:
             if self.trace: print 'show/hiding previous',self.previous_player
             self.previous_player.hide()
-            if self.previous_player.get_play_state() == 'pause_at_end':
+            if self.previous_player.get_play_state() == 'showing':
+                # showing or frozen
                 if self.trace: print 'show/closing previous',self.previous_player
                 self.previous_player.close(self._base_closed_callback)
             else:
@@ -260,7 +267,8 @@ class Show(object):
     def base_close_or_unload(self):
         # need to test for None because player may be made None by subshow lower down the stack for terminate
         if self.current_player is not None:
-            if self.current_player.get_play_state() in ('loaded','pause_at_end'):
+            # was pause at end
+            if self.current_player.get_play_state() in ('loaded','showing'):
                 if self.current_player.get_play_state() == 'loaded':
                     if self.trace: print 'show/close_or_unload- unloading current from' ,self.ending_reason
                     self.current_player.unload()
@@ -288,6 +296,7 @@ class Show(object):
     # wait for unloading or closing to complete then end
     def _wait_for_end(self):
         if self.current_player.play_state not in ('unloaded','closed'):
+            print 'wait for end'
             self.canvas.after(50,self._wait_for_end)
         else:
             if self.trace: print 'show/wait_for_end - current closed ', self.current_player,self.ending_reason
@@ -349,9 +358,9 @@ class Show(object):
     # stop received from another concurrent show
     def base_managed_stop(self):
         if self.trace: print 'show/managed_stop ',self
-        # set signal to stop the radiobuttonshow when all  sub-shows and players have ended
+        # set signal to stop the show when all  sub-shows and players have ended
         self.stop_command_signal=True
-        # then stop and shows or tracks.
+        # then stop subshow or tracks.
         if self.shower is not None:
             self.shower.managed_stop()
         elif self.current_player is not None:
@@ -362,7 +371,7 @@ class Show(object):
     # show timeout callback received
     def base_show_timeout_stop(self):
         if self.trace: print 'show/managed_stop ',self
-        # set signal to stop the radiobuttonshow when all  sub-shows and players have ended
+        # set signal to stop the show when all  sub-shows and players have ended
         self.show_timeout_signal=True
         # then stop and shows or tracks.
         if self.shower is not None:
@@ -391,6 +400,35 @@ class Show(object):
             self.end(reason,' terminated with no shower or player to terminate')
 
 
+  # respond to input events
+    def base_input_pressed(self,symbol,edge,source):
+        self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input event: " + symbol)
+
+        if self.shower is not None:
+            # if next lower show is running pass down to lower level
+            # print 'pass to lower level ',symbol
+            self.shower.input_pressed(symbol,edge,source)
+        else:
+            # use the symbol for the running show
+            # is the symbolic name  bound to an internal operation. Returns '' if not bound
+            operation=self.base_lookup_control(symbol,self.controls_list)
+            if operation == '':
+                # internal operation not found so treat as a trigger
+                self.do_trigger_or_link(symbol,edge,source)
+            else:
+                self.do_operation(operation,edge,source)
+
+    # must be overridden by derived class
+    def do_trigger_or_link(self,symbol,edge,source):
+        self.mon.err(self, 'do_trigger_or_link not overidden in '+self.show_params['type'])
+        self.base_end('error',"do_trigger_or_link not overidden")
+
+    # must be overridden by derived class        
+    def do_operation(self,symbol,edge,source):
+        self.mon.err(self, 'do_operation in '+self.show_params['type'])
+        self.base_end('error',"do_operation not overidden")
+
+
 # ******************************
 # reading resources.cfg
 # ******************************
@@ -407,14 +445,12 @@ class Show(object):
 # ******************************
 # lookup controls 
 # *********************************
-
     def base_lookup_control(self,symbol,controls_list):
         for control in controls_list:
             if symbol == control[0]:
                 return control[1]
+        # not found so must be a trigger
         return ''
-
-
 
 # ******************************
 # Eggtimer
@@ -444,33 +480,22 @@ class Show(object):
 # Display Admin Messages
 # *********************************
 
+    def display_admin_message(self,text):
 
-    # used to display internal messages in situations where a medialist entry is not desrable or possible
-    def display_admin_message(self,canvas,source,content,duration,display_admin_message_callback):
-        self.display_admin_message_callback=display_admin_message_callback
-        tp={'duration':duration,'message-colour':'white','message-font':'Helvetica 20 bold','message-justify':'left',
-            'background-colour':'','background-image':'','show-control-begin':'','show-control-end':'',
-            'animate-begin':'','animate-clear':'','animate-end':'','message-x':'','message-y':'',
-            'display-show-background':'no','display-show-text':'no','show-text':'','track-text':'',
-            'plugin':''}
+        self.admin_message=self.canvas.create_text(int(self.show_params['eggtimer-x']),
+                                                   int(self.show_params['eggtimer-y']),
+                                                   text= text,
+                                                   fill=self.show_params['eggtimer-colour'],
+                                                   font=self.show_params['eggtimer-font'],
+                                                   anchor='nw')
+            
+        self.canvas.update_idletasks( )
 
-        self.admin_player=MessagePlayer(self.show_id,self.showlist,self.root,canvas,tp,tp,self.pp_dir,self.pp_home,self.pp_profile,self.end)
-        # loading is immediae so don't bother with callback
-        self.admin_player.load(content,None,False)
-        self.admin_player.show(self.track_ready_callback,self.display_admin_message_end,self.display_admin_message_end)
-        return self.admin_player
 
-    def stop_admin_message_display(self):
-        self.admin_player.stop()
-
-    def  display_admin_message_end(self,reason,message):
-        self.admin_player.hide()
-        self.admin_player.close(None)
-        # closing is immediate so don't bother with callback
-        if reason in ("killed",'error'):
-            self.end(reason,message)
-        else:
-            self.display_admin_message_callback()
+    def delete_admin_message(self):
+        if self.admin_message is not None:
+            self.canvas.delete(self.admin_message)
+            self.canvas.update_idletasks( )
 
 
 # ******************************

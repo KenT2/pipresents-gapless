@@ -1,7 +1,5 @@
 import os
 from pp_show import Show
-from pp_controlsmanager import ControlsManager
-
 
 class ArtShow(Show):
     
@@ -23,12 +21,8 @@ class ArtShow(Show):
                  pp_home,
                  pp_profile):
 
-        # init items that are then initialised in the derived class.
-        self.medialist=None
-        self.load_delay=2000
-        Show.__init__(self)
-        
 
+    
         # init the common bits
         Show.base__init__(self,
                           show_id,
@@ -40,82 +34,41 @@ class ArtShow(Show):
                           pp_home,
                           pp_profile)
 
-        # Init variables
-        self.duration_timer=None
+
+        # Init variables for this show
+        self.end_medialist_signal=False
+        self.end_medialist_warning=False
+        self.next_track_signal=False
         self.state='closed'
-        self.ending_reason=''
-        self.end_trigger_signal=False
 
 
+    def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
+        if self.trace: print '\n\nARTSHOW/play ',self.show_params['show-ref']
+        Show.base_play(self,end_callback,show_ready_callback,direction_command, level,controls_list)
 
-    def play(self,end_callback,show_ready_callback, direction_command,level):
-
-        # instantiate the arguments
-        self.end_callback=end_callback
-        self.show_ready_callback=show_ready_callback
-        self.direction_command=direction_command
-        self.level=level
-        self.mon.log(self,"Starting show: " + self.show_params['show-ref'])
-
-        # check  data files are available.
-        self.medialist_file = self.pp_profile + os.sep + self.show_params['medialist']
-        if not os.path.exists(self.medialist_file):
-            self.mon.err(self,"Medialist file not found: "+ self.medialist_file)
-            self.end('error',"Medialist file not found")
-               
-        # opens the medialist for the show and read it populating the in memory list.
-        # medialist object is created in child class in order to choose medialist or livelist there
-        # for liveshow initial list will be empty
-        if self.medialist.open_list(self.medialist_file,self.showlist.sissue()) is False:
-            self.mon.err(self,"Version of medialist different to Pi Presents")
-            self.end('error',"Version of medialist different to Pi Presents")
-
-        # get control bindings for this show if top level
-        controlsmanager=ControlsManager()
-        if self.level == 0:
-            self.controls_list=controlsmanager.default_controls()
-            # and merge in controls from profile
-            self.controls_list=controlsmanager.merge_show_controls(self.controls_list,self.show_params['controls'])
-
-        # set up the time of day triggers for the show
-        if self.show_params['trigger-start-type']in('time','time-quiet'):
-            error_text=self.tod.add_times(self.show_params['trigger-start-param'],id(self),self.tod_start_callback,self.show_params['trigger-start-type'])
-            if error_text != '':
-                self.mon.err(self,error_text)
-                self.end('error',error_text)
-                
-        if self.show_params['trigger-end-type'] == 'time':
-            error_text=self.tod.add_times(self.show_params['trigger-end-param'],id(self),self.tod_end_callback,'n/a')
-            if error_text != '':
-                self.mon.err(self,error_text)
-                self.end('error',error_text)
-
-        if self.show_params['trigger-end-type'] == 'duration':
-            error_text=self.calculate_duration(self.show_params['trigger-end-param'])
-            if error_text != '':
-                self.mon.err(self,error_text)
-                self.end('error',error_text)       
-
-        if self.show_ready_callback is not None:
-            # get the previous player from calling show - (current because shuffled before use)
-            self.previous_shower,self.current_player=self.show_ready_callback()
-            if self.trace: print '************ start of show, getting previous_shower and previous_player from parent show***********',self.previous_shower,self.current_player
+        # get the previous shower and player from calling show
+        Show.base_get_previous_player_from_parent(self)
 
         # and delete eggtimer started by the parent
         if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()
 
-        self.wait_for_trigger()                
+        self.wait_for_trigger()   
+
+   
 
 # ********************************
 # Respond to external events
 # ********************************
 
     def managed_stop(self):
-        # if next lower show eor player is running pass down to stop the show/track
+        # set signal to stop the show when all  sub-shows and players have ended
         self.stop_command_signal=True
+        # then stop track.
         if self.current_player is not None:
             self.current_player.input_pressed('stop')
+        else:
+            self.end('normal','stopped by ShowManager')
 
                 
     # kill or error
@@ -129,96 +82,59 @@ class ArtShow(Show):
  
    # respond to key presses.
     def input_pressed(self,symbol,edge,source):
-        self.mon.log(self,"received key: " + symbol)
-
-        if self.state == 'waiting' and self.show_params['trigger-start-type'] in ('input','input-quiet') and symbol  ==  self.show_params['trigger-start-param']:
-            self.start_show()
-        
-        if self.show_params['disable-controls'] == 'yes':
-            return 
-
-       # if at top convert symbolic name to operation otherwise lower down we have received an operation
-        # look through list of standard symbols to find match (symbolic-name, function name) operation =lookup (symbol
-        if self.level == 0:
-            operation=Show.base_lookup_control(self,symbol,self.controls_list)
-        else:
-            operation=symbol
-            
-        # print 'operation',operation
-        self.do_operation(operation,edge,source)
+        self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input: " + symbol)
+        Show.base_input_pressed(self,symbol,edge,source)
 
 
+    def do_trigger_or_link(self,symbol,edge,source):
+        pass
+
+    # service the standard operations for this show
     def do_operation(self,operation,edge,source):
+        if self.trace: print 'artshow/input_pressed ',operation
         # service the standard inputs for this show
         if operation == 'stop':
-            # stop the show
-            self.user_stop_signal=True
-            # if  player is running pass down to stop the track
-            if self.current_player is not None:
-                self.current_player.input_pressed('stop')
+            if self.level != 0 :
+                # not at top so stop the show
+                self.user_stop_signal=True
+                # and stop the track first
+                if self.current_player is not None:
+                    self.current_player.input_pressed('stop')
+            else:
+                # at top, just stop track if running
+                if self.current_player is not None:
+                    self.current_player.input_pressed('stop')
+
+        elif operation == 'down':
+            self.next()
 
         elif operation  ==  'pause':
             # pass down if show or track running.
             if self.current_player is not None:
-                self.current_player.input_pressed(operation)
+                self.current_player.input_pressed('pause')
 
         elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-':
             if self.current_player is not None:
                 self.current_player.input_pressed(operation)
      
 
+    def next(self):
+        # stop track if running and set signal
+        self.next_track_signal=True
+        if self.current_player is not None:
+            self.current_player.input_pressed('stop')
 
 
 # ***************************
 # Sequencing
 # ***************************
     def wait_for_trigger(self):
-        self.state='waiting'
-        text='' # to please landscape.io
-
-
-        self.mon.log(self,"Waiting for trigger: "+ self.show_params['trigger-start-type'])
-
-        if self.show_params['trigger-start-type'] in ('time','time-quiet'):
-            # 0  - SOURCE,  1 - 'tomorrow',  2 - TAG,  3 - QUIET
-            # if next show is this one display text
-            next_show=self.tod.next_event_time()
-            if next_show[3] is False:
-                if next_show[1] == 'tomorrow':
-                    text = Show.base_resource(self,'mediashow','m09')
-                else:
-                    text = Show.base_resource(self,'mediashow','m08')                     
-                text=text.replace('%tt',next_show[0])
-                Show.display_admin_message(self,self.canvas,'text',text,0,self.start_show) 
-            
-        elif self.show_params['trigger-start-type'] == "start":
-            self.start_show()            
-        else:
-            self.mon.err(self,"Unknown trigger: "+ self.show_params['trigger-start-type'])
-            self.end('error',"Unknown trigger type")
-
-
-    # callbacks from time of day scheduler
-    def tod_start_callback(self):
-        if self.state == 'waiting' and self.show_params['trigger-start-type']in('time','time-quiet'):
-            # maybe could get messageplayer object and assign it to current_player so closed on track_ready_callback 
-            Show.stop_admin_message_display(self)     
-
-    def tod_end_callback(self):
-        if self.state == 'playing' and self.show_params['trigger-end-type'] in ('time','duration'):
-            self.end_trigger_signal=True
-            if self.current_player is not None:
-                self.current_player.input_pressed('stop')
+        self.start_show()            
 
     def start_show(self):
-        self.state='playing'
-        
-        # start duration timer
-        if self.show_params['trigger-end-type'] == 'duration':
-            # print 'set alarm ', self.duration
-            self.duration_timer = self.canvas.after(self.duration*1000,self.tod_end_callback)
         self.load_first_track()
 
+        
     # load the first track of the show
     def load_first_track(self):
         if self.trace: print 'artshow/load_first_track'
@@ -287,12 +203,6 @@ class ArtShow(Show):
             self.ending_reason='user-stop'
             self.close_current_and_next()
             
-        # end of show time trigger
-        elif self.end_trigger_signal is True:
-            self.end_trigger_signal=False
-            self.ending_reason='end-trigger'
-            self.close_current_and_next()
-
         # has content of list been changed (replaced if it has, used for content of livelist)
         elif self.medialist.replace_if_changed() is True:
             self.ending_reason='change-medialist'
@@ -301,8 +211,36 @@ class ArtShow(Show):
         elif self.medialist.length() == 0:
             self.load_first_track()
 
+        # end of medialist
+        elif self.end_medialist_signal is True:
+            print '!!!!!!! END MEDIALIST', self.show_params['repeat']
+            self.end_medialist_signal=False
+            self.end_medialist_warning=False
+            # test for oredered since medialist at end gives false positives for shuffle
+            
+            # repeat so go back to start
+            if self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'repeat':
+                # self.state='waiting'
+                self.wait_for_trigger()
+
+            # single run and at top so repeat
+            elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level == 0:
+                self.start_trigger()
+                # self.ending_reason='end-trigger'
+                # self.close_current_and_next()
+
+            # single run and not at top so end
+            elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level != 0:
+                self.ending_reason='end-of-medialist'
+                self.close_current_and_next()
+
+            else:
+                # otherwise show the next track
+                print 'show next track after end'
+                self.show_next_track()
         else:
             # otherwise show the next track
+            print '!!!!!!!!!! show next track'
             self.show_next_track()
 
             
@@ -313,6 +251,8 @@ class ArtShow(Show):
         self.next_player=None
         if self.trace: print 'AFTER SHUFFLE n-c-p', self.next_player,self.current_player,self.previous_player
         if self.trace: print 'artshow/show_next_track - showing track'
+        if self.end_medialist_warning is True:
+            self.end_medialist_signal = True
         self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
         # wait a short time before starting to close track and then loading next
         self.canvas.after(10,self.close_and_load)
@@ -341,7 +281,9 @@ class ArtShow(Show):
             self.previous_player.close(self.end_close_previous)
             
         # get the next track and init player
-        self.medialist.next('ordered')
+        self.medialist.next(self.show_params['sequence'])
+        if self.medialist.at_end() is True:
+            self.end_medialist_warning=True
         self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
         if self.next_player is None:
             self.mon.err(self,"Unknown Track Type: ")
@@ -371,7 +313,7 @@ class ArtShow(Show):
 
     def close_current_and_next(self):
         if self.current_player is not None and self.current_player.get_play_state() == 'pause_at_end':
-            if self.trace: print 'artshow/what_next - closing_current from terminate'
+            if self.trace: print 'artshow/what_next - closing_current from ',self.ending_reason 
             self.current_player.close(None)
         if self.next_player is not None and self.next_player.get_play_state() not in ('unloaded','load_failed'):
             if self.trace: print 'artshow/what_next - unloading next from terminate'
@@ -401,7 +343,7 @@ class ArtShow(Show):
             elif self.ending_reason == 'terminate':
                 self.end('killed',"show terminated by user")
                     
-            elif self.ending_reason in ('stop-command','user-stop'):
+            elif self.ending_reason in ('stop-command','user-stop','end-of-medialist'):
                 self.end('normal',"show quit by user or stop command")                
 
             elif self.ending_reason == 'change-medialist':
@@ -449,9 +391,10 @@ class ArtShow(Show):
 
     
     def stop_timers(self):
-        if self.duration_timer is not None:
-            self.canvas.after_cancel(self.duration_timer)
-            self.duration_timer=None
+        pass
+        #if self.duration_timer is not None:
+            #self.canvas.after_cancel(self.duration_timer)
+            #self.duration_timer=None
         # clear outstanding time of day events for this show
         # self.tod.clear_times_list(id(self))     
 

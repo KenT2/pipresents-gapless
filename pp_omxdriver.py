@@ -57,7 +57,7 @@ class OMXDriver(object):
         self.widget=widget
         
         self.mon=Monitor()
-        self.mon.off()
+        self.mon.on()
 
         self.paused=False
 
@@ -68,7 +68,7 @@ class OMXDriver(object):
         self.end_play_signal=True
         self.end_play_reason='nice_day'
         self.video_position=0
-        self.pause_at_end_required=False
+        self.freeze_at_end_required=False
 
     def control(self,char):
         self._process.send(char)
@@ -118,18 +118,19 @@ class OMXDriver(object):
         self.duration=1000000*long(duration)-150000
         self._pp(track, options,True)
     
-    def show(self,pause_at_end_required):
-        self.pause_at_end_required=pause_at_end_required
+    def show(self,freeze_at_end_required):
+        self.freeze_at_end_required=freeze_at_end_required
         # unpause to start playing
         self.unpause(' at show')
 
     def stop(self):
         self.mon.log(self,'>stop received')
         if self._process is not None:
+            #print self.is_running()
             self._process.send('q')
-            # print 'quit suceeeded'
+            #print 'quit suceeeded'
         else:
-            # print 'quit failed'
+            print 'quit failed'
             pass
 
     # kill the subprocess (omxplayer and omxplayer.bin). Used for tidy up on exit.
@@ -220,6 +221,7 @@ class OMXDriver(object):
             
             elif index== 0:    #0 is nice day
                 # Have a nice day detected, too late to pause
+                print 'OMXDRIVER - sends have a nice day'
                 self.end_play_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -232,8 +234,9 @@ class OMXDriver(object):
                 self.video_position = float(self._process.match.group(1))
 
                 # if timestamp is near the end then pause 
-                if self.pause_at_end_required is True and self.video_position>self.duration:    #microseconds
+                if self.freeze_at_end_required is True and self.video_position>self.duration:    #microseconds
                     if self.end_pause is False:
+                        print 'OMXDRIVER - sends pause at end'
                         self.pause(' at end detected')
                         self.end_pause=True
                         self.end_play_signal=True

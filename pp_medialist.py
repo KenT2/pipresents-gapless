@@ -15,10 +15,11 @@ class MediaList(object):
     """
     
 
-    def __init__(self):
+    def __init__(self,sequence):
         self.clear()
         self.mon=Monitor()
         self.mon.on()
+        self.sequence=sequence
         
  # Functions for the editor dealing with complete list
 
@@ -32,7 +33,8 @@ class MediaList(object):
         print self._tracks
 
     def first(self):
-        self.select(0)
+        self.selected_track_index=-1
+        self.next(self.sequence) #let this do the work of randomaising or  advancing to 0
 
     def length(self):
         return self._num_tracks
@@ -156,13 +158,16 @@ class MediaList(object):
 
     def start(self):
         # select first anonymous track in the list
-        index=0
-        while index<self._num_tracks:
-            if self._tracks[index] ['track-ref'] =="":
-                self.select(index)
-                return True
-            index +=1
-        return False
+        if self.sequence == 'ordered':
+            index=0
+            while index<self._num_tracks:
+                if self._tracks[index] ['track-ref'] =="":
+                    self.select(index)
+                    return True
+                index +=1
+            return False
+        else:
+            return self.next(self.sequence)
 
     def finish(self):
         # select last anymous track in the list

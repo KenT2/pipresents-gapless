@@ -30,7 +30,7 @@ class LiveShow(GapShow):
         # control logging
         self.mon.on()
         
-        # remove comment to trace this bottom level derived class
+        # remove comment to turn trace on
         # self.trace=True
 
 

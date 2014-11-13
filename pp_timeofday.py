@@ -45,7 +45,7 @@ class TimeOfDay(object):
 
         # init variables
         # if testing is True then time now can be set by line 58 ish.
-        self.testing=True
+        self.testing=False
         self.tod_tick=500
         self.tick_timer=None
         TimeOfDay.last_poll_time=long(time.time())
@@ -60,14 +60,14 @@ class TimeOfDay(object):
             print 'initial SIMULATED time',now.ctime()
         else:
             now = datetime.now()
-            print 'initial REAL time',now.ctime()
+            # print 'initial REAL time',now.ctime()
         midnight = now.replace(hour=0, minute=0, second=0)
         delta=(now-midnight)
         now_seconds= delta.seconds
         self.build_schedule_for_today(self.schedule,now)
-        self.print_todays_schedule()
+        # self.print_todays_schedule()
         self.build_events_lists(now_seconds)
-        self.print_events_lists()
+        # self.print_events_lists()
         # and start any show that should be running at start up time
         self.catchup=True
 
@@ -109,13 +109,13 @@ class TimeOfDay(object):
         delta=(now-midnight)
         now_seconds= delta.seconds-diff
         if delta.seconds == 0:
-            print 'midnight'
+            # print 'midnight'
             self.build_schedule_for_today(self.schedule,now)
             self.print_todays_schedule()
             self.build_events_lists(now_seconds)
             self.print_events_lists()
         TimeOfDay.synced=True
-        print 'scheduler time', now_seconds, ' diff ', diff
+        # print 'scheduler time', now_seconds, ' diff ', diff
         
       
         for show_ref in TimeOfDay.events:
@@ -135,7 +135,7 @@ class TimeOfDay(object):
                     elif time_element[0]=='stop-show':
                         show_running=False
                 if show_running is True:
-                    print 'catch up', show_ref
+                    # print 'catch up', show_ref
                     self.do_event(show_ref,last_start_element,midnight)
 
             # print show_ref
@@ -151,7 +151,7 @@ class TimeOfDay(object):
     def do_event(self,show_ref,time_element,midnight):
         delta=datetime.now() - midnight
         self.mon.log (self,'Event : ' + show_ref + ' ' + time_element[0] + ' required ' + str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1]))
-        print 'Event : ' + show_ref + ' ' + time_element[0] + ' required '+ str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1])
+        # print 'Event : ' + show_ref + ' ' + time_element[0] + ' required '+ str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1])
         self.callback(show_ref,time_element[0])
 
 
@@ -203,7 +203,7 @@ class TimeOfDay(object):
 
     def build_schedule_for_today(self,schedule,now):
         this_day=now
-        print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
+        # print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
         """
         self.todays_schedule is a dictionary the keys being show-refs.
         Each dictionary entry is a list of time_elements
@@ -240,7 +240,7 @@ class TimeOfDay(object):
             monthdays=schedule['monthdays']
             for day in  monthdays:
                 if int(day['day']) == this_day.day:
-                    print 'month matched', day['day']
+                    # print 'month matched', day['day']
                     for show in day['shows']:
                         self.todays_schedule[show['show-ref']]=copy.deepcopy(show['times'])
             #print '\nafter weekday',todays_schedule

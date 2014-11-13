@@ -82,7 +82,7 @@ class Player(object):
             self.ppio = PPIO()
 
         # initialise state and signals
-        self.pause_at_end_required='no' # overriden by videoplayer
+        self.freeze_at_end_required='no' # overriden by videoplayer
         self.tick_timer=None
         self.terminate_signal=False
         self.previous_player=None
@@ -170,13 +170,15 @@ class Player(object):
                 return
 
 
-
+    # overidden by videoplayer becaus eof freeze at end
     def terminate(self,reason):
         if self.trace:  print '    Player/terminate ',self
         self.terminate_signal=True
-        if self.play_state in ('showing','pause_at_end'):
+        if self.play_state == 'showing':
             # call the derived class's stop method
             self.stop()
+        else:
+            self.end('killed','terminate with no track or show open')
 
     # must be overriden by derived class
     def stop(self):

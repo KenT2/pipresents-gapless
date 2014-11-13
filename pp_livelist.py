@@ -9,9 +9,10 @@ from pp_utils import Monitor
 
 class LiveList(object):
 
-    def __init__(self):
+    def __init__(self,sequence):
         self.mon=Monitor()
         self.mon.on()
+        self.sequence=sequence
 
     # pass live_track direcotries from child
     def live_tracks(self,dir1,dir2):
@@ -72,8 +73,8 @@ class LiveList(object):
         if self._num_tracks==0:
             return False
         else:
-            index=0
-            self.select(index)
+            self._selected_track_index=-1
+            self.next(self.sequence)
             return True
 
     def finish(self):
@@ -83,7 +84,7 @@ class LiveList(object):
         if self._num_tracks==0:
             return False
         else:
-            index=self._num_tracks-1
+            self._selected_track_indexindex=self._num_tracks-1
             self.select(index)
             return True
 

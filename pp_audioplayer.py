@@ -52,9 +52,12 @@ class AudioPlayer(Player):
 
         if self.trace: print '    Audioplayer/init ',self
         # get duration limit (secs ) from profile
-        if self.track_params['duration'] != '':
-            self.duration= int(self.track_params['duration'])
-            self.duration_limit=20*self.duration
+        if self.show_params['type'] in ('liveshow','artliveshow'):
+            duration_text=''
+        else:
+            duration_text= self.track_params['duration']
+        if duration_text != '':
+            self.duration_limit= 20 * int(duration_text)
         else:
             self.duration_limit=-1
         # print self.duration_limit                   
@@ -215,11 +218,11 @@ class AudioPlayer(Player):
     """
         self. play_state controls the playing sequence, it has the following values.
          - initialised - _init__ done
-         - loading - 
-         - loaded - 
+         - loaded - mplayer instance created, no pre-load for audio tracks
          - starting - mplayer process is running but is not yet able to receive controls
          - showing - playing a track, controls can be sent
          - closing - mplayer is doing its termination, controls cannot be sent
+         - waiting - audio file has finished, witing for duration
          - closed - the mplayer process is closed after a track is played or duration is exceeded
     """
 
@@ -271,7 +274,6 @@ class AudioPlayer(Player):
                     self.mon.log(self,"      State machine: closing due to quit or duration with track running")
                     self.tick_timer=self.canvas.after(50, self.play_state_machine)
                 else:
-                    self.play_state = 'pause_at_end'
                     self.mon.log(self,"      State machine: closed due to quit or duration with track NOT running")
                     if self.finished_callback is not None:
                         self.finished_callback('pause_at_end','user quit or duration exceeded')
@@ -293,7 +295,7 @@ class AudioPlayer(Player):
                 self.mon.log(self,"            <mplayer process is dead")
                 if self.quit_signal is True:   # quit while waiting ??????
                     self.quit_signal=False
-                    self.play_state = 'pause_at_end'
+                    self.play_state = 'showing'
                     if self.finished_callback is not None:
                         self.finished_callback('pause_at_end','user quit or duration exceeded')
                         
@@ -301,7 +303,7 @@ class AudioPlayer(Player):
                     self.play_state= 'waiting'
                     self.tick_timer=self.canvas.after(50, self.play_state_machine)
                 else:
-                    self.play_state = 'pause_at_end'
+                    self.play_state = 'showing'
                     if self.finished_callback is not None:
                         self.finished_callback('pause_at_end','mplayer dead')
 
@@ -313,7 +315,7 @@ class AudioPlayer(Player):
             if self.quit_signal is True or (self.duration_limit>0 and self.duration_count>self.duration_limit):
                 self.mon.log(self,"      Service stop required signal or timeout from wait")
                 self.quit_signal=False
-                self.play_state = 'pause_at_end'
+                self.play_state = 'showing'
                 if self.finished_callback is not None:
                     self.finished_callback('pause_at_end','mplayer dead')
             else:

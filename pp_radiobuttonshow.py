@@ -72,7 +72,7 @@ class RadioButtonShow(Show):
         self.current_track_ref=''
 
 
-    def play(self,end_callback,show_ready_callback,direction_command,level):
+    def play(self,end_callback,show_ready_callback,direction_command,level,controls_list):
         """ starts the hyperlink show at start-track 
               end_callback - function to be called when the show exits
               show_ready_callback - callback to get the previous track
@@ -80,9 +80,9 @@ class RadioButtonShow(Show):
               direction_command  - not used other than it being passed to a show
         """
         # need to instantiate the medialist here as in gapshow done in derived class
-        self.medialist=MediaList()
+        self.medialist=MediaList('ordered')
         
-        Show.base_play(self,end_callback,show_ready_callback, direction_command,level)
+        Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
         
         if self.trace: print '\n\nRADIOBUTTONSHOW/play ',self.show_params['show-ref']
         
@@ -124,54 +124,37 @@ class RadioButtonShow(Show):
 
    # respond to inputs
     def input_pressed(self,symbol,edge,source):
+        Show.base_input_pressed(self,symbol,edge,source)
 
-        self.mon.log(self,"received symbol: " + symbol)
 
+    # overrides base
+    # service the triggers for this show
+    def do_trigger_or_link(self,symbol,edge,source):
         # does the symbol match a link, if so execute it
         if self.try_link(symbol,edge,source) is True:
             return
 
-        # controls are disabled so ignore inputs
-        if self.show_params['disable-controls'] == 'yes':
-            return
-
-        # does it match a control       
-        # if at top convert symbolic name to operation otherwise lower down we have received an operatio    
-        # look through list of controls to find match
-        if self.level == 0:
-            operation=Show.base_lookup_control(self,symbol,self.controls_list)
-        else:
-            operation=symbol
-        # print 'operation',operation 
-        if operation != '':
-            self.do_operation(operation,edge,source)
-
 
     def do_operation(self,operation,edge,source):
-        if self.shower  is not   None:
-            # if next lower show is running pass down to stop the show and lower level
-            self.shower.input_pressed(operation,edge,source)
-        else:
-            # control this show and its tracks
-            if self.trace: print 'radiobuttonshow/input_pressed ',operation
+        if self.trace: print 'radiobuttonshow/input_pressed ',operation
+        
+        # service the standard inputs for this show
+        # ??????? should stop from first_track ref get out of the show
+        if operation == 'stop':
+            self.stop_timers()
+            if self.current_player is not None:
+                if self.current_track_ref == self.first_track_ref and self.level != 0:
+                    self.user_stop_signal=True
+                self.current_player.input_pressed('stop')
+
+        elif operation == 'pause':
+            if self.current_player is not None:
+                self.current_player.input_pressed(operation)
+
             
-            # service the standard inputs for this show
-            # ??????? should stop from first_track ref get out of the show
-            if operation == 'stop':
-                self.stop_timers()
-                if self.current_player is not None:
-                    if self.current_track_ref == self.first_track_ref and self.level != 0:
-                        self.user_stop_signal=True
-                    self.current_player.input_pressed('stop')
-
-            elif operation == 'pause':
-                if self.current_player is not None:
-                    self.current_player.input_pressed(operation)
-
-                
-            elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5] == 'uzbl-':
-                if self.current_player is not None:
-                    self.current_player.input_pressed(operation)
+        elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5] == 'uzbl-':
+            if self.current_player is not None:
+                self.current_player.input_pressed(operation)
 
 
               

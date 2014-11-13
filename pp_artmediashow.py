@@ -36,7 +36,7 @@ class ArtMediaShow(ArtShow):
         self.load_delay = 2000
         
         # use the appropriate medialist
-        self.medialist=MediaList()
+        self.medialist=MediaList(show_params['sequence'])
         
 
 

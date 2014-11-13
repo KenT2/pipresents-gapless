@@ -28,11 +28,11 @@ class MediaShow(GapShow):
         # control logging
         self.mon.on()
         
-        # remove comment to trace this bottom level derived class
+        # remove comment to turn trace on
         self.trace=True
 
         # use the appropriate medialist
-        self.medialist=MediaList()
+        self.medialist=MediaList(show_params['sequence'])
 
 
 

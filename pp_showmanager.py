@@ -192,7 +192,7 @@ class ShowManager(object):
                                  self.pp_profile)
             self.set_running(index,show_obj)
             # params - end_callback, show_ready_callback, direction_command, level
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
         if show['type'] == "radiobuttonshow":
@@ -205,7 +205,7 @@ class ShowManager(object):
                                        self.pp_home,
                                        self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
         if show['type'] == "hyperlinkshow":
@@ -218,7 +218,7 @@ class ShowManager(object):
                                      self.pp_home,
                                      self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
         
         elif show['type'] == "menu":
@@ -231,7 +231,7 @@ class ShowManager(object):
                                 self.pp_home,
                                 self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
         elif show['type'] == "liveshow":
@@ -244,7 +244,7 @@ class ShowManager(object):
                                self.pp_home,
                                self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
         elif show['type'] == "artliveshow":
@@ -257,7 +257,7 @@ class ShowManager(object):
                                   self.pp_home,
                                   self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
         elif show['type'] == "artmediashow":
@@ -270,7 +270,7 @@ class ShowManager(object):
                                    self.pp_home,
                                    self.pp_profile)
             self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0)
+            show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
         else:
             return 'error',"unknown show type in start concurrent show - "+ show['type']
