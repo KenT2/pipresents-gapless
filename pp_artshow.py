@@ -140,7 +140,7 @@ class ArtShow(Show):
         if self.trace: print 'artshow/load_first_track'
         if self.medialist.start() is False:
             # list is empty - display a message for 10 secs and then retry
-            Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'liveshow','m01'),10,self.what_next)
+            Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'mediashow','m11'),10,self.what_next)
         else:
             # otherwise load the first track
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
@@ -275,7 +275,7 @@ class ArtShow(Show):
     # close and load runs as a concurrent thread. Control goes nowhere after completion, success is detected from the states.    
     def close_and_load(self):
         if self.trace: self.print_state ('artshow/close_and_load entered')
-        if self.previous_player is not None and self.previous_player.get_play_state() == 'pause_at_end':
+        if self.previous_player is not None and self.previous_player.get_play_state() == 'showing':
             # close the previous player
             if self.trace: print 'artshow/close_and_load -  closing previous '
             self.previous_player.close(self.end_close_previous)
@@ -312,7 +312,7 @@ class ArtShow(Show):
 
 
     def close_current_and_next(self):
-        if self.current_player is not None and self.current_player.get_play_state() == 'pause_at_end':
+        if self.current_player is not None and self.current_player.get_play_state() == 'showing':
             if self.trace: print 'artshow/what_next - closing_current from ',self.ending_reason 
             self.current_player.close(None)
         if self.next_player is not None and self.next_player.get_play_state() not in ('unloaded','load_failed'):
@@ -358,7 +358,7 @@ class ArtShow(Show):
         if self.previous_player is not None:
             if self.trace: print '********* hiding previous ******',self.previous_player
             self.previous_player.hide()
-            if self.previous_player.get_play_state() == 'pause_at_end':
+            if self.previous_player.get_play_state() == 'showing':
                 if self.trace: print '********* closing previous ******',self.previous_player
                 self.previous_player.close(self.closed_callback)
             else:

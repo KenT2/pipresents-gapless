@@ -43,7 +43,7 @@ class ImagePlayer(Player):
         # self.trace=True
 
         # control debugging trace
-        self.mon.on()
+        self.mon.off()
         
         # stopwatch for timing functions
         StopWatch.global_enable=False

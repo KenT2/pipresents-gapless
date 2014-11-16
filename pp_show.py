@@ -267,7 +267,6 @@ class Show(object):
     def base_close_or_unload(self):
         # need to test for None because player may be made None by subshow lower down the stack for terminate
         if self.current_player is not None:
-            # was pause at end
             if self.current_player.get_play_state() in ('loaded','showing'):
                 if self.current_player.get_play_state() == 'loaded':
                     if self.trace: print 'show/close_or_unload- unloading current from' ,self.ending_reason
@@ -357,6 +356,7 @@ class Show(object):
 
     # stop received from another concurrent show
     def base_managed_stop(self):
+        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Stop command received")
         if self.trace: print 'show/managed_stop ',self
         # set signal to stop the show when all  sub-shows and players have ended
         self.stop_command_signal=True
@@ -390,7 +390,7 @@ class Show(object):
     # terminate Pi Presents
     def base_terminate(self,reason):
         if self.trace: print 'show/terminate ',self
-        # set signal to be used on way up when tracks and subshows have ended
+        # set signal to stop the show when all  sub-shows and players have ended
         self.terminate_signal=True
         if self.shower is not None:
             self.shower.terminate(reason)

@@ -1,4 +1,4 @@
-from pp_show import Show
+mfrom pp_show import Show
 
 
 class GapShow(Show):
@@ -266,13 +266,13 @@ class GapShow(Show):
         if self.direction == 'backward':
             if self.medialist.finish() is False:
                 # list is empty - display a message for 10 secs and then retry
-                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'liveshow','m01'),10,self.what_next_after_showing)
+                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'mediashow','m11'),10,self.what_next_after_showing)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
         else:
             if self.medialist.start() is False:
                 # list is empty - display a message for 10 secs and then retry
-                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'liveshow','m01'),10,self.what_next_after_showing)
+                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'mediashow','m11'),10,self.what_next_after_showing)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
 

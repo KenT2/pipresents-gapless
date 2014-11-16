@@ -92,7 +92,7 @@ class HyperlinkShow(Show):
         
 
         # remove comment to turn the trace on          
-        # self.trace=True
+        self.trace=True
 
         # control debugging log
         self.mon.on()
@@ -176,14 +176,15 @@ class HyperlinkShow(Show):
 
     def do_operation(self,operation,edge,source):
         # control this show and its tracks
-        # ?????? should stop from first track get out of the show
         if self.trace: print 'hyperlinkshow/input_pressed ',operation
         if operation == 'stop':
             self.stop_timers()
             if self.current_player is not  None:
-                if self.current_track_ref == self.first_track_ref and self.level != 0:
+                # if quiescent then stop track and set signal to return to parent show
+                if self.current_track_ref in (self.first_track_ref,self.home_track_ref) and self.level != 0:
+                    print 'user stop sent'
                     self.user_stop_signal=True
-                self.current_player.input_pressed('stop')
+                    self.current_player.input_pressed('stop')
 
         elif operation == 'pause':
             if self.current_player is not  None:
@@ -217,7 +218,13 @@ class HyperlinkShow(Show):
             elif link_op  ==  'repeat':
                 self.do_repeat(edge,source)
             elif link_op == 'exit':
-                self.end('normal','executed exit command')
+                # exit at lower level so do it
+                if self.level != 0:
+                    self.user_stop_signal=True                   
+                    self.current_player.input_pressed('stop')
+                else:
+                    #otherwise go to first track
+                    self.do_goto(self.first_track_ref,edge,source)
         return found
 
 
@@ -422,7 +429,7 @@ class HyperlinkShow(Show):
     
     def what_next_after_showing(self):
         if self.trace: print 'hyperlinkshow/what_next_after_showing '
-
+        print self.user_stop_signal,self.next_track_signal
         # need to terminate
         if self.terminate_signal is True:
             self.terminate_signal=False
@@ -558,10 +565,23 @@ class HyperlinkShow(Show):
                 self.end('error',"next track not found in medialist")
                 
         else:
-            # track ends naturally so look to see if there is a pp-onend link
+            # track ends naturally look to see if there is a pp-onend link
             found,self.next_track_op,self.next_track_arg=self.path.find_link('pp-onend',self.links)
             if found is True:
-                self.next_track_signal=True
+                if self.next_track_op=='exit':
+                    # exit at lower level so do it
+                    if self.level != 0:
+                        self.user_stop_signal=True                   
+                        print '!!!!!!!! onend exit'
+                        self.current_player.input_pressed('stop')
+                    else:
+                        #otherwise go to first track
+                        self.next_track_op='goto'
+                        self.next_track_arg=self.first_track_ref
+                        self.next_track_signal=True
+                else:
+                    print '!!!!!!!! onend next track'
+                    self.next_track_signal=True
                 self.what_next_after_showing()
 
 

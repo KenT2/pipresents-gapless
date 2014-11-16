@@ -148,7 +148,6 @@ class MenuPlayer(Player):
         if self.quit_signal is True:
             self.quit_signal=False
             self.mon.log(self,"quit received")
-            self.play_state='pause_at_end'
             if self.finished_callback is not  None:
                 self.finished_callback('pause_at_end','user quit')
                 # use finish so that the show will call close 
@@ -248,7 +247,6 @@ class MenuPlayer(Player):
             # calculate top left corner of entry
             self.calculate_entry_position(column_index,row_index)
 
-
             # display the button strip
             top_id,bottom_id,left_id,right_id,rectangle_id=self.display_entry_strip()
 
@@ -317,6 +315,7 @@ class MenuPlayer(Player):
 
 
     def print_geometry(self,total_width,total_height):
+        print 'list length',self.list_length
         print 'menu width: ', self.menu_width
         print 'columns', self.menu_columns
         print 'icon width: ', self.icon_width
@@ -441,7 +440,7 @@ class MenuPlayer(Player):
         total_width=self.menu_columns * self.entry_width +(self.menu_columns-1)*self.x_separation
         total_height=self.menu_rows * self.entry_height + (self.menu_rows-1)*self.y_separation
         
-        # self.print_geometry(total_width,total_height)   
+        self.print_geometry(total_width,total_height)   
 
 
         # display guidelines and debgging text if there is a problem     
@@ -463,8 +462,7 @@ class MenuPlayer(Player):
             # and display the icon rectangle
             self.canvas.create_rectangle(points,
                                          outline='red',
-                                         fill='',
-                                         tag='pp-content')
+                                         fill='')
 
         
         # display menu rectangle guidelines for debugging
@@ -472,8 +470,7 @@ class MenuPlayer(Player):
             points=[self.menu_x_left,self.menu_y_top, self.menu_x_right,self.menu_y_bottom]
             self.canvas.create_rectangle(points,
                                          outline='blue',
-                                         fill='',
-                                         tag='pp-content')
+                                         fill='')
                 
         return 'normal',''
 
@@ -493,8 +490,7 @@ class MenuPlayer(Player):
                 rectangle_id=self.canvas.create_rectangle(strip_points,
                                                           outline='',
                                                           fill='gray',
-                                                          stipple='gray12',
-                                                          tag='pp-content')
+                                                          stipple='gray12')
 
                 top_l_points=[self.entry_x - self.strip_padding,
                               self.entry_y - self.strip_padding,
@@ -502,8 +498,7 @@ class MenuPlayer(Player):
                               self.entry_y - self.strip_padding]
                 
                 top_id=self.canvas.create_line(top_l_points,
-                                               fill='light gray',
-                                               tag='pp-content')
+                                               fill='light gray')
                 
                 bottom_l_points=[self.entry_x - self.strip_padding,
                                  self.entry_y + self.entry_height + self.strip_padding,
@@ -511,8 +506,7 @@ class MenuPlayer(Player):
                                  self.entry_y+ self.entry_height + self.strip_padding]
                 
                 bottom_id=self.canvas.create_line(bottom_l_points,
-                                                  fill='dark gray',
-                                                  tag='pp-content')
+                                                  fill='dark gray')
 
                 left_l_points=[self.entry_x - self.strip_padding,
                                self.entry_y - self.strip_padding,
@@ -520,8 +514,7 @@ class MenuPlayer(Player):
                                self.entry_y + self.entry_height + self.strip_padding]
                 
                 left_id=self.canvas.create_line(left_l_points,
-                                                fill='gray',
-                                                tag='pp-content')
+                                                fill='gray')
                 right_id=None
 
             else:
@@ -534,8 +527,7 @@ class MenuPlayer(Player):
                 rectangle_id=self.canvas.create_rectangle(strip_points,
                                                           outline='',
                                                           fill='gray',
-                                                          stipple='gray12',
-                                                          tag='pp-content')
+                                                          stipple='gray12')
 
                 top_l_points=[self.entry_x - self.strip_padding,
                               self.entry_y - self.strip_padding,
@@ -543,8 +535,7 @@ class MenuPlayer(Player):
                               self.entry_y - self.strip_padding]
                 
                 top_id=self.canvas.create_line(top_l_points,
-                                               fill='light gray',
-                                               tag='pp-content')
+                                               fill='light gray')
                 
                 left_l_points=[self.entry_x - self.strip_padding,
                                self.entry_y - self.strip_padding,
@@ -552,8 +543,7 @@ class MenuPlayer(Player):
                                self.entry_y + self.entry_height+ self.strip_padding]
                 
                 left_id=self.canvas.create_line(left_l_points,
-                                                fill='gray',
-                                                tag='pp-content')
+                                                fill='gray')
 
                 right_l_points=[self.entry_x +self.entry_width + self.strip_padding,
                                 self.entry_y - self.strip_padding,
@@ -561,12 +551,18 @@ class MenuPlayer(Player):
                                 self.entry_y + self.entry_height+ self.strip_padding]
                 
                 right_id=self.canvas.create_line(right_l_points,
-                                                 fill='dark gray',
-                                                 tag='pp-content')
+                                                 fill='dark gray')
 
                 bottom_id=None
+
+        else:
+            top_id = None
+            bottom_id = None
+            left_id = None
+            right_id = None
+            rectangle_id = None
                 
-            return top_id,bottom_id,left_id,right_id,rectangle_id
+        return top_id,bottom_id,left_id,right_id,rectangle_id
 
 
     # display the rectangle that goes arond the icon when the entry is selected
@@ -643,8 +639,7 @@ class MenuPlayer(Player):
                 image_id=self.canvas.create_image(self.icon_x_left+1,
                                          self.icon_y_top+1,
                                          image=photo_image_id,
-                                         anchor=NW,
-                                         tag='pp-content')
+                                         anchor=NW)
                 del self.pil_image
             else:
                 image_id=None
@@ -741,8 +736,7 @@ class MenuPlayer(Player):
                                         fill=self.track_params['entry-colour'],
                                         font=self.track_params['entry-font'],
                                         width=self.text_width,
-                                        justify=justify,
-                                        tag='pp-content')
+                                        justify=justify)
         return text_id
     
 

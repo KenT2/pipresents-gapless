@@ -144,9 +144,9 @@ class ShowManager(object):
         show_command=fields[1]
         if show_command == 'start':
             return self.start_show(show_ref)
-        elif show_command  == 'stop':
+        elif show_command  == 'exit':
             return self.stop_show(show_ref)
-        elif show_command == 'exit':
+        elif show_command == 'close-pipresents':
             return self.stop_all_shows()
         elif show_command == 'shutdownnow':
             ShowManager.shutdown_required=True

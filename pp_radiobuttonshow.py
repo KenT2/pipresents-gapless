@@ -144,6 +144,7 @@ class RadioButtonShow(Show):
             self.stop_timers()
             if self.current_player is not None:
                 if self.current_track_ref == self.first_track_ref and self.level != 0:
+                    # if quiescent then set signal to stop the show when track has stopped
                     self.user_stop_signal=True
                 self.current_player.input_pressed('stop')
 

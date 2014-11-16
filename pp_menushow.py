@@ -37,7 +37,7 @@ class MenuShow(Show):
         
 
         # remove comment to turn the trace on          
-        # self.trace=True
+        self.trace=True
 
         # control debugging log
         self.mon.on()
@@ -48,6 +48,7 @@ class MenuShow(Show):
         self.next_track_signal=False
         self.next_track=None
         self.menu_index=0
+        self.menu_showing=True
 
 
 
@@ -103,6 +104,7 @@ class MenuShow(Show):
 
     # overrides base
     # service the triggers for this show
+    # menu doe not use triggers or links
     def do_trigger_or_link(self,symbol,edge,source):
         pass
 
@@ -111,17 +113,12 @@ class MenuShow(Show):
         # service the standard inputs for this show
         if self.trace: print 'menushow/input_pressed ',operation
         if operation=='stop':
-            # stop show timeout
-            if self.show_timeout_timer is not None:
-                self.canvas.after_cancel(self.show_timeout_timer)
-                self.show_timeout_timer=None
+            self.stop_timers()
             if self.current_player is not None:
+                if self.menu_showing is True and self.level != 0:
+                    # if quiescent then set signal to stop the show when track has stopped
+                    self.user_stop_signal=True
                 self.current_player.input_pressed('stop')
-            else:
-                # not at top so end the show because menu is usually got to by user request
-                if  self.level != 0:
-                    self.end('normal',"exit by stop command from non-top show")
-
       
         elif operation in ('up','down'):
             # stop show timeout
@@ -192,6 +189,7 @@ class MenuShow(Show):
         self.do_operation('stop','none','timeout')
 
     def do_menu_track(self):
+        self.showing_menu=True
         if self.trace: print 'menushow/do_menu_track'
 
         # start show timeout alarm if required
@@ -280,7 +278,7 @@ class MenuShow(Show):
      # at the end of a track check for terminations else re-display the menu      
     def what_next_after_showing(self):
         if self.trace: print 'menushow/what_next_after_showing '
-
+        print self.user_stop_signal, self.current_player,self.previous_player
         # cancel track timeout timer
         if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
@@ -306,8 +304,15 @@ class MenuShow(Show):
             self.ending_reason='stop-command'
             Show.base_close_or_unload(self)
 
+        # user wants to stop
+        elif self.user_stop_signal is True:
+            self.user_stop_signal=False
+            self.ending_reason='user-stop'
+            Show.base_close_or_unload(self)
+
         elif self.next_track_signal is True:
             self.next_track_signal=False
+            self.menu_showing=False
             # start timeout for the track if required           
             if int(self.show_params['track-timeout']) != 0:
                 self.track_timeout_timer=self.canvas.after(int(self.show_params['track-timeout'])*1000,self.track_timeout_callback)

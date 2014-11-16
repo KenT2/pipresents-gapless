@@ -47,7 +47,7 @@ class AudioPlayer(Player):
         # self.trace=True
 
         # control debugging log
-        self.mon.on()
+        self.mon.off()
 
 
         if self.trace: print '    Audioplayer/init ',self

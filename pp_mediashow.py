@@ -29,7 +29,7 @@ class MediaShow(GapShow):
         self.mon.on()
         
         # remove comment to turn trace on
-        self.trace=True
+        # self.trace=True
 
         # use the appropriate medialist
         self.medialist=MediaList(show_params['sequence'])
