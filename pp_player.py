@@ -30,10 +30,7 @@ class Player(object):
         # create debugging log object
         self.mon=Monitor()
 
-        # must be true if player is being used with the test harness
-        # it removes all the subsiduary functions such as animation
-        self.testing=False
-        
+
         if self.trace: print '    Player/init ',self
         # instantiate arguments
         self.show_id=show_id
@@ -68,20 +65,21 @@ class Player(object):
         self.animate_begin_text=self.track_params['animate-begin']
         self.animate_end_text=self.track_params['animate-end']
 
+        # create an  instance of showmanager so we can control concurrent shows
+        self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
 
-        if not self.testing:
-            # create an  instance of showmanager so we can control concurrent shows
-            self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        # open the plugin Manager
+        self.pim=PluginManager(self.show_id,self.root,self.canvas,self.show_params,self.track_params,self.pp_dir,self.pp_home,self.pp_profile) 
 
-        if not self.testing:
-            # open the plugin Manager
-            self.pim=PluginManager(self.show_id,self.root,self.canvas,self.show_params,self.track_params,self.pp_dir,self.pp_home,self.pp_profile) 
-
-        if not self.testing:
-            # create an instance of PPIO so we can create gpio events
-            self.ppio = PPIO()
+        # create an instance of PPIO so we can create gpio events
+        self.ppio = PPIO()
 
         # initialise state and signals
+        self.background_obj=None
+        self.show_text_obj=None
+        self.track_text_obj=None
+        self.hint_obj=None
+        self.background=None
         self.freeze_at_end_required='no' # overriden by videoplayer
         self.tick_timer=None
         self.terminate_signal=False
@@ -96,25 +94,22 @@ class Player(object):
 
         # but pim needs to be done here as it uses the pp-plugin-content tag which needs to be created later
         self.pim.show_plugin()
+        
         # Control other shows at beginning
-        if not self.testing:
-            reason,message=self.show_manager.show_control(self.track_params['show-control-begin'])
-        else:
-            reason='normal'
-        if reason in ('error','killed'):
-            self.end(reason,message)
-            self=None
+        reason,message=self.show_manager.show_control(self.track_params['show-control-begin'])
+        if reason == 'error':
+            self.play_state='show-failed'
+            if self.finished_callback is not None:
+                self.finished_callback('error',message)
         else:      
-
             # create animation events
-            if not self.testing:
-                reason,message=self.ppio.animate(self.animate_begin_text,id(self))
-            else:
-                reason='normal'
+            reason,message=self.ppio.animate(self.animate_begin_text,id(self))
+            print 'ANIMATE FAILED',reason,message
             if reason  ==  'error':
                 self.mon.err(self,message)
-                self.end(reason,message)
-                self=None
+                self.play_state='show-failed'
+                if self.finished_callback is not None:
+                    self.finished_callback('error',message)
             else:
                 # return to start playing the track.
                 self.mon.log(self,">show track received from show Id: "+ str(self.show_id))
@@ -136,36 +131,26 @@ class Player(object):
         self.hide_x_content()
         
         # stop the plugin
-        if not self.testing:
-            if self.track_params['plugin'] != '':
-                self.pim.stop_plugin()
+        if self.track_params['plugin'] != '':
+            self.pim.stop_plugin()
 
         # Control concurrent shows at end
-        if not self.testing:
-            reason,message=self.show_manager.show_control(self.track_params['show-control-end'])
-        else:
-            reason='normal'
+        reason,message=self.show_manager.show_control(self.track_params['show-control-end'])
         if reason  == 'error':
-            self.mon.err(self,message)
-            self.end_callback(reason,message)
-            self=None
+            self.play_state='show-failed'
+            if self.finished_callback is not None:
+                self.finished_callback('error',message)
         else:
-            
-           # clear events list for this track
-            if  not self.testing:
-                if self.track_params['animate-clear'] == 'yes':
-                    self.ppio.clear_events_list(id(self))
+            # clear events list for this track
+            if self.track_params['animate-clear'] == 'yes':
+                self.ppio.clear_events_list(id(self))
                     
             # create animation events for ending
-            if  not self.testing:
-                reason,message=self.ppio.animate(self.animate_end_text,id(self))
-            else:
-                reason='normal'
-                
+            reason,message=self.ppio.animate(self.animate_end_text,id(self))
             if reason == 'error':
-                self.mon.err(self,message)
-                self.end_callback(reason,message)
-                self=None
+                self.play_state='show-failed'
+                if self.finished_callback is not None:
+                    self.finished_callback('error',message)
             else:
                 return
 
@@ -183,8 +168,10 @@ class Player(object):
     # must be overriden by derived class
     def stop(self):
         self.mon.err(self,'stop not overidden by derived class')
-        self.terminate_signal=True
-        self.end('error','stop not overidden by derived class')
+        self.play_state='show-failed'
+        if self.finished_callback is not None:
+            self.finished_callback('error',message)
+
 
     def get_play_state(self):
         return self.play_state
@@ -230,8 +217,7 @@ class Player(object):
         if self.background_file != '':
             background_img_file = self.complete_path(self.background_file)
             if not os.path.exists(background_img_file):
-                self.mon.err(self,"Trackbackground file not found: "+ background_img_file)
-                self.end('error',"Track background file not found")
+                return 'error',"Track background file not found "+ background_img_file
             else:
                 pil_background_img=Image.open(background_img_file)
                 # print 'pil_background_img ',pil_background_img
@@ -248,7 +234,9 @@ class Player(object):
             
 
         # load the track content.  Dummy function below is overridden in players          
-        self.load_track_content()
+        status,message=self.load_track_content()
+        if status == 'error':
+            return 'error',message
                           
         # load show text if enabled
         if self.show_params['show-text'] !=  '' and self.track_params['display-show-text'] == 'yes':
@@ -284,7 +272,7 @@ class Player(object):
         self.canvas.itemconfig(self.track_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_obj,state='hidden')
         self.canvas.update_idletasks( )
-        return 'normal',''
+        return 'normal','x-content loaded'
 
 
     # dummy functions to manipulate the track content, overidden in some players,
@@ -293,7 +281,7 @@ class Player(object):
     # menu stuff in menuplayer
         
     def load_track_content(self):
-        pass
+        return 'normal','player has no track content to load'
 
     def show_track_content(self):
         pass
@@ -353,9 +341,6 @@ class Player(object):
     # get a text string from resources.cfg
     def resource(self,section,item):
         value=self.rr.get(section,item)
-        if value is False:
-            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self.end('error','resource not found')
-        else:
-            return value
+        return value # False if not found
+
 

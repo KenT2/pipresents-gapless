@@ -1,3 +1,4 @@
+import os
 from pp_omxdriver import OMXDriver
 from pp_player import Player
 
@@ -106,29 +107,6 @@ class VideoPlayer(Player):
         else:
             self.seamless_loop=''
             
-##        # get duration limit (secs ) from profile
-##        if self.show_params['type'] in ('liveshow','artliveshow'):
-##            duration_text=''
-##        else:
-##            duration_text= self.track_params['duration']
-##        if duration_text != '':
-##            self.track_duration = 20 * int(duration_text)
-##        else:
-##            self.track_duration=-1
-
-        
-        # set up video window
-        status,message,command,has_window,x1,y1,x2,y2= self.parse_window(self.omx_window)
-        if status  == 'error':
-            self.mon.err(self,'omx window error: ' + message + ' in ' + self.omx_window)
-            self.end( 'error',message)
-        else:
-            if has_window is True:
-                self.omx_window_processed= '--win " '+ str(x1) +  ' ' + str(y1) + ' ' + str(x2) + ' ' + str(y2) + ' " '
-            else:
-                self.omx_window_processed=''
-
- 
         # initialise video playing state and signals
         self.quit_signal=False
         self.unload_signal=False
@@ -143,20 +121,43 @@ class VideoPlayer(Player):
 
         if self.trace: print '    Videoplayer/load ',self
 
+                # set up video window
+        status,message,command,has_window,x1,y1,x2,y2= self.parse_window(self.omx_window)
+        if status  == 'error':
+            self.mon.err(self,'omx window error: ' + message + ' in ' + self.omx_window)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
+        else:
+            if has_window is True:
+                self.omx_window_processed= '--win " '+ str(x1) +  ' ' + str(y1) + ' ' + str(x2) + ' ' + str(y2) + ' " '
+            else:
+                self.omx_window_processed=''
+
         # load the plugin, this may modify self.track and enable the plugin drawign to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
-                self.end('error',message)
-                self=None
+                self.play_state='load-failed'
+                if self.loaded_callback is not  None:
+                    self.loaded_callback('error',message)
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
-            self=None
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
+
+
+        if not os.path.exists(track):
+            self.mon.err(self,"Track file not found: "+ track)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error','track file not found')
+
 
         # get the length of the video
 
@@ -182,7 +183,9 @@ class VideoPlayer(Player):
         self.omx_dur=None
         if duration<=0:
             self.mon.err(self,'Track does not provide duration so cannot play')
-            self.end('error','duration of track required')
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error','Track does not provide duration so cannot play')
         else:        
             self.mon.log(self,">load track received from show Id: "+ str(self.show_id) + ' using duration from track')
             # create an  instance of omxdriver
@@ -287,28 +290,27 @@ class VideoPlayer(Player):
 
 
 # ***********************
-# state machine
+# track showing state machine
 # **********************
 
     """
     STATES OF STATE MACHINE
     Threre are ongoing states and states that are set just before callback
 
-    >Create an instance of the class
-    <On return - state = initialised   -  - init has been completed
-    < after a fatal error at any time in the lifetime of a track end-callback is called
-        On getting end_callback abort Pi Presents because its not worth continuing. Should happen in debug only.
+    >init - Create an instance of the class
+    <On return - state = initialised   -  - init has been completed, do not generate errors here
 
     >load
-         Ongoing - state=loading - load received, waiting for load to complete   
+        Fatal errors should be detected in load. If so  loaded_callback is called with 'load-failed'
+         Ongoing - state=loading - load called, waiting for load to complete   
     < loaded_callback with status = normal
          state=loaded - load has completed and video paused before first frame      
     <loaded_callback with status=error
-        state= load_failed - omxplayer process has been killed because of failure to load   
+        state= load-failed - omxplayer process has been killed because of failure to load   
 
     On getting the loaded_callback with status=normal the track can be shown using show
-    On getting the loaded_callback with status=load_failed omxplayer has been killed. Calling program needs to recover somehow.
     Duration obtained from track should always cause pause_at_end. if not please tell me as the fudge factor may need adjusting.
+
 
     >show
         show assumes a track has been loaded and is paused.
@@ -321,7 +323,7 @@ class VideoPlayer(Player):
 
     On getting finished_callback with status=pause_at end a new track can be shown and then use close to quit the video when new track is ready
     On getting closed_callback with status= timeout eof or nice_day omxplayer closing should not be attempted as it is already closed
-    
+    Do not generate user errors in Show. Only geberate system erros such as illegal state abd then use end()
 
     >close
        Ongoing state - closing - omxplayer processes are dying due to quit sent
@@ -382,17 +384,20 @@ class VideoPlayer(Player):
             self.mon.log (self,'>showing track from show Id: '+ str(self.show_id))
 
             # and start polling for state changes
-            print 'start show state machine show'
+            # print 'start show state machine show'
             self.tick_timer=self.canvas.after(0, self.show_state_machine)
         else:
             self.mon.err(self,'illegal state in show method ' + self.play_state)
-            self.end('error','illegal state in show method')                
+            self.play_state='show-failed'
+            if self.finished_callback is not None:
+                self.finished_callback('error',message)
+             
      
 
     def start_state_machine_close(self):
         # was pause at end
         self.quit_signal=True
-        print 'start close state machne close'
+        print 'start close state machine close'
         self.tick_timer=self.canvas.after(0, self.show_state_machine)
 
 
@@ -407,8 +412,8 @@ class VideoPlayer(Player):
                 self.mon.warn(self,"            <loading  - omxplayer ended before starting track with reason: " + self.omx.end_play_reason + ' at ' +str(self.omx.video_position))
                 self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                 self.omx.kill()
-                self.mon.warn(self,'omxplayer now  terminated ')
-                self.play_state = 'load_failed'
+                self.mon.err(self,'omxplayer ended before loading track')
+                self.play_state = 'load-failed'
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                 if self.loaded_callback is not  None:
                     self.loaded_callback('error','omxplayer ended before loading track')      
@@ -439,8 +444,8 @@ class VideoPlayer(Player):
                         self.mon.warn(self,"            <loading - omxplayer crashed when loading  track with: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
                         self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                         self.omx.kill()
-                        self.mon.warn(self,'omxplayer now  terminated ')
-                        self.play_state = 'load_failed'
+                        self.mon.warn(self,'omxplayer counted out when loading track ')
+                        self.play_state = 'load-failed'
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                         if self.loaded_callback is not None:
                             self.loaded_callback('error','omxplayer counted out when loading track')
@@ -517,7 +522,8 @@ class VideoPlayer(Player):
 
 
     def show_state_machine(self):
-        if self.play_state != 'showing': print 'show state is '+self.play_state
+        print self.play_state
+        # if self.play_state != 'showing': print 'show state is '+self.play_state
         if self.play_state == 'showing':
             # service any queued stop signals by sending quit to omxplayer
             # self.mon.log(self,"      State machine: " + self.play_state)
@@ -554,12 +560,15 @@ class VideoPlayer(Player):
                     self.mon.warn(self,"            <showing - end detected at: " + str(self.omx.video_position))
                     self.mon.warn(self,"            <pexpect reports: "+self.omx.end_play_reason)
                     self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
-                    print 'eof'
+                    # print 'eof'
                     self.tick_timer=self.canvas.after(50, self.show_state_machine)
                 else:
                     # unexpected reason
                     self.mon.err(self,'unexpected reason at end of show '+self.omx.end_play_reason)
-                    self.end('error','unexpected reason')
+                    self.play_state='show-failed'
+                    if self.finished_callback is not None:
+                        self.finished_callback('error','unexpected reason at end of show')
+
             else:
                 # nothng to do just try again
                 self.tick_timer=self.canvas.after(50, self.show_state_machine)       
@@ -572,7 +581,7 @@ class VideoPlayer(Player):
                 # if spawned process has closed can change to closed state
                 self.mon.log(self,"            <omx process is dead")
                 self.play_state = 'closed'
-                print 'settting closed from process dead'
+                # print 'settting closed from process dead'
                 self.omx=None
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                 if self.closed_callback is not  None:
@@ -587,19 +596,21 @@ class VideoPlayer(Player):
                     self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                     self.mon.warn(self,'omxplayer should now  be killed ')
                     self.omx.kill()
-                    print 'setting closed from kill'
+                    # print 'setting closed from kill'
                     self.play_state = 'closed'
                     self.omx=None
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                     if self.closed_callback is not None:
                         self.closed_callback('normal','closed omxplayer after sigint')
                 else:
-                    print 'not closed'
+                    # print 'not closed'
                     self.tick_timer=self.canvas.after(200, self.show_state_machine)
 
         else:
             self.mon.err(self,'unknown state in show state machine ' + self.play_state)
-            self.end('error','show state machine in unknown state')
+            self.play_state='show-failed'
+            if self.finished_callback is not None:
+                    self.finished_callback('error','show state machine in unknown state')
 
 
     def parse_window(self,line):

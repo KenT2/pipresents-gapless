@@ -74,15 +74,18 @@ class MessagePlayer(Player):
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
-                self.end('error',message)
-                self=None
+                self.play_state='load-failed'
+                if self.loaded_callback is not  None:
+                    self.loaded_callback('error',message)
+
 
         # load the images and text including message text
         status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
-            self=None
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
@@ -182,21 +185,18 @@ class MessagePlayer(Player):
                                                    fill=self.track_params['message-colour'],
                                                    font=self.track_params['message-font'],
                                                    justify=self.track_params['message-justify'],
-                                                   anchor = NW,
-                                                   tag='pp-content')
+                                                   anchor = NW)
         else:
             self.track_obj=self.canvas.create_text(int(self.canvas['width'])/2, int(self.canvas['height'])/2,
                                                    text=self.track.rstrip('\n'),
                                                    fill=self.track_params['message-colour'],
                                                    font=self.track_params['message-font'],
-                                                   justify=self.track_params['message-justify'],
-                                                   tag='pp-content')     
+                                                   justify=self.track_params['message-justify'])     
 
         return self.track_obj
     
 
     def hide_track_content(self):
-        # print 'deleting track image ',self.track_image_obj
         self.canvas.itemconfig(self.track_obj,state='hidden')
         self.canvas.delete(self.track_obj)
 

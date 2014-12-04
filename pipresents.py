@@ -1,8 +1,12 @@
 #! /usr/bin/env python
 
 """
-Part of Pi Presents
-Pi Presents is a presentation package, running on the Raspberry Pi, for museum exhibits, galleries, and presentations.
+Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
+on the Raspberry Pi.
+It is aimed at primarily at interaction in musems, exhibitions and galleries
+but has many other applications including digital signage
+
+Version 1.3 [pipresents-gapless]
 Copyright 2012/2013/2014, Ken Thompson
 
 See manual.pdf for instructions.
@@ -97,7 +101,6 @@ class PiPresents(object):
         
         # check if pp_home exists.
         # try for 10 seconds to allow usb stick to automount
-        # fall back to pipresents/pp_home
         self.pp_home=pp_dir+"/pp_home"
         found=False
         for i in range (1, 10):
@@ -109,23 +112,25 @@ class PiPresents(object):
             time.sleep (1)
         if found is True:
             self.mon.log(self,"Found Requested Home Directory, using pp_home at: " + home)
-        else:    
-            self.mon.log(self,"FAILED to find requested home directory, using default to display error message: " + self.pp_home)
+        else:
+            self.mon.err(self,"Failed to find pp_home"+ self.pp_home)
+            self.end('error','Failed to find pp_home')
 
 
-        # check profile exists, if not default to error profile inside pipresents
+        # check profile exists
         self.pp_profile=self.pp_home+self.pp_profile_path
         if os.path.exists(self.pp_profile):
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:
-            self.pp_profile=pp_dir+"/pp_home/pp_profiles/pp_profile"   
-            self.mon.log(self,"FAILED to find requested profile, using default to display error message: pp_profile")
+            self.mon.err(self,"Failed to find requested profile"+ self.pp_profile)
+            self.end('error','Failed to find profile')
         
         if self.options['verify'] is True:
             val =Validator()
             if  val.validate_profile(None,pp_dir,self.pp_home,self.pp_profile,self.pipresents_issue,False) is  False:
-                tkMessageBox.showwarning("Pi Presents","Validation Failed")
-                exit()
+                self.mon.err(self,"Validation Failed")
+                self.end('error','Validation Failed')
+
                 
         # open the resources
         self.rr=ResourceReader()
@@ -146,7 +151,8 @@ class PiPresents(object):
         if float(self.showlist.sissue()) != float(self.pipresents_issue):
             self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents, must exit")
             self.end('error','wrong version of profile')
- 
+
+
         # get the 'start' show from the showlist
         index = self.showlist.index_of_show('start')
         if index >=0:
@@ -156,7 +162,9 @@ class PiPresents(object):
             self.mon.err(self,"Show [start] not found in showlist")
             self.end('error','start show not found')
 
-        
+        if self.starter_show['start-show']=='':
+             self.mon.warn(self,"No Start Shows")       
+
 # ********************
 # SET UP THE GUI
 # ********************
@@ -225,7 +233,7 @@ class PiPresents(object):
         # looks after bindings between symbolic names and internal operations
         controlsmanager=ControlsManager()
         if controlsmanager.read(pp_dir,self.pp_home,self.pp_profile) is False:
-            self.end('error','cannot find or error in controls.cfg.cfg')
+            self.end('error','cannot find or error in controls.cfg')
         else:
             controlsmanager.parse_defaults()
 
@@ -276,7 +284,7 @@ class PiPresents(object):
         self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.tod_pressed)
         self.tod.poll()
 
-        # start tkinter
+        # start tkinters event loop
         self.root.mainloop( )
 
 
@@ -321,7 +329,7 @@ class PiPresents(object):
         if command=='start-show':
             self.show_manager.control_a_show([show_ref,'start'])
         elif command == 'stop-show':
-            self.show_manager.control_a_show([show_ref,'stop'])
+            self.show_manager.control_a_show([show_ref,'exit'])
     
     # all input events call this callback with a symbolic name.              
     def input_pressed(self,symbol,edge,source):
@@ -381,6 +389,8 @@ class PiPresents(object):
 
     def end(self,reason,message):
         self.mon.log(self,"Pi Presents ending with message: " + reason + ' ' + message)
+        # print gc.collect()
+        # print gc.garbage
         if reason == 'error':
             self.tidy_up()
             self.mon.log(self, "exiting because of error")

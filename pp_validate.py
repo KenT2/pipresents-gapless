@@ -57,12 +57,12 @@ class Validator(object):
                 self.result.display('t', "Validation Aborted")
                 return False
                 
-            if file.endswith(".json") and file != 'pp_showlist.json':
-                self.result.display('t',"\nChecking medialist '"+file+"'")
+            if medialist_file.endswith(".json") and medialist_file != 'pp_showlist.json':
+                self.result.display('t',"\nChecking medialist '"+medialist_file+"'")
                 v_media_lists.append(file)
 
                 # open a medialist and test its tracks
-                ifile  = open(pp_profile + os.sep + file, 'rb')
+                ifile  = open(pp_profile + os.sep + medialist_file, 'rb')
                 sdict= json.load(ifile)
                 ifile.close()                          
                 tracks = sdict['tracks']

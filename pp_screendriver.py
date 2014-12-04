@@ -96,19 +96,28 @@ class ScreenDriver(object):
             # print self.canvas.gettags(item)
             if ('pp-click-area' in self.canvas.gettags(item)) and self.canvas.itemcget(item,'state') == 'normal':
                 self.mon.log(self, "Click on screen: "+ self.canvas.gettags(item)[1])
-                self.callback(self.canvas.gettags(item)[1],'front','screen')                                                     
+                self.callback(self.canvas.gettags(item)[1],'front','screen')
+                # need break as find_overlapping returns two results for each click, one with 'current' one without.
+                break
+
+    def is_click_area(self,canvas,test_area):
+        click_areas=canvas.find_withtag('pp-click-area')
+        for area in click_areas:        
+            if test_area in canvas.gettags(area):
+                return True
+        return False
                                                       
 
-    # use links to enable and hide the click areas in a show
+    # use links with the symbolic name of click areas to enable the click areas in a show
     def enable_click_areas(self,links,canvas):
         for link in links:
-            # print 'trying link ',link[0]
-            # if not('key-' in link[0]) and link[1]<>'null' and link[0]<>'pp-auto':
-            if not('key-' in link[0]) and link[1] != 'null':
-                # print 'enabling link ',link[0]
+            if self.is_click_area(canvas,link[0]) and link[1] != 'null':
+                print 'enabling link ',link[0]
                 canvas.itemconfig(link[0],state='normal')
 
+
     def hide_click_areas(self,canvas):
+        # hide all click areas
         # this does not seem to change the colour of the polygon
         canvas.itemconfig('pp-click-area',state='hidden')
         canvas.update_idletasks( )

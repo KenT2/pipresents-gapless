@@ -265,9 +265,11 @@ class Show(object):
 
     # close or unload the current player when ending the show
     def base_close_or_unload(self):
+        if self.trace: print 'show/base_close_or_unload ',self.current_player
         # need to test for None because player may be made None by subshow lower down the stack for terminate
         if self.current_player is not None:
-            if self.current_player.get_play_state() in ('loaded','showing'):
+            if self.trace: print 'show/base_close_or_unload ',self.current_player.get_play_state()
+            if self.current_player.get_play_state() in ('loaded','showing','show-failed'):
                 if self.current_player.get_play_state() == 'loaded':
                     if self.trace: print 'show/close_or_unload- unloading current from' ,self.ending_reason
                     self.current_player.unload()
@@ -279,7 +281,10 @@ class Show(object):
             # current_player is None because closed further down show stack
             if self.trace: print 'show ended with current_player=None because ',self.ending_reason
             if self.ending_reason == 'terminate':
-                self.end('killed',"show terminated or error")
+                self.end('killed',"show terminated")
+
+            elif self.ending_reason == 'error':
+                self.base_close_previous()
 
             elif self.ending_reason == 'stop-command':
                 self.end('normal',"show quit by stop-command")
@@ -294,8 +299,8 @@ class Show(object):
 
     # wait for unloading or closing to complete then end
     def _wait_for_end(self):
-        if self.current_player.play_state not in ('unloaded','closed'):
-            print 'wait for end'
+        if self.trace: print 'show/wait_for_end',self.current_player,self.current_player.get_play_state()
+        if self.current_player.play_state not in ('unloaded','closed','initialised','load-failed'):
             self.canvas.after(50,self._wait_for_end)
         else:
             if self.trace: print 'show/wait_for_end - current closed ', self.current_player,self.ending_reason
@@ -305,10 +310,16 @@ class Show(object):
                 self.current_player=None
                 self.end('killed',"show terminated or error")
 
+            elif self.ending_reason == 'error':
+                self.current_player.hide()
+                self.current_player=None
+                self.base_close_previous()
+
+                
             elif self.ending_reason == 'show-timeout':
                 self.current_player.hide()
                 self.current_player=None
-                self.end('normal',"show terminated or error")
+                self.end('normal',"show timeout")
                 
             elif self.ending_reason == 'stop-command':
                 self.current_player.hide()
@@ -337,7 +348,7 @@ class Show(object):
         if self.trace: print 'show/end at level ',self.level
         if self.trace: print 'show/end - Current is ',self.current_player
         if self.trace: print 'show/end - Previous is ',self.previous_player
-        if self.trace: print 'SHOW/END with reason',self.show_params['show-ref'],reason
+        if self.trace: print 'SHOW/END with reason',reason
         if self.trace: print '\n\n'
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Ending Show")
         self.end_callback(self.show_id,reason,message)
@@ -353,6 +364,35 @@ class Show(object):
 # ********************************
 # Respond to external events
 # ********************************
+
+
+    def base_close_previous(self):
+        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": base close previous")
+        if self.trace: print 'show/base_close_previous ',self
+        # close the player from the previous track
+        if self.previous_player is not  None:
+            if self.trace: print 'show/previous not None',self.previous_player
+            if self.previous_player.get_play_state() == 'showing':
+                # showing or frozen
+                if self.trace: print 'show/closing previous',self.previous_player
+                self.previous_player.close(self._base_close_previous_callback)
+            else:
+                if self.trace: print 'show/previous is not showing'
+                self.previous_player.hide()
+                self.previous_player=None
+                self.end(self.ending_reason,'')
+        else:
+            if self.trace: print 'show/previous is None'
+            self.end(self.ending_reason,'')
+            
+                
+
+    def _base_close_previous_callback(self,status,message):
+        if self.trace: print 'show/close_previous callback, previous is None  - was',self.previous_player
+        self.previous_player.hide()
+        self.previous_player=None
+        self.end(self.ending_reason,'')
+
 
     # stop received from another concurrent show
     def base_managed_stop(self):
@@ -409,24 +449,16 @@ class Show(object):
             # print 'pass to lower level ',symbol
             self.shower.input_pressed(symbol,edge,source)
         else:
-            # use the symbol for the running show
-            # is the symbolic name  bound to an internal operation. Returns '' if not bound
-            operation=self.base_lookup_control(symbol,self.controls_list)
-            if operation == '':
-                # internal operation not found so treat as a trigger
-                self.do_trigger_or_link(symbol,edge,source)
-            else:
-                self.do_operation(operation,edge,source)
-
-    # must be overridden by derived class
-    def do_trigger_or_link(self,symbol,edge,source):
-        self.mon.err(self, 'do_trigger_or_link not overidden in '+self.show_params['type'])
-        self.base_end('error',"do_trigger_or_link not overidden")
-
-    # must be overridden by derived class        
-    def do_operation(self,symbol,edge,source):
-        self.mon.err(self, 'do_operation in '+self.show_params['type'])
-        self.base_end('error',"do_operation not overidden")
+            self.input_pressed_this_show(symbol,edge,source)
+            
+##            # use the symbol for the running show
+##            # is the symbolic name  bound to an internal operation. Returns '' if not bound
+##            operation=self.base_lookup_control(symbol,self.controls_list)
+##            if operation == '':
+##                # internal operation not found so treat as a trigger
+##                self.do_trigger_or_link(symbol,edge,source)
+##            else:
+##                self.do_operation(operation,edge,source)
 
 
 # ******************************

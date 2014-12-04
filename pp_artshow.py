@@ -40,6 +40,7 @@ class ArtShow(Show):
         self.end_medialist_warning=False
         self.next_track_signal=False
         self.state='closed'
+        self.req_next=''
 
 
     def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
@@ -146,7 +147,7 @@ class ArtShow(Show):
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
                 self.mon.err(self,"Unknown Track Type")
-                self.terminate_signal=True
+                self.req_next='error'
                 self.what_next()
             else:
                 track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
@@ -164,9 +165,8 @@ class ArtShow(Show):
         # and is a good place to test for ending.
         # if self.trace: self.print_state ('artshow/wait_for_load')
         if self.next_player is not None:
-            if self.next_player.get_play_state() == 'load_failed':
-                self.mon.err(self,'load failed')
-                self.terminate_signal=True
+            if self.next_player.get_play_state() == 'load-failed':
+                self.req_next='error'
                 self.what_next()
             else:
                 if self.previous_player is  None  and self.next_player.get_play_state() == 'loaded':
@@ -187,6 +187,12 @@ class ArtShow(Show):
         if self.terminate_signal is True:
             self.terminate_signal=False
             self.ending_reason='terminate'
+            self.close_current_and_next()
+
+        elif self.req_next== 'error':
+            self.req_next=''
+            # set what to do after closed or unloaded
+            self.ending_reason='error'
             self.close_current_and_next()
 
         # used by managed stop for stopping show from other shows 
@@ -213,7 +219,6 @@ class ArtShow(Show):
 
         # end of medialist
         elif self.end_medialist_signal is True:
-            print '!!!!!!! END MEDIALIST', self.show_params['repeat']
             self.end_medialist_signal=False
             self.end_medialist_warning=False
             # test for oredered since medialist at end gives false positives for shuffle
@@ -223,14 +228,8 @@ class ArtShow(Show):
                 # self.state='waiting'
                 self.wait_for_trigger()
 
-            # single run and at top so repeat
-            elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level == 0:
-                self.start_trigger()
-                # self.ending_reason='end-trigger'
-                # self.close_current_and_next()
-
-            # single run and not at top so end
-            elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level != 0:
+            # single run so end
+            elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run':
                 self.ending_reason='end-of-medialist'
                 self.close_current_and_next()
 
@@ -240,7 +239,6 @@ class ArtShow(Show):
                 self.show_next_track()
         else:
             # otherwise show the next track
-            print '!!!!!!!!!! show next track'
             self.show_next_track()
 
             
@@ -262,14 +260,24 @@ class ArtShow(Show):
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
         if self.trace: print 'artshow/finished_showing - pause at end'
         self.mon.log(self,"finished_showing - pause at end of showing with reason: "+reason+ ' and message: '+ message)
-        self.wait_for_load()
+        if self.current_player.play_state == 'show-failed':
+            self.req_next = 'error'
+            self.what_next()
+        else:
+            self.req_next='finished-player'
+            self.wait_for_load()
 
 
     def closed_after_showing(self,reason,message):
         # showing has finished with closing of player but track instance is alive for hiding the x_content
         if self.trace: print 'artshow/closed_after_showing - closed after showing'
         self.mon.log(self,"closed_after_showing - Closed after showing with reason: "+reason+ ' and message: '+ message)
-        self.wait_for_load()        
+        if self.current_player.play_state == 'show-failed':
+            self.req_next = 'error'
+            self.what_next()
+        else:
+            self.req_next='finished-player'
+            self.wait_for_load()        
 
         
     # close and load runs as a concurrent thread. Control goes nowhere after completion, success is detected from the states.    
@@ -287,7 +295,7 @@ class ArtShow(Show):
         self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
         if self.next_player is None:
             self.mon.err(self,"Unknown Track Type: ")
-            self.terminate_signal=True
+            self.req_next=True
             self.what_next()
         else:
             # and load the next after a wait
@@ -315,7 +323,7 @@ class ArtShow(Show):
         if self.current_player is not None and self.current_player.get_play_state() == 'showing':
             if self.trace: print 'artshow/what_next - closing_current from ',self.ending_reason 
             self.current_player.close(None)
-        if self.next_player is not None and self.next_player.get_play_state() not in ('unloaded','load_failed'):
+        if self.next_player is not None and self.next_player.get_play_state() not in ('unloaded','closed','initialised','load-failed'):
             if self.trace: print 'artshow/what_next - unloading next from terminate'
             self.next_player.unload()
         self.wait_for_end()
@@ -328,7 +336,7 @@ class ArtShow(Show):
         if self.current_player is None or self.current_player.get_play_state() == 'closed':
             self.current_player=None
             ok_to_end+=1
-        if self.next_player is None or self.next_player.get_play_state() in ('unloaded','load_failed'):
+        if self.next_player is None or self.next_player.get_play_state() in ('unloaded','load-failed'):
             self.next_player=None
             ok_to_end+=1
         if ok_to_end != 2:
@@ -339,6 +347,9 @@ class ArtShow(Show):
             if self.ending_reason == 'end-trigger':
                 self.state='waiting'
                 self.wait_for_trigger()
+
+            elif self.ending_reason=='error':
+                self.base_close_previous()
                 
             elif self.ending_reason == 'terminate':
                 self.end('killed',"show terminated by user")
@@ -365,11 +376,39 @@ class ArtShow(Show):
                 if self.trace: print '**** previous is none****'
                 self.previous_player=None
 
+
     def closed_callback(self,status,message):
         if self.trace: print 'artshow/closed_callback '+status+' '+message,self
         # if self.trace: print '**** previous is none****'
         self.previous_player=None
 
+
+    def base_close_previous(self):
+        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": base close previous")
+        if self.trace: print 'show/base_close_previous ',self
+        # close the player from the previous track
+        if self.previous_player is not  None:
+            if self.trace: print 'show/previous not None',self.previous_player
+            if self.previous_player.get_play_state() == 'showing':
+                # showing or frozen
+                if self.trace: print 'show/closing previous',self.previous_player
+                self.previous_player.close(self._base_close_previous_callback)
+            else:
+                if self.trace: print 'show/previous is not showing'
+                self.previous_player.hide()
+                self.previous_player=None
+                self.end(self.ending_reason,'')
+        else:
+            if self.trace: print 'show/previous is None'
+            self.end(self.ending_reason,'')
+            
+                
+
+    def _base_close_previous_callback(self,status,message):
+        if self.trace: print 'show/close_previous callback, previous is None  - was',self.previous_player
+        self.previous_player.hide()
+        self.previous_player=None
+        self.end(self.ending_reason,'')
 
 # *********************
 # Interface with other shows/players to reduce black gaps

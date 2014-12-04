@@ -106,14 +106,17 @@ class AudioPlayer(Player):
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
-                self.end('error',message)
-                self=None
+                self.play_state='load-failed'
+                if self.loaded_callback is not  None:
+                    self.loaded_callback('error',message)
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
             
         # just create instance of mplayer don't bother with any pre-load
         self.mplayer=mplayerDriver(self.canvas)

@@ -66,12 +66,10 @@ class ImagePlayer(Player):
         else:
             self.image_window= self.show_params['image-window'].strip()
 
-        # parse the image_window
-        status,self.command,self.has_coords,self.image_x1,self.image_y1,self.image_x2,self.image_y2,self.image_filter=self.parse_window(self.image_window)
-        if status  == 'error':
-            self.mon.err(self,'image window error: '+self.image_window)
-            self.end('error','image window error')
-        
+
+        self.track_image_obj=None
+        self.tk_img=None
+
         # initialise the state machine
         self.play_state='initialised'    
             
@@ -82,20 +80,33 @@ class ImagePlayer(Player):
         self.track=track
         self.loaded_callback=loaded_callback   # callback when loaded
         if self.trace: print '    Imageplayer/load ',self
-        
+
+        # parse the image_window
+        status,self.command,self.has_coords,self.image_x1,self.image_y1,self.image_x2,self.image_y2,self.image_filter=self.parse_window(self.image_window)
+        if status  == 'error':
+            self.mon.err(self,'image window error: '+self.image_window)
+            self.play_state='load-failed'
+            self.loaded_callback('error','image window error: '+self.image_window)
+            return
+
+      
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
-                self.end('error',message)
+                self.play_state='load-failed'
+                self.loaded_callback('error',message)
+                return
+
 
         # load the images and text
-        status,message=self.load_x_content(enable_menu)
+        status,message=Player.load_x_content(self,enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
-            self=None
+            self.play_state='load-failed'
+            self.loaded_callback('error',message)
+            return
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
@@ -127,7 +138,7 @@ class ImagePlayer(Player):
         self.dwell_counter=0
         self.quit_signal=False
         self.paused=False
-        self.pause_text=None
+        self.pause_text_obj=None
 
         self.show_x_content()
         
@@ -191,16 +202,23 @@ class ImagePlayer(Player):
                 self.dwell_counter=self.dwell_counter+1
 
             # one time flipping of pause text
-            if self.paused is True and self.pause_text is None:
-                self.pause_text=self.canvas.create_text(100,100, anchor=NW,
-                                                        text=self.resource('imageplayer','m01'),
+            pause_text= self.resource('imageplayer','m01')
+            if pause_text==False:
+                self.mon.err(self, 'pause txt  - imageplayer m01 - not in resources.cfg')
+                self.play_state='show-failed'
+                if self.finished_callback is not None:
+                    self.finished_callback('error','pause text not found')
+                    return
+            if self.paused is True and self.pause_text_obj is None:
+                self.pause_text_obj=self.canvas.create_text(100,100, anchor=NW,
+                                                        text=pause_text,
                                                         fill="white",
                                                         font="arial 25 bold")
                 self.canvas.update_idletasks( )
                 
-            if self.paused is False and self.pause_text is not None:
-                self.canvas.delete(self.pause_text)
-                self.pause_text=None
+            if self.paused is False and self.pause_text_obj is not None:
+                self.canvas.delete(self.pause_text_obj)
+                self.pause_text_obj=None
                 self.canvas.update_idletasks( )
 
             if self.dwell != 0 and self.dwell_counter == self.dwell:
@@ -229,6 +247,7 @@ class ImagePlayer(Player):
             pil_image=None
             self.tk_img=None
             self.track_image_obj=None
+            return 'error','Track file not found '+ self.track
 
         # display track image                                    
         if pil_image is not None:
@@ -312,6 +331,7 @@ class ImagePlayer(Player):
                                                                 window_centre_y,
                                                                image=self.tk_img, anchor=CENTER)
         self.canvas.itemconfig(self.track_image_obj,state='hidden')
+        return 'normal','track content loaded';
 
     def show_track_content(self):
         self.canvas.itemconfig(self.track_image_obj,state='normal')

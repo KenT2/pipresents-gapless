@@ -277,11 +277,16 @@ class ShowManager(object):
 
 
     def _end_play_show(self,index,reason,message):
-        self.mon.log(self,'Closing Show from: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" show_ref:" + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id:' + str(index) )
+        show_ref_to_exit =ShowManager.shows[index][ShowManager.SHOW_REF]
+        show_to_exit =ShowManager.shows[index][ShowManager.SHOW_OBJ]
+        self.mon.log(self,'Exited Show to: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" from show_ref:" + show_ref_to_exit + ' show_id:' + str(index) )
         self.mon.log(self,'      Reason and message: ' + reason+ message)
-        if self.trace: print 'showmanager/_end_play_show Show is: ',ShowManager.shows[index][ShowManager.SHOW_REF] , ' show index ', index
+        if self.trace: print 'showmanager/_end_play_show Show is: ',show_ref_to_exit , ' show index ', index
+        # closes the video/audio from last track then closes the track
+        # print 'show to exit ',show_to_exit, show_to_exit.current_player,show_to_exit.previous_player
         self.set_stopped(index)
         if self.all_shows_stopped() is True:
+            pass 
             ShowManager.all_shows_ended_callback('normal','All shows ended',ShowManager.shutdown_required)
         return reason,message
 

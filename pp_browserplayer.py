@@ -58,25 +58,6 @@ class BrowserPlayer(Player):
         else:
             self.web_window= self.show_params['web-window']
 
-        reason,message,command,has_window,x1,y1,x2,y2=self.parse_window(self.web_window)
-        if reason == 'error':
-            self.mon.err(self,'web window error: '+'  ' + message + ' in ' + self.web_window)
-            self.end('error',message)
-
-        # compute web_window size
-        if has_window is False:
-            self.geometry = ' --geometry=maximized '
-        else:
-            width=x2-x1
-            height=y2-y1
-            self.geometry = "--geometry=%dx%d%+d%+d "  % (width,height,x1,y1)
-            
-        # parse browser commands to self.command_list
-        reason,message=self.parse_commands(self.track_params['browser-commands'])
-        if reason != 'normal':
-            self.mon.err(self,message)
-            self.end('error',message)
-
         # create an instance of uzbl driver
         self.bplayer=uzblDriver(self.canvas)
 
@@ -98,12 +79,41 @@ class BrowserPlayer(Player):
         self.loaded_callback=loaded_callback   # callback when loaded
         if self.trace: print '    Browserplayer/load ',self
 
+        #parse web window
+        reason,message,command,has_window,x1,y1,x2,y2=self.parse_window(self.web_window)
+        if reason == 'error':
+            self.mon.err(self,'web window error: '+'  ' + message + ' in ' + self.web_window)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
+
+
+        # compute web_window size
+        if has_window is False:
+            self.geometry = ' --geometry=maximized '
+        else:
+            width=x2-x1
+            height=y2-y1
+            self.geometry = "--geometry=%dx%d%+d%+d "  % (width,height,x1,y1)
+            
+        # parse browser commands to self.command_list
+        reason,message=self.parse_commands(self.track_params['browser-commands'])
+        if reason != 'normal':
+            self.mon.err(self,message)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
+
+
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
             if status == 'error':
                 self.mon.err(self,message)
-                self.end('error',message)
+                self.play_state='load-failed'
+                if self.loaded_callback is not  None:
+                    self.loaded_callback('error',message)
+
 
         # start loading the browser
         self.bplayer.play(self.track,self.geometry)
@@ -114,7 +124,10 @@ class BrowserPlayer(Player):
         status,message=self.load_x_content(enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
+
 
         # wait for browser to load
         self.start_load_state_machine()

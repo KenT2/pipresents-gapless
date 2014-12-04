@@ -115,7 +115,7 @@ class OMXDriver(object):
         self._pp(track, options,False)
 
     def load(self, track, options,duration):
-        self.duration=1000000*long(duration)-150000
+        self.duration=1000000*long(duration)-150000   #was 150000
         self._pp(track, options,True)
     
     def show(self,freeze_at_end_required):
@@ -130,7 +130,7 @@ class OMXDriver(object):
             self._process.send('q')
             #print 'quit suceeeded'
         else:
-            print 'quit failed'
+            # print 'quit failed'
             pass
 
     # kill the subprocess (omxplayer and omxplayer.bin). Used for tidy up on exit.
@@ -221,7 +221,7 @@ class OMXDriver(object):
             
             elif index== 0:    #0 is nice day
                 # Have a nice day detected, too late to pause
-                print 'OMXDRIVER - sends have a nice day'
+                # print 'OMXDRIVER - sends have a nice day'
                 self.end_play_signal=True
                 self.xbefore=self._process.before
                 self.xafter=self._process.after
@@ -236,7 +236,7 @@ class OMXDriver(object):
                 # if timestamp is near the end then pause 
                 if self.freeze_at_end_required is True and self.video_position>self.duration:    #microseconds
                     if self.end_pause is False:
-                        print 'OMXDRIVER - sends pause at end'
+                        # print 'OMXDRIVER - sends pause at end'
                         self.pause(' at end detected')
                         self.end_pause=True
                         self.end_play_signal=True

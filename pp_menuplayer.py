@@ -70,15 +70,16 @@ class MenuPlayer(Player):
         if self.trace: print '    Menuplayer/load ',self
 
         # load the images and text
-        status,message=self.load_x_content(enable_menu)
+        status,message=Player.load_x_content(self,enable_menu)
         if status == 'error':
             self.mon.err(self,message)
-            self.end('error',message)
-            self=None
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error',message)
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
-                self.loaded_callback('loaded','image track loaded')
+                self.loaded_callback('loaded','menu track loaded')
 
             
  
@@ -165,7 +166,9 @@ class MenuPlayer(Player):
         self.menu_text_obj=None
         self.hint_text_obj=None
             
-        self.display_menu()
+        reason,message=self.display_menu()
+        if reason=='error':
+            return reason,message
 
         # display menu text if enabled
         if self.track_params['menu-text'] != '':
@@ -187,6 +190,7 @@ class MenuPlayer(Player):
             
         self.canvas.itemconfig(self.menu_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_text_obj,state='hidden')
+        return 'normal','menu content loaded'
 
 
     def show_track_content(self):
@@ -214,14 +218,14 @@ class MenuPlayer(Player):
     def display_menu(self):
 
         # calculate menu geometry
-        error,reason=self.calculate_geometry()
-        if error != 'normal':
-            self.mon.err(self,"Menu geometry error: "+ reason)
-            self.end('error',"Menu geometry error")
-        else:
-            # display the menu entries
-            self.display_menu_entries()
-            self.canvas.update_idletasks( ) 
+        reason,message=self.calculate_geometry()
+        if reason == 'error':
+            return reason,message
+        
+        # display the menu entries
+        self.display_menu_entries()
+        self.canvas.update_idletasks( )
+        return 'normal',''
 
 
     def display_menu_entries(self):
@@ -350,9 +354,9 @@ class MenuPlayer(Player):
             self.strip_padding=0
 
         # parse the menu window
-        error,reason,self.menu_x_left,self.menu_y_top,self.menu_x_right,self.menu_y_bottom=self.parse_menu_window(self.track_params['menu-window'])
-        if error != 'normal':
-            return 'error',"Menu Window error: "+ reason
+        reason,message,self.menu_x_left,self.menu_y_top,self.menu_x_right,self.menu_y_bottom=self.parse_menu_window(self.track_params['menu-window'])
+        if reason == 'error':
+            return 'error',"Menu Window error: "+ message
 
         if self.track_params['menu-icon-mode'] == 'none' and self.track_params['menu-text-mode'] == 'none':
             return 'error','Icon and Text are both None'
@@ -610,6 +614,7 @@ class MenuPlayer(Player):
     # display the image in a menu entry
     def  display_icon_image(self):
         image_id=None
+        photo_image_id=None
         if self.track_params['menu-icon-mode'] == 'thumbnail':
             # try for the thumbnail
             if self.medialist.selected_track()['thumbnail'] != '' and os.path.exists(self.complete_path(self.medialist.selected_track()['thumbnail'])):
@@ -620,6 +625,7 @@ class MenuPlayer(Player):
                     self.track=self.complete_path(self.medialist.selected_track()['location'])
                 else:
                     self.track=''
+                    
                 if self.medialist.selected_track()['type'] == 'image' and os.path.exists(self.track) is True: 
                     self.pil_image=Image.open(self.track)
                 else:

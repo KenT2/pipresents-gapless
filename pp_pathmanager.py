@@ -81,7 +81,7 @@ class PathManager(object):
 # Extract links
 # ***********************
 
-    def parse_links(self,links_text):
+    def parse_links(self,links_text,allowed_list):
         links=[]
         lines = links_text.split('\n')
         num_lines=0
@@ -89,7 +89,7 @@ class PathManager(object):
             if line.strip() ==  "":
                 continue
             num_lines+=1
-            error_text,link=self.parse_link(line)
+            error_text,link=self.parse_link(line,allowed_list)
             if error_text != "":
                 return 'error',error_text,links
             links.append(copy.deepcopy(link))
@@ -97,19 +97,21 @@ class PathManager(object):
         # print links
         return 'normal','',links
 
-    def parse_link(self,line):
+    def parse_link(self,line,allowed_list):
         fields = line.split()
         if len(fields)<2 or len(fields)>3:
             return "incorrect number of fields in link",['','','']
         symbol=fields[0]
         operation=fields[1]
-        if operation not in ('return','home','call','null','exit','goto','play','jump','repeat'):
-            return "unknown operation",['','','']
-        if len(fields) ==  3:
-            arg=fields[2]
+        if operation in allowed_list or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
+            if len(fields) ==  3:
+                arg=fields[2]
+            else:
+                arg=''                                                                                                                                                                                          
+            return '',[symbol,operation,arg]
         else:
-            arg=''
-        return '',[symbol,operation,arg]
+            return "unknown operation",['','','']
+
 
     def merge_links(self,current_links,track_links):
         for track_link in track_links:

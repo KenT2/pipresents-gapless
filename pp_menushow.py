@@ -49,6 +49,7 @@ class MenuShow(Show):
         self.next_track=None
         self.menu_index=0
         self.menu_showing=True
+        self.req_next=''
 
 
 
@@ -102,13 +103,13 @@ class MenuShow(Show):
     def input_pressed(self,symbol,edge,source):
         Show.base_input_pressed(self,symbol,edge,source)
 
-    # overrides base
-    # service the triggers for this show
-    # menu doe not use triggers or links
-    def do_trigger_or_link(self,symbol,edge,source):
-        pass
 
-    # overrides base
+    def input_pressed_this_show(self,symbol,edge,source):
+        # menushow has only internal operation
+        operation=self.base_lookup_control(symbol,self.controls_list)
+        self.do_operation(operation,edge,source)
+
+
     def do_operation(self,operation,edge,source):
         # service the standard inputs for this show
         if self.trace: print 'menushow/input_pressed ',operation
@@ -234,7 +235,7 @@ class MenuShow(Show):
         Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,False)
 
  
-  # track has loaded so show it.
+  # track has loaded (menu or otherwise) so show it.
     def what_next_after_load(self,status,message):
         # get the calculated length of the menu for the loaded menu track
         if self.current_player.__class__.__name__ == 'MenuPlayer':
@@ -244,10 +245,10 @@ class MenuShow(Show):
             self.current_player.highlight_menu_entry(self.menu_index,True)
             
         if self.trace: print 'menushow/what_next_after_load - load complete with status: ',status,'  message: ',message
-        if self.current_player.play_state=='load_failed':
-            self.mon.err(self,'load failed')
-            self.terminate_signal=True
+        if self.current_player.play_state=='load-failed':
+            self.req_next='error'
             self.what_next_after_showing()
+
         else:
             if self.show_timeout_signal is True or self.terminate_signal  is True or self.stop_command_signal  is True or self.user_stop_signal  is True:
                 self.what_next_after_showing()
@@ -260,17 +261,26 @@ class MenuShow(Show):
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
         if self.trace: print 'menushow/finished_showing - pause at end'
         self.mon.log(self,"pause at end of showing track with reason: "+reason+ ' and message: '+ message)
+        if self.current_player.play_state == 'show-failed':
+            self.req_next = 'error'
+        else:
+            self.req_next='finished-player'
         self.what_next_after_showing()
 
     def closed_after_showing(self,reason,message):
         # showing has finished with closing of player but track instance is alive for hiding the x_content
         if self.trace: print 'menushow/closed_after_showing - closed after showing'
         self.mon.log(self,"Closed after showing track with reason: "+reason+ ' and message: '+ message)
+        if self.current_player.play_state == 'show-failed':
+            self.req_next = 'error'
+        else:
+            self.req_next='closed-player'
         self.what_next_after_showing()
 
     # subshow or child show has ended
     def end_shower(self,show_id,reason,message):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ': Returned from shower with ' + reason +' ' + message)
+        self.req_next=reason
         Show.base_end_shower(self)
         self.what_next_after_showing()
  
@@ -291,8 +301,14 @@ class MenuShow(Show):
             self.ending_reason='terminate'
             Show.base_close_or_unload(self)
 
+        elif self.req_next== 'error':
+            self.req_next=''
+            # set what to do after closed or unloaded
+            self.ending_reason='error'
+            Show.base_close_or_unload(self)
+
         # show timeout
-        if self.show_timeout_signal is True:
+        elif self.show_timeout_signal is True:
             self.show_timeout_signal=False
             # set what to do when closed or unloaded
             self.ending_reason='show-timeout'
