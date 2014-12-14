@@ -85,13 +85,13 @@ class GapShow(Show):
 # Respond to external events
 # ********************************
 
-    # stop received from another concurrent show
-    def managed_stop(self):
-        Show.base_managed_stop(self)
+    # exit received from another concurrent show
+    def exit(self):
+        Show.base_exit(self)
 
     # terminate Pi Presents
-    def terminate(self,reason):
-        Show.base_terminate(self,reason)
+    def terminate(self):
+        Show.base_terminate(self)
 
 
    # respond to input events
@@ -147,7 +147,7 @@ class GapShow(Show):
             # use 'play' to start child if state=playing or to trigger the show if waiting for trigger
             if self.state == 'playing':
                 if self.show_params['has-child'] == 'yes':
-                    # set a signal because must stop current track befroe running child show
+                    # set a signal because must stop current track before running child show
                     self.play_child_signal=True
                     self.child_track_ref='pp-child-show'
                     # and stop the current track if its running
@@ -316,7 +316,7 @@ class GapShow(Show):
             self.what_next_after_showing()
 
         else:
-            if self.terminate_signal is True or self.stop_command_signal is True or self.user_stop_signal is True:
+            if self.terminate_signal is True or self.exit_signal is True or self.user_stop_signal is True:
                 self.what_next_after_showing()
             else:
                 if self.trace: print 'gapshow/what next_after_load- showing track'
@@ -354,7 +354,7 @@ class GapShow(Show):
 
     def print_what_next_after_showing_state(self):
         print '* terminate signal', self.terminate_signal
-        print '* stop command signal', self.stop_command_signal   
+        print '* exit signal', self.exit_signal   
         print '* user stop  signal', self.user_stop_signal
         print '* previous track  signal', self.previous_track_signal
         print '* next track  signal', self.next_track_signal
@@ -370,14 +370,14 @@ class GapShow(Show):
         # some of the conditions can happen at any time, others only when a track is closed or at pause_at_end
         if self.trace: print 'gapshow/what_next_after_showing '
         if self.trace: self.print_what_next_after_showing_state()
-        self.print_what_next_after_showing_state()
+        # self.print_what_next_after_showing_state()
         
         # need to terminate
         if self.terminate_signal is True:
             self.terminate_signal=False
             self.stop_timers()
             # set what to do after closed or unloaded
-            self.ending_reason='terminate'
+            self.ending_reason='killed'
             Show.base_close_or_unload(self)
 
         elif self.req_next== 'error':
@@ -385,6 +385,13 @@ class GapShow(Show):
             self.req_next=''
             # set what to do after closed or unloaded
             self.ending_reason='error'
+            Show.base_close_or_unload(self)
+
+        # used for exiting show from other shows, time of day, external etc.
+        elif self.exit_signal is True:
+            self.exit_signal=False
+            self.stop_timers()
+            self.ending_reason='exit'
             Show.base_close_or_unload(self)
 
        # repeat=interval and last track has finished so waiting for interval timer
@@ -399,13 +406,6 @@ class GapShow(Show):
             else:
                 self.poll_for_interval_timer=self.canvas.after(1000,self.what_next_after_showing)
   
-
-        # used by managed_stop for stopping show from other shows. 
-        elif self.stop_command_signal is True:
-            self.stop_command_signal=False
-            self.stop_timers()
-            self.ending_reason='stop-command'
-            Show.base_close_or_unload(self)
 
         # user wants to stop the show
         elif self.user_stop_signal is True:
@@ -486,7 +486,7 @@ class GapShow(Show):
                     # print 'AT START'
                     if  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'repeat':
                         # self.state='waiting'
-                        self.direction='forward'
+                        self.direction='backward'
                         self.wait_for_trigger()
                     elif  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level != 0:
                         self.direction='backward'

@@ -3,12 +3,12 @@
 """
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
 on the Raspberry Pi.
-It is aimed at primarily at interaction in musems, exhibitions and galleries
+It is aimed at primarily at  musems, exhibitions and galleries
 but has many other applications including digital signage
 
 Version 1.3 [pipresents-gapless]
 Copyright 2012/2013/2014, Ken Thompson
-
+See github for licence conditions
 See manual.pdf for instructions.
 """
 import os
@@ -39,8 +39,8 @@ class PiPresents(object):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.2"
         self.pipresents_minorissue = '1.3.1a'
-        self.nonfull_window_width = 0.5 # proportion of width
-        self.nonfull_window_height= 0.6 # proportion of height
+        self.nonfull_window_width = 0.45 # proportion of width
+        self.nonfull_window_height= 0.7 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
         self.nonfull_window_y=0   # position of top left corner
         
@@ -163,7 +163,7 @@ class PiPresents(object):
             self.end('error','start show not found')
 
         if self.starter_show['start-show']=='':
-             self.mon.warn(self,"No Start Shows")       
+             self.mon.warn(self,"No Start Shows in Start Show")       
 
 # ********************
 # SET UP THE GUI
@@ -204,15 +204,16 @@ class PiPresents(object):
             self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
 
             
-        # canvas covers the whole window
+        # canvas covers the whole window whatever the size of the window
         self.canvas_height=self.screen_height
         self.canvas_width=self.screen_width
+        self.mon.log(self, 'screen dimensions are ' + str(self.screen_width) + ' x ' + str(self.screen_height) + ' pixcels')
         
         # make sure focus is set.
         self.root.focus_set()
 
         # define response to main window closing.
-        self.root.protocol ("WM_DELETE_WINDOW", self.exit_pressed)
+        self.root.protocol ("WM_DELETE_WINDOW", self.terminate_pressed)
 
         # setup a canvas onto which will be drawn the images or text
         self.canvas = Canvas(self.root, bg='black')
@@ -220,7 +221,6 @@ class PiPresents(object):
         self.canvas.config(height=self.canvas_height,
                            width=self.canvas_width,
                            highlightthickness=0)
-        # self.canvas.pack()
         self.canvas.place(x=0,y=0)
 
         self.canvas.focus_set()
@@ -305,11 +305,10 @@ class PiPresents(object):
 
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message,force_shutdown):
-        self.mon.log(self,"All shows ended, so terminate Pi Presents")
         if force_shutdown is True:
             self.shutdown_required=True
             self.mon.log(self,"shutdown forced by profile")  
-            self.terminate('killed')
+            self.terminate()
         else:
             self.end(reason,message)
 
@@ -326,16 +325,17 @@ class PiPresents(object):
 
     def tod_pressed(self,show_ref,command):
         print 'tod pressed',show_ref,command
-        if command=='start-show':
+        if command=='start':
             self.show_manager.control_a_show([show_ref,'start'])
-        elif command == 'stop-show':
+        elif command == 'exit':
             self.show_manager.control_a_show([show_ref,'exit'])
     
-    # all input events call this callback with a symbolic name.              
+    # all input events call this callback with a symbolic name.
+    # handle events that affect PP overall, otherwise pass to all active shows
     def input_pressed(self,symbol,edge,source):
-        self.mon.log(self,"input received: "+symbol)
-        if symbol == 'pp-exit':
-            self.exit_pressed()
+        self.mon.log(self,"event received: "+symbol)
+        if symbol == 'pp-terminate':
+            self.terminate_pressed()
         elif symbol == 'pp-shutdown':
             self.shutdown_pressed('delay')
         elif symbol == 'pp-shutdownnow':
@@ -364,23 +364,22 @@ class PiPresents(object):
             self.exit_pressed()
 
          
-    def exit_pressed(self):
-        self.mon.log(self, "kill received from user")
-        # terminate any running shows and players     
-        self.mon.log(self,"kill sent to shows")   
-        self.terminate('killed')
+    def terminate_pressed(self):
+        self.mon.log(self, "terminate received from user")
+        # terminate any running shows and players      
+        self.terminate()
 
 
      # kill or error
-    def terminate(self,reason):
+    def terminate(self):
         needs_termination=False
         for show in self.show_manager.shows:
             if show[ShowManager.SHOW_OBJ] is not None:
                 needs_termination=True
                 self.mon.log(self,"Sent terminate to show "+ show[ShowManager.SHOW_REF])
-                show[ShowManager.SHOW_OBJ].terminate(reason)
+                show[ShowManager.SHOW_OBJ].terminate()
         if needs_termination is False:
-            self.end(reason,'terminate - no termination of lower levels required')
+            self.end('killed','killed - no termination of shows required')
 
 
 # ******************************
@@ -388,19 +387,23 @@ class PiPresents(object):
 # **************************
 
     def end(self,reason,message):
-        self.mon.log(self,"Pi Presents ending with message: " + reason + ' ' + message)
+        self.mon.log(self,"Pi Presents ending with reason: " + reason)
         # print gc.collect()
         # print gc.garbage
-        if reason == 'error':
-            self.tidy_up()
-            self.mon.log(self, "exiting because of error")
+        self.root.destroy()
+        self.tidy_up()
+        if reason == 'killed':
+            self.mon.log(self, "Pi Presents Aborted, au revoir")
+            # close logging files 
+            self.mon.finish()
+            exit()     
+        elif reason == 'error':
+            self.mon.log(self, "Pi Presents closing because of error, sorry")
             # close logging files 
             self.mon.finish()
             exit()            
         else:
-            self.tidy_up()
-            self.root.destroy()
-            self.mon.log(self,"no error - exiting normally")
+            self.mon.log(self,"Pi Presents  exiting normally, bye")
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
@@ -428,17 +431,17 @@ class PiPresents(object):
 
 
 
-# *****************************
-# utilitities
-# ****************************
-
-    def resource(self,section,item):
-        value=self.rr.get(section,item)
-        if value is False:
-            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self.terminate("error")
-        else:
-            return value
+## *****************************
+## utilitities
+## ****************************
+##
+##    def resource(self,section,item):
+##        value=self.rr.get(section,item)
+##        if value is False:
+##            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+##            self.terminate("error")
+##        else:
+##            return value
 
           
 if __name__ == '__main__':

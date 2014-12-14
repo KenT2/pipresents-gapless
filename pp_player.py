@@ -36,7 +36,15 @@ class Player(object):
         self.show_id=show_id
         self.showlist=showlist
         self.root=root
-        self.canvas = canvas
+        self.canvas=canvas['canvas-obj']
+        self.show_canvas_x1 = canvas['show-canvas-x1']
+        self.show_canvas_y1 = canvas['show-canvas-y1']
+        self.show_canvas_x2 = canvas['show-canvas-x2']
+        self.show_canvas_y2 = canvas['show-canvas-y2']
+        self.show_canvas_width = canvas['show-canvas-width']
+        self.show_canvas_height= canvas['show-canvas-height']
+        self.show_canvas_centre_x= canvas['show-canvas-centre-x']
+        self.show_canvas_centre_y= canvas['show-canvas-centre-y']
         self.show_params=show_params
         self.track_params=track_params
         self.pp_dir=pp_dir
@@ -83,8 +91,12 @@ class Player(object):
         self.freeze_at_end_required='no' # overriden by videoplayer
         self.tick_timer=None
         self.terminate_signal=False
-        self.previous_player=None
         self.play_state=''
+
+
+
+    def pre_load(self):
+        pass
 
               
     # common bits of show(....) 
@@ -104,7 +116,6 @@ class Player(object):
         else:      
             # create animation events
             reason,message=self.ppio.animate(self.animate_begin_text,id(self))
-            print 'ANIMATE FAILED',reason,message
             if reason  ==  'error':
                 self.mon.err(self,message)
                 self.play_state='show-failed'
@@ -155,10 +166,10 @@ class Player(object):
                 return
 
 
-    # overidden by videoplayer becaus eof freeze at end
-    def terminate(self,reason):
+    def terminate(self):
         if self.trace:  print '    Player/terminate ',self
         self.terminate_signal=True
+        print 'play state',self.play_state
         if self.play_state == 'showing':
             # call the derived class's stop method
             self.stop()
@@ -221,17 +232,21 @@ class Player(object):
             else:
                 pil_background_img=Image.open(background_img_file)
                 # print 'pil_background_img ',pil_background_img
+                image_width,image_height=pil_background_img.size
+                window_width=self.show_canvas_width
+                window_height=self.show_canvas_height
+                if image_width != window_width or image_height != window_height:
+                    print 'resizing'
+                    pil_background_img=pil_background_img.resize((window_width, window_height))
                 self.background = ImageTk.PhotoImage(pil_background_img)
                 del pil_background_img
                 # print 'self.background ',self.background
-                self.background_obj = self.canvas.create_image(int(self.canvas['width'])/2,
-                                                               int(self.canvas['height'])/2,
+                self.background_obj = self.canvas.create_image(self.show_canvas_x1,
+                                                               self.show_canvas_y1,
                                                                image=self.background,
-                                                               anchor=CENTER)
+                                                               anchor=NW)
                 # print '\nloaded background_obj: ',self.background_obj
 
-
-            
 
         # load the track content.  Dummy function below is overridden in players          
         status,message=self.load_track_content()
@@ -240,8 +255,8 @@ class Player(object):
                           
         # load show text if enabled
         if self.show_params['show-text'] !=  '' and self.track_params['display-show-text'] == 'yes':
-            self.show_text_obj=self.canvas.create_text(int(self.show_params['show-text-x']),
-                                                       int(self.show_params['show-text-y']),
+            self.show_text_obj=self.canvas.create_text(int(self.show_params['show-text-x'])+self.show_canvas_x1,
+                                                       int(self.show_params['show-text-y'])+self.show_canvas_y1,
                                                        anchor=NW,
                                                        text=self.show_params['show-text'],
                                                        fill=self.show_params['show-text-colour'],
@@ -250,8 +265,8 @@ class Player(object):
 
         # load track text if enabled
         if self.track_params['track-text'] !=  '':
-            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x']),
-                                                        int(self.track_params['track-text-y']),
+            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x'])+self.show_canvas_x1,
+                                                        int(self.track_params['track-text-y'])+ self.show_canvas_y1,
                                                         anchor=NW,
                                                         text=self.track_params['track-text'],
                                                         fill=self.track_params['track-text-colour'],
@@ -259,12 +274,14 @@ class Player(object):
 
         # load instructions if enabled
         if enable_menu is  True:
-            self.hint_obj=self.canvas.create_text(int(self.show_params['hint-x']),
-                                                  int(self.show_params['hint-y']),
+            self.hint_obj=self.canvas.create_text(int(self.show_params['hint-x'])+ self.show_canvas_x1,
+                                                  int(self.show_params['hint-y'])+ self.show_canvas_y1,
                                                   text=self.show_params['hint-text'],
                                                   fill=self.show_params['hint-colour'],
                                                   font=self.show_params['hint-font'],
                                                   anchor=NW)
+
+        self.display_show_canvas_rectangle()
 
         self.canvas.tag_raise('pp-click-area')
         self.canvas.itemconfig(self.background_obj,state='hidden')
@@ -273,6 +290,14 @@ class Player(object):
         self.canvas.itemconfig(self.hint_obj,state='hidden')
         self.canvas.update_idletasks( )
         return 'normal','x-content loaded'
+
+
+    # display the rectangle that is the show canvas
+    def display_show_canvas_rectangle(self):
+            coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2]
+            self.canvas.create_rectangle(coords,
+                                               outline='white',
+                                               fill='')
 
 
     # dummy functions to manipulate the track content, overidden in some players,

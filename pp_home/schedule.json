@@ -3,16 +3,16 @@
 	[
 	{"day":"everyday",
 		"shows":[
-					{"show-ref":"mediashow",
+					{"show-ref":"xmediashow",
 					"times":[
-					["start-show","9:50"],["stop-show","10:00"],
-					["start-show","10:30"],["stop-show","12:40"] 
+					["start","9:50"],["exit","10:00"],
+					["start","10:30"],["exit","12:40"] 
 							]
 					},
-					{"show-ref":"menushow",
+					{"show-ref":"xmenushow",
 					"times":[
-					["start-show","10:50"],["stop-show","11:00"],
-					["start-show","11:30"],["stop-show","13:40"] 
+					["start","10:50"],["exit","11:00"],
+					["start","11:30"],["exit","13:40"] 
 							]
 					}
 				]
@@ -24,29 +24,29 @@
 	[
 	{"day":"saturday",
 		"shows":[
-					{"show-ref":"mediashow",
+					{"show-ref":"xmediashow",
 					"times":[
-					["start-show","19:50"],["stop-show","20:00"],
-					["start-show","20:30"],["stop-show","22:40"]
+					["start","19:50"],["exit","20:00"],
+					["start","20:30"],["exit","22:40"]
 							]
 					},
-					{"show-ref":"menushow",
+					{"show-ref":"xmenushow",
 					"times":[
-					["start-show","20:50"],["stop-show","21:00"],
-					["start-show","21:30"],["stop-show","23:40"] 
+					["start","20:50"],["exit","21:00"],
+					["start","21:30"],["exit","23:40"] 
 							]
 					}
 				]
 	},
 	{"day":"thursday",
 		"shows":[
-					{"show-ref":"mediashow",
+					{"show-ref":"xmediashow",
 					"times":[
-					["start-show","9:50"],["stop-show","10:00"],
-					["start-show","10:30"],["stop-show","10:40"] 
+					["start","9:50"],["exit","10:00"],
+					["start","10:30"],["exit","10:40"] 
 							]
 					},
-					{"show-ref":"menushow",
+					{"show-ref":"xmenushow",
 					"times":[
 							]
 					}				
@@ -60,10 +60,10 @@
 	[
 	{"day":"1",
 		"shows":[
-					{"show-ref":"radiobuttonshow",
+					{"show-ref":"xradiobuttonshow",
 					"times":[
-					["start-show","19:50"],["stop-show","20:00"],
-					["start-show","20:30"],["stop-show","22:40"]
+					["start","19:50"],["exit","20:00"],
+					["start","20:30"],["exit","22:40"]
 							]
 					}
 				]
@@ -76,30 +76,30 @@
 	[
 	{"day":"2014-08-31",
 		"shows":[
-					{"show-ref":"mediashow",
+					{"show-ref":"xmediashow",
 					"times":[
-					["start-show","09:00:00"],
-					["start-show","23:59:50"],["stop-show","23:59:55"]
+					["start","09:00:00"],
+					["start","23:59:50"],["exit","23:59:55"]
 							]
 					},
-					{"show-ref":"menushow",
+					{"show-ref":"xmenushow",
 					"times":[
-					["start-show","09:00:00"],["stop-show","10:00:00"],
-					["start-show","23:59:50"],["stop-show","23:59:55"]
+					["start","09:00:00"],["exit","10:00:00"],
+					["start","23:59:50"],["exit","23:59:55"]
 							]
 					}
 				]
 	},
 	{"day":"2014-09-01",
 		"shows":[
-					{"show-ref":"mediashow",
+					{"show-ref":"xmediashow",
 					"times":[
-					["start-show","00:00:00"],["stop-show","00:00:01"]
+					["start","00:00:00"],["exit","00:00:01"]
 							]
 					},
-					{"show-ref":"menushow",
+					{"show-ref":"xmenushow",
 					"times":[
-					["start-show","00:00:01"],["stop-show","00:00:02"]
+					["start","00:00:01"],["exit","00:00:02"]
 							]
 					}
 				]

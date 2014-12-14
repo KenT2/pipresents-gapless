@@ -32,7 +32,16 @@ class Show(object):
         self.show_id=show_id
         self.show_params=show_params
         self.root=root
-        self.canvas=canvas
+        self.show_canvas=canvas
+        self.canvas=canvas['canvas-obj']
+        self.show_canvas_x1 = canvas['show-canvas-x1']
+        self.show_canvas_y1 = canvas['show-canvas-y1']
+        self.show_canvas_x2 = canvas['show-canvas-x2']
+        self.show_canvas_y2 = canvas['show-canvas-y2']
+        self.show_canvas_width = canvas['show-canvas-width']
+        self.show_canvas_height= canvas['show-canvas-height']
+        self.show_canvas_centre_x= canvas['show-canvas-centre-x']
+        self.show_canvas_centre_y= canvas['show-canvas-centre-y']
         self.showlist=showlist
         self.pp_dir=pp_dir
         self.pp_home=pp_home
@@ -62,7 +71,7 @@ class Show(object):
         self.shower=None
         self.previous_shower=None
         self.user_stop_signal= False
-        self.stop_command_signal=False
+        self.exit_signal=False
         self.terminate_signal=False
         self.show_timeout_signal=False
         self.egg_timer=None
@@ -119,7 +128,7 @@ class Show(object):
     def subshow_ready_callback(self):
         self.mon.err(self,"subshow_ready_callback not overidden")
         # set what to do when closed or unloaded
-        self.ending_reason='terminate'
+        self.ending_reason='killed'
         Show.base_close_or_unload(self)
 
 
@@ -180,7 +189,7 @@ class Show(object):
     def what_next_after_showing(self):
         self.mon.err(self,"what_next_after showing not overidden")
         # set what to do when closed or unloaded
-        self.ending_reason='terminate'
+        self.ending_reason='killed'
         Show.base_close_or_unload(self)
 
 
@@ -190,32 +199,32 @@ class Show(object):
         self.mon.log(self,"Track type is: "+ track_type)
                                       
         if track_type == "image":
-            return ImagePlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return ImagePlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
                                self.pp_profile,self.end)
     
         elif track_type == "video":
-            return VideoPlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return VideoPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
                                self.pp_profile,self.end)
 
         elif track_type == "audio":
-            return AudioPlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return AudioPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
                                self.pp_profile,self.end)
 
         elif track_type == "web":
-            return BrowserPlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return BrowserPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                  self.show_params,selected_track,self.pp_dir,self.pp_home,
                                  self.pp_profile,self.end)
   
         elif track_type == "message":
-            return MessagePlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return MessagePlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                  self.show_params,selected_track,self.pp_dir,self.pp_home,
                                  self.pp_profile,self.end)
 
         elif track_type == "menu":
-            return MenuPlayer(self.show_id,self.showlist,self.root,self.canvas,
+            return MenuPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                               self.show_params,selected_track,self.pp_dir,self.pp_home,
                               self.pp_profile,self.end)
                                    
@@ -227,7 +236,7 @@ class Show(object):
     def track_ready_callback(self):
         self.mon.err(self,"track_ready_callback not overidden")
         # set what to do when closed or unloaded
-        self.ending_reason='terminate'
+        self.ending_reason='killed'
         Show.base_close_or_unload(self)
 
 
@@ -242,13 +251,13 @@ class Show(object):
             if self.previous_player.get_play_state() == 'showing':
                 # showing or frozen
                 if self.trace: print 'show/closing previous',self.previous_player
-                self.previous_player.close(self._base_closed_callback)
+                self.previous_player.close(self._base_closed_callback_previous)
             else:
                 if self.trace: print 'show/previous is none\n'
                 self.previous_player=None
 
 
-    def _base_closed_callback(self,status,message):
+    def _base_closed_callback_previous(self,status,message):
         if self.trace: print 'show/closed_callback previous is None  - was',self.previous_player
         self.previous_player=None
 
@@ -280,14 +289,14 @@ class Show(object):
         else:
             # current_player is None because closed further down show stack
             if self.trace: print 'show ended with current_player=None because ',self.ending_reason
-            if self.ending_reason == 'terminate':
-                self.end('killed',"show terminated")
+            if self.ending_reason == 'killed':
+                self.base_close_previous()
 
             elif self.ending_reason == 'error':
                 self.base_close_previous()
 
-            elif self.ending_reason == 'stop-command':
-                self.end('normal',"show quit by stop-command")
+            elif self.ending_reason == 'exit':
+                self.end('normal',"show quit by exit command")
 
             elif self.ending_reason == 'user-stop':
                 self.end('normal',"show quit by stop operation")
@@ -297,42 +306,48 @@ class Show(object):
                 self.end('error',"Unhandled ending_reason")          
 
 
+    def _base_closed_callback_current(self,status,message):
+        if self.trace: print 'show/closed_callback current is None  - was',self.current_player
+
+
     # wait for unloading or closing to complete then end
     def _wait_for_end(self):
-        if self.trace: print 'show/wait_for_end',self.current_player,self.current_player.get_play_state()
-        if self.current_player.play_state not in ('unloaded','closed','initialised','load-failed'):
-            self.canvas.after(50,self._wait_for_end)
-        else:
-            if self.trace: print 'show/wait_for_end - current closed ', self.current_player,self.ending_reason
-     
-            if self.ending_reason == 'terminate':
-                self.current_player.hide()
-                self.current_player=None
-                self.end('killed',"show terminated or error")
-
-            elif self.ending_reason == 'error':
-                self.current_player.hide()
-                self.current_player=None
-                self.base_close_previous()
-
-                
-            elif self.ending_reason == 'show-timeout':
-                self.current_player.hide()
-                self.current_player=None
-                self.end('normal',"show timeout")
-                
-            elif self.ending_reason == 'stop-command':
-                self.current_player.hide()
-                self.current_player=None
-                self.end('normal',"show quit by stop-command")
-
-            elif self.ending_reason == 'user-stop':
-                self.end('normal',"show quit by stop operation")
-                
+        if self.trace: print 'show/wait_for_end',self.current_player
+        if self.current_player is not None:
+            if self.trace: print 'show/wait_for_end - play state is ',self.current_player.get_play_state()
+            if self.current_player.play_state not in ('unloaded','closed','initialised','load-failed'):
+                self.canvas.after(50,self._wait_for_end)
             else:
-                self.mon.err(self,"Unhandled ending_reason: ")
-                self.end('error',"Unhandled ending_reason")       
+                if self.trace: print 'show/wait_for_end - current closed ', self.current_player,self.ending_reason
+         
+                if self.ending_reason == 'killed':
+                    self.current_player.hide()
+                    self.current_player=None
+                    self.base_close_previous()
 
+                elif self.ending_reason == 'error':
+                    self.current_player.hide()
+                    self.current_player=None
+                    self.base_close_previous()
+
+                elif self.ending_reason == 'exit':
+                    self.current_player.hide()
+                    self.current_player=None
+                    self.base_close_previous()
+                    
+                elif self.ending_reason == 'show-timeout':
+                    self.current_player.hide()
+                    self.current_player=None
+                    self.end('normal',"show timeout")
+                    
+                elif self.ending_reason == 'user-stop':
+                    self.end('normal',"show quit by stop operation")
+                    
+                else:
+                    self.mon.err(self,"Unhandled ending_reason: ")
+                    self.end('error',"Unhandled ending_reason")
+        else:
+            if self.trace: print 'show/wait_for_end - current is None ', self.current_player,self.ending_reason
 
 
 # ***************************
@@ -367,7 +382,6 @@ class Show(object):
 
 
     def base_close_previous(self):
-        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": base close previous")
         if self.trace: print 'show/base_close_previous ',self
         # close the player from the previous track
         if self.previous_player is not  None:
@@ -394,24 +408,24 @@ class Show(object):
         self.end(self.ending_reason,'')
 
 
-    # stop received from another concurrent show
-    def base_managed_stop(self):
-        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Stop command received")
-        if self.trace: print 'show/managed_stop ',self
-        # set signal to stop the show when all  sub-shows and players have ended
-        self.stop_command_signal=True
+    # exit received from external source
+    def base_exit(self):
+        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Exit received")
+        if self.trace: print 'show/exit ',self
+        # set signal to exit the show when all  sub-shows and players have ended
+        self.exit_signal=True
         # then stop subshow or tracks.
         if self.shower is not None:
-            self.shower.managed_stop()
+            self.shower.exit()
         elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
-            self.end('normal','stopped by ShowManager')
+            self.end('normal','exit by ShowManager')
 
     # show timeout callback received
     def base_show_timeout_stop(self):
-        if self.trace: print 'show/managed_stop ',self
-        # set signal to stop the show when all  sub-shows and players have ended
+        if self.trace: print 'show/base_show_timeout_stop ',self
+        # set signal to exit the show when all  sub-shows and players have ended
         self.show_timeout_signal=True
         # then stop and shows or tracks.
         if self.shower is not None:
@@ -423,21 +437,22 @@ class Show(object):
 
 
     # dummy, normally overidden by derived class
-    def terminate(self,reason):
+    def terminate(self):
         self.mon.err(self,"terminate not overidden")
         self.base_end('error',"terminate not overidden")
 
     # terminate Pi Presents
-    def base_terminate(self,reason):
-        if self.trace: print 'show/terminate ',self
+    def base_terminate(self):
+        if self.trace: print 'show/base_terminate ',self
         # set signal to stop the show when all  sub-shows and players have ended
         self.terminate_signal=True
         if self.shower is not None:
-            self.shower.terminate(reason)
+            self.shower.terminate()
         elif self.current_player is not None:
-            self.current_player.terminate(reason)
+            self.ending_reason='killed'
+            Show.base_close_or_unload(self)
         else:
-            self.end(reason,' terminated with no shower or player to terminate')
+            self.end('killed',' terminated with no shower or player to terminate')
 
 
   # respond to input events
@@ -445,20 +460,10 @@ class Show(object):
         self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input event: " + symbol)
 
         if self.shower is not None:
-            # if next lower show is running pass down to lower level
-            # print 'pass to lower level ',symbol
             self.shower.input_pressed(symbol,edge,source)
         else:
             self.input_pressed_this_show(symbol,edge,source)
             
-##            # use the symbol for the running show
-##            # is the symbolic name  bound to an internal operation. Returns '' if not bound
-##            operation=self.base_lookup_control(symbol,self.controls_list)
-##            if operation == '':
-##                # internal operation not found so treat as a trigger
-##                self.do_trigger_or_link(symbol,edge,source)
-##            else:
-##                self.do_operation(operation,edge,source)
 
 
 # ******************************
@@ -490,8 +495,8 @@ class Show(object):
         
     def display_eggtimer(self,text):
         if text != '':
-            self.egg_timer=self.canvas.create_text(int(self.show_params['eggtimer-x']),
-                                                   int(self.show_params['eggtimer-y']),
+            self.egg_timer=self.canvas.create_text(int(self.show_params['eggtimer-x'])+ self.show_canvas_x1,
+                                                   int(self.show_params['eggtimer-y']) + self.show_canvas_y1,
                                                    text= text,
                                                    fill=self.show_params['eggtimer-colour'],
                                                    font=self.show_params['eggtimer-font'],
@@ -514,8 +519,8 @@ class Show(object):
 
     def display_admin_message(self,text):
 
-        self.admin_message=self.canvas.create_text(int(self.show_params['eggtimer-x']),
-                                                   int(self.show_params['eggtimer-y']),
+        self.admin_message=self.canvas.create_text(int(self.show_params['eggtimer-x']) + self.show_canvas_x1,
+                                                   int(self.show_params['eggtimer-y'])+self.show_canvas_y1,
                                                    text= text,
                                                    fill=self.show_params['eggtimer-colour'],
                                                    font=self.show_params['eggtimer-font'],
@@ -533,6 +538,8 @@ class Show(object):
 # ******************************
 # utilities
 # ******************************        
+
+
 
     def base_complete_path(self,track_file):
         #  complete path of the filename of the selected entry

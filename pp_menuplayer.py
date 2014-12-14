@@ -44,7 +44,7 @@ class MenuPlayer(Player):
 
                     
         # comment this out to turn the trace off          
-        self.trace=True
+        # self.trace=True
         
         # control debugging log
         self.mon.on()
@@ -76,6 +76,7 @@ class MenuPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
@@ -172,8 +173,8 @@ class MenuPlayer(Player):
 
         # display menu text if enabled
         if self.track_params['menu-text'] != '':
-            self.menu_text_obj=self.canvas.create_text(int(self.track_params['menu-text-x']),
-                                                       int(self.track_params['menu-text-y']),
+            self.menu_text_obj=self.canvas.create_text(int(self.track_params['menu-text-x'])+self.show_canvas_x1,
+                                                       int(self.track_params['menu-text-y'])+self.show_canvas_y1,
                                                        anchor=NW,
                                                        text=self.track_params['menu-text'],
                                                        fill=self.track_params['menu-text-colour'],
@@ -182,8 +183,8 @@ class MenuPlayer(Player):
         # display instructions (hint)
         hint_text=self.track_params['hint-text']
         if hint_text != '':
-            self.hint_text_obj=self.canvas.create_text(int(self.track_params['hint-x']),
-                                                       int(self.track_params['hint-y']),
+            self.hint_text_obj=self.canvas.create_text(int(self.track_params['hint-x'])+self.show_canvas_x1,
+                                                       int(self.track_params['hint-y'])+self.show_canvas_y1,
                                                        anchor=NW,
                                                        text=hint_text,
                                                        fill=self.track_params['hint-colour'])
@@ -287,7 +288,7 @@ class MenuPlayer(Player):
                     
 
     def hide_menu_entries(self):
-        print 'HIDE MENU ENTRIES'
+        # print 'HIDE MENU ENTRIES'
         for entry in self.menu_entry_id:
             #0 icon_id   polygon
             self.canvas.itemconfig(entry[0],state='hidden')
@@ -461,7 +462,10 @@ class MenuPlayer(Player):
 
         # display calculated total rectangle guidelines for debugging
         if self.display_guidelines == 'always':
-            points=[self.menu_x_left,self.menu_y_top, self.menu_x_left+total_width,self.menu_y_top+total_height]
+            points=[self.menu_x_left + self.show_canvas_x1,
+                    self.menu_y_top + self.show_canvas_y1,
+                    self.menu_x_left+total_width + self.show_canvas_x1,
+                    self.menu_y_top+total_height + self.show_canvas_y1]
 
             # and display the icon rectangle
             self.canvas.create_rectangle(points,
@@ -471,7 +475,10 @@ class MenuPlayer(Player):
         
         # display menu rectangle guidelines for debugging
         if self.display_guidelines == 'always':
-            points=[self.menu_x_left,self.menu_y_top, self.menu_x_right,self.menu_y_bottom]
+            points=[self.menu_x_left + self.show_canvas_x1,
+                    self.menu_y_top + self.show_canvas_y1,
+                    self.menu_x_right + self.show_canvas_x1,
+                    self.menu_y_bottom + self.show_canvas_y1]
             self.canvas.create_rectangle(points,
                                          outline='blue',
                                          fill='')
@@ -487,35 +494,35 @@ class MenuPlayer(Player):
         if self.display_strip == 'yes':
             if self.direction == 'vertical':
                 # display the strip
-                strip_points=[self.entry_x - self.strip_padding -1 ,
-                              self.entry_y - self.strip_padding - 1,
-                              self.entry_x+ self.entry_width + self.strip_padding - 1,
-                              self.entry_y+self.entry_height+ self.strip_padding - 1]
+                strip_points=[self.entry_x - self.strip_padding -1  + self.show_canvas_x1,
+                              self.entry_y - self.strip_padding - 1 + self.show_canvas_y1,
+                              self.entry_x+ self.entry_width + self.strip_padding - 1 + self.show_canvas_x1,
+                              self.entry_y+self.entry_height+ self.strip_padding - 1 + self.show_canvas_y1]
                 rectangle_id=self.canvas.create_rectangle(strip_points,
                                                           outline='',
                                                           fill='gray',
                                                           stipple='gray12')
 
-                top_l_points=[self.entry_x - self.strip_padding,
-                              self.entry_y - self.strip_padding,
-                              self.entry_x + self.entry_width + self.strip_padding ,
-                              self.entry_y - self.strip_padding]
+                top_l_points=[self.entry_x - self.strip_padding + self.show_canvas_x1,
+                              self.entry_y - self.strip_padding + self.show_canvas_y1,
+                              self.entry_x + self.entry_width + self.strip_padding  + self.show_canvas_x1,
+                              self.entry_y - self.strip_padding + self.show_canvas_y1]
                 
                 top_id=self.canvas.create_line(top_l_points,
                                                fill='light gray')
                 
-                bottom_l_points=[self.entry_x - self.strip_padding,
-                                 self.entry_y + self.entry_height + self.strip_padding,
-                                 self.entry_x+ self.entry_width + self.strip_padding ,
-                                 self.entry_y+ self.entry_height + self.strip_padding]
+                bottom_l_points=[self.entry_x - self.strip_padding + self.show_canvas_x1,
+                                 self.entry_y + self.entry_height + self.strip_padding + self.show_canvas_y1,
+                                 self.entry_x+ self.entry_width + self.strip_padding  + self.show_canvas_x1,
+                                 self.entry_y+ self.entry_height + self.strip_padding + self.show_canvas_y1]
                 
                 bottom_id=self.canvas.create_line(bottom_l_points,
                                                   fill='dark gray')
 
-                left_l_points=[self.entry_x - self.strip_padding,
-                               self.entry_y - self.strip_padding,
-                               self.entry_x - self.strip_padding,
-                               self.entry_y + self.entry_height + self.strip_padding]
+                left_l_points=[self.entry_x - self.strip_padding + self.show_canvas_x1,
+                               self.entry_y - self.strip_padding + self.show_canvas_y1,
+                               self.entry_x - self.strip_padding + self.show_canvas_x1,
+                               self.entry_y + self.entry_height + self.strip_padding + self.show_canvas_y1]
                 
                 left_id=self.canvas.create_line(left_l_points,
                                                 fill='gray')
@@ -523,36 +530,36 @@ class MenuPlayer(Player):
 
             else:
                 # display the strip vertically
-                strip_points=[self.entry_x - self.strip_padding +1 ,
-                              self.entry_y - self.strip_padding +1,
-                              self.entry_x+self.entry_width + self.strip_padding -1,
-                              self.entry_y + self.entry_height+ self.strip_padding -1]
+                strip_points=[self.entry_x - self.strip_padding +1 + self.show_canvas_x1 ,
+                              self.entry_y - self.strip_padding +1 + self.show_canvas_y1,
+                              self.entry_x+self.entry_width + self.strip_padding -1 + self.show_canvas_x1,
+                              self.entry_y + self.entry_height+ self.strip_padding -1 + self.show_canvas_y1]
                 
                 rectangle_id=self.canvas.create_rectangle(strip_points,
                                                           outline='',
                                                           fill='gray',
                                                           stipple='gray12')
 
-                top_l_points=[self.entry_x - self.strip_padding,
-                              self.entry_y - self.strip_padding,
-                              self.entry_x + self.entry_width + self.strip_padding,
-                              self.entry_y - self.strip_padding]
+                top_l_points=[self.entry_x - self.strip_padding + self.show_canvas_x1,
+                              self.entry_y - self.strip_padding + self.show_canvas_y1,
+                              self.entry_x + self.entry_width + self.strip_padding + self.show_canvas_x1,
+                              self.entry_y - self.strip_padding + self.show_canvas_y1]
                 
                 top_id=self.canvas.create_line(top_l_points,
                                                fill='light gray')
                 
-                left_l_points=[self.entry_x - self.strip_padding,
-                               self.entry_y - self.strip_padding,
-                               self.entry_x - self.strip_padding,
-                               self.entry_y + self.entry_height+ self.strip_padding]
+                left_l_points=[self.entry_x - self.strip_padding + self.show_canvas_x1,
+                               self.entry_y - self.strip_padding + self.show_canvas_y1,
+                               self.entry_x - self.strip_padding + self.show_canvas_x1,
+                               self.entry_y + self.entry_height+ self.strip_padding + self.show_canvas_y1]
                 
                 left_id=self.canvas.create_line(left_l_points,
                                                 fill='gray')
 
-                right_l_points=[self.entry_x +self.entry_width + self.strip_padding,
-                                self.entry_y - self.strip_padding,
-                                self.entry_x +self.entry_width + self.strip_padding,
-                                self.entry_y + self.entry_height+ self.strip_padding]
+                right_l_points=[self.entry_x +self.entry_width + self.strip_padding + self.show_canvas_x1,
+                                self.entry_y - self.strip_padding + self.show_canvas_y1,
+                                self.entry_x +self.entry_width + self.strip_padding + self.show_canvas_x1,
+                                self.entry_y + self.entry_height+ self.strip_padding + self.show_canvas_y1]
                 
                 right_id=self.canvas.create_line(right_l_points,
                                                  fill='dark gray')
@@ -589,7 +596,14 @@ class MenuPlayer(Player):
             self.icon_y_bottom=self.icon_y_top+self.icon_height
 
             
-            points=[self.icon_x_left,self.icon_y_top,self.icon_x_right,self.icon_y_top,self.icon_x_right,self.icon_y_bottom,self.icon_x_left,self.icon_y_bottom]
+            points=[self.icon_x_left + self.show_canvas_x1,
+                    self.icon_y_top + self.show_canvas_y1,
+                    self.icon_x_right + self.show_canvas_x1,
+                    self.icon_y_top + self.show_canvas_y1,
+                    self.icon_x_right + self.show_canvas_x1,
+                    self.icon_y_bottom + self.show_canvas_y1,
+                    self.icon_x_left + self.show_canvas_x1,
+                    self.icon_y_bottom + self.show_canvas_y1]
 
             # display guidelines make it white when not selected for debugging
             if self.display_guidelines == 'always':
@@ -642,8 +656,8 @@ class MenuPlayer(Player):
             if self.pil_image  is not  None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                 photo_image_id=ImageTk.PhotoImage(self.pil_image)
-                image_id=self.canvas.create_image(self.icon_x_left+1,
-                                         self.icon_y_top+1,
+                image_id=self.canvas.create_image(self.icon_x_left+1 + self.show_canvas_x1,
+                                         self.icon_y_top+1 + self.show_canvas_y1,
                                          image=photo_image_id,
                                          anchor=NW)
                 del self.pil_image
@@ -659,8 +673,8 @@ class MenuPlayer(Player):
             if self.pil_image is not None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                 photo_image_id=ImageTk.PhotoImage(self.pil_image)
-                image_id=self.canvas.create_image(self.icon_x_left+1,
-                                         self.icon_y_top+1,
+                image_id=self.canvas.create_image(self.icon_x_left+1 + self.show_canvas_x1,
+                                         self.icon_y_top+1 + self.show_canvas_y1,
                                          image=photo_image_id,
                                          anchor=NW)
                 del self.pil_image
@@ -720,7 +734,14 @@ class MenuPlayer(Player):
 
         # display the guidelines for debugging
         if self.display_guidelines == 'always':
-            points=[text_x_left,text_y_top,text_x_right,text_y_top,text_x_right,text_y_bottom,text_x_left,text_y_bottom]
+            points=[text_x_left + self.show_canvas_x1,
+                    text_y_top + self.show_canvas_y1,
+                    text_x_right + self.show_canvas_x1,
+                    text_y_top + self.show_canvas_y1,
+                    text_x_right + self.show_canvas_x1,
+                    text_y_bottom + self.show_canvas_y1,
+                    text_x_left + self.show_canvas_x1,
+                    text_y_bottom + self.show_canvas_y1]
             self.canvas.create_polygon(points,
                                        fill= '' ,
                                        outline='white')
@@ -735,8 +756,8 @@ class MenuPlayer(Player):
         else:
             anchor=W
             justify=LEFT
-        text_id=self.canvas.create_text(text_x,
-                                        text_y,
+        text_id=self.canvas.create_text(text_x + self.show_canvas_x1,
+                                        text_y + self.show_canvas_y1,
                                         text=self.medialist.selected_track()['title'],
                                         anchor=anchor,
                                         fill=self.track_params['entry-colour'],

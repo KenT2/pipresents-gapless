@@ -17,7 +17,7 @@ class RadioButtonShow(Show):
          * play - selects the first track to play (first-track) 
          * input_pressed,  - receives user events passes them to a Shower/Player if a track is playing,
                 otherwise actions them depending on the symbolic name supplied
-        * managed_stop  - stops the show from another show
+        *exit  - exits the show from another show, time of day scheduler or external
         * terminate  - aborts the show, used whan clsing or after errors
         * track_ready_callback - called by the next track to be played to remove the previous track from display
         * subshow_ready_callback - called by the subshow to get the last track of the parent show
@@ -108,10 +108,10 @@ class RadioButtonShow(Show):
 # Respond to external events
 # ********************************
 
-    # stop received from another concurrent show
-    def managed_stop(self):
+    # exit received from another concurrent show
+    def exit(self):
         self.stop_timers()
-        Show.base_managed_stop(self)
+        Show.base_exit(self)
 
     #  show timeout happened
     def show_timeout_stop(self):
@@ -119,9 +119,9 @@ class RadioButtonShow(Show):
         Show.base_show_timeout_stop(self)
 
     # terminate Pi Presents
-    def terminate(self,reason):
+    def terminate(self):
         self.stop_timers()
-        Show.base_terminate(self,reason)
+        Show.base_terminate(self)
 
 
    # respond to inputs
@@ -264,7 +264,7 @@ class RadioButtonShow(Show):
             self.req_next='error'
             self.what_next_after_showing()
         else:
-            if self.show_timeout_signal is True  or self.terminate_signal is True or self.stop_command_signal is True or self.user_stop_signal is True:
+            if self.show_timeout_signal is True  or self.terminate_signal is True or self.exit_signal is True or self.user_stop_signal is True:
                 self.what_next_after_showing()
             else:
                 if self.trace: print 'menushow/what_next_after_load- showing track'
@@ -310,7 +310,7 @@ class RadioButtonShow(Show):
         if self.terminate_signal is True:
             self.terminate_signal=False
             # what to do when closed or unloaded
-            self.ending_reason='terminate'
+            self.ending_reason='killed'
             Show.base_close_or_unload(self)
 
         elif self.req_next== 'error':
@@ -326,10 +326,10 @@ class RadioButtonShow(Show):
             self.ending_reason='show-timeout'
             Show.base_close_or_unload(self)
 
-        # used by managed_stop for stopping show from other shows. 
-        elif self.stop_command_signal is True:
-            self.stop_command_signal=False
-            self.ending_reason='stop-command'
+        # used by exit for stopping show from other shows. 
+        elif self.exit_signal is True:
+            self.exit_signal=False
+            self.ending_reason='exit'
             Show.base_close_or_unload(self)
 
         # user wants to stop

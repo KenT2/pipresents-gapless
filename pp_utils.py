@@ -67,9 +67,9 @@ class Monitor(object):
 
     def log(self,caller,text):
         if Monitor.global_enable >1  and self.enable:
-            print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text," ",caller
+            # print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text," ",caller
             
-            # print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
+            print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
             Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + caller.__class__.__name__ +": " + text+"\n")
              
   

@@ -7,10 +7,10 @@ class ShowManager(object):
     ShowManager manages PiPresents' concurrent shows. It does not manage sub-shows or child-shows.
     concurrent shows are always top level (level 0 shows:
     They can be started by the start show or by 'myshow start' in the Show Control field of players
-    They can be stopped either by 'myshow stop' in the Show Control field in players
+    They can be exiteded either by 'myshow exit' in the Show Control field in players
 
-    a show with the same reference should not be run twice as there is no way to reference an individual instance when stopping
-    ??? this could be changed as there is single-run to stop them, the stop command could stop all instances.
+    a show with the same reference should not be run twice as there is no way to reference an individual instance when exiting
+    ??? this could be changed as there is single-run to exit them, the exit command could exit all instances.
     """
     
     # Declare class variables
@@ -32,7 +32,7 @@ class ShowManager(object):
 # functions to manipulate show register
 # **************************************
 
-# adds a new concurrent show to the register if not already there, returns an index for use by start and stop
+# adds a new concurrent show to the register if not already there, returns an index for use by start and exit
 
     def register_show(self,ref):
         registered=self.show_registered(ref)
@@ -70,19 +70,19 @@ class ShowManager(object):
         else:
             return None
 
-    def set_stopped(self,index):
+    def set_exited(self,index):
         ShowManager.shows[index][ShowManager.SHOW_OBJ]=None
-        if self.trace: print 'showmanager/set_stopped: show_ref=',ShowManager.shows[index][ShowManager.SHOW_REF],' show_id=',index
+        if self.trace: print 'showmanager/set_exited: show_ref=',ShowManager.shows[index][ShowManager.SHOW_REF],' show_id=',index
         if self.trace: print 'concurrent shows:', ShowManager.shows
 
 
-# are all shows stopped?
-    def all_shows_stopped(self):
-        all_stopped=True
+# are all shows exited?
+    def all_shows_exited(self):
+        all_exited=True
         for show in ShowManager.shows:
             if show[ShowManager.SHOW_OBJ] is not None:
-                all_stopped=False
-        return all_stopped
+                all_exited=False
+        return all_exited
 
 
 # *********************************
@@ -123,7 +123,7 @@ class ShowManager(object):
         return 'normal',''
             
 
-# Control shows from Players so need to handle start and stop commands
+# Control shows from Players so need to handle start and exit commands
     def show_control(self,show_control_text): 
         lines = show_control_text.split('\n')
         for line in lines:
@@ -145,28 +145,28 @@ class ShowManager(object):
         if show_command == 'start':
             return self.start_show(show_ref)
         elif show_command  == 'exit':
-            return self.stop_show(show_ref)
-        elif show_command == 'close-pipresents':
-            return self.stop_all_shows()
+            return self.exit_show(show_ref)
+        elif show_command == 'closepipresents':
+            return self.exit_all_shows()
         elif show_command == 'shutdownnow':
             ShowManager.shutdown_required=True
-            return self.stop_all_shows()
+            return self.exit_all_shows()
         else:
             return 'error','command not recognised '+ show_command
 
-    def stop_show(self,show_ref):
+    def exit_show(self,show_ref):
         index=self.show_registered(show_ref)
-        self.mon.log(self,"Stopping show "+ show_ref + ' show index:' + str(index))
+        self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
         show_obj=self.show_running(index)
         if show_obj is not None:
-            show_obj.managed_stop()
-        return 'normal','stopped a concurrent show'
+            show_obj.exit()
+        return 'normal','exited a concurrent show'
             
 
-    def stop_all_shows(self):
+    def exit_all_shows(self):
         for show in ShowManager.shows:
-            self.stop_show(show[ShowManager.SHOW_REF])
-        return 'normal','stopped all shows'
+            self.exit_show(show[ShowManager.SHOW_REF])
+        return 'normal','exited all shows'
 
 
     def start_show(self,show_ref):
@@ -176,6 +176,7 @@ class ShowManager(object):
         
         show=self.showlist.show(show_index)
         index=self.register_show(show_ref)
+        canvas=self.compute_show_canvas(show)
         self.mon.log(self,'Starting Show from: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" show_ref:"+ show_ref + ' show_id' + str(index) )
         if self.show_running(index):
             self.mon.log(self,"show already running "+show_ref)
@@ -185,7 +186,7 @@ class ShowManager(object):
             show_obj = MediaShow(index,
                                  show,
                                  self.root,
-                                 self.canvas,
+                                 canvas,
                                  self.showlist,
                                  self.pp_dir,
                                  self.pp_home,
@@ -199,7 +200,7 @@ class ShowManager(object):
             show_obj = RadioButtonShow(index,
                                        show,
                                        self.root,
-                                       self.canvas,
+                                       canvas,
                                        self.showlist,
                                        self.pp_dir,
                                        self.pp_home,
@@ -212,7 +213,7 @@ class ShowManager(object):
             show_obj = HyperlinkShow(index,
                                      show,
                                      self.root,
-                                     self.canvas,
+                                     canvas,
                                      self.showlist,
                                      self.pp_dir,
                                      self.pp_home,
@@ -225,7 +226,7 @@ class ShowManager(object):
             show_obj = MenuShow(index,
                                 show,
                                 self.root,
-                                self.canvas,
+                                canvas,
                                 self.showlist,
                                 self.pp_dir,
                                 self.pp_home,
@@ -238,7 +239,7 @@ class ShowManager(object):
             show_obj= LiveShow(index,
                                show,
                                self.root,
-                               self.canvas,
+                               canvas,
                                self.showlist,
                                self.pp_dir,
                                self.pp_home,
@@ -251,7 +252,7 @@ class ShowManager(object):
             show_obj= ArtLiveShow(index,
                                   show,
                                   self.root,
-                                  self.canvas,
+                                  canvas,
                                   self.showlist,
                                   self.pp_dir,
                                   self.pp_home,
@@ -264,7 +265,7 @@ class ShowManager(object):
             show_obj= ArtMediaShow(index,
                                    show,
                                    self.root,
-                                   self.canvas,
+                                   canvas,
                                    self.showlist,
                                    self.pp_dir,
                                    self.pp_home,
@@ -279,26 +280,26 @@ class ShowManager(object):
     def _end_play_show(self,index,reason,message):
         show_ref_to_exit =ShowManager.shows[index][ShowManager.SHOW_REF]
         show_to_exit =ShowManager.shows[index][ShowManager.SHOW_OBJ]
-        self.mon.log(self,'Exited Show to: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" from show_ref:" + show_ref_to_exit + ' show_id:' + str(index) )
-        self.mon.log(self,'      Reason and message: ' + reason+ message)
+        self.mon.log(self,'Exited from show: ' + show_ref_to_exit + ' ' + str(index) )
+        self.mon.log(self,'Exited with Reason = ' + reason)
         if self.trace: print 'showmanager/_end_play_show Show is: ',show_ref_to_exit , ' show index ', index
         # closes the video/audio from last track then closes the track
         # print 'show to exit ',show_to_exit, show_to_exit.current_player,show_to_exit.previous_player
-        self.set_stopped(index)
-        if self.all_shows_stopped() is True:
-            pass 
-            ShowManager.all_shows_ended_callback('normal','All shows ended',ShowManager.shutdown_required)
+        self.set_exited(index)
+        if reason in ('killed','error') and self.all_shows_exited() is True:
+            ShowManager.all_shows_ended_callback(reason,message,ShowManager.shutdown_required)
         return reason,message
 
 
 
     # used by shows to create subshows or child shows
     def init_selected_show(self,selected_show):
+        canvas=self.compute_show_canvas(selected_show)
         if selected_show['type'] == "mediashow":    
             return MediaShow(self.show_id,
                              selected_show,
                              self.root,
-                             self.canvas,
+                             canvas,
                              self.showlist,
                              self.pp_dir,
                              self.pp_home,
@@ -308,7 +309,7 @@ class ShowManager(object):
             return LiveShow(self.show_id,
                             selected_show,
                             self.root,
-                            self.canvas,
+                            canvas,
                             self.showlist,
                             self.pp_dir,
                             self.pp_home,
@@ -319,7 +320,7 @@ class ShowManager(object):
             return RadioButtonShow(self.show_id,
                                    selected_show,
                                    self.root,
-                                   self.canvas,
+                                   canvas,
                                    self.showlist,
                                    self.pp_dir,
                                    self.pp_home,
@@ -329,7 +330,7 @@ class ShowManager(object):
             return HyperlinkShow(self.show_id,
                                  selected_show,
                                  self.root,
-                                 self.canvas,
+                                 canvas,
                                  self.showlist,
                                  self.pp_dir,
                                  self.pp_home,
@@ -339,7 +340,7 @@ class ShowManager(object):
             return MenuShow(self.show_id,
                             selected_show,
                             self.root,
-                            self.canvas,
+                            canvas,
                             self.showlist,
                             self.pp_dir,
                             self.pp_home,
@@ -349,7 +350,7 @@ class ShowManager(object):
             return ArtMediaShow(self.show_id,
                                 selected_show,
                                 self.root,
-                                self.canvas,
+                                canvas,
                                 self.showlist,
                                 self.pp_dir,
                                 self.pp_home,
@@ -359,7 +360,7 @@ class ShowManager(object):
             return ArtLiveShow(self.show_id,
                                selected_show,
                                self.root,
-                               self.canvas,
+                               canvas,
                                self.showlist,
                                self.pp_dir,
                                self.pp_home,
@@ -367,6 +368,45 @@ class ShowManager(object):
         else:
             return None
 
+
+    def compute_show_canvas(self,show_params):
+        canvas={}
+        canvas['canvas-obj']= self.canvas
+        status,message,self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2= self.parse_show_canvas(show_params['show-canvas'])
+        if status  == 'error':
+            self.mon.err(self,'show canvas error: ' + message + ' in ' + self.show_params['show-canvas'])
+            self.end('error',"show canvas error")
+        else:
+            self.show_canvas_width = self.show_canvas_x2 - self.show_canvas_x1
+            self.show_canvas_height=self.show_canvas_y2 - self.show_canvas_y1
+            self.show_canvas_centre_x= self.show_canvas_width/2
+            self.show_canvas_centre_y= self.show_canvas_height/2
+            canvas['show-canvas-x1'] = self.show_canvas_x1
+            canvas['show-canvas-y1'] = self.show_canvas_y1
+            canvas['show-canvas-x2'] = self.show_canvas_x2
+            canvas['show-canvas-y2'] = self.show_canvas_y2
+            canvas['show-canvas-width']  = self.show_canvas_width
+            canvas['show-canvas-height'] = self.show_canvas_height
+            canvas['show-canvas-centre-x'] = self.show_canvas_centre_x 
+            canvas['show-canvas-centre-y'] = self.show_canvas_centre_y
+            return canvas
+
+
+
+    def parse_show_canvas(self,text):
+        fields = text.split()
+        # blank so show canvas is the whole screen
+        if len(fields) < 1:
+            return 'normal','',0,0,int(self.canvas['width']),int(self.canvas['height'])
+             
+        elif len(fields) == 4:
+            # window is specified
+            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
+                return 'error','coordinates are not positive integers',0,0,0,0
+            return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
+        else:
+            # error
+            return 'error','illegal Show canvas dimensions '+show_canvas_text,0,0,0,0
 
 from pp_menushow import MenuShow
 from pp_liveshow import LiveShow

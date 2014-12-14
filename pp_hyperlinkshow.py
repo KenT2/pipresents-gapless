@@ -47,7 +47,7 @@ class HyperlinkShow(Show):
          * play - selects the first track to play (first-track) 
          * input_pressed,  - receives user events passes them to a Shower/Player if a track is playing,
                 otherwise actions them depending on the symbolic name supplied
-        * managed_stop  - stops the show from another show
+        * exit  - stops the show from another show
         * terminate  - aborts the show, used whan clsing or after errors
         * track_ready_callback - called by the next track to be played to remove the previous track from display
         * subshow_ready_callback - called by the subshow to get the last track of the parent show
@@ -144,11 +144,11 @@ class HyperlinkShow(Show):
         self.do_first_track()
 
         
-# stop received from another concurrent show via ShowManager
+# exit received from another concurrent show via ShowManager
 
-    def managed_stop(self):
+    def exit(self):
         self.stop_timers()
-        Show.base_managed_stop(self)
+        Show.base_exit(self)
 
     #  show timeout happened
     def show_timeout_stop(self):
@@ -157,9 +157,9 @@ class HyperlinkShow(Show):
   
        
     # kill or error
-    def terminate(self,reason):
+    def terminate(self):
         self.stop_timers()
-        Show.base_terminate(self,reason)
+        Show.base_terminate(self)
 
           
 
@@ -372,7 +372,7 @@ class HyperlinkShow(Show):
             self.req_next='error'
             self.what_next_after_showing()
         else:
-            if self.show_timeout_signal is True  or self.terminate_signal is True or self.stop_command_signal is True or self.user_stop_signal is True:
+            if self.show_timeout_signal is True  or self.terminate_signal is True or self.exit_signal is True or self.user_stop_signal is True:
                 self.what_next_after_showing()
             else:
                 if self.trace: print 'show/what_next_after_load- showing track'
@@ -429,7 +429,7 @@ class HyperlinkShow(Show):
         if self.terminate_signal is True:
             self.terminate_signal=False
             # what to do when closed or unloaded
-            self.ending_reason='terminate'
+            self.ending_reason='killed'
             Show.base_close_or_unload(self)
 
         elif self.req_next== 'error':
@@ -445,10 +445,10 @@ class HyperlinkShow(Show):
             self.ending_reason='show-timeout'
             Show.base_close_or_unload(self)
             
-        # used by managed_stop for stopping show from other shows. 
-        elif self.stop_command_signal is True:
-            self.stop_command_signal=False
-            self.ending_reason='stop-command'
+        # used by exit for stopping show from other shows. 
+        elif self.exit_signal is True:
+            self.exit_signal=False
+            self.ending_reason='exit'
             Show.base_close_or_unload(self)
 
         # user wants to stop

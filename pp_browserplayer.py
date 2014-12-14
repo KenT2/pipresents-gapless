@@ -86,6 +86,7 @@ class BrowserPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
 
 
         # compute web_window size
@@ -98,11 +99,12 @@ class BrowserPlayer(Player):
             
         # parse browser commands to self.command_list
         reason,message=self.parse_commands(self.track_params['browser-commands'])
-        if reason != 'normal':
+        if reason == 'error':
             self.mon.err(self,message)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
 
 
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
@@ -113,12 +115,12 @@ class BrowserPlayer(Player):
                 self.play_state='load-failed'
                 if self.loaded_callback is not  None:
                     self.loaded_callback('error',message)
-
+                    return
 
         # start loading the browser
+        self.play_state='loading'
         self.bplayer.play(self.track,self.geometry)
         self.mon.log (self,'Loading browser from show Id: '+ str(self.show_id))
-        self.play_state='loading'
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
@@ -127,22 +129,19 @@ class BrowserPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
-
+                return
 
         # wait for browser to load
         self.start_load_state_machine()
 
 
-    # UNLOAD - abort a load when sub-process is loading or loaded
-    # ?????? this is a bodge need to wait for browser to end
+    # UNLOAD - abort a load when browser is loading or loaded
     def unload(self):
         if self.trace: print '    Browserplayer/unload ',self
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
-        # exit the browser
-        self.bplayer.stop()
-        self.play_state='unloaded'
+        self.start_unload_state_machine()
 
-
+         
      # SHOW - show a track from its loaded state 
     def show(self,ready_callback,finished_callback,closed_callback):
                          
@@ -165,7 +164,7 @@ class BrowserPlayer(Player):
         Player.pre_show(self)
         
         # start show state machine
-        self.start_show_state_machine()
+        self.start_show_state_machine_show()
 
 
     # CLOSE - nothing to do in browserplayer - x content is removed by ready callback and hide browser does not implement pause_at_end
@@ -173,9 +172,7 @@ class BrowserPlayer(Player):
         if self.trace: print '    Browserplayer/close ',self
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
-        self.play_state='closed'
-        if self.closed_callback is not None:
-            self.closed_callback('normal','browserplayer closed')
+        self.start_show_state_machine_close()
 
 
     def input_pressed(self,symbol):
@@ -195,7 +192,7 @@ class BrowserPlayer(Player):
         
     # other control when playing, not currently used
     def control(self,chars):
-        if self.play_state==BrowserPlayer._PLAYING and chars not in ('exit'):
+        if self.play_state == 'showing' and chars not in ('exit'):
             self.mon.log(self,"> send control to uzbl:"+ chars)
             self.bplayer.control(chars)
             return True
@@ -232,7 +229,7 @@ class BrowserPlayer(Player):
 
 
     def load_state_machine(self):
-
+        # print self.load_state,self.play_state
         if self.load_state  in ('initialised','loaded','unloaded'):
             self.mon.log(self,"      Load state machine: " + self.load_state)
             return 
@@ -246,7 +243,7 @@ class BrowserPlayer(Player):
                 self.bplayer.start_play_signal=False
                 self.load_state='waiting'
                 # get rid of status bar
-                self.bplayer.control('set show_status = 0')
+                # self.bplayer.control('set show_status = 0')
                 # and get ready to wait for browser to appear
                 self.wait_count= 50   # 10 seconds at 200mS steps 
                 self.mon.log(self,"      State machine: uzbl process alive")
@@ -258,44 +255,96 @@ class BrowserPlayer(Player):
             if self.wait_count==0:
                 self.load_state='loaded'
                 self.play_state = 'loaded'
+                self.bplayer.control('set show_status = 0')
                
                 # and start executing the browser commands
                 self.play_commands()
                 self.mon.log(self,"      State machine: uzbl loaded")
                 if self.loaded_callback is not None:
-                    self.loaded_callback('loaded','browser loaded')
+                    self.loaded_callback('normal','browser loaded')
             else:
                 self.wait_count -=1
                 self.tick_timer=self.canvas.after(200, self.load_state_machine)
 
 
+    def start_unload_state_machine(self):
+        # print 'browserplayer - starting unload',self.play_state
+        if self.play_state in('closed','initialised','unloaded'):
+            pass
+        else:
+            if self.play_state  ==  'loaded':
+                pass
+                # load already complete
+                self.unload_state_machine()
+            elif self.play_state == 'loading':
+                # wait for load to complete before unloading - must do this because does not respond to exit when loading
+                self.tick_timer=self.canvas.after(10,self.start_unload_state_machine)
+            else:
+                self.mon.err(self,'illegal state in unload method ' + self.play_state)
+                self.end('error','illegal state in unload method')           
 
-    def start_show_state_machine(self):
+
+    def unload_state_machine(self):
+        # self.mon.log(self,"      Unload state machine: " + self.play_state)
+        if self.play_state == 'unloaded':
+            return 
+
+        elif self.play_state == 'loaded':
+            # service any queued stop signals and test duration count
+            self.mon.log(self,"Exit browser")
+            self.bplayer.stop()
+            self.play_state='unloading'
+            self.tick_timer=self.canvas.after(50, self.unload_state_machine)
+
+        elif self.play_state == 'unloading':
+            # self.mon.log(self,"      Unload state machine: " + self.load_state)
+            # if spawned process has closed can change to closed state
+            # self.mon.log (self,"      State machine : is uzbl process running? -  "  + str(self.bplayer.is_running()))
+            if self.bplayer.is_running() is False:
+                self.mon.log(self,"            <uzbl process is dead")
+                # clean up and fifos and sockets left by uzbl
+                os.system('rm -f  /tmp/uzbl_*')
+                self.play_state = 'unloaded'
+            else:
+                self.tick_timer=self.canvas.after(50, self.unload_state_machine)
+                
+                
+
+
+    def start_show_state_machine_show(self):
         self.play_state='showing'
         self.show_state='showing'
         self.duration_count=self.duration_limit
         self.tick_timer=self.canvas.after(50, self.show_state_machine)
 
 
+    def start_show_state_machine_close(self):
+        self.play_state='showing'
+        self.quit_signal=True
+        self.duration_limit = 0
+        self.tick_timer=self.canvas.after(50, self.show_state_machine)
+
+
     def show_state_machine(self):
 
-        if self.show_state == 'closed':
+        if self.play_state == 'closed':
             self.mon.log(self,"      Show state machine: " + self.show_state)
             return 
 
-        elif self.show_state == 'showing':
+        elif self.play_state == 'showing':
             self.duration_count -= 1
             # self.mon.log(self,"      Show state machine: " + self.show_state)
             
             # service any queued stop signals and test duration count
             if self.quit_signal is True or (self.duration_limit != 0 and self.duration_count == 0):
                 self.mon.log(self,"      Service stop required signal or timeout")
-                if self.quit_signal  is True: self.quit_signal=False
+                if self.quit_signal  is True:
+                    self.quit_signal=False
                 self.bplayer.stop()
-                self.show_state = 'ending'
+                self.play_state = 'closing'
             self.tick_timer=self.canvas.after(50, self.show_state_machine)
 
-        elif self.show_state == 'ending':
+        elif self.play_state == 'closing':
             # self.mon.log(self,"      Show state machine: " + self.show_state)
             # if spawned process has closed can change to closed state
             # self.mon.log (self,"      State machine : is uzbl process running? -  "  + str(self.bplayer.is_running()))
@@ -303,10 +352,9 @@ class BrowserPlayer(Player):
                 self.mon.log(self,"            <uzbl process is dead")
                 # clean up and fifos and sockets left by uzbl
                 os.system('rm -f  /tmp/uzbl_*')
-                self.show_state='closed'
                 self.play_state = 'closed'
                 if self.closed_callback is not None:
-                    self.closed_callback('closed','browser closed')
+                    self.closed_callback('normal','browser closed')
             else:
                 self.tick_timer=self.canvas.after(50, self.show_state_machine)
                 

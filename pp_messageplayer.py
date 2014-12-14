@@ -77,6 +77,7 @@ class MessagePlayer(Player):
                 self.play_state='load-failed'
                 if self.loaded_callback is not  None:
                     self.loaded_callback('error',message)
+                    return
 
 
         # load the images and text including message text
@@ -86,6 +87,7 @@ class MessagePlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
@@ -180,20 +182,21 @@ class MessagePlayer(Player):
     def load_track_content(self):
         # load message text
         if self.track_params['message-x'] != '':
-            self.track_obj=self.canvas.create_text(int(self.track_params['message-x']), int(self.track_params['message-y']),
+            self.track_obj=self.canvas.create_text(int(self.track_params['message-x'])+self.show_canvas_x1,
+                                                   int(self.track_params['message-y'])+self.show_canvas_y1,
                                                    text=self.track.rstrip('\n'),
                                                    fill=self.track_params['message-colour'],
                                                    font=self.track_params['message-font'],
                                                    justify=self.track_params['message-justify'],
                                                    anchor = NW)
         else:
-            self.track_obj=self.canvas.create_text(int(self.canvas['width'])/2, int(self.canvas['height'])/2,
+            self.track_obj=self.canvas.create_text(self.show_canvas_centre_x, self.show_canvas_centre_y,
                                                    text=self.track.rstrip('\n'),
                                                    fill=self.track_params['message-colour'],
                                                    font=self.track_params['message-font'],
                                                    justify=self.track_params['message-justify'])     
 
-        return self.track_obj
+        return 'normal','message loaded'
     
 
     def hide_track_content(self):

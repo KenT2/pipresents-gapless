@@ -121,13 +121,17 @@ class VideoPlayer(Player):
 
         if self.trace: print '    Videoplayer/load ',self
 
-                # set up video window
-        status,message,command,has_window,x1,y1,x2,y2= self.parse_window(self.omx_window)
+        # do common bits of  load
+        Player.pre_load(self)           
+
+        # set up video window
+        status,message,command,has_window,x1,y1,x2,y2= self.parse_video_window(self.omx_window)
         if status  == 'error':
             self.mon.err(self,'omx window error: ' + message + ' in ' + self.omx_window)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
         else:
             if has_window is True:
                 self.omx_window_processed= '--win " '+ str(x1) +  ' ' + str(y1) + ' ' + str(x2) + ' ' + str(y2) + ' " '
@@ -142,6 +146,7 @@ class VideoPlayer(Player):
                 self.play_state='load-failed'
                 if self.loaded_callback is not  None:
                     self.loaded_callback('error',message)
+                    return
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
@@ -150,6 +155,7 @@ class VideoPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
+                return
 
 
         if not os.path.exists(track):
@@ -157,6 +163,7 @@ class VideoPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error','track file not found')
+                return
 
 
         # get the length of the video
@@ -186,6 +193,7 @@ class VideoPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error','Track does not provide duration so cannot play')
+                return
         else:        
             self.mon.log(self,">load track received from show Id: "+ str(self.show_id) + ' using duration from track')
             # create an  instance of omxdriver
@@ -375,7 +383,7 @@ class VideoPlayer(Player):
             
     def start_state_machine_show(self):
         if self.play_state == 'loaded':
-            # print 'start show state machine ' + self.play_state
+            # print '\nstart show state machine ' + self.play_state
             self.play_state='showing'
             self.freeze_signal=False     # signal that user has pressed stop
             self.must_quit_signal=False
@@ -392,12 +400,10 @@ class VideoPlayer(Player):
             if self.finished_callback is not None:
                 self.finished_callback('error',message)
              
-     
 
     def start_state_machine_close(self):
-        # was pause at end
         self.quit_signal=True
-        print 'start close state machine close'
+        # print 'start close state machine close'
         self.tick_timer=self.canvas.after(0, self.show_state_machine)
 
 
@@ -522,7 +528,7 @@ class VideoPlayer(Player):
 
 
     def show_state_machine(self):
-        print self.play_state
+        # print self.play_state
         # if self.play_state != 'showing': print 'show state is '+self.play_state
         if self.play_state == 'showing':
             # service any queued stop signals by sending quit to omxplayer
@@ -557,10 +563,10 @@ class VideoPlayer(Player):
                     self.closing_count=0
                     self.mon.warn(self,self.track)
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                    self.mon.warn(self,"            <showing - end detected at: " + str(self.omx.video_position))
+                    self.mon.warn(self,"            <showing - eof or timeout detected at: " + str(self.omx.video_position))
                     self.mon.warn(self,"            <pexpect reports: "+self.omx.end_play_reason)
                     self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
-                    # print 'eof'
+                    # print 'showing - eof or timeout so go to closing to wait for precess to be dead'
                     self.tick_timer=self.canvas.after(50, self.show_state_machine)
                 else:
                     # unexpected reason
@@ -570,18 +576,19 @@ class VideoPlayer(Player):
                         self.finished_callback('error','unexpected reason at end of show')
 
             else:
-                # nothng to do just try again
+                # nothing to do just try again
+                # print 'showing - try again'
                 self.tick_timer=self.canvas.after(50, self.show_state_machine)       
 
 
         elif self.play_state == 'closing':
             # wait for closing to complete
-            # self.mon.log(self,"      State machine: " + self.play_state)
+            self.mon.log(self,"      State machine: " + self.play_state)
             if self.omx.is_running()  is False:
                 # if spawned process has closed can change to closed state
                 self.mon.log(self,"            <omx process is dead")
                 self.play_state = 'closed'
-                # print 'settting closed from process dead'
+                # print 'process dead going to closed'
                 self.omx=None
                 self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                 if self.closed_callback is not  None:
@@ -589,31 +596,37 @@ class VideoPlayer(Player):
             else:
                 # process still running
                 self.closing_count+=1
-                if self.closing_count>10:
+                # print 'closing - waiting for process to die',self.closing_count
+                if self.closing_count>20:
                     # deal with omxplayer not terminating at the end of a track
                     self.mon.warn(self,self.track)
                     self.mon.warn(self,"            <closing - omxplayer failed to close at: " + str(self.omx.video_position))
                     self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
-                    self.mon.warn(self,'omxplayer should now  be killed ')
+                    self.mon.warn(self,'omxplayer now being killed with SIGINT')
                     self.omx.kill()
-                    # print 'setting closed from kill'
+                    # print 'closing - precess will not die so ita been killed with SIGINT'
                     self.play_state = 'closed'
                     self.omx=None
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                     if self.closed_callback is not None:
                         self.closed_callback('normal','closed omxplayer after sigint')
                 else:
-                    # print 'not closed'
                     self.tick_timer=self.canvas.after(200, self.show_state_machine)
 
+        elif self.play_state=='closed':
+            # shouldn't be needed - bug somewhere
+            # print 'closed - should not be here'
+            self.mon.log(self,"      State machine: " + self.play_state)    
+            self.tick_timer=self.canvas.after(200, self.show_state_machine)            
+
         else:
-            self.mon.err(self,'unknown state in show state machine ' + self.play_state)
+            self.mon.err(self,'unknown state in show/close state machine ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
                     self.finished_callback('error','show state machine in unknown state')
 
 
-    def parse_window(self,line):
+    def parse_video_window(self,line):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
@@ -639,9 +652,9 @@ class VideoPlayer(Player):
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
                 return 'error','coordinates are not positive integers','',False,0,0,0,0
             has_window=True
-            return 'normal','',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4])
+            return 'normal','',fields[0],has_window,self.show_canvas_x1+int(fields[1]),self.show_canvas_y1+int(fields[2]),self.show_canvas_x1+int(fields[3]),self.show_canvas_y1+int(fields[4])
         else:
             # fullscreen
             has_window=True
-            return 'normal','',fields[0],has_window,0,0,self.canvas['width'],self.canvas['height']
+            return 'normal','',fields[0],has_window,self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
 

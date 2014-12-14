@@ -22,14 +22,6 @@ class KbdDriver(object):
         # bind all the normal keys that return a printing character such that x produces pp-key-x
         widget.bind("<Key>", lambda event : self.normal_key(callback,event))
 
-##        # bind special keys to the specified symbolic name
-##        widget.bind("<Break>", lambda event, name='pp-exit': self.specific_key(callback,name))
-##        widget.bind("<Escape>", lambda event, name='pp-stop': self.specific_key(callback,name))
-##        widget.bind("<Up>", lambda event, name='pp-up': self.specific_key(callback,name))
-##        widget.bind("<Down>", lambda event, name='pp-down': self.specific_key(callback,name))
-##        widget.bind("<Return>", lambda event, name='pp-play': self.specific_key(callback,name))
-##
-
 
     def specific_key(self,callback,name):
         callback(name,'front','key')

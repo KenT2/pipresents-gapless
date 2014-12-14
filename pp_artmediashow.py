@@ -29,7 +29,7 @@ class ArtMediaShow(ArtShow):
         self.mon.on()
 
         # uncomment to turn trace on 
-        self.trace=True
+        # self.trace=True
         
         # delay in mS before next track is loaded after showing a track.
         # can be reduced if animation is not required

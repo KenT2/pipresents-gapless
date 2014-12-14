@@ -105,6 +105,7 @@ class uzblDriver(object):
             f = open(self.fifo, 'a')
             f.write('%s\n' % data)
             f.close()
+            # self.mon.log(self,'sent command to uzbl:'+ data)
 
    # test of whether _process is running
     def is_running(self):

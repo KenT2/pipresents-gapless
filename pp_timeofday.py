@@ -129,10 +129,10 @@ class TimeOfDay(object):
                     # print 'time from events', time_element[1]
                     if time_element[1]  >=  now_seconds:
                         break
-                    if time_element[0] == 'start-show':
+                    if time_element[0] == 'start':
                         last_start_element=time_element
                         show_running=True
-                    elif time_element[0]=='stop-show':
+                    elif time_element[0]=='exit':
                         show_running=False
                 if show_running is True:
                     # print 'catch up', show_ref
@@ -307,7 +307,7 @@ class TimeOfDay(object):
             for show in shows:
                 print '      ',show['show-ref']
                 for time_pair in show['times']:
-                    print '               ' ,time_pair['start-show'],time_pair['stop-show']
+                    print '               ' ,time_pair['start'],time_pair['exit']
 
                     
     def print_todays_schedule(self):

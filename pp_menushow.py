@@ -37,7 +37,7 @@ class MenuShow(Show):
         
 
         # remove comment to turn the trace on          
-        self.trace=True
+        # self.trace=True
 
         # control debugging log
         self.mon.on()
@@ -84,10 +84,10 @@ class MenuShow(Show):
 # respond to inputs.
 # ********************
 
-    # stop received from another concurrent show
-    def managed_stop(self):
+    # exit received from another concurrent show
+    def exit(self):
         self.stop_timers()
-        Show.base_managed_stop(self)
+        Show.base_exit(self)
 
     #  show timeout happened
     def show_timeout_stop(self):
@@ -95,9 +95,9 @@ class MenuShow(Show):
         Show.base_show_timeout_stop(self)
 
     # terminate Pi Presents
-    def terminate(self,reason):
+    def terminate(self):
         self.stop_timers()
-        Show.base_terminate(self,reason)            
+        Show.base_terminate(self)            
 
 
     def input_pressed(self,symbol,edge,source):
@@ -250,7 +250,7 @@ class MenuShow(Show):
             self.what_next_after_showing()
 
         else:
-            if self.show_timeout_signal is True or self.terminate_signal  is True or self.stop_command_signal  is True or self.user_stop_signal  is True:
+            if self.show_timeout_signal is True or self.terminate_signal  is True or self.exit_signal  is True or self.user_stop_signal  is True:
                 self.what_next_after_showing()
             else:
                 if self.trace: print 'menushow/what_next_after_load- showing track'
@@ -298,7 +298,7 @@ class MenuShow(Show):
         if self.terminate_signal is True:
             self.terminate_signal=False
             # set what to do when closed or unloaded
-            self.ending_reason='terminate'
+            self.ending_reason='killed'
             Show.base_close_or_unload(self)
 
         elif self.req_next== 'error':
@@ -314,10 +314,10 @@ class MenuShow(Show):
             self.ending_reason='show-timeout'
             Show.base_close_or_unload(self)
 
-        # used by managed_stop for stopping show from other shows. 
-        elif self.stop_command_signal is True:
-            self.stop_command_signal=False
-            self.ending_reason='stop-command'
+        # used by exit for stopping show from other shows. 
+        elif self.exit_signal is True:
+            self.exit_signal=False
+            self.ending_reason='exit'
             Show.base_close_or_unload(self)
 
         # user wants to stop

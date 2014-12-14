@@ -47,7 +47,7 @@ class AudioPlayer(Player):
         # self.trace=True
 
         # control debugging log
-        self.mon.off()
+        self.mon.on()
 
 
         if self.trace: print '    Audioplayer/init ',self
@@ -90,7 +90,8 @@ class AudioPlayer(Player):
         # initialise the state and signals      
         self.tick_timer=None
         self.quit_signal=False
-        self.play_state='initialised'  
+        self.play_state='initialised'
+        self.waiting=False
 
         
     # LOAD - creates and mplayer instance, loads a track and then pause
@@ -109,6 +110,7 @@ class AudioPlayer(Player):
                 self.play_state='load-failed'
                 if self.loaded_callback is not  None:
                     self.loaded_callback('error',message)
+                    return
 
         # load the images and text
         status,message=self.load_x_content(enable_menu)
@@ -117,7 +119,15 @@ class AudioPlayer(Player):
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
                 self.loaded_callback('error',message)
-            
+                return
+
+        if track !='' and not os.path.exists(track):
+            self.mon.err(self,"Track file not found: "+ track)
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error','track file not found')
+                return
+
         # just create instance of mplayer don't bother with any pre-load
         self.mplayer=mplayerDriver(self.canvas)
         self.play_state='loaded'
@@ -161,18 +171,19 @@ class AudioPlayer(Player):
         # start playing the track.
         self.mon.log(self,">start playing track: "+ str(self.show_id))
         if self.duration_limit != 0:
-            self.start_play_state_machine()
+            self.start_play_state_machine_show()
         else:
-            self.end('normal','zero duration')
+            self.mplayer=None
+            if self.closed_callback is not None:
+                        self.closed_callback('normal','end with zero duration')
+
 
     # CLOSE - nothing to do in audioplayer - x content is removed by ready callback
     def close(self,closed_callback):
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         if self.trace: print '    Audioplayer/close ',self
-        self.play_state='closed'
-        if self.closed_callback is not None:
-            self.closed_callback('normal','audioplayer closed')
+        self.start_play_state_machine_close()
 
 
     def input_pressed(self,symbol):
@@ -210,7 +221,8 @@ class AudioPlayer(Player):
     def stop(self):
         # send signal to stop the track to the state machine
         self.mon.log(self,">stop received")
-        self.quit_signal=True
+        if self.play_state=='showing':
+            self.quit_signal=True
 
          
       
@@ -230,34 +242,48 @@ class AudioPlayer(Player):
     """
 
  
-    def start_play_state_machine(self):
-        # initialise all the state machine variables
-        self.duration_count = 0
+    def start_play_state_machine_show(self):
+        if self.play_state == 'loaded':
+            # initialise all the state machine variables
+            self.duration_count = 0
 
-        # play the track
-        options = self.show_params['mplayer-other-options'] + '-af '+ self.speaker_option+','+self.volume_option + ' '
-        if self.track != '':
-            self.mplayer.play(self.track,options)
-            self.mon.log (self,'Playing audio track from show Id: '+ str(self.show_id))
-            self.play_state='starting'
+            # play the track
+            options = self.show_params['mplayer-other-options'] + '-af '+ self.speaker_option+','+self.volume_option + ' '
+            if self.track != '':
+                self.mplayer.play(self.track,options)
+                self.mon.log (self,'Playing audio track from show Id: '+ str(self.show_id))
+                self.play_state='starting'
+            else:
+                # no track to play so cannot rely on mplayer starting signal
+                self.play_state='showing'
+            # and start polling for state changes and count duration
+            self.tick_timer=self.canvas.after(50, self.play_state_machine)
         else:
-            # no track to play so cannot rely on mplayer starting signal
-            self.play_state='showing'
-        # and start polling for state changes and count duration
-        self.tick_timer=self.canvas.after(50, self.play_state_machine)
+            self.mon.err(self,'illegal state in show method ' + self.play_state)
+            self.play_state='show-failed'
+            if self.finished_callback is not None:
+                self.finished_callback('error',message)
+
+
+    def start_play_state_machine_close(self):
+        self.quit_signal=True
+        # print 'start close state machine close',self.play_state
+        self.tick_timer=self.canvas.after(1, self.play_state_machine)
+
 
 
     def play_state_machine(self):
         self.duration_count+=1
         # self.mon.log(self,"      State machine: " + self.play_state)           
         if self.play_state == 'closed':
-            self.mon.log(self,"      State machine: " + self.play_state)
+            # self.mon.log(self,"   State machine: " + self.play_state)
+            pass
 
-                
+
         elif self.play_state == 'starting':
-            self.mon.log(self,"      State machine: " + self.play_state)
+            # self.mon.log(self,"      State machine: " + self.play_state)
             
-            # if mplayer is playing the track change to play state
+            # if mplayer has started and can accept runtime commands change to showing state
             if self.mplayer.start_play_signal is True:
                 self.mon.log(self,"            <start play signal received from mplayer")
                 self.mplayer.start_play_signal=False
@@ -266,23 +292,38 @@ class AudioPlayer(Player):
             self.tick_timer=self.canvas.after(50, self.play_state_machine)
 
         elif self.play_state == 'showing':
+
+            if self.waiting is True:
+                # self.mon.log(self,"      State machine: " + self.play_state + ' ' + self.waiting)
+                if self.quit_signal is True or (self.duration_limit>0 and self.duration_count>self.duration_limit):
+                    self.mon.log(self,"      Service stop required signal or timeout from wait")
+                    self.quit_signal=False
+                    self.waiting=False
+                    self.play_state = 'closed'
+                    if self.closed_callback is not None:
+                        self.closed_callback('normal','wait is finished')
+                else:
+                    self.tick_timer=self.canvas.after(50, self.play_state_machine)
+
+
             # self.mon.log(self,"      State machine: " + self.play_state)
             # service any queued stop signals
-            if self.quit_signal is True or (self.duration_limit>0 and self.duration_count>self.duration_limit):
+            elif self.quit_signal is True or (self.duration_limit>0 and self.duration_count>self.duration_limit):
                 self.mon.log(self,"      Service stop required signal or timeout")
                 # self.quit_signal=False
                 if self.track != '':
                     self.mplayer.stop()
                     self.play_state = 'closing'
-                    self.mon.log(self,"      State machine: closing due to quit or duration with track running")
+                    self.mon.log(self,"      State machine: closing due to quit or duration with track to play")
                     self.tick_timer=self.canvas.after(50, self.play_state_machine)
                 else:
-                    self.mon.log(self,"      State machine: closed due to quit or duration with track NOT running")
-                    if self.finished_callback is not None:
-                        self.finished_callback('pause_at_end','user quit or duration exceeded')
+                    self.mon.log(self,"      State machine: closed due to quit or duration with NO track to play")
+                    self.play_state='closed'
+                    if self.closed_callback is not None:
+                        self.closed_callback('normal','user quit or duration NO track to play')
 
-            # mplayer reports it is terminating so change to ending state
-            if self.track != '' and self.mplayer.end_play_signal:                    
+            # mplayer reports it is finishing at end of track so change to ending state
+            elif self.track != '' and self.mplayer.end_play_signal:                    
                 self.mon.log(self,"            <end play signal received")
                 self.mon.log(self,"            <end detected at: " + str(self.mplayer.audio_position))
                 self.play_state = 'closing'
@@ -296,34 +337,19 @@ class AudioPlayer(Player):
             # if spawned process has closed can change to closed state
             if self.mplayer.is_running()  is False:
                 self.mon.log(self,"            <mplayer process is dead")
-                if self.quit_signal is True:   # quit while waiting ??????
-                    self.quit_signal=False
-                    self.play_state = 'showing'
-                    if self.finished_callback is not None:
-                        self.finished_callback('pause_at_end','user quit or duration exceeded')
-                        
-                elif self.duration_limit>0 and self.duration_count<self.duration_limit:
-                    self.play_state= 'waiting'
+                # if still need to wait for duration change to waiting state
+                if self.duration_limit>0 and self.duration_count<self.duration_limit:
+                    self.play_state= 'showing'
+                    self.waiting=True
                     self.tick_timer=self.canvas.after(50, self.play_state_machine)
                 else:
-                    self.play_state = 'showing'
-                    if self.finished_callback is not None:
-                        self.finished_callback('pause_at_end','mplayer dead')
+                    self.play_state = 'closed'
+                    if self.closed_callback is not None:
+                        self.closed_callback('normal','mplayer dead')
 
             else:
                 self.tick_timer=self.canvas.after(50, self.play_state_machine)
                 
-        elif self.play_state == 'waiting':
-            # self.mon.log(self,"      State machine: " + self.play_state)
-            if self.quit_signal is True or (self.duration_limit>0 and self.duration_count>self.duration_limit):
-                self.mon.log(self,"      Service stop required signal or timeout from wait")
-                self.quit_signal=False
-                self.play_state = 'showing'
-                if self.finished_callback is not None:
-                    self.finished_callback('pause_at_end','mplayer dead')
-            else:
-                self.tick_timer=self.canvas.after(50, self.play_state_machine)
-                    
 
 
 

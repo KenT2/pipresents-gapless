@@ -81,6 +81,8 @@ class ImagePlayer(Player):
         self.loaded_callback=loaded_callback   # callback when loaded
         if self.trace: print '    Imageplayer/load ',self
 
+        Player.pre_load(self)
+
         # parse the image_window
         status,self.command,self.has_coords,self.image_x1,self.image_y1,self.image_x2,self.image_y2,self.image_filter=self.parse_window(self.image_window)
         if status  == 'error':
@@ -89,7 +91,11 @@ class ImagePlayer(Player):
             self.loaded_callback('error','image window error: '+self.image_window)
             return
 
-      
+##        self.image_x1=image_x1+self.show_canvas_x1
+##        self.image_y1=image_y1+self.show_canvas_y1
+##        self.image_x2=image_x2+self.show_canvas_x2
+##        self.image_y2=image_y2+self.show_canvas_y2
+        
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
@@ -237,8 +243,7 @@ class ImagePlayer(Player):
     # called from Player, load_x_content      
             
     def load_track_content(self):
-        self.canvas_centre_x = int(self.canvas['width'])/2
-        self.canvas_centre_y = int(self.canvas['height'])/2
+
         
         # get the track to be displayed
         if os.path.exists(self.track) is True:
@@ -259,15 +264,15 @@ class ImagePlayer(Player):
                     # load and display the unmodified image in centre
                     self.tk_img=ImageTk.PhotoImage(pil_image)
                     del pil_image
-                    self.track_image_obj = self.canvas.create_image(self.canvas_centre_x,
-                                                                    self.canvas_centre_y,
+                    self.track_image_obj = self.canvas.create_image(self.show_canvas_centre_x+self.show_canvas_x1,
+                                                                    self.show_canvas_centre_y+self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)
                 else:
                     # load and display the unmodified image at x1,y1
                     self.tk_img=ImageTk.PhotoImage(pil_image)
                     del pil_image
-                    self.track_image_obj = self.canvas.create_image(self.image_x1,
-                                                                    self.image_y1,
+                    self.track_image_obj = self.canvas.create_image(self.image_x1+self.show_canvas_x1,
+                                                                    self.image_y1+self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=NW)
 
 
@@ -279,18 +284,18 @@ class ImagePlayer(Player):
                     window_centre_x=(self.image_x2+self.image_x1)/2
                     window_centre_y= (self.image_y2+self.image_y1)/2
                 else:
-                    window_width=int(self.canvas['width'])
-                    window_height=int(self.canvas['height'])
-                    window_centre_x=self.canvas_centre_x
-                    window_centre_y=self.canvas_centre_y
+                    window_width=self.show_canvas_width
+                    window_height=self.show_canvas_height
+                    window_centre_x=self.show_canvas_centre_x
+                    window_centre_y=self.show_canvas_centre_y
                 
                 if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
                     # original image is larger or , shrink it to fit the screen preserving aspect
                     pil_image.thumbnail((window_width,window_height),eval(self.image_filter))                 
                     self.tk_img=ImageTk.PhotoImage(pil_image)
                     del pil_image
-                    self.track_image_obj = self.canvas.create_image(window_centre_x,
-                                                                    window_centre_y,
+                    self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
+                                                                    window_centre_y + self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)
                 else:
                     # fitting and original image is smaller, expand it to fit the screen preserving aspect
@@ -307,8 +312,8 @@ class ImagePlayer(Player):
                     pil_image=pil_image.resize((increased_width, increased_height),eval(self.image_filter))
                     self.tk_img=ImageTk.PhotoImage(pil_image)
                     del pil_image
-                    self.track_image_obj = self.canvas.create_image(window_centre_x,
-                                                                    window_centre_y,
+                    self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
+                                                                    window_centre_y + self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)                                                 
 
             elif self.command in ('warp'):
@@ -319,16 +324,16 @@ class ImagePlayer(Player):
                     window_centre_x=(self.image_x2+self.image_x1)/2
                     window_centre_y= (self.image_y2+self.image_y1)/2
                 else:
-                    window_width=int(self.canvas['width'])
-                    window_height=int(self.canvas['height'])
-                    window_centre_x=self.canvas_centre_x
-                    window_centre_y=self.canvas_centre_y
+                    window_width=self.show_canvas_width
+                    window_height=self.show_canvas_height
+                    window_centre_x=self.show_canvas_centre_x
+                    window_centre_y=self.show_canvas_centre_y
                 
                 pil_image=pil_image.resize((window_width, window_height),eval(self.image_filter))
                 self.tk_img=ImageTk.PhotoImage(pil_image)
                 del pil_image
-                self.track_image_obj = self.canvas.create_image(window_centre_x,
-                                                                window_centre_y,
+                self.track_image_obj = self.canvas.create_image(window_centre_x+ self.show_canvas_x1,
+                                                                window_centre_y+ self.show_canvas_y1,
                                                                image=self.tk_img, anchor=CENTER)
         self.canvas.itemconfig(self.track_image_obj,state='hidden')
         return 'normal','track content loaded';

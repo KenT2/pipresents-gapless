@@ -332,7 +332,7 @@ class PPIO(object):
         delay=int(delay_text)
         
         self.add_event(pin,to_state,delay,tag)
-        self.print_events()
+        # self.print_events()
         return ''
 
     def pin_of(self,name):
@@ -361,7 +361,7 @@ class PPIO(object):
         event[PPIO.SEQUENCER_TO_STATE]=sequencer_to_state
         event[PPIO.SEQUENCER_TIME]=sequencer_time+poll_time+1
         event[PPIO.SEQUENCER_TAG]=sequencer_tag
-        print 'add event ',event
+        # print 'add event ',event
         # find the place in the events list and insert
         # first item in the list is earliest, if two have the same time then last to be added is fired last.
         abs_time=sequencer_time+poll_time
