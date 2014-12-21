@@ -27,7 +27,8 @@ class MenuPlayer(Player):
                  pp_dir,
                  pp_home,
                  pp_profile,
-                 end_callback):
+                 end_callback,
+                 command_callback):
 
         # initialise items common to all players   
         Player.__init__( self,
@@ -40,7 +41,8 @@ class MenuPlayer(Player):
                          pp_dir,
                          pp_home,
                          pp_profile,
-                         end_callback)
+                         end_callback,
+                         command_callback)
 
                     
         # comment this out to turn the trace off          
@@ -187,7 +189,8 @@ class MenuPlayer(Player):
                                                        int(self.track_params['hint-y'])+self.show_canvas_y1,
                                                        anchor=NW,
                                                        text=hint_text,
-                                                       fill=self.track_params['hint-colour'])
+                                                       fill=self.track_params['hint-colour'],
+                                                       font=self.track_params['hint-font'])
             
         self.canvas.itemconfig(self.menu_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_text_obj,state='hidden')

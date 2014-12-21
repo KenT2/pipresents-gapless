@@ -11,7 +11,8 @@ class ArtMediaShow(ArtShow):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
 
 
         # init the common bits
@@ -23,7 +24,8 @@ class ArtMediaShow(ArtShow):
                          showlist,
                          pp_dir,
                          pp_home,
-                         pp_profile)
+                         pp_profile,
+                         command_callback)
 
         # control the debugging log
         self.mon.on()

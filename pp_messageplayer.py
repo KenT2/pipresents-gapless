@@ -23,7 +23,8 @@ class MessagePlayer(Player):
                  pp_dir,
                  pp_home,
                  pp_profile,
-                 end_callback):
+                 end_callback,
+                 command_callback):
 
         # initialise items common to all players   
         Player.__init__( self,
@@ -36,7 +37,8 @@ class MessagePlayer(Player):
                          pp_dir,
                          pp_home,
                          pp_profile,
-                         end_callback)                    
+                         end_callback,
+                         command_callback)                    
 
         # comment this out to turn the trace off          
         # self.trace=True

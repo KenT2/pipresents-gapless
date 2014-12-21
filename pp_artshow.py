@@ -19,7 +19,8 @@ class ArtShow(Show):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
 
 
     
@@ -32,7 +33,8 @@ class ArtShow(Show):
                           showlist,
                           pp_dir,
                           pp_home,
-                          pp_profile)
+                          pp_profile,
+                          command_callback)
 
 
         # Init variables for this show
@@ -86,6 +88,12 @@ class ArtShow(Show):
     def input_pressed(self,symbol,edge,source):
         self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input: " + symbol)
         Show.base_input_pressed(self,symbol,edge,source)
+
+
+
+    def input_pressed_this_show(self,symbol,edge,source):
+        operation=self.base_lookup_control(symbol,self.controls_list)
+        self.do_operation(operation,edge,source)
 
 
     def do_trigger_or_link(self,symbol,edge,source):

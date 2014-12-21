@@ -15,6 +15,7 @@ class ShowManager(object):
     
     # Declare class variables
     shows=[]
+    canvas=None    #canvas for all shows
     shutdown_required=False
     SHOW_TEMPLATE=['',None]
     SHOW_REF= 0   # show-reference  - name of the show as in editor
@@ -23,10 +24,12 @@ class ShowManager(object):
 
     # Initialise, first time through only in pipresents.py
 
-    def init(self,all_shows_ended_callback):
+    def init(self,canvas,all_shows_ended_callback,command_callback):
         ShowManager.all_shows_ended_callback=all_shows_ended_callback
         ShowManager.shows=[]
         ShowManager.shutdown_required=False
+        ShowManager.canvas=canvas
+        ShowManager.command_callback = command_callback
 
 # **************************************
 # functions to manipulate show register
@@ -96,7 +99,7 @@ class ShowManager(object):
         self.showlist=showlist
         self.show_params=show_params
         self.root=root
-        self.canvas=canvas
+        self.show_canvas=canvas
         self.pp_dir=pp_dir
         self.pp_profile=pp_profile
         self.pp_home=pp_home
@@ -108,52 +111,23 @@ class ShowManager(object):
         self.trace=True
         self.trace=False
 
-# control initial shows from PiPresents so command is always start
 
-    def start_initial_shows(self,start_shows_text):
-        show_refs= start_shows_text.split()
-        fields=['','']
-        for show_ref in show_refs:
-            fields[0]=show_ref
-            fields[1]='start'
-            reason,message=self.control_a_show(fields)
-            if reason != 'normal':
-                return reason,message
-        # no shows started
-        return 'normal',''
-            
-
-# Control shows from Players so need to handle start and exit commands
-    def show_control(self,show_control_text): 
-        lines = show_control_text.split('\n')
-        for line in lines:
-            if line.strip() == "":
-                continue
-            fields= line.split()
-            # control a show and return its ending reason
-            # print 'show control fields: ',fields
-            reason,message=self.control_a_show(fields)
-            if reason != 'normal':
-                return reason,message
-        # all commands done OK
-        return 'normal',''
-
-
-    def control_a_show(self,fields):
-        show_ref=fields[0]
-        show_command=fields[1]
-        if show_command == 'start':
+        
+    def control_a_show(self,show_ref,show_command):
+        if show_command == 'open':
             return self.start_show(show_ref)
-        elif show_command  == 'exit':
+        elif show_command  == 'close':
             return self.exit_show(show_ref)
-        elif show_command == 'closepipresents':
-            return self.exit_all_shows()
-        elif show_command == 'shutdownnow':
-            ShowManager.shutdown_required=True
-            return self.exit_all_shows()
         else:
             return 'error','command not recognised '+ show_command
 
+    def exit_all_shows(self):
+        for show in ShowManager.shows:
+            self.exit_show(show[ShowManager.SHOW_REF])
+        return 'normal','exited all shows'
+
+    # kick off the exit sequence of a show by calling the shows exit method.
+    # it will result in al the shows in a stack being closed and end_play_show being called
     def exit_show(self,show_ref):
         index=self.show_registered(show_ref)
         self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
@@ -163,12 +137,6 @@ class ShowManager(object):
         return 'normal','exited a concurrent show'
             
 
-    def exit_all_shows(self):
-        for show in ShowManager.shows:
-            self.exit_show(show[ShowManager.SHOW_REF])
-        return 'normal','exited all shows'
-
-
     def start_show(self,show_ref):
         show_index = self.showlist.index_of_show(show_ref)
         if show_index <0:
@@ -176,105 +144,26 @@ class ShowManager(object):
         
         show=self.showlist.show(show_index)
         index=self.register_show(show_ref)
-        canvas=self.compute_show_canvas(show)
+        show_canvas=self.compute_show_canvas(show)
+        # print 'STARTING TOP LEVEL SHOW',show_canvas
         self.mon.log(self,'Starting Show from: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" show_ref:"+ show_ref + ' show_id' + str(index) )
         if self.show_running(index):
             self.mon.log(self,"show already running "+show_ref)
             return 'normal','this concurrent show already running'
-        
-        if show['type'] == "mediashow":
-            show_obj = MediaShow(index,
-                                 show,
-                                 self.root,
-                                 canvas,
-                                 self.showlist,
-                                 self.pp_dir,
-                                 self.pp_home,
-                                 self.pp_profile)
+        show_obj = self.init_show(index,show,show_canvas)
+        if show_obj is None:
+            return 'error',"unknown show type in start concurrent show - "+ show['type']
+        else:
             self.set_running(index,show_obj)
             # params - end_callback, show_ready_callback, direction_command, level
             show_obj.play(self._end_play_show,None,'nil',0,[])
             return 'normal','concurrent show started'
 
-        if show['type'] == "radiobuttonshow":
-            show_obj = RadioButtonShow(index,
-                                       show,
-                                       self.root,
-                                       canvas,
-                                       self.showlist,
-                                       self.pp_dir,
-                                       self.pp_home,
-                                       self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
+ 
+    # used by shows to create subshows or child shows
+    def init_subshow(self,show_id,show,show_canvas):
+        return self.init_show(show_id,show,show_canvas)
 
-        if show['type'] == "hyperlinkshow":
-            show_obj = HyperlinkShow(index,
-                                     show,
-                                     self.root,
-                                     canvas,
-                                     self.showlist,
-                                     self.pp_dir,
-                                     self.pp_home,
-                                     self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
-        
-        elif show['type'] == "menu":
-            show_obj = MenuShow(index,
-                                show,
-                                self.root,
-                                canvas,
-                                self.showlist,
-                                self.pp_dir,
-                                self.pp_home,
-                                self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
-
-        elif show['type'] == "liveshow":
-            show_obj= LiveShow(index,
-                               show,
-                               self.root,
-                               canvas,
-                               self.showlist,
-                               self.pp_dir,
-                               self.pp_home,
-                               self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
-
-        elif show['type'] == "artliveshow":
-            show_obj= ArtLiveShow(index,
-                                  show,
-                                  self.root,
-                                  canvas,
-                                  self.showlist,
-                                  self.pp_dir,
-                                  self.pp_home,
-                                  self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
-
-        elif show['type'] == "artmediashow":
-            show_obj= ArtMediaShow(index,
-                                   show,
-                                   self.root,
-                                   canvas,
-                                   self.showlist,
-                                   self.pp_dir,
-                                   self.pp_home,
-                                   self.pp_profile)
-            self.set_running(index,show_obj)
-            show_obj.play(self._end_play_show,None,'nil',0,[])
-            return 'normal','concurrent show started'
-        else:
-            return 'error',"unknown show type in start concurrent show - "+ show['type']
 
 
     def _end_play_show(self,index,reason,message):
@@ -286,92 +175,97 @@ class ShowManager(object):
         # closes the video/audio from last track then closes the track
         # print 'show to exit ',show_to_exit, show_to_exit.current_player,show_to_exit.previous_player
         self.set_exited(index)
-        if reason in ('killed','error') and self.all_shows_exited() is True:
-            ShowManager.all_shows_ended_callback(reason,message,ShowManager.shutdown_required)
+        if self.all_shows_exited() is True:
+            ShowManager.all_shows_ended_callback(reason,message)
         return reason,message
 
 
-
-    # used by shows to create subshows or child shows
-    def init_selected_show(self,selected_show):
-        canvas=self.compute_show_canvas(selected_show)
-        if selected_show['type'] == "mediashow":    
-            return MediaShow(self.show_id,
+    # common function to initilaise the show by type
+    def init_show(self,show_id,selected_show,show_canvas,):
+        if selected_show['type'] == "mediashow":
+            return MediaShow(show_id,
                              selected_show,
                              self.root,
-                             canvas,
+                             show_canvas,
                              self.showlist,
                              self.pp_dir,
                              self.pp_home,
-                             self.pp_profile)
+                             self.pp_profile,
+                             ShowManager.command_callback)
 
         elif selected_show['type'] == "liveshow":    
-            return LiveShow(self.show_id,
+            return LiveShow(show_id,
                             selected_show,
                             self.root,
-                            canvas,
+                            show_canvas,
                             self.showlist,
                             self.pp_dir,
                             self.pp_home,
-                            self.pp_profile)
+                            self.pp_profile,
+                            ShowManager.command_callback)
 
 
         elif selected_show['type'] == "radiobuttonshow":
-            return RadioButtonShow(self.show_id,
+            return RadioButtonShow(show_id,
                                    selected_show,
                                    self.root,
-                                   canvas,
+                                   show_canvas,
                                    self.showlist,
                                    self.pp_dir,
                                    self.pp_home,
-                                   self.pp_profile)
+                                   self.pp_profile,
+                                   ShowManager.command_callback)
 
         elif selected_show['type'] == "hyperlinkshow":
-            return HyperlinkShow(self.show_id,
+            return HyperlinkShow(show_id,
                                  selected_show,
                                  self.root,
-                                 canvas,
+                                 show_canvas,
                                  self.showlist,
                                  self.pp_dir,
                                  self.pp_home,
-                                 self.pp_profile)
+                                 self.pp_profile,
+                                 ShowManager.command_callback)
         
         elif selected_show['type'] == "menu":
-            return MenuShow(self.show_id,
+            return MenuShow(show_id,
                             selected_show,
                             self.root,
-                            canvas,
+                            show_canvas,
                             self.showlist,
                             self.pp_dir,
                             self.pp_home,
-                            self.pp_profile)
+                            self.pp_profile,
+                            ShowManager.command_callback)
         
         elif selected_show['type'] == "artmediashow":    
-            return ArtMediaShow(self.show_id,
+            return ArtMediaShow(show_id,
                                 selected_show,
                                 self.root,
-                                canvas,
+                                show_canvas,
                                 self.showlist,
                                 self.pp_dir,
                                 self.pp_home,
-                                self.pp_profile)
+                                self.pp_profile,
+                                ShowManager.command_callback)
         
         elif selected_show['type'] == "artliveshow":    
-            return ArtLiveShow(self.show_id,
+            return ArtLiveShow(show_id,
                                selected_show,
                                self.root,
-                               canvas,
+                               show_canvas,
                                self.showlist,
                                self.pp_dir,
                                self.pp_home,
-                               self.pp_profile)
+                               self.pp_profile,
+                               ShowManager.command_callback)
         else:
             return None
 
 
     def compute_show_canvas(self,show_params):
         canvas={}
-        canvas['canvas-obj']= self.canvas
+        canvas['canvas-obj']= ShowManager.canvas
         status,message,self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2= self.parse_show_canvas(show_params['show-canvas'])
         if status  == 'error':
             self.mon.err(self,'show canvas error: ' + message + ' in ' + self.show_params['show-canvas'])

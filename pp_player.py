@@ -22,7 +22,8 @@ class Player(object):
                  pp_dir,
                  pp_home,
                  pp_profile,
-                 end_callback):
+                 end_callback,
+                 command_callback):
 
         # init trace to off, derived classes can turn it on
         self.trace=False
@@ -51,6 +52,7 @@ class Player(object):
         self.pp_home=pp_home
         self.pp_profile=pp_profile
         self.end_callback=end_callback
+        self.command_callback=command_callback
         
         # open resources
         self.rr=ResourceReader()
@@ -74,7 +76,7 @@ class Player(object):
         self.animate_end_text=self.track_params['animate-end']
 
         # create an  instance of showmanager so we can control concurrent shows
-        self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        # self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
 
         # open the plugin Manager
         self.pim=PluginManager(self.show_id,self.root,self.canvas,self.show_params,self.track_params,self.pp_dir,self.pp_home,self.pp_profile) 
@@ -108,23 +110,31 @@ class Player(object):
         self.pim.show_plugin()
         
         # Control other shows at beginning
-        reason,message=self.show_manager.show_control(self.track_params['show-control-begin'])
-        if reason == 'error':
+        self.show_control(self.track_params['show-control-begin'])
+        
+        # create animation events
+        reason,message=self.ppio.animate(self.animate_begin_text,id(self))
+        if reason  ==  'error':
+            self.mon.err(self,message)
             self.play_state='show-failed'
             if self.finished_callback is not None:
                 self.finished_callback('error',message)
-        else:      
-            # create animation events
-            reason,message=self.ppio.animate(self.animate_begin_text,id(self))
-            if reason  ==  'error':
-                self.mon.err(self,message)
-                self.play_state='show-failed'
-                if self.finished_callback is not None:
-                    self.finished_callback('error',message)
-            else:
-                # return to start playing the track.
-                self.mon.log(self,">show track received from show Id: "+ str(self.show_id))
-                return
+        else:
+            # return to start playing the track.
+            self.mon.log(self,">show track received from show Id: "+ str(self.show_id))
+            return
+
+
+# Control shows so pass the show control commands back to PiPresents via the command callback
+    def show_control(self,show_control_text): 
+        lines = show_control_text.split('\n')
+        for line in lines:
+            if line.strip() == "":
+                continue
+            # print 'show control command: ',linr
+            self.command_callback(line)
+
+
 
 # *****************
 # hide content and end animation, show control etc.
@@ -146,24 +156,20 @@ class Player(object):
             self.pim.stop_plugin()
 
         # Control concurrent shows at end
-        reason,message=self.show_manager.show_control(self.track_params['show-control-end'])
-        if reason  == 'error':
+        self.show_control(self.track_params['show-control-end'])
+        
+        # clear events list for this track
+        if self.track_params['animate-clear'] == 'yes':
+            self.ppio.clear_events_list(id(self))
+                
+        # create animation events for ending
+        reason,message=self.ppio.animate(self.animate_end_text,id(self))
+        if reason == 'error':
             self.play_state='show-failed'
             if self.finished_callback is not None:
                 self.finished_callback('error',message)
         else:
-            # clear events list for this track
-            if self.track_params['animate-clear'] == 'yes':
-                self.ppio.clear_events_list(id(self))
-                    
-            # create animation events for ending
-            reason,message=self.ppio.animate(self.animate_end_text,id(self))
-            if reason == 'error':
-                self.play_state='show-failed'
-                if self.finished_callback is not None:
-                    self.finished_callback('error',message)
-            else:
-                return
+            return
 
 
     def terminate(self):
@@ -296,7 +302,7 @@ class Player(object):
     def display_show_canvas_rectangle(self):
             coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2]
             self.canvas.create_rectangle(coords,
-                                               outline='white',
+                                               outline='yellow',
                                                fill='')
 
 
@@ -360,7 +366,7 @@ class Player(object):
         #  complete path of the filename of the selected entry
         if track_file[0] == "+":
             track_file=self.pp_home+track_file[1:]
-        self.mon.log(self,"Background image is "+ track_file)
+        # self.mon.log(self,"Background image is "+ track_file)
         return track_file
         
     # get a text string from resources.cfg

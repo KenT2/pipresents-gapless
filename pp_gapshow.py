@@ -20,7 +20,8 @@ class GapShow(Show):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
 
 
         # init the common bits
@@ -32,7 +33,8 @@ class GapShow(Show):
                           showlist,
                           pp_dir,
                           pp_home,
-                          pp_profile)
+                          pp_profile,
+                          command_callback)
 
 
         # Init variables special to this show
@@ -269,15 +271,21 @@ class GapShow(Show):
         if self.direction == 'backward':
             if self.medialist.finish() is False:
                 # list is empty - display a message for 10 secs and then retry
-                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'mediashow','m11'),10,self.what_next_after_showing)
+                Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
+                self.canvas.after(10000,self.remove_list_empty_message)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
         else:
             if self.medialist.start() is False:
                 # list is empty - display a message for 10 secs and then retry
-                Show.display_admin_message(self,self.canvas,None,Show.base_resource(self,'mediashow','m11'),10,self.what_next_after_showing)
+                Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
+                self.canvas.after(10000,self.remove_list_empty_message)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
+
+    def remove_list_empty_message(self):
+        Show.delete_admin_message(self)
+        self.start_load_show_loop(self.medialist.selected_track())
 
 
 # ***************************

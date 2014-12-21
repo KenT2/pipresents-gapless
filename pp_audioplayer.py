@@ -28,7 +28,8 @@ class AudioPlayer(Player):
                  pp_dir,
                  pp_home,
                  pp_profile,
-                 end_callback):
+                 end_callback,
+                 command_callback):
 
         # initialise items common to all players   
         Player.__init__( self,
@@ -41,7 +42,8 @@ class AudioPlayer(Player):
                          pp_dir,
                          pp_home,
                          pp_profile,
-                         end_callback)
+                         end_callback,
+                         command_callback)
 
         # remove comment to turn the trace on          
         # self.trace=True

@@ -12,7 +12,8 @@ class MenuShow(Show):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
         
         """
             show_id - index of the top level show caling this (for debug only)
@@ -33,11 +34,12 @@ class MenuShow(Show):
                           showlist,
                           pp_dir,
                           pp_home,
-                          pp_profile)
+                          pp_profile,
+                          command_callback)
         
 
         # remove comment to turn the trace on          
-        # self.trace=True
+        self.trace=True
 
         # control debugging log
         self.mon.on()
@@ -113,10 +115,11 @@ class MenuShow(Show):
     def do_operation(self,operation,edge,source):
         # service the standard inputs for this show
         if self.trace: print 'menushow/input_pressed ',operation
-        if operation=='stop':
+        if operation == 'stop':
             self.stop_timers()
+            print 'stop', self.current_player,self.level,self.menu_showing
             if self.current_player is not None:
-                if self.menu_showing is True and self.level != 0:
+                if self.menu_showing is True  and self.level != 0:
                     # if quiescent then set signal to stop the show when track has stopped
                     self.user_stop_signal=True
                 self.current_player.input_pressed('stop')
@@ -190,7 +193,7 @@ class MenuShow(Show):
         self.do_operation('stop','none','timeout')
 
     def do_menu_track(self):
-        self.showing_menu=True
+        self.menu_showing=True
         if self.trace: print 'menushow/do_menu_track'
 
         # start show timeout alarm if required
@@ -211,6 +214,7 @@ class MenuShow(Show):
         self.menu_track_params['show-control-end']=''
         self.menu_track_params['plugin']=''
         self.menu_track_params['display-show-background']='no'
+        self.menu_track_params['display-show-text']='no'
         self.menu_track_params['background-colour']=self.show_params['menu-background-colour']
         self.menu_track_params['background-image']=self.show_params['menu-background-image']
         self.menu_track_params['medialist_obj']=self.medialist

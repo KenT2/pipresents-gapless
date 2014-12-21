@@ -13,7 +13,8 @@ class LiveShow(GapShow):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
 
 
         # init the common bits
@@ -25,7 +26,8 @@ class LiveShow(GapShow):
                          showlist,
                          pp_dir,
                          pp_home,
-                         pp_profile)
+                         pp_profile,
+                         command_callback)
 
         # control logging
         self.mon.on()

@@ -129,10 +129,10 @@ class TimeOfDay(object):
                     # print 'time from events', time_element[1]
                     if time_element[1]  >=  now_seconds:
                         break
-                    if time_element[0] == 'start':
+                    if time_element[0] == 'open':
                         last_start_element=time_element
                         show_running=True
-                    elif time_element[0]=='exit':
+                    elif time_element[0]=='close':
                         show_running=False
                 if show_running is True:
                     # print 'catch up', show_ref
@@ -150,9 +150,9 @@ class TimeOfDay(object):
     # execute an event
     def do_event(self,show_ref,time_element,midnight):
         delta=datetime.now() - midnight
-        self.mon.log (self,'Event : ' + show_ref + ' ' + time_element[0] + ' required ' + str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1]))
+        self.mon.log (self,'Event : '  + time_element[0] +  ' ' +  show_ref + ' required ' + str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1]))
         # print 'Event : ' + show_ref + ' ' + time_element[0] + ' required '+ str(timedelta(seconds=time_element[1])) + ' late by ' + str(delta.seconds - time_element[1])
-        self.callback(show_ref,time_element[0])
+        self.callback(time_element[0]  + ' ' + show_ref)
 
 
 #

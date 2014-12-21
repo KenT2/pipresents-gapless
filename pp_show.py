@@ -26,7 +26,8 @@ class Show(object):
                      showlist,
                      pp_dir,
                      pp_home,
-                     pp_profile):
+                     pp_profile,
+                     command_callback):
 
         # instantiate arguments
         self.show_id=show_id
@@ -46,6 +47,7 @@ class Show(object):
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         self.pp_profile=pp_profile
+        self.command_callback=command_callback
 
         # init things that will then be reinitialised by derived classes
         self.medialist=None
@@ -63,7 +65,7 @@ class Show(object):
         self.tod=TimeOfDay()
         
         # create an  instance of showmanager so we can init child/subshows
-        self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.show_canvas,self.pp_dir,self.pp_profile,self.pp_home)
 
         # init variables
         self.current_player=None
@@ -159,7 +161,7 @@ class Show(object):
             else:
                 self.showlist.select(index)
                 selected_show=self.showlist.selected_show()
-                self.shower=self.show_manager.init_selected_show(selected_show)
+                self.shower=self.show_manager.init_subshow(self.show_id,selected_show,self.show_canvas)
                 if self.trace: print 'show/load_track_or_show - show is ',self.shower,selected_show['show-ref']
                 if self.shower is None:
                     self.mon.err(self,"Unknown Show Type: "+ selected_show['type'])
@@ -201,32 +203,32 @@ class Show(object):
         if track_type == "image":
             return ImagePlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
-                               self.pp_profile,self.end)
+                               self.pp_profile,self.end,self.command_callback)
     
         elif track_type == "video":
             return VideoPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
-                               self.pp_profile,self.end)
+                               self.pp_profile,self.end,self.command_callback)
 
         elif track_type == "audio":
             return AudioPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
-                               self.pp_profile,self.end)
+                               self.pp_profile,self.end,self.command_callback)
 
         elif track_type == "web":
             return BrowserPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                  self.show_params,selected_track,self.pp_dir,self.pp_home,
-                                 self.pp_profile,self.end)
+                                 self.pp_profile,self.end,self.command_callback)
   
         elif track_type == "message":
             return MessagePlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                  self.show_params,selected_track,self.pp_dir,self.pp_home,
-                                 self.pp_profile,self.end)
+                                 self.pp_profile,self.end,self.command_callback)
 
         elif track_type == "menu":
             return MenuPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                               self.show_params,selected_track,self.pp_dir,self.pp_home,
-                              self.pp_profile,self.end)
+                              self.pp_profile,self.end,self.command_callback)
                                    
         else:
             return None

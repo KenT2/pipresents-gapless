@@ -213,7 +213,7 @@ class PiPresents(object):
         self.root.focus_set()
 
         # define response to main window closing.
-        self.root.protocol ("WM_DELETE_WINDOW", self.terminate_pressed)
+        self.root.protocol ("WM_DELETE_WINDOW", self.terminate)
 
         # setup a canvas onto which will be drawn the images or text
         self.canvas = Canvas(self.root, bg='black')
@@ -262,6 +262,7 @@ class PiPresents(object):
 # INITIALISE THE APPLICATION AND START
 # ****************************************
         self.shutdown_required=False
+        self.exitpipresents_required=False
         
         # kick off GPIO if enabled by command line option
         if self.options['gpio'] is True:
@@ -281,7 +282,7 @@ class PiPresents(object):
 
         # kick off the time of day scheduler which may run additional shows
         self.tod=TimeOfDay()
-        self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.tod_pressed)
+        self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
         self.tod.poll()
 
         # start tkinters event loop
@@ -297,20 +298,12 @@ class PiPresents(object):
         show_id=-1 #start show
         self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)        
         # first time through so empty show register and set callback to terminate Pi Presents if all shows have ended.
-        self.show_manager.init(self.all_shows_ended_callback)
+        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command)
 
         # parse the start shows field and start the initial shows       
-        start_shows_text=self.starter_show['start-show']
-        self.show_manager.start_initial_shows(start_shows_text)
-
-    # callback from ShowManager when all shows have ended
-    def all_shows_ended_callback(self,reason,message,force_shutdown):
-        if force_shutdown is True:
-            self.shutdown_required=True
-            self.mon.log(self,"shutdown forced by profile")  
-            self.terminate()
-        else:
-            self.end(reason,message)
+        show_refs=self.starter_show['start-show'].split()
+        for show_ref in show_refs:
+            reason,message=self.show_manager.control_a_show(show_ref,'open')
 
 
 # *********************
@@ -323,60 +316,81 @@ class PiPresents(object):
         self.input_pressed(symbol,edge,'gpio')
 
 
-    def tod_pressed(self,show_ref,command):
-        print 'tod pressed',show_ref,command
-        if command=='start':
-            self.show_manager.control_a_show([show_ref,'start'])
-        elif command == 'exit':
-            self.show_manager.control_a_show([show_ref,'exit'])
-    
+    # handles one command provided as a line of text
+    def handle_command(self,command_text):
+        print 'Command',command_text
+        if command_text.strip()=="":
+            return
+        fields= command_text.split()
+        show_command=fields[0]
+        if len(fields)>1:
+            show_ref=fields[1]
+        else:
+            show_ref=''
+        if show_command in ('open','close'):
+            reason,message=self.show_manager.control_a_show(show_ref,show_command)
+            
+        elif show_command == 'exitpipresents':
+            self.exitpipresents_required=True
+            reason,message= self.show_manager.exit_all_shows()
+
+        elif show_command == 'shutdownnow':
+            self.shutdown_required=True
+            reason,message=self.show_manager.exit_all_shows()
+        else:
+            reason='error'
+            message='command not recognised '+ command_text
+        if reason=='error':
+            self.mon.err(self,message)
+            self.end(reason,message)
+
+                            
+
+
     # all input events call this callback with a symbolic name.
     # handle events that affect PP overall, otherwise pass to all active shows
     def input_pressed(self,symbol,edge,source):
         self.mon.log(self,"event received: "+symbol)
         if symbol == 'pp-terminate':
-            self.terminate_pressed()
+            self.terminate()
         elif symbol == 'pp-shutdown':
             self.shutdown_pressed('delay')
         elif symbol == 'pp-shutdownnow':
             self.shutdown_pressed('now')
         else:
+            # events for shows affect the show and could cause it to exit.
             for show in self.show_manager.shows:
                 show_obj=show[ShowManager.SHOW_OBJ]
                 if show_obj is not None:
                     show_obj.input_pressed(symbol,edge,source)
 
 
-# **************************************
-# respond to exit inputs by terminating
-# **************************************
 
     def shutdown_pressed(self, when):
         if when == 'delay':
             self.root.after(5000,self.on_shutdown_delay)
         else:
             self.shutdown_required=True
-            self.exit_pressed()           
+            # calls exit method of all shows, results in all_shows_closed_callback
+            self.show_manager.exit_all_shows()           
+
 
     def on_shutdown_delay(self):
+        # 5 second delay is up, if shutdown button still pressed then shutdown
         if self.ppio.shutdown_pressed():
             self.shutdown_required=True
-            self.exit_pressed()
-
-         
-    def terminate_pressed(self):
-        self.mon.log(self, "terminate received from user")
-        # terminate any running shows and players      
-        self.terminate()
+            self.show_manager.exit_all_shows()
 
 
-     # kill or error
     def terminate(self):
+        self.mon.log(self, "terminate received from user")
         needs_termination=False
         for show in self.show_manager.shows:
             if show[ShowManager.SHOW_OBJ] is not None:
                 needs_termination=True
                 self.mon.log(self,"Sent terminate to show "+ show[ShowManager.SHOW_REF])
+                # call shows terminate method
+                # eventually the show will exit and after all shows have exited all_shows_callback will be executed.
                 show[ShowManager.SHOW_OBJ].terminate()
         if needs_termination is False:
             self.end('killed','killed - no termination of shows required')
@@ -385,6 +399,11 @@ class PiPresents(object):
 # ******************************
 # Ending Pi Presents after all the showers and players are closed
 # **************************
+
+    # callback from ShowManager when all shows have ended
+    def all_shows_ended_callback(self,reason,message):
+        if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True:
+            self.end(reason,message)
 
     def end(self,reason,message):
         self.mon.log(self,"Pi Presents ending with reason: " + reason)
@@ -407,7 +426,8 @@ class PiPresents(object):
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
-                call(['sudo', 'shutdown', '-h', '-t 5','now'])
+                print 'SHUTDOWN'
+                # call(['sudo', 'shutdown', '-h', '-t 5','now'])
                 sys.exit()
             else:
                 sys.exit()

@@ -32,7 +32,8 @@ class RadioButtonShow(Show):
                  showlist,
                  pp_dir,
                  pp_home,
-                 pp_profile):
+                 pp_profile,
+                 command_callback):
         
         """
             show_id - index of the top level show caling this (for debug only)
@@ -53,7 +54,8 @@ class RadioButtonShow(Show):
                           showlist,
                           pp_dir,
                           pp_home,
-                          pp_profile)
+                          pp_profile,
+                          command_callback)
         
 
         # remove comment to turn the trace on          
