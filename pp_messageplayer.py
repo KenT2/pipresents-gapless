@@ -40,18 +40,12 @@ class MessagePlayer(Player):
                          end_callback,
                          command_callback)                    
 
-        # comment this out to turn the trace off          
-        # self.trace=True
-
-        # control debugging log
-        self.mon.on()
-        
         # stopwatch for timing functions
         StopWatch.global_enable=False
         self.sw=StopWatch()
         self.sw.off()
 
-        if self.trace: print '    Messageplayer/init ',self
+        self.mon.trace(self,'')
         # and initilise things for this player
         
         # get duration from profile
@@ -69,7 +63,7 @@ class MessagePlayer(Player):
         # instantiate arguments
         self.track=text
         self.loaded_callback=loaded_callback   # callback when loaded
-        if self.trace: print '    Messageplayer/load ',self
+        self.mon.trace(self,'')
 
         # load the plugin, this may modify self.ttack and enable the plugin drawign to canvas
         if self.track_params['plugin'] != '':
@@ -98,7 +92,7 @@ class MessagePlayer(Player):
             
     # UNLOAD - abort a load when omplayer is loading or loaded
     def unload(self):
-        if self.trace: print '    Messageplayer/unload ',self
+        self.mon.trace(self,'')
         # nothing to do for Messageplayer
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         self.play_state='unloaded'
@@ -113,16 +107,12 @@ class MessagePlayer(Player):
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by Messageplayer
 
-        if self.trace: print '    Messageplayer/show ',self
-        
+        self.mon.trace(self,'')
         # init state and signals  
         self.tick = 100 # tick time for image display (milliseconds)
         self.dwell = 10*self.duration
         self.dwell_counter=0
         self.quit_signal=False
-        self.show_x_content()
-        if self.ready_callback is not None:
-            self.ready_callback()
 
         # do common bits
         Player.pre_show(self)
@@ -130,9 +120,9 @@ class MessagePlayer(Player):
         # start show state machine
         self.start_dwell()
 
-    # CLOSE - nothing ot do in messageplayer - x content is removed by ready callback
+    # CLOSE - nothing to do in messageplayer - x content is removed by ready callback
     def close(self,closed_callback):
-        if self.trace: print '    Messageplayer/close ',self
+        self.mon.trace(self,'')
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'

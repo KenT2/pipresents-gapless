@@ -7,7 +7,7 @@ class PathManager(object):
         self.debug=False
 
         # remove the # to enable display of the path operations and stack in the terminal window.
-        self.debug=True
+        self.debug=False
         
         self.path_stack=[]
 
@@ -29,7 +29,7 @@ class PathManager(object):
             self.path_stack.pop()
         track_to_play = self.path_stack[len(self.path_stack)-1][0]
         self.path_stack.pop()
-        if self.debug:  self.print_path()
+        if self.debug:  print self.pretty_path()
         return track_to_play
 
 
@@ -53,13 +53,13 @@ class PathManager(object):
         track_to_play = top[0]
         if self.debug: 
             print '   removed for playing: ',track_to_play
-            self.print_path()
+            print self.pretty_path()
         return track_to_play
     
     def append(self,page):
         if self.debug:  print 'pathmanager command   -   append: ',page
         self.path_stack.append([page])
-        if self.debug: self.print_path()
+        if self.debug: print self.pretty_path()
 
     def empty(self):
         self.path_stack=[]
@@ -68,13 +68,14 @@ class PathManager(object):
     def pop_for_sibling(self):
         if self.debug: print 'pathmanger: pop for sibling'
         self.path_stack.pop()
-        if self.debug: self.print_path()
+        if self.debug: print self.pretty_path()
 
         
-    def print_path(self):
-        print 'Path now is:'
+    def pretty_path(self):
+        path= '\nPath now is:'
         for page in self.path_stack:
-            print "      ",page[0]
+            path  += "\n      " + page[0]
+        return path
  
 
 # *******************   

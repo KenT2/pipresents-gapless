@@ -5,7 +5,7 @@ from PIL import ImageTk
 
 from pp_showmanager import ShowManager
 from pp_pluginmanager import PluginManager
-from pp_gpio import PPIO
+from pp_animate import Animate
 from pp_resourcereader import ResourceReader
 from pp_utils import Monitor
 
@@ -25,14 +25,11 @@ class Player(object):
                  end_callback,
                  command_callback):
 
-        # init trace to off, derived classes can turn it on
-        self.trace=False
-
         # create debugging log object
         self.mon=Monitor()
 
+        self.mon.trace(self,'')
 
-        if self.trace: print '    Player/init ',self
         # instantiate arguments
         self.show_id=show_id
         self.showlist=showlist
@@ -61,9 +58,7 @@ class Player(object):
         self.background_file=''
         if self.track_params['background-image'] != '':
             self.background_file= self.track_params['background-image']
-        else:
-            if self.track_params['display-show-background'] == 'yes':
-                self.background_file= self.show_params['background-image']
+
             
         # get background colour from profile.
         if self.track_params['background-colour'] != '':
@@ -81,8 +76,8 @@ class Player(object):
         # open the plugin Manager
         self.pim=PluginManager(self.show_id,self.root,self.canvas,self.show_params,self.track_params,self.pp_dir,self.pp_home,self.pp_profile) 
 
-        # create an instance of PPIO so we can create gpio events
-        self.ppio = PPIO()
+        # create an instance of Animate so we can send animation commands
+        self.animate = Animate()
 
         # initialise state and signals
         self.background_obj=None
@@ -103,8 +98,14 @@ class Player(object):
               
     # common bits of show(....) 
     def pre_show(self):
-        if self.trace: print '    Player/pre-show ',self
+        self.mon.trace(self,'')
+
         # show_x_content moved to just before ready_callback to improve flicker.
+        self.show_x_content()
+
+        #ready callback hides and lases players from provious track, also displays show background
+        if self.ready_callback is not None:
+            self.ready_callback(self.enable_show_background)
 
         # but pim needs to be done here as it uses the pp-plugin-content tag which needs to be created later
         self.pim.show_plugin()
@@ -113,7 +114,7 @@ class Player(object):
         self.show_control(self.track_params['show-control-begin'])
         
         # create animation events
-        reason,message=self.ppio.animate(self.animate_begin_text,id(self))
+        reason,message=self.animate.animate(self.animate_begin_text,id(self))
         if reason  ==  'error':
             self.mon.err(self,message)
             self.play_state='show-failed'
@@ -123,6 +124,7 @@ class Player(object):
             # return to start playing the track.
             self.mon.log(self,">show track received from show Id: "+ str(self.show_id))
             return
+
 
 
 # Control shows so pass the show control commands back to PiPresents via the command callback
@@ -142,8 +144,7 @@ class Player(object):
 # *****************
 
     def hide(self):
-        if self.trace: print '    Player/hide ',self
-
+        self.mon.trace(self,'')
         # abort the timer
         if self.tick_timer is not None:
             self.canvas.after_cancel(self.tick_timer)
@@ -160,10 +161,10 @@ class Player(object):
         
         # clear events list for this track
         if self.track_params['animate-clear'] == 'yes':
-            self.ppio.clear_events_list(id(self))
+            self.animate.clear_events_list(id(self))
                 
         # create animation events for ending
-        reason,message=self.ppio.animate(self.animate_end_text,id(self))
+        reason,message=self.animate.animate(self.animate_end_text,id(self))
         if reason == 'error':
             self.play_state='show-failed'
             if self.finished_callback is not None:
@@ -173,9 +174,8 @@ class Player(object):
 
 
     def terminate(self):
-        if self.trace:  print '    Player/terminate ',self
+        self.mon.trace(self,'')
         self.terminate_signal=True
-        print 'play state',self.play_state
         if self.play_state == 'showing':
             # call the derived class's stop method
             self.stop()
@@ -198,7 +198,7 @@ class Player(object):
 # *****************
 
     def end(self,reason,message):
-        if self.trace: print '    Player/end ',self
+        self.mon.trace(self,'')
         # stop the plugin
 
         if self.terminate_signal is True:
@@ -221,7 +221,7 @@ class Player(object):
             return reason,message
 
     def load_x_content(self,enable_menu):
-        if self.trace: print '    Player/load_x_content ',self
+        self.mon.trace(self,'')
         self.background_obj=None
         self.background=None
         self.track_text_obj=None
@@ -242,11 +242,9 @@ class Player(object):
                 window_width=self.show_canvas_width
                 window_height=self.show_canvas_height
                 if image_width != window_width or image_height != window_height:
-                    print 'resizing'
                     pil_background_img=pil_background_img.resize((window_width, window_height))
                 self.background = ImageTk.PhotoImage(pil_background_img)
                 del pil_background_img
-                # print 'self.background ',self.background
                 self.background_obj = self.canvas.create_image(self.show_canvas_x1,
                                                                self.show_canvas_y1,
                                                                image=self.background,
@@ -300,10 +298,10 @@ class Player(object):
 
     # display the rectangle that is the show canvas
     def display_show_canvas_rectangle(self):
-            coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2]
-            self.canvas.create_rectangle(coords,
-                                               outline='yellow',
-                                               fill='')
+            coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2-1,self.show_canvas_y2-1]
+            # self.canvas.create_rectangle(coords,
+                                    #            outline='yellow',
+                                      #          fill='')
 
 
     # dummy functions to manipulate the track content, overidden in some players,
@@ -321,7 +319,7 @@ class Player(object):
         pass
 
     def show_x_content(self):
-        if self.trace: print '    Player/show_x_content ',self
+        self.mon.trace(self,'')
         # background colour
         if  self.background_colour != '':
             self.canvas.config(bg=self.background_colour)
@@ -333,25 +331,30 @@ class Player(object):
         self.canvas.itemconfig(self.show_text_obj,state='normal')
         self.canvas.itemconfig(self.track_text_obj,state='normal')
         self.canvas.itemconfig(self.hint_obj,state='normal')
-        self.canvas.update_idletasks( )       
+        # self.canvas.update_idletasks( )
+
+        # decide whether the show background should be enabled.
+        if self.background_obj is None and self.track_params['display-show-background']=='yes':
+            self.enable_show_background=True
+        else:
+            self.enable_show_background=False
 
 
     def hide_x_content(self):
-        if self.trace: print '    Player/hide_x_content ',self
+        self.mon.trace(self,'')
         self.hide_track_content()
-        # print 'hide background obj', self.background_obj
         self.canvas.itemconfig(self.background_obj,state='hidden')
         self.canvas.itemconfig(self.show_text_obj,state='hidden')
         self.canvas.itemconfig(self.track_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_obj,state='hidden')
-        self.canvas.update_idletasks( )
+        # self.canvas.update_idletasks( )
         
         self.canvas.delete(self.background_obj)
         self.canvas.delete(self.show_text_obj)
         self.canvas.delete(self.track_text_obj)
         self.canvas.delete(self.hint_obj)
         self.background=None
-        self.canvas.update_idletasks( )
+        # self.canvas.update_idletasks( )
 
 
 # ****************

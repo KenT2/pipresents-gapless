@@ -44,15 +44,8 @@ class MenuPlayer(Player):
                          end_callback,
                          command_callback)
 
-                    
-        # comment this out to turn the trace off          
-        # self.trace=True
-        
-        # control debugging log
-        self.mon.on()
+        self.mon.trace(self,'')      
 
-
-        if self.trace: print '    Menuplayer/init ',self
         
         # bodge for menuplayer, pass medialist through track parameters
         self.medialist=self.track_params['medialist_obj']
@@ -69,8 +62,8 @@ class MenuPlayer(Player):
         self.track=track                   # not used
         self.loaded_callback=loaded_callback   #callback when loaded
         
-        if self.trace: print '    Menuplayer/load ',self
-
+        self.mon.trace(self,'')
+        
         # load the images and text
         status,message=Player.load_x_content(self,enable_menu)
         if status == 'error':
@@ -88,7 +81,7 @@ class MenuPlayer(Player):
  
     # UNLOAD - abort a load when omplayer is loading or loaded
     def unload(self):
-        if self.trace: print '    Menuplayer/unload ',self
+        self.mon.trace(self, '')
         # nothing to do for Menuplayer
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         self.play_state='unloaded'
@@ -101,15 +94,11 @@ class MenuPlayer(Player):
         self.ready_callback=ready_callback         # callback when ready to show an image - 
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
-        if self.trace: print '    Menuplayer/show ',self
-
+        
+        self.mon.trace(self,'')
+        
         self.quit_signal=False
         
-        self.show_x_content()
-        
-        if self.ready_callback is not  None:
-            self.ready_callback()
-
         # do common bits
         Player.pre_show(self)
         
@@ -118,7 +107,8 @@ class MenuPlayer(Player):
 
     # CLOSE - nothing tt do in menuplayer - x content is removed by ready callback and hide
     def close(self,closed_callback):
-        if self.trace: print '    Menuplayer/close ',self
+        self.mon.trace(self,'') 
+
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'
@@ -127,8 +117,8 @@ class MenuPlayer(Player):
 
 
 
-    def input_pressed(self,symbol):
-        if self.trace: print '    Menuplayer/input_pressed ',symbol
+    def input_pressed(self,symbol):   
+        self.mon.trace(self,symbol) 
         if symbol == 'stop':
             self.stop()
 
@@ -203,8 +193,7 @@ class MenuPlayer(Player):
         
 
     def hide_track_content(self):
-        if self.trace: print '    Menuplayer/hide_track_content '
-        print 'Hide Menu content'
+        self.mon.trace(self,'') 
         self.canvas.itemconfig(self.menu_text_obj,state='hidden')
         self.canvas.itemconfig(self.hint_text_obj,state='hidden')
         self.canvas.delete(self.menu_text_obj)
@@ -243,7 +232,7 @@ class MenuPlayer(Player):
         # offsets for the above
         self.icon_id_index=0 # rectangle around the icon - object
         self.image_id_index=1 # icon image - needed for tkinter - PIL image
-        self.text_id_index=2 # the text - need when no icon is displayed - object
+        self.text_id_index=3 # the text - need when no icon is displayed - object
         # and 5 other to do with the strip
 
         # select the startof the medialist
@@ -448,7 +437,7 @@ class MenuPlayer(Player):
         total_width=self.menu_columns * self.entry_width +(self.menu_columns-1)*self.x_separation
         total_height=self.menu_rows * self.entry_height + (self.menu_rows-1)*self.y_separation
         
-        self.print_geometry(total_width,total_height)   
+        # self.print_geometry(total_width,total_height)   
 
 
         # display guidelines and debgging text if there is a problem     
@@ -784,6 +773,7 @@ class MenuPlayer(Player):
             if state is True:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.text_id_index],
                                        fill=self.track_params['entry-select-colour'])
+                self.canvas.update_idletasks( )
             else:
                 self.canvas.itemconfig(self.menu_entry_id[index][self.text_id_index],
                                        fill=self.track_params['entry-colour'])

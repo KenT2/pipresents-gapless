@@ -33,14 +33,14 @@ from stat import S_ISFIFO
 
 """
 
-class uzblDriver(object):
+class UZBLDriver(object):
 
     def __init__(self,widget):
 
         self.widget=widget
         
         self.mon=Monitor()
-        self.mon.on()
+
         self._process=None
         self.fifo=''
 

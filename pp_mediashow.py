@@ -27,11 +27,6 @@ class MediaShow(GapShow):
                          pp_profile,
                          command_callback)
 
-        # control logging
-        self.mon.on()
-        
-        # remove comment to turn trace on
-        # self.trace=True
 
         # use the appropriate medialist
         self.medialist=MediaList(show_params['sequence'])

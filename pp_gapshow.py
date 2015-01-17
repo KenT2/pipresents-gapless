@@ -1,5 +1,6 @@
 from pp_show import Show
-
+from pp_controlsmanager import ControlsManager
+from pp_screendriver import ScreenDriver
 
 class GapShow(Show):
     """
@@ -36,6 +37,8 @@ class GapShow(Show):
                           pp_profile,
                           command_callback)
 
+        # instatiatate the screen driver - used only to access enable and hide click areas
+        self.sr=ScreenDriver()
 
         # Init variables special to this show
         self.poll_for_interval_timer=None
@@ -58,8 +61,26 @@ class GapShow(Show):
         
 
     def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
-        if self.trace: print '\n\nGAPSHOW/play ',self.show_params['show-ref']
+        self.mon.newline(3)
+        self.mon.trace(self, self.show_params['show-ref'])
+             
         Show.base_play(self,end_callback,show_ready_callback,direction_command, level,controls_list)
+
+        # get the previous shower and player from calling show
+       # Show.base_get_previous_player_from_parent(self)
+
+        # get control bindings for this show
+        controlsmanager=ControlsManager()
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+
+            # print 'controls',reason,self.show_params['controls'],self.controls_list
 
         # unpack end trigger 
         if self.show_params['trigger-end-type'] == 'duration':
@@ -72,9 +93,7 @@ class GapShow(Show):
         # initial direction
         self.direction='forward'
 
-        # get the previous shower and player from calling show
-        Show.base_get_previous_player_from_parent(self)
-        
+      
         # and delete eggtimer started by the parent
         if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()
@@ -126,8 +145,11 @@ class GapShow(Show):
     # service the standard operations for this show
     def do_operation(self,operation,edge,source):
         # print 'do_operation ',operation
-        if self.trace: print 'gapshow/input_pressed ',operation
-        if operation == 'stop':
+        self.mon.trace(self, operation)
+        if operation == 'exit':
+            self.exit()
+            
+        elif operation == 'stop':
             if self.level != 0 :
                 # not at top so stop the show
                 self.user_stop_signal=True
@@ -148,10 +170,10 @@ class GapShow(Show):
         elif operation == 'play':
             # use 'play' to start child if state=playing or to trigger the show if waiting for trigger
             if self.state == 'playing':
-                if self.show_params['has-child'] == 'yes':
+                if self.show_params['child-track-ref'] != '':
                     # set a signal because must stop current track before running child show
                     self.play_child_signal=True
-                    self.child_track_ref='pp-child-show'
+                    self.child_track_ref=self.show_params['child-track-ref']
                     # and stop the current track if its running
                     if self.current_player is not None:
                         self.current_player.input_pressed('stop')
@@ -270,9 +292,9 @@ class GapShow(Show):
         # and play the first track unless commanded otherwise
         if self.direction == 'backward':
             if self.medialist.finish() is False:
-                # list is empty - display a message for 10 secs and then retry
+                # list is empty - display a message for 5 secs and then retry
                 Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
-                self.canvas.after(10000,self.remove_list_empty_message)
+                self.canvas.after(5000,self.remove_list_empty_message)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
         else:
@@ -283,9 +305,10 @@ class GapShow(Show):
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
 
+
     def remove_list_empty_message(self):
         Show.delete_admin_message(self)
-        self.start_load_show_loop(self.medialist.selected_track())
+        self.start_show()
 
 
 # ***************************
@@ -299,8 +322,8 @@ class GapShow(Show):
         
         self.delete_eggtimer()
 
-        # is menu required
-        if self.show_params['has-child'] == "yes":
+        # is child track required
+        if self.show_params['child-track-ref'] != '':
             self.enable_child=True
         else:
             self.enable_child=False
@@ -318,7 +341,7 @@ class GapShow(Show):
 
     # track has loaded so show it.
     def what_next_after_load(self,status,message):
-        if self.trace: print 'gapshow/what_next_after_load - load complete with status: ',status,'  message: ',message
+        self.mon.trace(self,' - load complete with status: ' + status +'  message: ' +message)
         if self.current_player.play_state == 'load-failed':
             self.req_next = 'error'
             self.what_next_after_showing()
@@ -327,28 +350,30 @@ class GapShow(Show):
             if self.terminate_signal is True or self.exit_signal is True or self.user_stop_signal is True:
                 self.what_next_after_showing()
             else:
-                if self.trace: print 'gapshow/what next_after_load- showing track'
+                self.mon.trace(self, ' - showing track')
                 self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
 
 
     def finished_showing(self,reason,message):
+        self.sr.hide_click_areas(self.controls_list)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
             self.req_next='finished-player'
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
-        if self.trace: print 'gapshow/finished_showing - pause at end',self.current_player
+        self.mon.trace(self, ' - pause at end ')
         self.mon.log(self,"pause at end of showing track with reason: "+reason+ ' and message: '+ message)
         self.what_next_after_showing()
 
 
     def closed_after_showing(self,reason,message):
+        self.sr.hide_click_areas(self.controls_list)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
             self.req_next='closed-player'
         # showing has finished with closing of player but track instance is alive for hiding the x_content
-        if self.trace: print 'gapshow/closed_after_showing - closed',self.current_player
+        self.mon.trace(self,' - closed')
         self.mon.log(self,"Closed after showing track with reason: "+reason+ ' and message: '+ message)
         self.what_next_after_showing()
 
@@ -356,18 +381,20 @@ class GapShow(Show):
     # subshow or child show has ended
     def end_shower(self,show_id,reason,message):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ': Returned from shower with ' + reason +' ' + message)
+        self.sr.hide_click_areas(self.controls_list)
         self.req_next=reason
         Show.base_end_shower(self)
         self.what_next_after_showing()
 
-    def print_what_next_after_showing_state(self):
-        print '* terminate signal', self.terminate_signal
-        print '* exit signal', self.exit_signal   
-        print '* user stop  signal', self.user_stop_signal
-        print '* previous track  signal', self.previous_track_signal
-        print '* next track  signal', self.next_track_signal
-        print '* req_next', self.req_next
-        print '* direction ?old', self.direction
+    def pretty_what_next_after_showing_state(self):
+        state = '\n* terminate signal ' + str(self.terminate_signal)
+        state += '\n* exit signal ' +  str(self.exit_signal)
+        state += '\n* user stop  signal ' + str(self.user_stop_signal)
+        state += '\n* previous track  signal ' + str(self.previous_track_signal)
+        state += '\n* next track  signal ' + str(self.next_track_signal)
+        state += '\n* req_next ' + self.req_next
+        state +=  '\n * direction ?old ' + self.direction
+        return state +'\n'
         
 
     def what_next_after_showing(self):
@@ -376,9 +403,8 @@ class GapShow(Show):
 
         # first of all deal with conditions that do not require the next track to be shown
         # some of the conditions can happen at any time, others only when a track is closed or at pause_at_end
-        if self.trace: print 'gapshow/what_next_after_showing '
-        if self.trace: self.print_what_next_after_showing_state()
-        # self.print_what_next_after_showing_state()
+        self.mon.trace(self,self.pretty_what_next_after_showing_state())
+
         
         # need to terminate
         if self.terminate_signal is True:
@@ -462,8 +488,8 @@ class GapShow(Show):
                     self.display_eggtimer(Show.base_resource(self,'mediashow','m07'))
                     self.start_load_show_loop(child_track)
                 else:
-                    self.mon.err(self,"Child show not found in medialist: "+ self.show_params['pp-child-show'])
-                    self.end('error',"child show not found in medialist")
+                    self.mon.err(self,"Child not found in medialist: "+ self.child_track_ref)
+                    self.end('error',"child not found in medialist")
 
             # skip to next track on user input or after subshow
             elif self.next_track_signal is True or self.req_next == 'do-next':
@@ -559,9 +585,11 @@ class GapShow(Show):
 
     # called just before a track is shown to remove the  previous track from the screen
     # and if necessary close it
-    def track_ready_callback(self):
+    def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
-        Show.base_track_ready_callback(self)
+        # enable the click-area that are in the list of controls
+        self.sr.enable_click_areas(self.controls_list)
+        Show.base_track_ready_callback(self,enable_show_background)
 
    
     # callback from begining of a subshow, provide previous player to called show        

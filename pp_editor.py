@@ -33,7 +33,7 @@ class PPEditor(object):
 
     def __init__(self):
     
-        self.editor_issue="1.2"
+        self.editor_issue="1.3"
 
         # get command options
         self.command_options=ed_options()
@@ -49,15 +49,13 @@ class PPEditor(object):
         # Initialise logging
         Monitor.log_path=self.pp_dir
         self.mon=Monitor()
-        self.mon.on()
+        self.mon.init()
+        
+        Monitor.classes  = ['PPEditor','EditItem','Validator']
 
-        if self.command_options['debug']  is  True:
-            Monitor.global_enable=True
-        else:
-            Monitor.global_enable=False
+        Monitor.log_level = int(self.command_options['debug'])
 
         self.mon.log (self, "Pi Presents Editor is starting")
-
         self.mon.log (self," OS and separator " + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: code "+sys.path[0])
 
@@ -138,8 +136,6 @@ class PPEditor(object):
         typemenu.add_command(label='Web', command = self.new_web_track)
         typemenu.add_command(label='Message', command = self.new_message_track)
         typemenu.add_command(label='Show', command = self.new_show_track)
-        typemenu.add_command(label='Menu Background', command = self.new_menu_background_track)
-        typemenu.add_command(label='Child Show', command = self.new_child_show_track)
         trackmenu.add_cascade(label='New', menu = typemenu)
 
         toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
@@ -266,8 +262,10 @@ class PPEditor(object):
     def init(self):
         self.options.read()
         self.pp_home_dir = self.options.pp_home_dir
+        self.pp_profiles_offset = self.options.pp_profiles_offset
         self.initial_media_dir = self.options.initial_media_dir
         self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
+        self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
         self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
         self.current_medialist=None
         self.current_showlist=None
@@ -308,9 +306,9 @@ class PPEditor(object):
     # **************
 
     def open_existing_profile(self):
-        initial_dir=self.pp_home_dir+os.sep+"pp_profiles"
+        initial_dir=self.pp_home_dir+os.sep+"pp_profiles"+self.pp_profiles_offset
         if os.path.exists(initial_dir) is False:
-            self.mon.err(self,"Home directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
+            self.mon.err(self,"Profiles directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
             return
         dir_path=tkFileDialog.askdirectory(initialdir=initial_dir)
         # dir_path="C:\Users\Ken\pp_home\pp_profiles\\ttt"
@@ -340,7 +338,7 @@ class PPEditor(object):
         if name == "":
             tkMessageBox.showwarning("New Profile","Name is blank")
             return
-        to = self.pp_home_dir + os.sep + "pp_profiles"+ os.sep + name
+        to = self.pp_home_dir + os.sep + "pp_profiles"+ self.pp_profiles_offset + os.sep + name
         if os.path.exists(to) is  True:
             tkMessageBox.showwarning( "New Profile","Profile exists\n(%s)" % to )
             return
@@ -412,9 +410,6 @@ class PPEditor(object):
             showlist_file = showlist_dir + os.sep + "pp_showlist.json"
             self.current_showlist.save_list(showlist_file)
             
-    def add_eventshow(self):
-        self.add_show(PPdefinitions.new_shows['eventshow'])
-
     def add_mediashow(self):
         self.add_show(PPdefinitions.new_shows['mediashow'])
 
@@ -612,7 +607,7 @@ class PPEditor(object):
         self.tracks_display.delete(0,self.tracks_display.size())
         if self.current_medialist is not None:
             for index in range(self.current_medialist.length()):
-                if self.current_medialist.track(index)['track-ref'] == '':
+                if self.current_medialist.track(index)['track-ref'] != '':
                     track_ref_string="  ["+self.current_medialist.track(index)['track-ref']+"]"
                 else:
                     track_ref_string=""
@@ -682,12 +677,6 @@ class PPEditor(object):
     def new_show_track(self):
         self.new_track(PPdefinitions.new_tracks['show'],None)
  
-    def new_menu_background_track(self):
-        self.new_track(PPdefinitions.new_tracks['menu-background'],None)
-
-    def new_child_show_track(self):
-        self.new_track(PPdefinitions.new_tracks['child-show'],None)
-
     def remove_track(self):
         if  self.current_medialist is not None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
             if tkMessageBox.askokcancel("Delete Track","Delete Track"):
@@ -765,15 +754,15 @@ class PPEditor(object):
 
     def update_all(self):
         self.init()
-        for profile_file in os.listdir(self.pp_home_dir+os.sep+'pp_profiles'):
+        for profile_file in os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset):
             # self.mon.log (self,"Updating "+profile_file)
-            self.pp_profile_dir = self.pp_home_dir+os.sep+'pp_profiles'+ os.sep + profile_file
+            self.pp_profile_dir = self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset + os.sep + profile_file
             if not os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
                 tkMessageBox.showwarning("Pi Presents","Not a profile, skipping "+self.pp_profile_dir)
             else:
                 self.current_showlist=ShowList()
-                # self.mon.log (self,"Checking version "+profile_file)
                 self.current_showlist.open_json(self.pp_profile_dir+os.sep+"pp_showlist.json")
+                self.mon.log (self,"Version of profile "+ profile_file + ' is ' + self.current_showlist.sissue())
                 if float(self.current_showlist.sissue())<float(self.editor_issue):
                     self.mon.log(self,"Version of profile "+profile_file+ "  is being updated to "+self.editor_issue)
                     self.update_profile()
@@ -783,13 +772,13 @@ class PPEditor(object):
                 elif float(self.current_showlist.sissue())>float(self.editor_issue):
                     tkMessageBox.showwarning("Pi Presents", "Version of profile " +profile_file+ " is greater than editor, skipping")
                 else:
-                    self.mon.log(self," Profile " + profile_file + " Already up to date ")
+                    self.mon.log(self," Skipping Profile " + profile_file + " It is already up to date ")
         self.init()
         tkMessageBox.showwarning("Pi Presents","All profiles updated")
             
     def update_profile(self):
         # open showlist and update its shows
-        # self.mon.log (self,"Updating show ")
+        self.mon.log (self,"Updating show ")
         ifile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", 'rb')
         shows = json.load(ifile)['shows']
         ifile.close()
@@ -802,7 +791,7 @@ class PPEditor(object):
         # UPDATE MEDIALISTS AND THEIR TRACKS
         for this_file in os.listdir(self.pp_profile_dir):
             if this_file.endswith(".json") and this_file != 'pp_showlist.json':
-                # self.mon.log (self,"Updating medialist " + this_file)
+                self.mon.log (self,"Updating medialist " + this_file)
                 # open a medialist and update its tracks
                 ifile  = open(self.pp_profile_dir + os.sep + this_file, 'rb')
                 tracks = json.load(ifile)['tracks']
@@ -910,7 +899,8 @@ class Options(object):
         config.read(self.options_file)
         
         self.pp_home_dir =config.get('config','home',0)
-        self.initial_media_dir =config.get('config','media',0)    
+        self.pp_profiles_offset =config.get('config','offset',0)
+        self.initial_media_dir =config.get('config','media',0)
 
     def create(self):
         config=ConfigParser.ConfigParser()
@@ -918,9 +908,11 @@ class Options(object):
         if os.name == 'nt':
             config.set('config','home',os.path.expanduser('~')+'\pp_home')
             config.set('config','media',os.path.expanduser('~'))
+            config.set('config','offset','')
         else:
             config.set('config','home',os.path.expanduser('~')+'/pp_home')
-            config.set('config','media',os.path.expanduser('~'))            
+            config.set('config','media',os.path.expanduser('~'))
+            config.set('config','offset','')
             # config.set('config','home','/home/pi/pp_home')
             # config.set('config','media','/home/pi')
         with open(self.options_file, 'wb') as config_file:
@@ -959,6 +951,12 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         self.e_media.grid(row=32)
         self.e_media.insert(0,config.get('config','media',0))
 
+        Label(master, text="").grid(row=40, sticky=W)
+        Label(master, text="Offset for Current Profiles:").grid(row=41, sticky=W)
+        self.e_offset = Entry(master,width=80)
+        self.e_offset.grid(row=42)
+        self.e_offset.insert(0,config.get('config','offset',0))
+
         return None    # no initial focus
 
     def validate(self):
@@ -967,6 +965,9 @@ class OptionsDialog(tkSimpleDialog.Dialog):
             return 0
         if os.path.exists(self.e_media.get()) is  False:
             tkMessageBox.showwarning("Pi Presents Editor","Media Directory not found")
+            return 0
+        if os.path.exists(self.e_home.get()+os.sep+'pp_profiles'+self.e_offset.get()) is  False:
+            tkMessageBox.showwarning("Pi Presents Editor","Current Profles directory not found")
             return 0
         return 1
 
@@ -980,6 +981,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         config.add_section('config')
         config.set('config','home',self.e_home.get())
         config.set('config','media',self.e_media.get())
+        config.set('config','offset',self.e_offset.get())
         with open(self.options_file, 'wb') as optionsfile:
             config.write(optionsfile)
     

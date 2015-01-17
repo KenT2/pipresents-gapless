@@ -8,7 +8,7 @@ class ResourceReader(object):
 
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
+
 
     def read(self,pp_dir,pp_home,pp_profile):
         if ResourceReader.config is None:

@@ -30,7 +30,6 @@ class TimeOfDay(object):
     # executed by main program and by each object using tod
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
 
 
      # executed once from main program  only 

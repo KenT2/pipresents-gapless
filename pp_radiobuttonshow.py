@@ -1,7 +1,7 @@
 from pp_medialist import MediaList
 from pp_show import Show
 from pp_pathmanager import PathManager
-
+from pp_screendriver import ScreenDriver
 
 class RadioButtonShow(Show):
     """
@@ -58,16 +58,13 @@ class RadioButtonShow(Show):
                           command_callback)
         
 
-        # remove comment to turn the trace on          
-        # self.trace=True
-
-        # control debugging log
-        self.mon.on()
+        # instatiatate the screen driver - used only to access enable and hide click areas
+        self.sr=ScreenDriver()
 
         # create an instance of PathManager -  only used to parse the links.
         self.path = PathManager()
 
-        self.allowed_links=('play','pause','exit')
+        self.allowed_links=('play','pause','exit','return')
         # init variables
         self.track_timeout_timer=None
         self.show_timeout_timer=None
@@ -88,7 +85,7 @@ class RadioButtonShow(Show):
         
         Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
         
-        if self.trace: print '\n\nRADIOBUTTONSHOW/play ',self.show_params['show-ref']
+        self.mon.trace(self,self.show_params['show-ref'])
         
         # read the show links. Track links will NOT be added by ready_callback
         links_text=self.show_params['links']
@@ -98,7 +95,7 @@ class RadioButtonShow(Show):
             self.end('error',message)
       
         # get the previous player and show from calling show
-        Show.base_get_previous_player_from_parent(self)
+        # Show.base_get_previous_player_from_parent(self)
         
         # and delete eggtimer
         if self.previous_shower is not  None:
@@ -138,10 +135,16 @@ class RadioButtonShow(Show):
         found,link_op,link_arg=self.path.find_link(symbol,self.links)                    
         if link_op == 'play':
             self.do_play(link_arg,edge,source)
+            
         elif link_op == 'exit':
             #exit the show
-            self.user_stop_signal=True               
-            self.current_player.input_pressed('stop')
+            self.exit()
+
+        elif link_op== 'return':
+            # return to the first track
+            if self.current_track_ref != self.first_track_ref:
+                self.do_play(self.first_track_ref,edge,source)
+
             # in-track operation
         elif link_op =='pause' or link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
             self.do_operation(link_op,edge,source)       
@@ -150,30 +153,6 @@ class RadioButtonShow(Show):
             self.end('error',"unkown link command")
 
         return found
-
-
-
-    def do_operation(self,operation,edge,source):
-        if self.trace: print 'radiobuttonshow/input_pressed ',operation
-        
-        # service the standard inputs for this show
-        # ??????? should stop from first_track ref get out of the show
-##        if operation == 'stop':
-##            self.stop_timers()
-##            if self.current_player is not None:
-##                if self.current_track_ref == self.first_track_ref and self.level != 0:
-##                    # if quiescent then set signal to stop the show when track has stopped
-##                    self.user_stop_signal=True
-##                self.current_player.input_pressed('stop')
-
-        if operation == 'pause':
-            if self.current_player is not None:
-                self.current_player.input_pressed(operation)
-
-            
-        elif operation[0:4]=='omx-' or operation[0:6]=='mplay-'or operation[0:5] == 'uzbl-':
-            if self.current_player is not None:
-                self.current_player.input_pressed(operation)
 
 
 
@@ -193,7 +172,6 @@ class RadioButtonShow(Show):
 
     def do_play(self,track_ref,edge,source):
         if track_ref != self.current_track_ref:
-            print 'executing play ',track_ref
             # cancel the show timeout when playing another track
             if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
@@ -241,7 +219,7 @@ class RadioButtonShow(Show):
         # shuffle players
         Show.base_shuffle(self)
 
-        if self.trace: print 'radiobuttonshow/start_load_show_loop'
+        self.mon.trace(self,'')
         
         self.display_eggtimer(Show.base_resource(self,'radiobuttonshow','m01'))
 
@@ -260,16 +238,15 @@ class RadioButtonShow(Show):
 
    # track has loaded so show it.
     def what_next_after_load(self,status,message):
-        if self.trace: print 'radiobuttonshow/what_next_after_load - load complete with status: ',status,'  message: ',message
+        self.mon.trace(self, 'load complete with status: ' + status + '  message: ' +message)
         if self.current_player.play_state == 'load-failed':
-            self.mon.err(self,'load failed')
             self.req_next='error'
             self.what_next_after_showing()
         else:
             if self.show_timeout_signal is True  or self.terminate_signal is True or self.exit_signal is True or self.user_stop_signal is True:
                 self.what_next_after_showing()
             else:
-                if self.trace: print 'menushow/what_next_after_load- showing track'
+                self.mon.trace(self, '- showing track')
                 self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
 
 
@@ -277,8 +254,9 @@ class RadioButtonShow(Show):
 
     def finished_showing(self,reason,message):
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
-        if self.trace: print 'radiobuttonshow/finished_showing - pause at end'
+        self.mon.trace(self,' - pause at end')
         self.mon.log(self,"pause at end of showing track with reason: "+reason+ ' and message: '+ message)
+        self.sr.hide_click_areas(self.links)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
@@ -287,8 +265,9 @@ class RadioButtonShow(Show):
 
     def closed_after_showing(self,reason,message):
         # showing has finished with closing of player but track instance is alive for hiding the x_content
-        if self.trace: print 'radiobuttonshow/closed_after_showing - closed after showing'
+        self.mon.trace(self, '- closed after showing')
         self.mon.log(self,"Closed after showing track with reason: "+reason+ ' and message: '+ message)
+        self.sr.hide_click_areas(self.links)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
@@ -299,6 +278,7 @@ class RadioButtonShow(Show):
     # subshow or child show has ended
     def end_shower(self,show_id,reason,message):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ': Returned from shower with ' + reason +' ' + message)
+        self.sr.hide_click_areas(self.links)
         self.req_next=reason
         Show.base_end_shower(self)
         self.what_next_after_showing()
@@ -306,7 +286,7 @@ class RadioButtonShow(Show):
            
 
     def what_next_after_showing(self):
-        if self.trace: print 'radiobuttonshow/what_next_after_showing '
+        self.mon.trace(self, '')
 
         # need to terminate
         if self.terminate_signal is True:
@@ -366,6 +346,8 @@ class RadioButtonShow(Show):
     # and if necessary close it
     def track_ready_callback(self):
         self.delete_eggtimer()
+        # enable the click-area that are in the list of links
+        self.sr.enable_click_areas(self.links)
         Show.base_track_ready_callback(self)
 
     # callback from begining of a subshow, provide previous shower player to called show        

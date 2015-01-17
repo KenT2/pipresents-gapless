@@ -17,7 +17,6 @@ class PluginManager(object):
         """
 
         self.mon=Monitor()
-        self.mon.off()
 
         self.show_id=show_id
         self.root=root

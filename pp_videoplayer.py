@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from pp_omxdriver import OMXDriver
 from pp_player import Player
@@ -59,15 +60,8 @@ class VideoPlayer(Player):
                          pp_profile,
                          end_callback,
                          command_callback)
-        
-        # comment this out to turn the trace off          
-        # self.trace=True
 
-        # control debugging log
-        self.mon.on()
-
-        
-        if self.trace: print '    Videoplayer/init ',self
+        self.mon.trace(self,'')
 
         # get player parameters
         if self.track_params['omx-audio'] != "":
@@ -121,7 +115,7 @@ class VideoPlayer(Player):
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
 
-        if self.trace: print '    Videoplayer/load ',self
+        self.mon.trace(self,'')
 
         # do common bits of  load
         Player.pre_load(self)           
@@ -212,17 +206,10 @@ class VideoPlayer(Player):
         self.finished_callback=finished_callback         # callback when finished showing
         self.closed_callback=closed_callback
 
-        if self.trace: print '    Videoplayer/show ',self
-
-        self.show_x_content()
-
-        # hide previous and do animation at end etc.
-        if self.ready_callback is not  None:
-            self.ready_callback()
+        self.mon.trace(self,'')
 
         #  do animation at start etc.
         Player.pre_show(self)
-
 
         # start show state machine
         self.start_state_machine_show()
@@ -230,14 +217,15 @@ class VideoPlayer(Player):
 
     # UNLOAD - abort a load when omplayer is loading or loaded
     def unload(self):
-        if self.trace: print '    Videoplayer/unload ',self
+        self.mon.trace(self,'')
+        
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         self.start_state_machine_unload()
 
 
     # CLOSE - quits omxplayer from 'pause at end' state
     def close(self,closed_callback):
-        if self.trace: print '    Videoplayer/close ',self
+        self.mon.trace(self,'')
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.closed_callback=closed_callback
         self.start_state_machine_close()
@@ -343,6 +331,8 @@ class VideoPlayer(Player):
         Ongoing states - start_unload and unloading - omxplayer processes are dying due to quit sent.
         when unloading is complete state=unloaded
         I have not added a callback to unload. its easy to add one if you want.
+
+    closed is needed because wait_for end in pp_show polls for closed and does not use closed_callback
     
     """
 
@@ -616,8 +606,7 @@ class VideoPlayer(Player):
                     self.tick_timer=self.canvas.after(200, self.show_state_machine)
 
         elif self.play_state=='closed':
-            # shouldn't be needed - bug somewhere
-            # print 'closed - should not be here'
+            # needed because wait_for_end polls the state and does not use callback
             self.mon.log(self,"      State machine: " + self.play_state)    
             self.tick_timer=self.canvas.after(200, self.show_state_machine)            
 

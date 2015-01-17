@@ -28,22 +28,24 @@ from pp_resourcereader import ResourceReader
 from pp_screendriver import ScreenDriver
 from pp_timeofday import TimeOfDay
 from pp_kbddriver import KbdDriver
-from pp_controlsmanager import ControlsManager
 from pp_utils import Monitor
 from pp_utils import StopWatch
+from pp_animate import Animate
 
 
 class PiPresents(object):
 
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
-        self.pipresents_issue="1.2"
+        self.pipresents_issue="1.3"
         self.pipresents_minorissue = '1.3.1a'
+
+        # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
         self.nonfull_window_y=0   # position of top left corner
-        
+
         StopWatch.global_enable=False
 
 # ****************************************
@@ -52,7 +54,7 @@ class PiPresents(object):
         # get command line options
         self.options=command_options()
 
-        # get pi presents code directory
+        # get Pi Presents code directory
         pp_dir=sys.path[0]
         self.pp_dir=pp_dir
         
@@ -61,30 +63,43 @@ class PiPresents(object):
             exit()
 
         
-        # Initialise logging
+        # Initialise logging and tracing
         Monitor.log_path=pp_dir
         self.mon=Monitor()
-        self.mon.on()
-        # 0  - errors only
-        # 1  - errors and warnings
-        # 2  - everything
-        if self.options['debug'] is True:
-            Monitor.global_enable=2
-        else:
-            Monitor.global_enable=0
-            
-        # UNCOMMENT THIS TO LOG WARNINGS AND ERRORS ONLY
-        # Monitor.global_enable=1
+        # Init in PiPresents only
+        self.mon.init()
 
-        self.mon.log (self, "\n\n\n\n\n*****************\nPi Presents is starting, Version:"+self.pipresents_minorissue)
+        # uncomment to enable cobtrol of logging from within a class
+        # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mom.set_log_level()
+        
+        # make a shorter list to log/trace only some classes without using enable_in_code.
+        Monitor.classes  = ['PiPresents',
+                            'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
+                            'GapShow','Show','ArtShow',
+                            'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
+                            'MediaList','LiveList','ShowList',
+                            'PathManager','ControlsManager','ShowManager','PluginManager',
+                            'MplayerDriver','OMXDriver','UZBLDriver',
+                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate',
+                            'ResourceReader'
+                            ]
+        
+        # get global log level from command line
+        Monitor.log_level = int(self.options['debug'])
+        
+        self.mon.newline(3)    
+        self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue)
         self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
         # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME'))
         # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))
 
         # optional other classes used
+        self.root=None
         self.ppio=None
         self.tod=None
+        self.animate=None
+        self.gpiodriver=None
          
         # get profile path from -p option
         if self.options['profile'] != '':
@@ -180,35 +195,38 @@ class PiPresents(object):
         self.root.title(self.title)
         self.root.iconname(self.icon_text)
         self.root.config(bg='black')
+
+        self.mon.log(self, 'native screen dimensions are ' + str(self.root.winfo_screenwidth()) + ' x ' + str(self.root.winfo_screenheight()) + ' pixcels')
+        if self.options['screensize'] =='':        
+            self.screen_width = self.root.winfo_screenwidth()
+            self.screen_height = self.root.winfo_screenheight()
+        else:
+            reason,message,self.screen_width,self.screen_height=self.parse_screen(self.options['screensize'])
+            if reason =='error':
+                self.mon.err(self,message)
+                self.end('error',message)
         
-        # get size of the screen
-        self.screen_width = self.root.winfo_screenwidth()
-        self.screen_height = self.root.winfo_screenheight()
-
         # set window dimensions and decorations
-        if self.options['fullscreen'] is True:
-
-            self.root.attributes('-fullscreen', True)
-            os.system('unclutter &')
+        if self.options['fullscreen'] is False:
+            self.window_width=int(self.root.winfo_screenwidth()*self.nonfull_window_width)
+            self.window_height=int(self.root.winfo_screenheight()*self.nonfull_window_height)
+            self.window_x=self.nonfull_window_x
+            self.window_y=self.nonfull_window_y
+            self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
+        else:
             self.window_width=self.screen_width
             self.window_height=self.screen_height
+            self.root.attributes('-fullscreen', True)
+            os.system('unclutter &')
             self.window_x=0
             self.window_y=0  
             self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))
             self.root.attributes('-zoomed','1')
-        else:
-            self.window_width=int(self.screen_width*self.nonfull_window_width)
-            self.window_height=int(self.screen_height*self.nonfull_window_height)
-            self.window_x=self.nonfull_window_x
-            self.window_y=self.nonfull_window_y
-            self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
 
-            
-        # canvas covers the whole window whatever the size of the window
+        # canvs cover the whole screen whatever the size of the window. 
         self.canvas_height=self.screen_height
         self.canvas_width=self.screen_width
-        self.mon.log(self, 'screen dimensions are ' + str(self.screen_width) + ' x ' + str(self.screen_height) + ' pixcels')
-        
+  
         # make sure focus is set.
         self.root.focus_set()
 
@@ -218,24 +236,26 @@ class PiPresents(object):
         # setup a canvas onto which will be drawn the images or text
         self.canvas = Canvas(self.root, bg='black')
 
-        self.canvas.config(height=self.canvas_height,
-                           width=self.canvas_width,
-                           highlightthickness=0)
+
+        if self.options['fullscreen'] is True:
+            self.canvas.config(height=self.canvas_height,
+                               width=self.canvas_width,
+                               highlightthickness=0)
+        else:
+            self.canvas.config(height=self.canvas_height,
+                    width=self.canvas_width,
+                        highlightthickness=1,
+                               highlightcolor='yellow')
+            
         self.canvas.place(x=0,y=0)
 
         self.canvas.focus_set()
+
 
                 
 # ****************************************
 # INITIALISE THE INPUT DRIVERS
 # ****************************************
-
-        # looks after bindings between symbolic names and internal operations
-        controlsmanager=ControlsManager()
-        if controlsmanager.read(pp_dir,self.pp_home,self.pp_profile) is False:
-            self.end('error','cannot find or error in controls.cfg')
-        else:
-            controlsmanager.parse_defaults()
 
         # each driver takes a set of inputs, binds them to symboic names
         # and sets up a callback which returns the symbolic name when an input event occurs/
@@ -248,10 +268,12 @@ class PiPresents(object):
 
         self.sr=ScreenDriver()
         # read the screen click area config file
-        if self.sr.read(pp_dir,self.pp_home,self.pp_profile) is False:
+        reason,message = self.sr.read(pp_dir,self.pp_home,self.pp_profile)
+        if reason == 'error':
             self.end('error','cannot find screen.cfg')
 
         # create click areas on the canvas, must be polygon as outline rectangles are not filled as far as find_closest goes
+        # click areas are made on the Pi Presents canvas not the show canvases.
         reason,message = self.sr.make_click_areas(self.canvas,self.input_pressed)
         if reason == 'error':
             self.mon.err(self,message)
@@ -266,34 +288,49 @@ class PiPresents(object):
         
         # kick off GPIO if enabled by command line option
         if self.options['gpio'] is True:
-            from pp_gpio import PPIO
+            from pp_gpiodriver import GPIODriver
             # initialise the GPIO
-            self.ppio=PPIO()
+            self.gpiodriver=GPIODriver()
             # PPIO.gpio_enabled=False
-            if self.ppio.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.gpio_pressed) is False:
-                self.end('error','gpio error')
+            reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.gpio_pressed)
+            if reason == 'error':
+                self.end('error',message)
                 
             # and start polling gpio
-            self.ppio.poll()
+            self.gpiodriver.poll()
 
+        # kick off animation sequencer
+        self.animate = Animate()
+        self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
+        self.animate.poll()
 
         # Create list of start shows initialise them and then run them
         self.run_start_shows()
 
         # kick off the time of day scheduler which may run additional shows
         self.tod=TimeOfDay()
-        self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
-        self.tod.poll()
+        # self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
+        # self.tod.poll()
 
         # start tkinters event loop
         self.root.mainloop( )
 
 
+    def parse_screen(self,size_text):
+        fields=size_text.split('*')
+        if len(fields)!=2:
+            return 'error','do not understand --fullscreen comand option',0,0
+        elif fields[0].isdigit()  is False or fields[1].isdigit()  is False:
+            return 'error','dimensions are not positive integers in ---fullscreen',0,0
+        else:
+            return 'normal','',int(fields[0]),int(fields[1])
+        
 
 # *********************
 #  RUN START SHOWS
 # ********************   
     def run_start_shows(self):
+        self.mon.trace(self,'run start shows')
         # start show manager
         show_id=-1 #start show
         self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)        
@@ -310,7 +347,7 @@ class PiPresents(object):
 # User inputs
 # ********************
 
-    # gpio callback - symbol provided by gpio
+    # gpio callback - symbol provided by gpiodriver
     def gpio_pressed(self,index,symbol,edge):
         self.mon.log(self, "GPIO Pressed: "+ symbol)
         self.input_pressed(symbol,edge,'gpio')
@@ -318,7 +355,7 @@ class PiPresents(object):
 
     # handles one command provided as a line of text
     def handle_command(self,command_text):
-        print 'Command',command_text
+        self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
             return
         fields= command_text.split()
@@ -335,8 +372,9 @@ class PiPresents(object):
             reason,message= self.show_manager.exit_all_shows()
 
         elif show_command == 'shutdownnow':
-            self.shutdown_required=True
-            reason,message=self.show_manager.exit_all_shows()
+            reason='normal'
+            message='shutdownnow'
+            self.shutdown_pressed('now')
         else:
             reason='error'
             message='command not recognised '+ command_text
@@ -345,6 +383,12 @@ class PiPresents(object):
             self.end(reason,message)
 
                             
+    def handle_output_event(self,symbol,param_type,param_values,req_time):
+        reason,message=self.gpiodriver.handle_output_event(symbol,param_type,param_values,req_time)
+        if reason =='error':
+            self.mon.err(self,message)
+            self.end(reason,message)            
+        
 
 
     # all input events call this callback with a symbolic name.
@@ -377,7 +421,7 @@ class PiPresents(object):
 
     def on_shutdown_delay(self):
         # 5 second delay is up, if shutdown button still pressed then shutdown
-        if self.ppio.shutdown_pressed():
+        if self.gpiodriver.shutdown_pressed():
             self.shutdown_required=True
             self.show_manager.exit_all_shows()
 
@@ -402,6 +446,7 @@ class PiPresents(object):
 
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message):
+        self.canvas.config(bg='black')
         if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True:
             self.end(reason,message)
 
@@ -409,25 +454,25 @@ class PiPresents(object):
         self.mon.log(self,"Pi Presents ending with reason: " + reason)
         # print gc.collect()
         # print gc.garbage
-        self.root.destroy()
+        if self.root is not None:
+            self.root.destroy()
         self.tidy_up()
         if reason == 'killed':
             self.mon.log(self, "Pi Presents Aborted, au revoir")
             # close logging files 
             self.mon.finish()
-            exit()     
+            sys.exit()     
         elif reason == 'error':
             self.mon.log(self, "Pi Presents closing because of error, sorry")
             # close logging files 
             self.mon.finish()
-            exit()            
+            sys.exit()            
         else:
             self.mon.log(self,"Pi Presents  exiting normally, bye")
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
-                print 'SHUTDOWN'
-                # call(['sudo', 'shutdown', '-h', '-t 5','now'])
+                call(['sudo', 'shutdown', '-h', '-t 5','now'])
                 sys.exit()
             else:
                 sys.exit()
@@ -441,13 +486,16 @@ class PiPresents(object):
             call(["xset","s", "on"])
             call(["xset","s", "+dpms"])
             
-        # tidy up gpio
-        if self.options['gpio'] is True and self.ppio is not None:
-            self.ppio.terminate()
+        # tidy up animation and gpio
+        if self.animate is not None:
+            self.animate.terminate()
+        if self.options['gpio'] is True and self.gpiodriver is not None:
+            self.gpiodriver.terminate()
             
         # tidy up time of day scheduler
         if self.tod is not None:
-            self.tod.terminate()
+            pass
+            # self.tod.terminate()
 
 
 

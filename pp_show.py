@@ -1,6 +1,9 @@
 import os
+from Tkinter import CENTER, NW
+from PIL import Image
+from PIL import ImageTk
+
 from pp_resourcereader import ResourceReader
-from pp_controlsmanager import ControlsManager
 from pp_showmanager import ShowManager
 from pp_timeofday import TimeOfDay
 from pp_imageplayer import ImagePlayer
@@ -54,10 +57,7 @@ class Show(object):
 
         # set up logging 
         self.mon=Monitor()
-
-        # trace is off by default
-        self.trace=False      
-
+        self.mon.set_log_level(16)
         # open resources
         self.rr=ResourceReader()
 
@@ -66,6 +66,7 @@ class Show(object):
         
         # create an  instance of showmanager so we can init child/subshows
         self.show_manager=ShowManager(self.show_id,self.showlist,self.show_params,self.root,self.show_canvas,self.pp_dir,self.pp_profile,self.pp_home)
+
 
         # init variables
         self.current_player=None
@@ -79,7 +80,12 @@ class Show(object):
         self.egg_timer=None
         self.admin_message=None
         self.ending_reason=''
-
+        self.background_obj=None
+        self.background_file=''
+        
+        # get background image from profile.
+        if self.show_params['background-image'] != '':
+            self.background_file= self.show_params['background-image']
 
     def base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
 
@@ -94,8 +100,9 @@ class Show(object):
         self.show_ready_callback=show_ready_callback
         self.direction_command=direction_command
         self.level=level
-        self.controls_list=controls_list
-        if self.trace: print 'show/play',self.show_params['show-ref'],' at level ',self.level
+        # not needed as controls list is not passed down to subshows.
+        # self.controls_list=controls_list
+        self.mon.trace(self,self.show_params['show-ref'] + ' at level ' + str(self.level))
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Starting show")
 
         # check  data files are available.
@@ -109,22 +116,16 @@ class Show(object):
             self.mon.err(self,"Version of medialist different to Pi Presents")
             self.end('error',"Version of medialist different to Pi Presents")
 
-        # get control bindings for this show if top level
-        controlsmanager=ControlsManager()
-        if self.level == 0:
-            if self.show_params['disable-controls'] == 'yes':
-                self.controls_list=[]
-            else:
-                self.controls_list=controlsmanager.default_controls()
-                # and merge in controls from profile
-                self.controls_list=controlsmanager.merge_show_controls(self.controls_list,self.show_params['controls'])
-            
-
-    def base_get_previous_player_from_parent(self):
         if self.show_ready_callback is not None:
             # get the previous player from calling show its stored in current because its going to be shuffled before use
             self.previous_shower, self.current_player=self.show_ready_callback()
-            if self.trace: print 'show/ start of show, previous shower and player is',self.previous_shower,self.current_player
+            self.mon.trace(self,' - previous shower and player is ' + self.mon.pretty_inst(self.previous_shower)+ ' ' + self.mon.pretty_inst(self.current_player))
+
+        #load the show background
+        reason,message=Show.base_load_show_background(self)
+        if reason=='error':
+            self.mon.err(self,message)
+            self.end(reason,message)
 
     # dummy, must be overidden by derived class
     def subshow_ready_callback(self):
@@ -138,15 +139,15 @@ class Show(object):
         # callback from begining of a subshow, provide previous player to called show
         # used by show_ready_callback of called show
         # in the case of a menushow last track is always the menu
-        if self.trace: print 'show/subshow_ready_callback sends ',self,self.previous_player
+        self.mon.trace(self,' -  sends ' + self.mon.pretty_inst(self.previous_player))
         return self,self.previous_player
 
 
     def base_shuffle(self):
         self.previous_player=self.current_player
         self.current_player = None
-        if self.trace: print '\n\n\nshow/LOOP STARTS WITH current is', self.current_player
-        if self.trace: print '                     previous is', self.previous_player
+        self.mon.trace(self,' - LOOP STARTS WITH current is: ' + self.mon.pretty_inst(self.current_player))
+        self.mon.trace(self,'       -  previous is: ' + self.mon.pretty_inst(self.previous_player))
 
 
 
@@ -162,7 +163,7 @@ class Show(object):
                 self.showlist.select(index)
                 selected_show=self.showlist.selected_show()
                 self.shower=self.show_manager.init_subshow(self.show_id,selected_show,self.show_canvas)
-                if self.trace: print 'show/load_track_or_show - show is ',self.shower,selected_show['show-ref']
+                self.mon.trace(self,' - show is: ' + self.mon.pretty_inst(self.shower) + ' ' + selected_show['show-ref'])
                 if self.shower is None:
                     self.mon.err(self,"Unknown Show Type: "+ selected_show['type'])
                     self.terminate_signal=True
@@ -179,13 +180,11 @@ class Show(object):
                 track_file=selected_track['text']
             else:
                 track_file=self.base_complete_path(selected_track['location'])
-            if self.trace: print 'show/load_track_or_show  - track is - ',track_file
-            if self.trace: print 'show/load_track_or_show - current_player is',self.current_player   
+            self.mon.trace(self,' - track is: ' + track_file)
+            self.mon.trace(self,' - current_player is: '+ self.mon.pretty_inst(self.current_player))
             self.current_player.load(track_file,
                                      loaded_callback,
                                      enable_menu=enable_menu)
-
-
 
     # dummy, must be overidden by derived class
     def what_next_after_showing(self):
@@ -234,8 +233,8 @@ class Show(object):
             return None
 
 
-    # dummy, must be overidden by derived class
-    def track_ready_callback(self):
+    # DUMMY, must be overidden by derived class
+    def track_ready_callback(self,track_background):
         self.mon.err(self,"track_ready_callback not overidden")
         # set what to do when closed or unloaded
         self.ending_reason='killed'
@@ -244,53 +243,62 @@ class Show(object):
 
     # called just before a track is shown to remove the  previous track from the screen
     # and if necessary close it        
-    def base_track_ready_callback(self):            
-        if self.trace: print 'show/track_ready_callback '
+    def base_track_ready_callback(self,enable_show_background):
+        self.mon.trace(self,'')
+        # show the show background done for every track but quick operation
+        if enable_show_background is True:
+            self.base_show_show_background()
+            if self.previous_shower != None:
+                self.previous_shower.base_withdraw_show_background()
         # close the player from the previous track
         if self.previous_player is not  None:
-            if self.trace: print 'show/hiding previous',self.previous_player
+            self.mon.trace(self,' - hiding previous: ' + self.mon.pretty_inst(self.previous_player))
             self.previous_player.hide()
             if self.previous_player.get_play_state() == 'showing':
                 # showing or frozen
-                if self.trace: print 'show/closing previous',self.previous_player
+                self.mon.trace(self,' - closing previous: ' + self.mon.pretty_inst(self.previous_player))
                 self.previous_player.close(self._base_closed_callback_previous)
             else:
-                if self.trace: print 'show/previous is none\n'
+                self.mon.trace(self,' - previous is none\n')
                 self.previous_player=None
+        self.canvas.update_idletasks( )
 
 
     def _base_closed_callback_previous(self,status,message):
-        if self.trace: print 'show/closed_callback previous is None  - was',self.previous_player
+        self.mon.trace(self,' -  previous is None  - was: ' + self.mon.pretty_inst(self.previous_player))
         self.previous_player=None
 
 
     # used by end_shower to get the last track of the subshow
     def base_end_shower(self):
-        if self.trace: print 'show/end_shower returned back to level ',self.level
+        self.mon.trace(self,' -  returned back to level: ' +str(self.level))
         # get the last track played from the subshow
-        self.current_player=self.shower.subshow_ended_callback()
+        self.previous_shower,self.current_player=self.shower.subshow_ended_callback()
+        if self.previous_shower!= None:
+            self.previous_shower.base_withdraw_show_background()
+            self.base_show_show_background()
         self.previous_player=None
-        if self.trace: print 'show/end_shower  - get previous_player from subshow *****',self.current_player
+        self.mon.trace(self,'- get previous_player from subshow: ' + self.mon.pretty_inst(self.current_player))
         self.shower=None
 
 
     # close or unload the current player when ending the show
     def base_close_or_unload(self):
-        if self.trace: print 'show/base_close_or_unload ',self.current_player
+        self.mon.trace(self,self.mon.pretty_inst(self.current_player))
         # need to test for None because player may be made None by subshow lower down the stack for terminate
         if self.current_player is not None:
-            if self.trace: print 'show/base_close_or_unload ',self.current_player.get_play_state()
+            self.mon.trace(self,self.current_player.get_play_state())
             if self.current_player.get_play_state() in ('loaded','showing','show-failed'):
                 if self.current_player.get_play_state() == 'loaded':
-                    if self.trace: print 'show/close_or_unload- unloading current from' ,self.ending_reason
+                    self.mon.trace(self,' - unloading current from: '+self.ending_reason)
                     self.current_player.unload()
                 else:
-                    if self.trace: print 'show/close_or_unload - closing current from'  ,self.ending_reason
+                    self.mon.trace(self,' - closing current from: '  + self.ending_reason)
                     self.current_player.close(None)
             self._wait_for_end()
         else:
             # current_player is None because closed further down show stack
-            if self.trace: print 'show ended with current_player=None because ',self.ending_reason
+            self.mon.trace(self,' - show ended with current_player=None because: ' + self.ending_reason)
             if self.ending_reason == 'killed':
                 self.base_close_previous()
 
@@ -309,18 +317,18 @@ class Show(object):
 
 
     def _base_closed_callback_current(self,status,message):
-        if self.trace: print 'show/closed_callback current is None  - was',self.current_player
+        self.mon.trace(self,' current is None  - was: ' + self.mon.pretty_inst(self.current_player))
 
 
     # wait for unloading or closing to complete then end
     def _wait_for_end(self):
-        if self.trace: print 'show/wait_for_end',self.current_player
+        self.mon.trace(self, self.mon.pretty_inst(self.current_player))
         if self.current_player is not None:
-            if self.trace: print 'show/wait_for_end - play state is ',self.current_player.get_play_state()
+            self.mon.trace(self,' - play state is ' +self.current_player.get_play_state())
             if self.current_player.play_state not in ('unloaded','closed','initialised','load-failed'):
                 self.canvas.after(50,self._wait_for_end)
             else:
-                if self.trace: print 'show/wait_for_end - current closed ', self.current_player,self.ending_reason
+                self.mon.trace(self,' - current closed '+ self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)
          
                 if self.ending_reason == 'killed':
                     self.current_player.hide()
@@ -349,7 +357,7 @@ class Show(object):
                     self.mon.err(self,"Unhandled ending_reason: ")
                     self.end('error',"Unhandled ending_reason")
         else:
-            if self.trace: print 'show/wait_for_end - current is None ', self.current_player,self.ending_reason
+            self.mon.trace(self,' - current is None ' +  self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)
 
 
 # ***************************
@@ -362,20 +370,18 @@ class Show(object):
         self.base_end('error',message)
 
     def base_end(self,reason,message):
-        if self.trace: print 'show/end at level ',self.level
-        if self.trace: print 'show/end - Current is ',self.current_player
-        if self.trace: print 'show/end - Previous is ',self.previous_player
-        if self.trace: print 'SHOW/END with reason',reason
-        if self.trace: print '\n\n'
+        self.base_withdraw_show_background()
+        self.base_delete_show_background()
+        self.mon.trace(self,' at level ' + str(self.level) + '\n - Current is ' + self.mon.pretty_inst(self.current_player) + '\n - Previous is ' + self.mon.pretty_inst(self.previous_player) + '\n with reason' + reason + '\n\n')
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Ending Show")
         self.end_callback(self.show_id,reason,message)
         self=None
 
 
     def base_subshow_ended_callback(self):
-        # called by end_shower of a parent show  to get the last track of the subshow
-        if self.trace: print 'show/subshow_ended_callback returns ',self.current_player
-        return self.current_player
+        # called by end_shower of a parent show  to get the last track of the subshow and the subshow
+        self.mon.trace(self,' -  returns ' + self.mon.pretty_inst(self.current_player))
+        return self, self.current_player
 
 
 # ********************************
@@ -384,27 +390,27 @@ class Show(object):
 
 
     def base_close_previous(self):
-        if self.trace: print 'show/base_close_previous ',self
+        self.mon.trace(self,'')
         # close the player from the previous track
         if self.previous_player is not  None:
-            if self.trace: print 'show/previous not None',self.previous_player
+            self.mon.trace(self,' - previous not None ' + self.mon.pretty_inst(self.previous_player))
             if self.previous_player.get_play_state() == 'showing':
                 # showing or frozen
-                if self.trace: print 'show/closing previous',self.previous_player
+                self.mon.trace(self,' - closing previous ' + self.mon.pretty_inst(self.previous_player))
                 self.previous_player.close(self._base_close_previous_callback)
             else:
-                if self.trace: print 'show/previous is not showing'
+                self.mon.trace(self,'previous is not showing')
                 self.previous_player.hide()
                 self.previous_player=None
                 self.end(self.ending_reason,'')
         else:
-            if self.trace: print 'show/previous is None'
+            self.mon.trace(self,' - previous is None')
             self.end(self.ending_reason,'')
             
                 
 
     def _base_close_previous_callback(self,status,message):
-        if self.trace: print 'show/close_previous callback, previous is None  - was',self.previous_player
+        self.mon.trace(self, ' -  previous is None  - was ' + self.mon.pretty_inst(self.previous_player))
         self.previous_player.hide()
         self.previous_player=None
         self.end(self.ending_reason,'')
@@ -413,7 +419,7 @@ class Show(object):
     # exit received from external source
     def base_exit(self):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Exit received")
-        if self.trace: print 'show/exit ',self
+        self.mon.trace(self,'')
         # set signal to exit the show when all  sub-shows and players have ended
         self.exit_signal=True
         # then stop subshow or tracks.
@@ -426,7 +432,7 @@ class Show(object):
 
     # show timeout callback received
     def base_show_timeout_stop(self):
-        if self.trace: print 'show/base_show_timeout_stop ',self
+        self.mon.trace(self,'')
         # set signal to exit the show when all  sub-shows and players have ended
         self.show_timeout_signal=True
         # then stop and shows or tracks.
@@ -445,7 +451,7 @@ class Show(object):
 
     # terminate Pi Presents
     def base_terminate(self):
-        if self.trace: print 'show/base_terminate ',self
+        self.mon.trace(self,'')
         # set signal to stop the show when all  sub-shows and players have ended
         self.terminate_signal=True
         if self.shower is not None:
@@ -466,6 +472,53 @@ class Show(object):
         else:
             self.input_pressed_this_show(symbol,edge,source)
             
+    def base_load_show_background(self):
+        # load show background image
+        if self.background_file != '':
+            background_img_file = self.base_complete_path(self.background_file)
+            if not os.path.exists(background_img_file):
+                return 'error',"Show background file not found "+ background_img_file
+            else:
+                pil_background_img=Image.open(background_img_file)
+                # print 'pil_background_img ',pil_background_img
+                image_width,image_height=pil_background_img.size
+                window_width=self.show_canvas_width
+                window_height=self.show_canvas_height
+                if image_width != window_width or image_height != window_height:
+                    pil_background_img=pil_background_img.resize((window_width, window_height))
+                self.background = ImageTk.PhotoImage(pil_background_img)
+                del pil_background_img
+                # print 'self.background ',self.background
+                self.background_obj = self.canvas.create_image(self.show_canvas_x1,
+                                                               self.show_canvas_y1,
+                                                               image=self.background,
+                                                               anchor=NW)
+                self.canvas.itemconfig(self.background_obj,state='hidden')
+                self.canvas.update_idletasks( )
+                # print '\nloaded background_obj: ',self.background_obj
+                return 'normal','show background loaded'
+        else:
+            return 'normal','no backgound to load'
+              
+    def base_show_show_background(self):
+        if self.background_obj!= None:
+            self.canvas.itemconfig(self.background_obj,state='normal')
+            # self.canvas.update_idletasks( )    
+
+    def base_withdraw_show_background(self):
+        self.mon.trace(self,'')
+        if self.background_obj!= None:
+            # print 'withdraw background obj', self.background_obj
+            self.canvas.itemconfig(self.background_obj,state='hidden')
+            # self.canvas.update_idletasks( )
+
+
+    def base_delete_show_background(self):
+        if self.background_obj!= None:
+            self.canvas.delete(self.background_obj)
+            self.background=None
+            # self.canvas.update_idletasks( )
+    
 
 
 # ******************************

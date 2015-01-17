@@ -246,7 +246,6 @@ class EditItem(tkSimpleDialog.Dialog):
 
     def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_home_dir,initial_tab):
         self.mon=Monitor()
-        self.mon.on()
         # save the extra arg to instance variable
         self.field_content = field_content   # dictionary - the track parameters to be edited
         self.record_specs= record_specs # list of field names and seps/tabs in the order that they appear

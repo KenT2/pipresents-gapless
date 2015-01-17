@@ -1,6 +1,6 @@
 import os
 import copy
-from pp_uzbldriver import uzblDriver
+from pp_uzbldriver import UZBLDriver
 from pp_player import Player
 
 
@@ -37,13 +37,7 @@ class BrowserPlayer(Player):
                          end_callback,
                          command_callback)
 
-        # comment this out to turn the trace off          
-        self.trace=True
-
-        # control debugging trace
-        self.mon.on()
-
-        if self.trace: print '    Browserplayer/init ',self
+        self.mon.trace(self,'')
         # and initialise things for this player        
 
     
@@ -61,7 +55,7 @@ class BrowserPlayer(Player):
             self.web_window= self.show_params['web-window']
 
         # create an instance of uzbl driver
-        self.bplayer=uzblDriver(self.canvas)
+        self.bplayer=UZBLDriver(self.canvas)
 
         # Initialize variables
         self.command_timer=None
@@ -79,7 +73,7 @@ class BrowserPlayer(Player):
         # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   # callback when loaded
-        if self.trace: print '    Browserplayer/load ',self
+        self.mon.trace(self,'')
 
         #parse web window
         reason,message,command,has_window,x1,y1,x2,y2=self.parse_window(self.web_window)
@@ -139,7 +133,7 @@ class BrowserPlayer(Player):
 
     # UNLOAD - abort a load when browser is loading or loaded
     def unload(self):
-        if self.trace: print '    Browserplayer/unload ',self
+        self.mon.trace(self,'')
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         self.start_unload_state_machine()
 
@@ -152,15 +146,10 @@ class BrowserPlayer(Player):
         self.finished_callback=finished_callback         # callback when finished showing  - not used
         self.closed_callback=closed_callback            # callback when closed
 
-        if self.trace: print '    Browserplayer/show ',self
+        self.mon.trace(self,'')
         
         # init state and signals  
         self.quit_signal=False
-
-        self.show_x_content()
-        
-        if self.ready_callback is not None:
-            self.ready_callback()
 
         # do common bits
         Player.pre_show(self)
@@ -171,14 +160,14 @@ class BrowserPlayer(Player):
 
     # CLOSE - nothing to do in browserplayer - x content is removed by ready callback and hide browser does not implement pause_at_end
     def close(self,closed_callback):
-        if self.trace: print '    Browserplayer/close ',self
+        self.mon.trace(self,'')
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.start_show_state_machine_close()
 
 
     def input_pressed(self,symbol):
-        if self.trace: print '    Browserplayer/input_pressed ',symbol
+        self.mon.trace(self,symbol)
         # print symbol, symbol[0:5]
         if symbol[0:5]=='uzbl-':
             self.control(symbol[5:])

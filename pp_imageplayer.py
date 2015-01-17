@@ -41,19 +41,14 @@ class ImagePlayer(Player):
                          end_callback,
                          command_callback)
 
-        # comment this out to turn the trace off          
-        # self.trace=True
 
-        # control debugging trace
-        self.mon.off()
-        
         # stopwatch for timing functions
         StopWatch.global_enable=False
         self.sw=StopWatch()
         self.sw.off()
 
         
-        if self.trace: print '    Imageplayer/init ',self
+        self.mon.trace(self,'')
         # and initialise things for this player
         
         # get duration from profile
@@ -81,7 +76,8 @@ class ImagePlayer(Player):
         # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   # callback when loaded
-        if self.trace: print '    Imageplayer/load ',self
+        self.mon.trace(self,'')
+
 
         Player.pre_load(self)
 
@@ -92,12 +88,7 @@ class ImagePlayer(Player):
             self.play_state='load-failed'
             self.loaded_callback('error','image window error: '+self.image_window)
             return
-
-##        self.image_x1=image_x1+self.show_canvas_x1
-##        self.image_y1=image_y1+self.show_canvas_y1
-##        self.image_x2=image_x2+self.show_canvas_x2
-##        self.image_y2=image_y2+self.show_canvas_y2
-        
+ 
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
@@ -123,7 +114,7 @@ class ImagePlayer(Player):
             
     # UNLOAD - abort a load when sub-process is loading or loaded
     def unload(self):
-        if self.trace: print '    Imageplayer/unload ',self
+        self.mon.trace(self,'')        
         # nothing to do for imageplayer
         self.mon.log(self,">unload received from show Id: "+ str(self.show_id))
         self.play_state='unloaded'
@@ -138,7 +129,7 @@ class ImagePlayer(Player):
         self.finished_callback=finished_callback         # callback when finished showing 
         self.closed_callback=closed_callback            # callback when closed - not used by imageplayer
 
-        if self.trace: print '    Imageplayer/show ',self
+        self.mon.trace(self,'')
         
         # init state and signals  
         self.tick = 100 # tick time for image display (milliseconds)
@@ -147,11 +138,6 @@ class ImagePlayer(Player):
         self.quit_signal=False
         self.paused=False
         self.pause_text_obj=None
-
-        self.show_x_content()
-        
-        if self.ready_callback is not None:
-            self.ready_callback()
 
         # do common bits
         Player.pre_show(self)
@@ -162,7 +148,7 @@ class ImagePlayer(Player):
 
     # CLOSE - nothing to do in imageplayer - x content is removed by ready callback and hide
     def close(self,closed_callback):
-        if self.trace: print '    Imageplayer/close ',self
+        self.mon.trace(self,'')
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         self.play_state='closed'
@@ -171,7 +157,7 @@ class ImagePlayer(Player):
 
 
     def input_pressed(self,symbol):
-        if self.trace: print '    Imageplayer/input_pressed ',symbol
+        self.mon.trace(self,symbol)
         if symbol  == 'pause':
             self.pause()
         elif symbol == 'stop':

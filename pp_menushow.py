@@ -1,6 +1,8 @@
 import copy
 from pp_medialist import MediaList
 from pp_show import Show
+from pp_controlsmanager import ControlsManager
+from pp_screendriver import ScreenDriver
 
 class MenuShow(Show):
 
@@ -38,11 +40,8 @@ class MenuShow(Show):
                           command_callback)
         
 
-        # remove comment to turn the trace on          
-        self.trace=True
-
-        # control debugging log
-        self.mon.on()
+        # instatiatate the screen driver - used only to access enable and hide click areas
+        self.sr=ScreenDriver()
 
         # init variables
         self.show_timeout_timer=None
@@ -66,13 +65,28 @@ class MenuShow(Show):
         self.medialist=MediaList('ordered')
 
         Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
-        if self.trace: print 'MENUSHOW/play ', self.show_params['show-ref']
+        
+        self.mon.trace(self,self.show_params['show-ref'])
+
+
+        # get control bindings for this show
+        controlsmanager=ControlsManager()
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+
+
 
         # condition the show timeout
         self.show_timeout_value=int(self.show_params['show-timeout'])*1000                               
 
         # get the previous player and show from calling show
-        Show.base_get_previous_player_from_parent(self)
+        # Show.base_get_previous_player_from_parent(self)
         
         # and delete eggtimer
         if self.previous_shower is not None:
@@ -114,10 +128,12 @@ class MenuShow(Show):
 
     def do_operation(self,operation,edge,source):
         # service the standard inputs for this show
-        if self.trace: print 'menushow/input_pressed ',operation
-        if operation == 'stop':
+
+        self.mon.trace(self,operation)
+        if operation =='exit':
+            self.exit()
+        elif operation == 'stop':
             self.stop_timers()
-            print 'stop', self.current_player,self.level,self.menu_showing
             if self.current_player is not None:
                 if self.menu_showing is True  and self.level != 0:
                     # if quiescent then set signal to stop the show when track has stopped
@@ -139,6 +155,7 @@ class MenuShow(Show):
         elif operation =='play':
             self.next_track_signal=True
             self.next_track=self.medialist.selected_track()
+
 
             # cancel show timeout
             if self.show_timeout_timer is not None:
@@ -194,8 +211,7 @@ class MenuShow(Show):
 
     def do_menu_track(self):
         self.menu_showing=True
-        if self.trace: print 'menushow/do_menu_track'
-
+        self.mon.trace(self,'')
         # start show timeout alarm if required
         if int(self.show_params['show-timeout']) != 0:
             self.show_timeout_timer=self.canvas.after(self.show_timeout_value,self.show_timeout_stop)
@@ -213,7 +229,7 @@ class MenuShow(Show):
         self.menu_track_params['show-control-begin']=''
         self.menu_track_params['show-control-end']=''
         self.menu_track_params['plugin']=''
-        self.menu_track_params['display-show-background']='no'
+        self.menu_track_params['display-show-background']='yes'
         self.menu_track_params['display-show-text']='no'
         self.menu_track_params['background-colour']=self.show_params['menu-background-colour']
         self.menu_track_params['background-image']=self.show_params['menu-background-image']
@@ -231,8 +247,7 @@ class MenuShow(Show):
     def start_load_show_loop(self,selected_track):
         # shuffle players
         Show.base_shuffle(self)
-
-        if self.trace: print 'menushow/start_load_show_loop'
+        self.mon.trace(self,'')
         self.display_eggtimer(Show.base_resource(self,'menushow','m01'))
             
         # load the track or show
@@ -247,8 +262,7 @@ class MenuShow(Show):
             self.menu_index=0
             self.menu_length=self.current_player.menu_length
             self.current_player.highlight_menu_entry(self.menu_index,True)
-            
-        if self.trace: print 'menushow/what_next_after_load - load complete with status: ',status,'  message: ',message
+        self.mon.trace(self,' - load complete with status: ' + status + '  message: ' + message)
         if self.current_player.play_state=='load-failed':
             self.req_next='error'
             self.what_next_after_showing()
@@ -257,14 +271,15 @@ class MenuShow(Show):
             if self.show_timeout_signal is True or self.terminate_signal  is True or self.exit_signal  is True or self.user_stop_signal  is True:
                 self.what_next_after_showing()
             else:
-                if self.trace: print 'menushow/what_next_after_load- showing track'
+                self.mon.trace(self,'')
                 self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
 
 
     def finished_showing(self,reason,message):
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
-        if self.trace: print 'menushow/finished_showing - pause at end'
+        self.mon.trace(self,'')
         self.mon.log(self,"pause at end of showing track with reason: "+reason+ ' and message: '+ message)
+        self.sr.hide_click_areas(self.controls_list)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
@@ -273,8 +288,9 @@ class MenuShow(Show):
 
     def closed_after_showing(self,reason,message):
         # showing has finished with closing of player but track instance is alive for hiding the x_content
-        if self.trace: print 'menushow/closed_after_showing - closed after showing'
+        self.mon.trace(self,'')
         self.mon.log(self,"Closed after showing track with reason: "+reason+ ' and message: '+ message)
+        self.sr.hide_click_areas(self.controls_list)
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
         else:
@@ -284,6 +300,7 @@ class MenuShow(Show):
     # subshow or child show has ended
     def end_shower(self,show_id,reason,message):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ': Returned from shower with ' + reason +' ' + message)
+        self.sr.hide_click_areas(self.controls_list)        
         self.req_next=reason
         Show.base_end_shower(self)
         self.what_next_after_showing()
@@ -291,8 +308,7 @@ class MenuShow(Show):
 
      # at the end of a track check for terminations else re-display the menu      
     def what_next_after_showing(self):
-        if self.trace: print 'menushow/what_next_after_showing '
-        print self.user_stop_signal, self.current_player,self.previous_player
+        self.mon.trace(self,'')
         # cancel track timeout timer
         if self.track_timeout_timer is not None:
             self.canvas.after_cancel(self.track_timeout_timer)
@@ -349,9 +365,10 @@ class MenuShow(Show):
 
     # called just before a track is shown to remove the  previous track from the screen
     # and if necessary close it
-    def track_ready_callback(self):
+    def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
-        Show.base_track_ready_callback(self)
+        self.sr.enable_click_areas(self.controls_list)
+        Show.base_track_ready_callback(self,enable_show_background)
 
     # callback from begining of a subshow, provide previous shower player to called show        
     def subshow_ready_callback(self):

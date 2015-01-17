@@ -18,7 +18,6 @@ class MediaList(object):
     def __init__(self,sequence):
         self.clear()
         self.mon=Monitor()
-        self.mon.on()
         self.sequence=sequence
         
  # Functions for the editor dealing with complete list

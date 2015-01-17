@@ -39,7 +39,7 @@ Signals
 
 """
 
-class mplayerDriver(object):
+class MplayerDriver(object):
 
     _STATUS_REXP = re.compile(r"V :\s*([\d.]+).*") 
     _DONE_REXP = re.compile(r"Exiting*")
@@ -51,7 +51,7 @@ class mplayerDriver(object):
         self.widget=widget
         
         self.mon=Monitor()
-        self.mon.on()
+        
         self._process=None
         self.paused=False
 
@@ -109,7 +109,7 @@ class mplayerDriver(object):
         self.end_play_signal=False
         self.terminate_reason=''
         track= "'"+ track.replace("'","'\\''") + "'"
-        cmd = mplayerDriver._LAUNCH_CMD + options +" " + track
+        cmd = MplayerDriver._LAUNCH_CMD + options +" " + track
         self.mon.log(self, "Send command to mplayer: "+ cmd)
         self._process = pexpect.spawn(cmd)
         
@@ -136,10 +136,10 @@ class mplayerDriver(object):
         self.audio_position=0.0
         
         while True:
-            index = self._process.expect([mplayerDriver._DONE_REXP,
+            index = self._process.expect([MplayerDriver._DONE_REXP,
                                           pexpect.TIMEOUT,
                                           pexpect.EOF,
-                                          mplayerDriver._STATUS_REXP],
+                                          MplayerDriver._STATUS_REXP],
                                          timeout=10)
             # mplayer does not produce regular status messages just 'exit' at end 
             if index == 0:   # nice day

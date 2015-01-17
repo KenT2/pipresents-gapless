@@ -11,7 +11,6 @@ class LiveList(object):
 
     def __init__(self,sequence):
         self.mon=Monitor()
-        self.mon.on()
         self.sequence=sequence
 
     # pass live_track direcotries from child
@@ -50,7 +49,6 @@ class LiveList(object):
 
 
     def next(self,sequence):
-        print sequence
         if sequence=='ordered':
             if self._selected_track_index==self._num_tracks-1:
                 self._selected_track_index=0
@@ -61,7 +59,7 @@ class LiveList(object):
             return True
         else:
             self._selected_track_index=random.randint(0,self._num_tracks-1)
-            print self._selected_track_index
+            # print self._selected_track_index
             self.select(self._selected_track_index)
             return True
             
@@ -149,10 +147,13 @@ class LiveList(object):
                     
 
         self.new_livelist= sorted(self.new_livelist, key= lambda track: os.path.basename(track['location']).lower())
-##        print 'LIVELIST'
-##        for it in self.new_livelist:
-##            print 'type: ', it['type'], 'loc: ',it['location'],'\nplugin cfg: ', it['plugin']
-##        print ''
+        # self.print_livelist()
+
+    def print_livelist(self):
+        print 'LIVELIST'
+        for it in self.new_livelist:
+            print 'type: ', it['type'], 'loc: ',it['location'],'\nplugin cfg: ', it['plugin']
+        print ''
 
 
         

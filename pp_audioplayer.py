@@ -1,5 +1,5 @@
 import os
-from pp_mplayerdriver import mplayerDriver
+from pp_mplayerdriver import MplayerDriver
 from pp_player import Player
 
 
@@ -45,14 +45,8 @@ class AudioPlayer(Player):
                          end_callback,
                          command_callback)
 
-        # remove comment to turn the trace on          
-        # self.trace=True
 
-        # control debugging log
-        self.mon.on()
-
-
-        if self.trace: print '    Audioplayer/init ',self
+        self.mon.trace(self,'')
         # get duration limit (secs ) from profile
         if self.show_params['type'] in ('liveshow','artliveshow'):
             duration_text=''
@@ -102,7 +96,7 @@ class AudioPlayer(Player):
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
 
-        if self.trace: print '    Audioplayer/load ',self
+        self.mon.trace(self,'')
         
         # load the plugin, this may modify self.track and enable the plugin drawign to canvas
         if self.track_params['plugin'] != '':
@@ -131,7 +125,7 @@ class AudioPlayer(Player):
                 return
 
         # just create instance of mplayer don't bother with any pre-load
-        self.mplayer=mplayerDriver(self.canvas)
+        self.mplayer=MplayerDriver(self.canvas)
         self.play_state='loaded'
         self.mon.log(self,"<Track loaded from show Id: "+ str(self.show_id))
         if self.loaded_callback is not None:
@@ -139,7 +133,7 @@ class AudioPlayer(Player):
 
 
     def unload(self):
-        if self.trace: print '    Audioplayer/unload ',self
+        self.mon.trace(self,'')
         self.mplayer=None
         self.play_state='unloaded'
 
@@ -151,15 +145,8 @@ class AudioPlayer(Player):
         self.ready_callback=ready_callback         # callback when ready to show video
         self.finished_callback=finished_callback         # callback when finished showing
         self.closed_callback=closed_callback
+        self.mon.trace(self,'')
 
-        if self.trace: print '    Audioplayer/show ',self
-
-        self.show_x_content()
-
-        # callback to the calling object to e.g remove egg timer do animation end
-        if self.ready_callback is not None:
-            self.ready_callback()
-        
         # do animation begin etc. 
         Player.pre_show(self)
 
@@ -184,7 +171,7 @@ class AudioPlayer(Player):
     def close(self,closed_callback):
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
-        if self.trace: print '    Audioplayer/close ',self
+        self.mon.trace(self,'')
         self.start_play_state_machine_close()
 
 

@@ -2,20 +2,22 @@ class PPdefinitions(object):
 
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
     VIDEO_FILES=('Video files','.mp4','.mkv','.avi','.mp2','.wmv','.m4v')
-    AUDIO_FILES=('Audio files','.mp3','.wav','.ogg')
+    AUDIO_FILES=('Audio files','.mp3','.wav','.ogg','.wma')
     WEB_FILES=('Web files','.htm','.html')
 
 
-    # order of fields for editor display
+    # order of fields for editor display and which tab they are in.
     show_types={
 
         'artliveshow':[
             'tab-show','sep',  
                 'type','title','show-ref', 'medialist','live-tracks-dir1','live-tracks-dir2','sequence','repeat','show-canvas',
+            'tab-eggtimer','sep',  
+                 'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
-                   'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                   'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio',
+                'transition', 'duration','image-window','audio-speaker','mplayer-audio',
                 'mplayer-volume','mplayer-other-options','omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end',
             'tab-controls','sep',  
                 'disable-controls','controls'
@@ -24,10 +26,12 @@ class PPdefinitions(object):
         'artmediashow':[
             'tab-show','sep',  
                 'type','title','show-ref', 'medialist','sequence','repeat','show-canvas',
+            'tab-eggtimer','sep',  
+                 'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
-                   'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                   'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio',
+                'transition', 'duration','image-window','audio-speaker','mplayer-audio',
                 'mplayer-volume','mplayer-other-options','omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end',
             'tab-controls','sep',  
                 'disable-controls','controls'
@@ -37,13 +41,13 @@ class PPdefinitions(object):
             'tab-show','sep',  
                      'type','title','show-ref', 'medialist','trigger-start-type','trigger-start-param','trigger-next-type','trigger-next-param','sequence','repeat','trigger-end-type','trigger-end-param','show-canvas',
             'tab-child','sep',  
-                'has-child', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
+                'child-track-ref', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
-                   'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                   'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                    'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
+                    'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
                     'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
             'tab-controls','sep',  
                     'disable-controls', 'controls'
@@ -61,9 +65,9 @@ class PPdefinitions(object):
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',  
-                    'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                    'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                    'background-image','background-colour','transition','duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
+                    'transition','duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
             'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
             'tab-controls','sep',  
                'disable-controls','controls'
@@ -72,15 +76,15 @@ class PPdefinitions(object):
         
         'liveshow':[
             'tab-show','sep',  
-                'type','title','show-ref', 'medialist','live-tracks-dir1','live-tracks-dir2','trigger-start-type','trigger-start-param','trigger-next-type','trigger-next-param','sequence','repeat','repeat-interval','trigger-end-type','trigger-end-param','show-canvas',
+                'type','title','show-ref', 'medialist','live-tracks-dir1','live-tracks-dir2','trigger-start-type','trigger-start-param','trigger-next-type','trigger-next-param','sequence','repeat','trigger-end-type','trigger-end-param','show-canvas',
             'tab-child','sep',  
-                    'has-child', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
+                    'child-track-ref', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
-                   'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                   'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio',
+                'transition', 'duration','image-window','audio-speaker','mplayer-audio',
                 'mplayer-volume','mplayer-other-options','omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
             'tab-controls','sep',  
                 'disable-controls','controls'
@@ -90,34 +94,30 @@ class PPdefinitions(object):
         'hyperlinkshow':[
             'tab-show','sep',  
                 'type','title','show-ref','medialist','first-track-ref','home-track-ref','show-timeout','track-timeout','timeout-track-ref','show-canvas',          
-            'tab-show-text','sep',
-                'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
+            'tab-show-text','sep',
+                'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep', 
-                'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
+                'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
             'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
             'tab-links','sep',
-                'links',
-            'tab-controls','sep',  
-                'disable-controls','controls'
+                'links'
             ],
         
 
         'radiobuttonshow':[
             'tab-show','sep',  
                 'type','title','show-ref','medialist','first-track-ref','show-timeout','track-timeout','show-canvas',
-            'tab-show-text','sep',
-                    'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
+            'tab-show-text','sep',
+                    'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                'background-image','background-colour','transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
+                'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
             'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
             'tab-links','sep',
-                'links',
-            'tab-controls','sep',  
-                'disable-controls','controls'
+                'links'
                     ],
               
                 'start':[
@@ -132,12 +132,14 @@ class PPdefinitions(object):
 
                 'artliveshow':{'title': 'New ArtLiveshow','show-ref':'','show-canvas':'',  'type': 'artliveshow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
                         'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                            'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
                             'controls':'','live-tracks-dir1':'','live-tracks-dir2':''},
 
                 'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
                         'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                        'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
                             'controls':''},
@@ -148,8 +150,8 @@ class PPdefinitions(object):
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                             'transition': 'cut', 'duration': '0','image-window':'original',
                              'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes',
-                            'controls':''},
+                                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes'
+                            },
 
     
                'radiobuttonshow':{ 'type':'radiobuttonshow','title':'New Radio Button Show','show-ref':'', 'show-canvas':'', 'medialist':'',
@@ -158,20 +160,20 @@ class PPdefinitions(object):
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                             'transition': 'cut', 'duration': '0','image-window':'original',
                              'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                   'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes',
-                                   'controls':''},
+                                   'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes'
+                                   },
     
                 'mediashow':{'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '',
                           'disable-controls':'no','trigger-start-type': 'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':'none', 'trigger-end-param':'',
-                            'has-child': 'no', 'hint-text': '', 'hint-x':'200','hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                            'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                             'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                             'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp',
                              'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
-                             'controls':''},
+                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
                                      
-                'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'',         'type': 'liveshow', 'disable-controls':'no','trigger-start-type':           'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'',            'sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
-                        'has-child': 'no', 'hint-text': '','hint-x':'200', 'hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow', 'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'',            'sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
+                        'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
                         'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                         'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
@@ -192,7 +194,7 @@ class PPdefinitions(object):
                         'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
                         'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes',
-                        'controls':''},
+                        'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
             
                 'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}  
             }
@@ -203,6 +205,7 @@ class PPdefinitions(object):
                              'values':['left','right','stereo']},
                     'background-colour':{'param':'background-colour','shape':'colour','text':'Background Colour','must':'no','read-only':'no'},
                     'background-image':{'param':'background-image','shape':'browse','text':'Background Image','must':'no','read-only':'no'},
+                    'child-track-ref':{'param':'child-track-ref','shape':'entry','text':'Child Track','must':'no','read-only':'no'},
                     'controls':{'param':'controls','shape':'text','text':'Controls','must':'no','read-only':'no'},
                     'disable-controls':{'param':'disable-controls','shape':'option-menu','text':'Disable Controls ','must':'no','read-only':'no','values':['yes','no']},
                     'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
@@ -217,8 +220,6 @@ class PPdefinitions(object):
                     'entry-select-colour':{'param':'entry-select-colour','shape':'colour','text':'Selected Entry Colour','must':'no','read-only':'no'},
                     'timeout-track-ref':{'param':'timeout-track-ref','shape':'entry','text':'Timeout Track','must':'no','read-only':'no'},
                     'first-track-ref':{'param':'first-track-ref','shape':'entry','text':'First Track','must':'no','read-only':'no'},
-                    'has-child':{'param':'has-child','shape':'option-menu','text':'Has Child','must':'no','read-only':'no',
-                                        'values':['yes','no']},
                     'has-background':{'param':'has-background','shape':'option-menu','text':'Has Background Image','must':'no','read-only':'no','values':['yes','no']},
                     'hint-text':{'param':'hint-text','shape':'text','text':'Hint Text','must':'no','read-only':'no'},
                     'hint-x':{'param':'hint-x','shape':'entry','text':'Hint Text x Position','must':'no','read-only':'no'},
@@ -299,7 +300,7 @@ class PPdefinitions(object):
                     'tab-links':{'shape':'tab','name':'links','text':'Links'},
                     'tab-menu-geometry':{'shape':'tab','name':'menu-geometry','text':'Geometry'},
                     'tab-show':{'shape':'tab','name':'show','text':'Show'},
-                    'tab-show-text':{'shape':'tab','name':'show-text','text':'Show Text'},
+                    'tab-show-text':{'shape':'tab','name':'show-text','text':'Show Background and Text'},
                     'tab-menu-text':{'shape':'tab','name':'menu-text','text':'Menu Text'},
                     'tab-track':{'shape':'tab','name':'track','text':'Track'},
                     'tab-tracks':{'shape':'tab','name':'tracks','text':'Track Defaults'},

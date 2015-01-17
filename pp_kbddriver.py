@@ -8,7 +8,6 @@ class KbdDriver(object):
 
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
 
     # sets up tkinter keyboard events such that any key press
     # does a callback to 'callback' with the event object and a symbolic name.

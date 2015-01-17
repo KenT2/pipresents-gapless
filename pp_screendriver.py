@@ -5,12 +5,12 @@ from pp_utils import Monitor
 
 class ScreenDriver(object):
     config=None
+    canvas = None  ##The Pi presents canvas, click areas are draawn on this, not individual show canvases.
 
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
 
-        
+
     # read screen.cfg    
     def read(self,pp_dir,pp_home,pp_profile):
         if ScreenDriver.config is None:
@@ -32,13 +32,12 @@ class ScreenDriver(object):
                     if os.path.exists(tryfile):
                         filename=tryfile
                     else:
-                        self.mon.log(self,"screen.cfg not found at "+ tryfile)
-                        self.mon.err(self,"screen.cfg not found")
-                        return False   
+                        self.mon.err(self,"screen.cfg not found at " + tryfile)
+                        return 'error','scrren.cfg not found'   
             ScreenDriver.config = ConfigParser.ConfigParser()
             ScreenDriver.config.read(filename)
             self.mon.log(self,"screen.cfg read from "+ filename)
-            return True
+            return 'normal','screen.cfg read'
 
 
     def click_areas(self):
@@ -49,15 +48,16 @@ class ScreenDriver(object):
     
     # make click areas on the screen, bind them to their symbolic name, and create a callback if it is clicked.
     # click areas must be polygon as outline rectangles are not filled as far as find_closest goes
+    # canvas is the PiPresents canvas
     def make_click_areas(self,canvas,callback):
-        self.canvas=canvas
+        ScreenDriver.canvas=canvas
         self.callback=callback
         reason=''
         for area in self.click_areas():
             reason,message,points = self.parse_points(self.get(area,'points'),self.get(area,'name'))
             if reason == 'error':
                 break
-            self.canvas.create_polygon(points,
+            ScreenDriver.canvas.create_polygon(points,
                                        fill=self.get (area,'fill-colour'),
                                        outline=self.get (area,'outline-colour'),
                                        tags=("pp-click-area",self.get(area,'name')),
@@ -76,51 +76,56 @@ class ScreenDriver(object):
                     # print int(points[2*i+1])
                 text_centre_x=sum_x/vertices
                 text_centre_y=sum_y/vertices
-                self.canvas.create_text(text_centre_x,text_centre_y,
+                ScreenDriver.canvas.create_text(text_centre_x,text_centre_y,
                                         text=self.get(area,'text'),
                                         fill=self.get(area,'text-colour'),
                                         font=self.get(area,'text-font'),
                                         tags=('pp-click-area',self.get(area,'name')),
                                         state='hidden')
-            self.canvas.bind('<Button-1>',self.click_pressed)
+            ScreenDriver.canvas.bind('<Button-1>',self.click_pressed)
                                                       
         if reason == 'error':
             return 'error',message
         else:
-            return 'normal',''
+            return 'normal','made click areas'
                                         
      # callback for click on screen
     def click_pressed(self,event):
         overlapping =  event.widget.find_overlapping(event.x-5,event.y-5,event.x+5,event.y+5)
         for item in overlapping:
-            # print self.canvas.gettags(item)
-            if ('pp-click-area' in self.canvas.gettags(item)) and self.canvas.itemcget(item,'state') == 'normal':
-                self.mon.log(self, "Click on screen: "+ self.canvas.gettags(item)[1])
-                self.callback(self.canvas.gettags(item)[1],'front','screen')
+            # print ScreenDriver.canvas.gettags(item)
+            if ('pp-click-area' in ScreenDriver.canvas.gettags(item)) and ScreenDriver.canvas.itemcget(item,'state') == 'normal':
+                self.mon.log(self, "Click on screen: "+ ScreenDriver.canvas.gettags(item)[1])
+                self.callback(ScreenDriver.canvas.gettags(item)[1],'front','screen')
                 # need break as find_overlapping returns two results for each click, one with 'current' one without.
                 break
 
-    def is_click_area(self,canvas,test_area):
-        click_areas=canvas.find_withtag('pp-click-area')
+    def is_click_area(self,test_area):
+        click_areas=ScreenDriver.canvas.find_withtag('pp-click-area')
         for area in click_areas:        
-            if test_area in canvas.gettags(area):
+            if test_area in ScreenDriver.canvas.gettags(area):
                 return True
         return False
                                                       
 
     # use links with the symbolic name of click areas to enable the click areas in a show
-    def enable_click_areas(self,links,canvas):
+    def enable_click_areas(self,links):
         for link in links:
-            if self.is_click_area(canvas,link[0]) and link[1] != 'null':
-                print 'enabling link ',link[0]
-                canvas.itemconfig(link[0],state='normal')
+            if self.is_click_area(link[0]) and link[1] != 'null':
+                # print 'enabling link ',link[0]
+                ScreenDriver.canvas.itemconfig(link[0],state='normal')
 
 
-    def hide_click_areas(self,canvas):
-        # hide all click areas
+    def hide_click_areas(self,links):
+        # hide  click areas
+        for link in links:
+            if self.is_click_area(link[0]) and link[1] != 'null':
+                print 'disabling link ',link[0]
+                ScreenDriver.canvas.itemconfig(link[0],state='hidden')
+
         # this does not seem to change the colour of the polygon
-        canvas.itemconfig('pp-click-area',state='hidden')
-        canvas.update_idletasks( )
+        # ScreenDriver.canvas.itemconfig('pp-click-area',state='hidden')
+        ScreenDriver.canvas.update_idletasks( )
         
 
     def parse_points(self,points_text,area):

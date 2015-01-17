@@ -35,6 +35,13 @@ class ShowManager(object):
 # functions to manipulate show register
 # **************************************
 
+    def pretty_shows(self):
+        shows='\n'
+        for show in ShowManager.shows:
+            shows += show[0] +'\n'
+        return shows
+            
+
 # adds a new concurrent show to the register if not already there, returns an index for use by start and exit
 
     def register_show(self,ref):
@@ -44,10 +51,10 @@ class ShowManager(object):
             index=len(ShowManager.shows)-1
             ShowManager.shows[index][ShowManager.SHOW_REF]=ref
             ShowManager.shows[index][ShowManager.SHOW_OBJ]=None
-            if self.trace: print 'showmanager/register_show  new show: show_ref=',ref,' show_id=',index
+            self.mon.trace(self,' - new show: show_ref = ' + ref + ' index = ' + str(index))
             return index
         else:
-            if self.trace: print 'showmanager/register_show show exists: show_ref=',ref,' show_id=',registered
+            self.mon.warn(self, ' show already registerd: show_ref = ' + ref, + ' show_id= ' + registered)
             return registered
         
 # is the show registered?
@@ -63,8 +70,8 @@ class ShowManager(object):
 # needs calling program to check that the show is not already running
     def set_running(self,index,show_obj):
         ShowManager.shows[index][ShowManager.SHOW_OBJ]=show_obj
-        if self.trace: print 'showmanager/set_running: show_ref=',ShowManager.shows[index][ShowManager.SHOW_REF],' show_id=',index
-        if self.trace: print 'concurrent shows:', ShowManager.shows
+        self.mon.trace(self, 'show_ref= ' + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id= ' + str(index))
+        self.mon.trace(self,'concurrent shows:\n' + self.pretty_shows())
 
 # is the show running?
     def show_running(self,index):
@@ -75,8 +82,8 @@ class ShowManager(object):
 
     def set_exited(self,index):
         ShowManager.shows[index][ShowManager.SHOW_OBJ]=None
-        if self.trace: print 'showmanager/set_exited: show_ref=',ShowManager.shows[index][ShowManager.SHOW_REF],' show_id=',index
-        if self.trace: print 'concurrent shows:', ShowManager.shows
+        self.mon.trace(self,'show_ref= ' + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id= ' + str(index))
+        self.mon.trace(self,'concurrent shows:\n' + self.pretty_shows())
 
 
 # are all shows exited?
@@ -106,13 +113,7 @@ class ShowManager(object):
 
 
         self.mon=Monitor()
-        self.mon.on()
 
-        self.trace=True
-        self.trace=False
-
-
-        
     def control_a_show(self,show_ref,show_command):
         if show_command == 'open':
             return self.start_show(show_ref)
@@ -171,7 +172,7 @@ class ShowManager(object):
         show_to_exit =ShowManager.shows[index][ShowManager.SHOW_OBJ]
         self.mon.log(self,'Exited from show: ' + show_ref_to_exit + ' ' + str(index) )
         self.mon.log(self,'Exited with Reason = ' + reason)
-        if self.trace: print 'showmanager/_end_play_show Show is: ',show_ref_to_exit , ' show index ', index
+        self.mon.trace(self,' Show is: ' + show_ref_to_exit + ' show index ' + str(index))
         # closes the video/audio from last track then closes the track
         # print 'show to exit ',show_to_exit, show_to_exit.current_player,show_to_exit.previous_player
         self.set_exited(index)

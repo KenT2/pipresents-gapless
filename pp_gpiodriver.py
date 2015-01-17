@@ -44,9 +44,16 @@ class GPIODriver(object):
                 '',             #pull
                 0,False,False,0]   #dynamics
     
+# for A and B
+#    PINLIST = ('P1-03','P1-05','P1-07','P1-08',
+#               'P1-10','P1-11','P1-12','P1-13','P1-15','P1-16','P1-18','P1-19',
+#               'P1-21','P1-22','P1-23','P1-24','P1-26')
+
+# for A+ and B+ seems to work for A and B
     PINLIST = ('P1-03','P1-05','P1-07','P1-08',
                'P1-10','P1-11','P1-12','P1-13','P1-15','P1-16','P1-18','P1-19',
-               'P1-21','P1-22','P1-23','P1-24','P1-26')
+               'P1-21','P1-22','P1-23','P1-24','P1-26','P1-29',
+                'P1-31','P1-32','P1-33','P1-35','P1-36','P1-37','P1-38','P1-40')
 
 
 # CLASS VARIABLES  (GPIODriver.)
@@ -59,7 +66,7 @@ class GPIODriver(object):
     # executed by main program and by each object using gpio
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
+
 
 
      # executed once from main program   
@@ -77,8 +84,9 @@ class GPIODriver(object):
         GPIODriver.shutdown_index=0
 
         # read gpio.cfg file.
-        if self.read(self.pp_dir,self.pp_home,self.pp_profile) is False:
-            return False
+        reason,message=self.read(self.pp_dir,self.pp_home,self.pp_profile)
+        if reason =='error':
+            return reason,message
 
         import RPi.GPIO as GPIO
         self.GPIO = GPIO
@@ -90,7 +98,7 @@ class GPIODriver(object):
             pin_num=pin_bits[1:]
             pin[GPIODriver.PIN]=int(pin_num[0])
             if self.config.has_section(pin_def) is False:
-                self.mon.log(self, "no pin definition for "+ pin_def)
+                self.mon.warn(self, "no pin definition for "+ pin_def)
                 pin[GPIODriver.DIRECTION]='None'            
             else:
                 # unused pin
@@ -125,7 +133,7 @@ class GPIODriver(object):
             GPIODriver.pins.append(copy.deepcopy(pin))
 
         # setup GPIO
-        self.GPIO.setwarnings(False)        
+        self.GPIO.setwarnings(True)        
         self.GPIO.setmode(self.GPIO.BOARD)
         
 
@@ -137,12 +145,12 @@ class GPIODriver(object):
             elif  pin[GPIODriver.DIRECTION] == 'out':
                 self.GPIO.setup(num,self.GPIO.OUT)
                 self.GPIO.setup(num,False)
-        self.reset_inputs()
+        self.reset_input_state()
         GPIODriver.gpio_enabled=True
 
         # init timer
         self.button_tick_timer=None
-        return True
+        return 'normal','GPIO initialised'
 
     # called by main program only         
     def poll(self):
@@ -164,7 +172,7 @@ class GPIODriver(object):
 # called by main program only
 # ************************************************
     
-    def reset_inputs(self):
+    def reset_input_state(self):
         for pin in GPIODriver.pins:
             pin[GPIODriver.COUNT]=0
             pin[GPIODriver.PRESSED]=False
@@ -221,18 +229,19 @@ class GPIODriver(object):
                     
 
     # execute an output event
-    def handle_output_event(self,name,param_type,to_state,req_time):
+    def handle_output_event(self,name,param_type,param_values,req_time):
         #gpio only handles state parameters
-        if param_type!='state:
+        if param_type != 'state':
             return 'error','gpio does not handle: ' + param_type
+        to_state=param_values[0]
         if to_state== 'on':
             state=True
         else:
             state=False
             
-        pin= self.pin_of(name)
+        pin= self.output_pin_of(name)
         if pin  == -1:
-            return 'error','Unknown symbolic name for gpio: ' + name
+            return 'error','Not an output for gpio: ' + name
         
         self.mon.log (self,'pin P1-'+ str(pin)+ ' set  '+ str(state) + ' required at: ' + str(req_time)+ ' sent at: ' + str(long(time.time())))
         # print 'pin P1-'+ str(pin)+ ' set  '+ str(state) + ' required: ' + str(req_time)+ ' actual: ' + str(long(time.time()))
@@ -261,7 +270,7 @@ class GPIODriver(object):
 # ************************************************
 
 
-    def pin_of(self,name):
+    def output_pin_of(self,name):
         for pin in GPIODriver.pins:
             # print " in list" + pin[GPIODriver.NAME] + str(pin[GPIODriver.PIN] )
             if pin[GPIODriver.NAME] == name and pin[GPIODriver.DIRECTION] == 'out':
@@ -293,12 +302,11 @@ class GPIODriver(object):
                 if os.path.exists(tryfile):
                     filename=tryfile
                 else:
-                    self.mon.log(self,"gpio.cfg not found at "+ tryfile)
-                    self.mon.err(self,"gpio.cfg not found")
-                    return False   
+                    self.mon.err(self,"gpio.cfg not found at "+ tryfile)
+                    return 'error',"gpio.cfg not found at "+ tryfile
         self.config = ConfigParser.ConfigParser()
         self.config.read(filename)
         self.mon.log(self,"gpio.cfg read from "+ filename)
-        return True
+        return 'normal','gpio.cfg read'
 
 

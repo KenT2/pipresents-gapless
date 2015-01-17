@@ -12,7 +12,6 @@ class ShowList(object):
 
     def __init__(self):
         self.mon=Monitor()
-        self.mon.on()
         self.clear()
 
     def clear(self):
