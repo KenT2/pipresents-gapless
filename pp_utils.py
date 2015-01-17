@@ -93,7 +93,7 @@ class Monitor(object):
     def warn(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_warn) is True:     
-            print "%.2f" % (time.time()-Monitor.start_time), " WARNING: ",r_clasa+": ", text
+            print "%.2f" % (time.time()-Monitor.start_time), " WARNING: ",r_class +": ", text
             Monitor.ofile.write (" WARNING: " + r_class+ ":  " + text + "\n")
 
     def log(self,caller,text):

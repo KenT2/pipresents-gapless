@@ -27,10 +27,6 @@ class ArtMediaShow(ArtShow):
                          pp_profile,
                          command_callback)
 
-
-        # delay in mS before next track is loaded after showing a track.
-        # can be reduced if animation is not required
-        self.load_delay = 2000
         
         # use the appropriate medialist
         self.medialist=MediaList(show_params['sequence'])

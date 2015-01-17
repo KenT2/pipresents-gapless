@@ -242,15 +242,15 @@ class HyperlinkShow(Show):
 # Show Sequencer
 # *********************
 
-
     def track_timeout_callback(self):
         self.mon.trace(self, 'goto ' + self.timeout_track_ref)
-        self.do_goto(self.timeout_track_ref,'front','timeout')
+        self.decode_goto(link_arg,'front','timeout')
+        self.what_next_after_showing()
 
 
     def stop_current_track(self):
         if self.shower is not None:
-            self.shower.input_pressed('stop',edge,source)
+            self.shower.input_pressed('stop','front','timeout')
         elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
@@ -574,8 +574,8 @@ class HyperlinkShow(Show):
                     self.mon.err(self,"unknown link command for pp_onend: "+ link_op)
                     self.end('error',"unkown link command for pp-onend")
             else:
-                    self.mon.err(self,"pp-onend for this track not found: "+ link_op)
-                    self.end('error',"pp-onend for this track not found")
+                self.mon.err(self,"pp-onend for this track not found: "+ link_op)
+                self.end('error',"pp-onend for this track not found")
 
 
 ##            else:
@@ -586,7 +586,7 @@ class HyperlinkShow(Show):
 ##                self.what_next_after_showing()
 
 
-    def track_ready_callback(self):
+    def track_ready_callback(self,enable_show_background):
         # called from a Player when ready to play, merge the links from the track with those from the show
         # and then enable the click areas
         self.delete_eggtimer()                         
@@ -600,7 +600,7 @@ class HyperlinkShow(Show):
         # enable the click-area that are in the list of links
         self.sr.enable_click_areas(self.links)
         
-        Show.base_track_ready_callback(self)
+        Show.base_track_ready_callback(self,enable_show_background)
 
 
 
@@ -608,12 +608,6 @@ class HyperlinkShow(Show):
     def subshow_ready_callback(self):
         return Show.base_subshow_ready_callback(self)              
     
-    # called by end_shower of a parent show  to get the last track of the subshow
-    def subshow_ended_callback(self):
-        return Show.base_subshow_ended_callback(self)
-
-
-
 
 # *********************
 # End the show

@@ -1,9 +1,8 @@
 import os
-from Tkinter import CENTER, NW
+from Tkinter import NW
 from PIL import Image
 from PIL import ImageTk
 
-from pp_showmanager import ShowManager
 from pp_pluginmanager import PluginManager
 from pp_animate import Animate
 from pp_resourcereader import ResourceReader
@@ -90,6 +89,11 @@ class Player(object):
         self.terminate_signal=False
         self.play_state=''
 
+        # keep landscape happy
+        self.ready_callback=None
+        self.finished_callback=None
+        self.closed_callback=None
+
 
 
     def pre_load(self):
@@ -103,7 +107,7 @@ class Player(object):
         # show_x_content moved to just before ready_callback to improve flicker.
         self.show_x_content()
 
-        #ready callback hides and lases players from provious track, also displays show background
+        #ready callback hides and closes players from previous track, also displays show background
         if self.ready_callback is not None:
             self.ready_callback(self.enable_show_background)
 
@@ -298,10 +302,11 @@ class Player(object):
 
     # display the rectangle that is the show canvas
     def display_show_canvas_rectangle(self):
-            coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2-1,self.show_canvas_y2-1]
-            # self.canvas.create_rectangle(coords,
-                                    #            outline='yellow',
-                                      #          fill='')
+        # coords=[self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2-1,self.show_canvas_y2-1]
+        # self.canvas.create_rectangle(coords,
+        #            outline='yellow',
+        #          fill='')
+        pass
 
 
     # dummy functions to manipulate the track content, overidden in some players,

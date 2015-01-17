@@ -597,12 +597,6 @@ class GapShow(Show):
         return Show.base_subshow_ready_callback(self)
 
 
-    # called by end_shower of a parent show  to get the last track of the subshow
-    def subshow_ended_callback(self):
-        return Show.base_subshow_ended_callback(self)
-
-
-
 # *********************
 # End the show
 # *********************

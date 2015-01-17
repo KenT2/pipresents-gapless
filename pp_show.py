@@ -1,5 +1,5 @@
 import os
-from Tkinter import CENTER, NW
+from Tkinter import NW
 from PIL import Image
 from PIL import ImageTk
 
@@ -169,7 +169,8 @@ class Show(object):
                     self.terminate_signal=True
                     self.what_next_after_showing()
                 else:
-                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.direction_command,self.level+1,self.controls_list)
+                    # empty controls list as not used, pleases landscape
+                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.direction_command,self.level+1,[])
         else:
             # dispatch track by type
             self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Track type is: "+ track_type)
@@ -273,7 +274,7 @@ class Show(object):
     def base_end_shower(self):
         self.mon.trace(self,' -  returned back to level: ' +str(self.level))
         # get the last track played from the subshow
-        self.previous_shower,self.current_player=self.shower.subshow_ended_callback()
+        self.previous_shower,self.current_player=self.shower.base_subshow_ended_callback()
         if self.previous_shower!= None:
             self.previous_shower.base_withdraw_show_background()
             self.base_show_show_background()
@@ -471,6 +472,12 @@ class Show(object):
             self.shower.input_pressed(symbol,edge,source)
         else:
             self.input_pressed_this_show(symbol,edge,source)
+
+    #dummy must be overridden in derived class
+    def input_pressed_this_show(self,symbol,edge,source):
+        self.mon.err(self,"input_pressed_this_show not overidden")
+        self.ending_reason='killed'
+        Show.base_close_or_unload(self)
             
     def base_load_show_background(self):
         # load show background image
@@ -529,7 +536,7 @@ class Show(object):
         value=self.rr.get(section,item)
         if value is False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self.terminate('error')
+            self.terminate()
         else:
             return value
 

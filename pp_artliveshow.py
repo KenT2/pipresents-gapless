@@ -1,4 +1,5 @@
 import os
+import time
 from pp_artshow import ArtShow
 from pp_livelist import LiveList
 from pp_options import command_options
@@ -28,10 +29,6 @@ class ArtLiveShow(ArtShow):
                          pp_profile,
                          command_callback)
 
-
-        # delay in mS before next track is loaded after showing a track.
-        # can be reduced if animation is not required
-        self.load_delay = 2000
 
         # get the live tracks directories
         self.options=command_options()

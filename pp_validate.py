@@ -147,7 +147,7 @@ class Validator(object):
                             
                     if track['type'] == 'web':
                         self.check_browser_commands(track['browser-commands'])
-                        self.check_web_window('track','web-window',show['web-window'])
+                        self.check_web_window('track','web-window',track['web-window'])
 
                   
                     # CHECK CROSS REF TRACK TO SHOW
@@ -264,7 +264,7 @@ class Validator(object):
                     if show['trigger-end-type'] == 'duration':
                         self.check_duration('Duration',show['trigger-end-param'])
                     if show['trigger-end-type'] == 'interval':
-                        self.check_duration(show['Interval''trigger-end-param'])
+                        self.check_duration('Interval',show['trigger-end-param'])
                     self.check_web_window('show','web-window',show['web-window'])
                     self.check_controls('controls',show['controls'])
 
@@ -581,7 +581,7 @@ class Validator(object):
 
 
 # *******************   
-# Check links
+# Check hyperlinkshow links
 # ***********************
 
     def check_hyperlinks(self,name,links_text,v_track_labels):
@@ -589,12 +589,12 @@ class Validator(object):
         for line in lines:
             if line.strip() == "":
                 continue
-            self.check_hyperlink(line)
+            self.check_hyperlink(line,v_track_labels)
 
 
     def check_hyperlink(self,line,v_track_labels):
         fields = line.split()
-        if len(fields)<2 or len(fields)>3:
+        if len(fields) not in (2,3):
             self.result.display('f',"incorrect number of fields in link: " + line)
             return
         symbol=fields[0]
@@ -607,22 +607,23 @@ class Validator(object):
             self.result.display('f',symbol + " is not in medialist: " + line)
 
 # *******************   
-# Check button links
+# Check radiobuttonshow  links
 # ***********************
 
-    def check_button_links(self,name,links_text):
+    def check_radiobutton_links(self,name,links_text,v_track_labels):
         lines = links_text.split('\n')
         for line in lines:
             if line.strip() == "":
                 continue
-            self.check_button_link(line)
+            self.check_radiobutton_link(line,v_track_labels)
 
 
-    def check_button_link(self,line,v_track_labels):
+    def check_radiobutton_link(self,line,v_track_labels):
         fields = line.split()
-        if len(fields) != 3:
+        if len(fields) != 2:
             self.result.display('f',"incorrect number of fields in link: " + line)
             return
+        symbol = fiels[0]
         operation=fields[1]
         if operation not in ('play','return','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
@@ -704,7 +705,7 @@ class Validator(object):
     def read_gpio_cfg(self,pp_dir,pp_home):
         tryfile=pp_home+os.sep+"gpio.cfg"
         if os.path.exists(tryfile):
-             filename=tryfile
+            filename=tryfile
         else:
             self.result.display('t', "gpio.cfg not found in pp_home")
             tryfile=pp_dir+os.sep+'pp_home'+os.sep+"gpio.cfg"
@@ -761,17 +762,17 @@ class Validator(object):
 # SHOW CANVAS
 # ************************************              
                            
-    def check_show_canvas(self,track_type,field,line):
+    def check_show_canvas(self,track_type,name,line):
         fields=line.split()
         if len(fields)== 0:
             return
         if len(fields) !=4:
-                self.result.display('f','wrong number of fields for ' + field + ", " + line)
-                return
+            self.result.display('f','wrong number of fields for ' + name + ", " + line)
+            return
         else:
             # show canvas is specified
             if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
+                self.result.display('f','coordinate is not a positive integer ' + name + ", " + line)
                 return
        
 

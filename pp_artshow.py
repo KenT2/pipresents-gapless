@@ -37,6 +37,9 @@ class ArtShow(Show):
                           pp_profile,
                           command_callback)
 
+        # delay in mS before next track is loaded after showing a track.
+        # can be reduced if animation is not required
+        self.load_delay = 2000
 
         # Init variables for this show
         self.end_medialist_signal=False
@@ -454,14 +457,7 @@ class ArtShow(Show):
         self.previous_player=None
         self.end(self.ending_reason,'')
 
-# *********************
-# Interface with other shows/players to reduce black gaps
-# *********************
 
-    # used by end_shower when a show has finished to get the last track of the called show
-    def subshow_ended_callback(self):
-        return self.current_player
- 
 # ***************************
 # end of show 
 # ***************************

@@ -82,8 +82,8 @@ class LiveList(object):
         if self._num_tracks==0:
             return False
         else:
-            self._selected_track_indexindex=self._num_tracks-1
-            self.select(index)
+            self._selected_track_index=self._num_tracks-1
+            self.next(self.sequence)
             return True
 
     def at_start(self):

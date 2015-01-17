@@ -254,7 +254,7 @@ class VideoPlayer(Player):
                 self.omx.pause('freeze at end from user stop')
                 # and return to show so it can end  the track and the video in track ready callback
                 if self.finished_callback is not None:
-                        self.finished_callback('pause_at_end','pause at end')
+                    self.finished_callback('pause_at_end','pause at end')
             else:
                 self.mon.log(self,"!<stop rejected")
         else:
@@ -387,10 +387,10 @@ class VideoPlayer(Player):
             # print 'start show state machine show'
             self.tick_timer=self.canvas.after(0, self.show_state_machine)
         else:
-            self.mon.err(self,'illegal state in show method ' + self.play_state)
+            self.mon.fatal(self,'illegal state in show method ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
-                self.finished_callback('error',message)
+                self.finished_callback('error','illegal state in show method')
              
 
     def start_state_machine_close(self):
@@ -543,11 +543,11 @@ class VideoPlayer(Player):
                         self.finished_callback('pause_at_end','pause at end')
 
                 elif self.omx.end_play_reason == 'nice_day':
-                        # no problem with omxplayer
-                        self.play_state='closing'
-                        self.closing_count=0
-                        self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                        self.tick_timer=self.canvas.after(50, self.show_state_machine)
+                    # no problem with omxplayer
+                    self.play_state='closing'
+                    self.closing_count=0
+                    self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
+                    self.tick_timer=self.canvas.after(50, self.show_state_machine)
                     
                 elif self.omx.end_play_reason in ('eof','timeout'):
                     # problem with omxplayer
@@ -614,7 +614,7 @@ class VideoPlayer(Player):
             self.mon.err(self,'unknown state in show/close state machine ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
-                    self.finished_callback('error','show state machine in unknown state')
+                self.finished_callback('error','show state machine in unknown state')
 
 
     def parse_video_window(self,line):

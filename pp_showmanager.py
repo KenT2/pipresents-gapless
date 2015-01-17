@@ -54,7 +54,7 @@ class ShowManager(object):
             self.mon.trace(self,' - new show: show_ref = ' + ref + ' index = ' + str(index))
             return index
         else:
-            self.mon.warn(self, ' show already registerd: show_ref = ' + ref, + ' show_id= ' + registered)
+            self.mon.warn(self, ' show already registerd: show_ref = ' + ref + ' show_id= ' + registered)
             return registered
         
 # is the show registered?
@@ -145,7 +145,9 @@ class ShowManager(object):
         
         show=self.showlist.show(show_index)
         index=self.register_show(show_ref)
-        show_canvas=self.compute_show_canvas(show)
+        reason,message,show_canvas=self.compute_show_canvas(show)
+        if reason == 'error':
+            return reason,message
         # print 'STARTING TOP LEVEL SHOW',show_canvas
         self.mon.log(self,'Starting Show from: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" show_ref:"+ show_ref + ' show_id' + str(index) )
         if self.show_running(index):
@@ -269,8 +271,8 @@ class ShowManager(object):
         canvas['canvas-obj']= ShowManager.canvas
         status,message,self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2= self.parse_show_canvas(show_params['show-canvas'])
         if status  == 'error':
-            self.mon.err(self,'show canvas error: ' + message + ' in ' + self.show_params['show-canvas'])
-            self.end('error',"show canvas error")
+            self.mon.err(self,'show canvas error: ' + message + ' in ' + show_params['show-canvas'])
+            return 'error',message,canvas
         else:
             self.show_canvas_width = self.show_canvas_x2 - self.show_canvas_x1
             self.show_canvas_height=self.show_canvas_y2 - self.show_canvas_y1
@@ -284,7 +286,7 @@ class ShowManager(object):
             canvas['show-canvas-height'] = self.show_canvas_height
             canvas['show-canvas-centre-x'] = self.show_canvas_centre_x 
             canvas['show-canvas-centre-y'] = self.show_canvas_centre_y
-            return canvas
+            return 'normal','',canvas
 
 
 
@@ -301,7 +303,7 @@ class ShowManager(object):
             return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
         else:
             # error
-            return 'error','illegal Show canvas dimensions '+show_canvas_text,0,0,0,0
+            return 'error','illegal Show canvas dimensions '+ text,0,0,0,0
 
 from pp_menushow import MenuShow
 from pp_liveshow import LiveShow
