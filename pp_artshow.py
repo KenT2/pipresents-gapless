@@ -388,7 +388,7 @@ class ArtShow(Show):
         if ok_to_end != 2:
             self.canvas.after(50,self.wait_for_end)
         else:
-            self.mon.trace(self,' - next and current closed ', + self.ending_reason)
+            self.mon.trace(self,' - next and current closed ' + self.ending_reason)
 
             if self.ending_reason == 'killed':
                 self.base_close_previous()

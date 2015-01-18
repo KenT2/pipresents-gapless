@@ -231,7 +231,7 @@ class ImagePlayer(Player):
     # called from Player, load_x_content      
             
     def load_track_content(self):
-
+        pil_image=None  # Keep landscape happy
         
         # get the track to be displayed
         if os.path.exists(self.track) is True:

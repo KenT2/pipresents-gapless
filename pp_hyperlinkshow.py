@@ -162,7 +162,7 @@ class HyperlinkShow(Show):
 
           
 
-   # respond to inputs cal base_input_pressed to pass to subshow
+   # respond to inputs  - call base_input_pressed to pass to subshow
     def input_pressed(self,symbol,edge,source):
         Show.base_input_pressed(self,symbol,edge,source)
 
@@ -177,63 +177,51 @@ class HyperlinkShow(Show):
             if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
+                
             if link_op == 'home':
                 self.decode_home(edge,source)
                 self.stop_current_track()
+                
             elif link_op  == 'return':
                 self.decode_return(link_arg,edge,source)
                 self.stop_current_track()
+                
             elif link_op  == 'call':
                 self.decode_call(link_arg,edge,source)
                 self.stop_current_track()
+                
             elif link_op  == 'goto':
                 self.decode_goto(link_arg,edge,source)
                 self.stop_current_track()
+                
             elif link_op  == 'jump':
                 self.decode_jump(link_arg,edge,source)
                 self.stop_current_track()
+                
             elif link_op  ==  'repeat':
                 self.decode_repeat(edge,source)
                 self.stop_current_track()
+                
             elif link_op == 'exit':
                 self.exit()
+                
             elif link_op=='no-command':
                 pass
-                # in-track operation
-            elif link_op =='pause' or link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
-                self.do_operation(link_op,edge,source)       
+            
+            # in-track operations
+            elif link_op =='pause':
+                if self.current_player is not  None:
+                    self.current_player.input_pressed(operation)
+                    
+            elif link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
+                if self.current_player is not None:
+                    self.current_player.input_pressed(operation)
+                    
             else:
-                self.mon.err(self,"unkown link command: "+ link_op)
-                self.end('error',"unkown link command")
+                self.mon.err(self,"unknown link command: "+ link_op)
+                self.end('error',"unknown link command")
+
                 
-
-
-    def do_operation(self,operation,edge,source):
-        # control this show and its tracks
-        self.mon.trace(self, operation)
-##        if operation == 'stop':
-##            self.stop_timers()
-##            if self.current_player is not  None:
-##                # if quiescent then stop track and set signal to return to parent show
-##                if self.current_track_ref in (self.first_track_ref,self.home_track_ref) and self.level != 0:
-##                    print 'user stop sent'
-##                    self.user_stop_signal=True
-##                    self.current_player.input_pressed('stop')
-
-        if operation == 'pause':
-            if self.current_player is not  None:
-                self.current_player.input_pressed(operation)
-
-        elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
-            if self.current_player is not None:
-                self.current_player.input_pressed(operation)
-
-   
-
-
-
-
-
 # *********************
 # INTERNAL FUNCTIONS
 # ********************
@@ -244,7 +232,8 @@ class HyperlinkShow(Show):
 
     def track_timeout_callback(self):
         self.mon.trace(self, 'goto ' + self.timeout_track_ref)
-        self.decode_goto(link_arg,'front','timeout')
+        self.next_track_op='goto'
+        self.next_track_arg=self.timeout_track_ref
         self.what_next_after_showing()
 
 

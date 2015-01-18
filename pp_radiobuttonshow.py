@@ -145,15 +145,18 @@ class RadioButtonShow(Show):
             if self.current_track_ref != self.first_track_ref:
                 self.do_play(self.first_track_ref,edge,source)
 
-            # in-track operation
-        elif link_op =='pause' or link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
-            self.do_operation(link_op,edge,source)       
+        # in-track operations
+        elif link_op =='pause':
+            if self.current_player is not  None:
+                self.current_player.input_pressed(operation)
+                
+        elif link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
+            if self.current_player is not None:
+                self.current_player.input_pressed(operation)
+                
         else:
-            self.mon.err(self,"unkown link command: "+ link_op)
-            self.end('error',"unkown link command")
-
-        return found
-
+            self.mon.err(self,"unknown link command: "+ link_op)
+            self.end('error',"unknown link command")
 
 
 
@@ -344,11 +347,11 @@ class RadioButtonShow(Show):
 
     # called just before a track is shown to remove the  previous track from the screen
     # and if necessary close it
-    def track_ready_callback(self):
+    def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
         # enable the click-area that are in the list of links
         self.sr.enable_click_areas(self.links)
-        Show.base_track_ready_callback(self)
+        Show.base_track_ready_callback(self,enable_show_background)
 
     # callback from begining of a subshow, provide previous shower player to called show        
     def subshow_ready_callback(self):

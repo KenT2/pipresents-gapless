@@ -89,11 +89,6 @@ class Player(object):
         self.terminate_signal=False
         self.play_state=''
 
-        # keep landscape happy
-        self.ready_callback=None
-        self.finished_callback=None
-        self.closed_callback=None
-
 
 
     def pre_load(self):
@@ -129,6 +124,19 @@ class Player(object):
             self.mon.log(self,">show track received from show Id: "+ str(self.show_id))
             return
 
+
+    # to keep landscape happy
+    def ready_callback(self):
+        self.mon.fatal(self,'ready callback not overridden')
+        self.end('error','ready callback not overridden')
+
+    def finished_callback(self):
+        self.mon.fatal(self,'finished callback not overridden')
+        self.end('error','finished callback not overridden')
+
+    def closed_callback(self):
+        self.mon.fatal(self,'closed callback not overridden')
+        self.end('error','closed callback not overridden')
 
 
 # Control shows so pass the show control commands back to PiPresents via the command callback
@@ -188,10 +196,10 @@ class Player(object):
 
     # must be overriden by derived class
     def stop(self):
-        self.mon.err(self,'stop not overidden by derived class')
+        self.mon.fatal(self,'stop not overidden by derived class')
         self.play_state='show-failed'
         if self.finished_callback is not None:
-            self.finished_callback('error',message)
+            self.finished_callback('error','stop not overidden by derived class')
 
 
     def get_play_state(self):

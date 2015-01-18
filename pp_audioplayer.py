@@ -164,7 +164,7 @@ class AudioPlayer(Player):
         else:
             self.mplayer=None
             if self.closed_callback is not None:
-                        self.closed_callback('normal','end with zero duration')
+                self.closed_callback('normal','end with zero duration')
 
 
     # CLOSE - nothing to do in audioplayer - x content is removed by ready callback
@@ -248,10 +248,10 @@ class AudioPlayer(Player):
             # and start polling for state changes and count duration
             self.tick_timer=self.canvas.after(50, self.play_state_machine)
         else:
-            self.mon.err(self,'illegal state in show method ' + self.play_state)
+            self.mon.fatal(self,'illegal state in show method ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
-                self.finished_callback('error',message)
+                self.finished_callback('error','illegal state in show method ' + self.play_state)
 
 
     def start_play_state_machine_close(self):

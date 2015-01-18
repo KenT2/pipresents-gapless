@@ -300,7 +300,7 @@ class Validator(object):
                     if show['first-track-ref'] not in v_track_labels:
                         self.result.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])
                         
-                    self.check_button_links('links',show['links'],v_track_labels)
+                    self.check_radiobutton_links('links',show['links'],v_track_labels)
                     if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
                     if not show['track-timeout'].isdigit(): self.result.display('f',"'track timeout' is not 0 or a positive integer")
                     self.check_web_window('show','web-window',show['web-window'])
@@ -623,7 +623,7 @@ class Validator(object):
         if len(fields) != 2:
             self.result.display('f',"incorrect number of fields in link: " + line)
             return
-        symbol = fiels[0]
+        symbol = fields[0]
         operation=fields[1]
         if operation not in ('play','return','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
