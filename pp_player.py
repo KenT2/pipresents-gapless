@@ -126,15 +126,15 @@ class Player(object):
 
 
     # to keep landscape happy
-    def ready_callback(self):
+    def ready_callback(self,enable_show_background):
         self.mon.fatal(self,'ready callback not overridden')
         self.end('error','ready callback not overridden')
 
-    def finished_callback(self):
+    def finished_callback(self,reason,message):
         self.mon.fatal(self,'finished callback not overridden')
         self.end('error','finished callback not overridden')
 
-    def closed_callback(self):
+    def closed_callback(self,reason,message):
         self.mon.fatal(self,'closed callback not overridden')
         self.end('error','closed callback not overridden')
 

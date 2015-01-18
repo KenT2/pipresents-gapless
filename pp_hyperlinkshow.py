@@ -211,11 +211,11 @@ class HyperlinkShow(Show):
             # in-track operations
             elif link_op =='pause':
                 if self.current_player is not  None:
-                    self.current_player.input_pressed(operation)
+                    self.current_player.input_pressed(link_op)
                     
             elif link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
                 if self.current_player is not None:
-                    self.current_player.input_pressed(operation)
+                    self.current_player.input_pressed(link_op)
                     
             else:
                 self.mon.err(self,"unknown link command: "+ link_op)

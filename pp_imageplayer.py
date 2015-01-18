@@ -231,34 +231,34 @@ class ImagePlayer(Player):
     # called from Player, load_x_content      
             
     def load_track_content(self):
-        pil_image=None  # Keep landscape happy
+        ppil_image=None  # Keep landscape happy
         
         # get the track to be displayed
         if os.path.exists(self.track) is True:
-            pil_image=Image.open(self.track)
+            ppil_image=Image.open(self.track)
         else:
-            pil_image=None
+            ppil_image=None
             self.tk_img=None
             self.track_image_obj=None
             return 'error','Track file not found '+ self.track
 
         # display track image                                    
-        if pil_image is not None:
-            self.image_width,self.image_height=pil_image.size
+        if ppil_image is not None:
+            self.image_width,self.image_height=ppil_image.size
 
             if self.command == 'original':
                 # display image at its original size
                 if self.has_coords is False:
                     # load and display the unmodified image in centre
-                    self.tk_img=ImageTk.PhotoImage(pil_image)
-                    del pil_image
+                    self.tk_img=ImageTk.PhotoImage(ppil_image)
+                    del ppil_image
                     self.track_image_obj = self.canvas.create_image(self.show_canvas_centre_x+self.show_canvas_x1,
                                                                     self.show_canvas_centre_y+self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)
                 else:
                     # load and display the unmodified image at x1,y1
-                    self.tk_img=ImageTk.PhotoImage(pil_image)
-                    del pil_image
+                    self.tk_img=ImageTk.PhotoImage(ppil_image)
+                    del ppil_image
                     self.track_image_obj = self.canvas.create_image(self.image_x1+self.show_canvas_x1,
                                                                     self.image_y1+self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=NW)
@@ -279,9 +279,9 @@ class ImagePlayer(Player):
                 
                 if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
                     # original image is larger or , shrink it to fit the screen preserving aspect
-                    pil_image.thumbnail((window_width,window_height),eval(self.image_filter))                 
-                    self.tk_img=ImageTk.PhotoImage(pil_image)
-                    del pil_image
+                    ppil_image.thumbnail((window_width,window_height),eval(self.image_filter))                 
+                    self.tk_img=ImageTk.PhotoImage(ppil_image)
+                    del ppil_image
                     self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
                                                                     window_centre_y + self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)
@@ -297,9 +297,9 @@ class ImagePlayer(Player):
                     increased_width=int(self.image_width * prop)
                     increased_height=int(self.image_height * prop)
                     # print 'result',prop, increased_width,increased_height
-                    pil_image=pil_image.resize((increased_width, increased_height),eval(self.image_filter))
-                    self.tk_img=ImageTk.PhotoImage(pil_image)
-                    del pil_image
+                    ppil_image=ppil_image.resize((increased_width, increased_height),eval(self.image_filter))
+                    self.tk_img=ImageTk.PhotoImage(ppil_image)
+                    del ppil_image
                     self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
                                                                     window_centre_y + self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=CENTER)                                                 
@@ -317,9 +317,9 @@ class ImagePlayer(Player):
                     window_centre_x=self.show_canvas_centre_x
                     window_centre_y=self.show_canvas_centre_y
                 
-                pil_image=pil_image.resize((window_width, window_height),eval(self.image_filter))
-                self.tk_img=ImageTk.PhotoImage(pil_image)
-                del pil_image
+                ppil_image=ppil_image.resize((window_width, window_height),eval(self.image_filter))
+                self.tk_img=ImageTk.PhotoImage(ppil_image)
+                del ppil_image
                 self.track_image_obj = self.canvas.create_image(window_centre_x+ self.show_canvas_x1,
                                                                 window_centre_y+ self.show_canvas_y1,
                                                                image=self.tk_img, anchor=CENTER)
