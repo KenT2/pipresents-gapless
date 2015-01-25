@@ -82,6 +82,7 @@ class Show(object):
         self.ending_reason=''
         self.background_obj=None
         self.background_file=''
+        self.level=0
         
         # get background image from profile.
         if self.show_params['background-image'] != '':
@@ -187,7 +188,7 @@ class Show(object):
                                      loaded_callback,
                                      enable_menu=enable_menu)
 
-    # dummy, must be overidden by derived class
+    # DUMMY, must be overidden by derived class
     def what_next_after_showing(self):
         self.mon.err(self,"what_next_after showing not overidden")
         # set what to do when closed or unloaded
@@ -313,7 +314,7 @@ class Show(object):
                 self.end('normal',"show quit by stop operation")
                     
             else:
-                self.mon.err(self,"Unhandled ending_reason: ")
+                self.mon.fatal(self,"Unhandled ending_reason: ")
                 self.end('error',"Unhandled ending_reason")          
 
 
@@ -345,6 +346,12 @@ class Show(object):
                     self.current_player.hide()
                     self.current_player=None
                     self.base_close_previous()
+
+                elif self.ending_reason == 'change-medialist':
+                    self.current_player.hide()
+                    self.current_player=None
+                    # self.base_close_previous()
+                    self.wait_for_trigger()
                     
                 elif self.ending_reason == 'show-timeout':
                     self.current_player.hide()
@@ -352,10 +359,16 @@ class Show(object):
                     self.end('normal',"show timeout")
                     
                 elif self.ending_reason == 'user-stop':
-                    self.end('normal',"show quit by stop operation")
+                    if self.level !=0:
+                        self.end('normal',"show quit by stop operation")
+                    else:
+                        self.current_player.hide()
+                        self.current_player=None
+                        self.base_close_previous()
+                        
                     
                 else:
-                    self.mon.err(self,"Unhandled ending_reason: ")
+                    self.mon.fatal(self,"Unhandled ending_reason: " + self.ending_reason)
                     self.end('error',"Unhandled ending_reason")
         else:
             self.mon.trace(self,' - current is None ' +  self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)

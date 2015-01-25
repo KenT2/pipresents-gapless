@@ -48,7 +48,7 @@ class PPdefinitions(object):
                    'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
                     'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
-                    'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
+                    'omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end','web-window',
             'tab-controls','sep',  
                     'disable-controls', 'controls'
             ],
@@ -68,7 +68,7 @@ class PPdefinitions(object):
                     'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
                     'transition','duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
-            'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
+            'omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end','web-window',
             'tab-controls','sep',  
                'disable-controls','controls'
             ],
@@ -85,7 +85,7 @@ class PPdefinitions(object):
                    'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
                 'transition', 'duration','image-window','audio-speaker','mplayer-audio',
-                'mplayer-volume','mplayer-other-options','omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
+                'mplayer-volume','mplayer-other-options','omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end','web-window',
             'tab-controls','sep',  
                 'disable-controls','controls'
             ],
@@ -100,7 +100,7 @@ class PPdefinitions(object):
                 'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep', 
                 'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
-            'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
+            'omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end','web-window',
             'tab-links','sep',
                 'links'
             ],
@@ -115,7 +115,7 @@ class PPdefinitions(object):
                     'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
                 'transition', 'duration','image-window','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
-            'omx-audio','omx-volume','omx-window','omx-other-options','web-window','freeze-at-end',
+            'omx-audio','omx-volume','omx-window','omx-other-options','freeze-at-end','web-window',
             'tab-links','sep',
                 'links'
                     ],
@@ -131,69 +131,71 @@ class PPdefinitions(object):
     new_shows={
 
                 'artliveshow':{'title': 'New ArtLiveshow','show-ref':'','show-canvas':'',  'type': 'artliveshow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                        'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                             'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':'','live-tracks-dir1':'','live-tracks-dir2':''},
+                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
+                            'controls':'','live-tracks-dir1':'','live-tracks-dir2':'',
+                               'controls':'pp-down down\npp-up up\npp-stop stop\npp-pause pause\npp-exit exit\n'},
 
                 'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                        'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                         'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':''},
+                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
+                            'controls':'pp-down down\npp-up up\npp-stop stop\npp-pause pause\npp-exit exit\n'},
 
                'hyperlinkshow':{ 'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'',
                     'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '60','track-timeout': '0',
-                             'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                             'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                             'transition': 'cut', 'duration': '0','image-window':'original',
                              'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes'
+                                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
                             },
 
     
                'radiobuttonshow':{ 'type':'radiobuttonshow','title':'New Radio Button Show','show-ref':'', 'show-canvas':'', 'medialist':'',
                     'links':'','first-track-ref':'','disable-controls':'no','show-timeout': '60','track-timeout': '0',
-                             'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                             'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                             'transition': 'cut', 'duration': '0','image-window':'original',
                              'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                   'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes'
+                                   'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
                                    },
     
                 'mediashow':{'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '',
                           'disable-controls':'no','trigger-start-type': 'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':'none', 'trigger-end-param':'',
                             'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
                              'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                            'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                            'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp',
-                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','freeze-at-end':'yes',
+                            'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                            'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
+                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
                              'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
                                      
                 'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow', 'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'',            'sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
                         'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '980','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                        'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                         'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes',
-                            'controls':'','live-tracks-dir1':'','live-tracks-dir2':''},
+                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
+                            'live-tracks-dir1':'','live-tracks-dir2':'',
+                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
             
                 'menu':{'show-ref': '','show-canvas':'', 'title': 'New Menu','type': 'menu','medialist': '',
                         'disable-controls':'no','show-timeout': '0','track-timeout':'0','menu-background-colour':'black','menu-background-image':'',
                         'entry-font': 'Helvetica 30 bold','entry-colour': 'white', 'entry-select-colour': 'red',
                         'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
-                         'menu-text': '', 'menu-text-x':'','menu-text-y': '', 'menu-text-font': '', 'menu-text-colour': '',                       
+                         'menu-text': '', 'menu-text-x':'200','menu-text-y': '20', 'menu-text-font': 'Helvetica 30 bold', 'menu-text-colour': 'white',                       
                          'menu-window':'300 250','menu-direction':'vertical','menu-rows':'10','menu-columns':'1','menu-icon-mode':'bullet','menu-text-mode':'right',
                         'menu-bullet':'/home/pi/pipresents/pp_home/pp_resources/bullet_square_grey.png',
                         'menu-icon-width':'80','menu-icon-height':'80',
                         'menu-horizontal-padding':'10','menu-vertical-padding':'10','menu-text-width':'800','menu-text-height':'50',
                         'menu-horizontal-separation':'20','menu-vertical-separation':'20','menu-strip':'no','menu-strip-padding':'5','menu-guidelines':'never',
                          'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',                       
-                        'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
-                        'omx-audio': 'hdmi','omx-volume':'0','omx-window':'original','omx-other-options': '','web-window':'warp','freeze-at-end':'yes',
+                        'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
                         'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
             
                 'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}  
@@ -294,7 +296,7 @@ class PPdefinitions(object):
                     'show-text-y':{'param':'show-text-y','shape':'entry','text':'Show Text y Position','must':'no','read-only':'no'},
                     'start-show':{'param':'start-show','shape':'entry','text':'Start Shows','must':'no','read-only':'no'},
                     'tab-animation':{'shape':'tab','name':'animation','text':'Animation'},
-                    'tab-child':{'shape':'tab','name':'child','text':'Child Show'},
+                    'tab-child':{'shape':'tab','name':'child','text':'Child Track'},
                     'tab-controls':{'shape':'tab','name':'controls','text':'Controls'},
                     'tab-eggtimer':{'shape':'tab','name':'eggtimer','text':'Egg Timer'},
                     'tab-links':{'shape':'tab','name':'links','text':'Links'},
@@ -399,39 +401,38 @@ class PPdefinitions(object):
                  'show-control-begin','show-control-end',
             'tab-animate','sep',
                  'animate-begin','animate-clear','animate-end'
-                 ],
+                 ]
 
  
-        'menu-background':[
-            'tab-track','sep',  
-                'type','title','track-ref','location'
-            ]
+
                          }                   
 
     new_tracks={
         
-                'video':{'title':'New Video','track-ref':'','type':'video','location':'','thumbnail':'','freeze-at-end':'yes','seamless-loop':'no','omx-audio':'','omx-volume':'','omx-window':'','omx-other-options': '','background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','track-text':'','track-text-font':'',
-                       'track-text-colour':'','track-text-x':'0','track-text-y':'0','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
+                'video':{'title':'New Video','track-ref':'','type':'video','location':'','thumbnail':'','freeze-at-end':'yes','seamless-loop':'no',
+                         'omx-audio':'','omx-volume':'','omx-window':'','omx-other-options': '','background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes',
+                         'track-text':'','track-text-font':'Helvetica 20 bold',
+                       'track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
                        
                 'message':{'title':'New Message','track-ref':'','type':'message','text':'','thumbnail':'','duration':'','message-font':'Helvetica 30 bold','message-colour':'white','message-justify':'left','message-x':'','message-y':'',
-                           'track-text':'','track-text-font':'','track-text-colour':'','track-text-x':'0','track-text-y':'0',
-                           'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'no','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
+                           'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40',
+                           'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
                 
                 'show':{'title':'New Show','track-ref':'','type':'show','sub-show':'','thumbnail':''},   
                 
-                'image':{'title':'New Image','track-ref':'','type':'image','location':'','thumbnail':'','duration':'','transition':'','image-window':'','background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','track-text':'','track-text-font':'',
-                       'track-text-colour':'','track-text-x':'0','track-text-y':'0','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
+                'image':{'title':'New Image','track-ref':'','type':'image','location':'','thumbnail':'','duration':'','transition':'','image-window':'',
+                         'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','track-text':'','track-text-font':'Helvetica 20 bold',
+                       'track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
                        
                 'audio':{'title':'New Audio','track-ref':'','type':'audio','location':'', 'thumbnail':'','duration':'','audio-speaker':'','mplayer-audio':'','mplayer-volume':'','display-show-text':'yes',
-                          'mplayer-other-options':'','clear-screen':'no','background-colour':'','background-image':'','display-show-background':'yes','track-text':'','track-text-font':'','track-text-colour':'','track-text-x':'0','track-text-y':'0','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
+                          'mplayer-other-options':'','clear-screen':'no',
+                         'background-colour':'','background-image':'','display-show-background':'yes',
+                         'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
 
                 'web':{'title':'New Web','track-ref':'','type':'web','location':'', 'thumbnail':'','duration':'','web-window':'','display-show-text':'yes',
-                          'background-colour':'','background-image':'','display-show-background':'yes','track-text':'','track-text-font':'','track-text-colour':'','track-text-x':'0','track-text-y':'0','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','browser-commands':'','plugin':''},
-
-                          
-                'menu-background':{'title':'New Menu Background','track-ref':'pp-menu-background','type':'menu-background','location':''},
-                
-                'child-show': {'title':'New Child Show','track-ref':'pp-child-show','type':'show','sub-show':'','thumbnail':''}
+                          'background-colour':'','background-image':'','display-show-background':'yes',
+                       'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'',
+                       'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','browser-commands':'','plugin':''}
                          }
 
 

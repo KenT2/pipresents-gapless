@@ -29,9 +29,12 @@ class ArtLiveShow(ArtShow):
                          pp_profile,
                          command_callback)
 
-
         # get the live tracks directories
         self.options=command_options()
+
+    def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
+
+        self.end_callback=end_callback
 
         # get the livetracks directories
         if self.show_params['live-tracks-dir1'] != '':
@@ -80,9 +83,9 @@ class ArtLiveShow(ArtShow):
             
 
         # use the appropriate medialist
-        self.medialist=LiveList(show_params['sequence'])
+        self.medialist=LiveList(self.show_params['sequence'])
 
         # and pass directories to Livelist
         self.medialist.live_tracks(self.pp_live_dir1,self.pp_live_dir2)
 
-
+        ArtShow.play(self,end_callback,show_ready_callback, direction_command,level,controls_list)

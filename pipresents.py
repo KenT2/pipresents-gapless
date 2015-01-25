@@ -305,6 +305,17 @@ class PiPresents(object):
         self.animate.poll()
 
         # Create list of start shows initialise them and then run them
+        show_id=-1
+        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        
+        # first time through so  register shows and set callback to terminate Pi Presents if all shows have ended.
+        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command,self.showlist)
+        reason,message=self.show_manager.register_shows()
+        if reason == 'error':
+            self.mon.err(self,message)
+            self.end('error',message)
+            
+        # and run the start shows
         self.run_start_shows()
 
         # kick off the time of day scheduler which may run additional shows
@@ -331,16 +342,13 @@ class PiPresents(object):
 # ********************   
     def run_start_shows(self):
         self.mon.trace(self,'run start shows')
-        # start show manager
-        show_id=-1 #start show
-        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)        
-        # first time through so empty show register and set callback to terminate Pi Presents if all shows have ended.
-        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command)
-
         # parse the start shows field and start the initial shows       
         show_refs=self.starter_show['start-show'].split()
         for show_ref in show_refs:
             reason,message=self.show_manager.control_a_show(show_ref,'open')
+            if reason == 'error':
+                self.mon.err(self,message)
+                
 
 
 # *********************
@@ -358,12 +366,14 @@ class PiPresents(object):
         self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
             return
+        
         fields= command_text.split()
         show_command=fields[0]
         if len(fields)>1:
             show_ref=fields[1]
         else:
             show_ref=''
+            
         if show_command in ('open','close'):
             reason,message=self.show_manager.control_a_show(show_ref,show_command)
             
@@ -378,9 +388,10 @@ class PiPresents(object):
         else:
             reason='error'
             message='command not recognised '+ command_text
+            
         if reason=='error':
             self.mon.err(self,message)
-            self.end(reason,message)
+        return
 
                             
     def handle_output_event(self,symbol,param_type,param_values,req_time):
@@ -430,6 +441,7 @@ class PiPresents(object):
         self.mon.log(self, "terminate received from user")
         needs_termination=False
         for show in self.show_manager.shows:
+            # print  show[ShowManager.SHOW_OBJ], show[ShowManager.SHOW_REF]
             if show[ShowManager.SHOW_OBJ] is not None:
                 needs_termination=True
                 self.mon.log(self,"Sent terminate to show "+ show[ShowManager.SHOW_REF])
@@ -515,10 +527,10 @@ class PiPresents(object):
 if __name__ == '__main__':
 
     pp = PiPresents()
-    ##    try:
-    ##        pp = PiPresents()
-    ##    except:
-    ##        traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
-    ##        pass
+    # try:
+            # pp = PiPresents()
+    # except:
+            # traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
+            # pass
 
 

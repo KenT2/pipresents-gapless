@@ -172,36 +172,53 @@ class Animate(object):
         Animate.events=[]
 
 
+    # [delay],symbol,type,state
     def parse_animate_fields(self,line):
         fields= line.split()
         if len(fields) == 0:
             return 'normal','no fields','','',[],0
             
-        name=fields[0]
-
-        if len(fields) not in (3,4): 
+        elif len(fields) not in (3,4): 
             return 'error','Wrong number of fields in : '+ line,'','',[],0
 
-        param_type=fields[1]
+        elif len(fields)== 3:
+
+            name=fields[0]
+            param_type=fields[1]
+            delay_text='0'
+            start_params=2
+
+        elif len(fields)== 4:
+            delay_text=fields[0]
+            name=fields[1]
+            param_type=fields[2]
+            start_params=3
+
+        else:
+            return 'error','Wrong number of fields in : '+ line,'','',[],0            
+
+        # check each field
+        if  not delay_text.isdigit():
+            return 'error','Delay is not an integer in : '+ line,'','',[],0
+        else:
+            delay=int(delay_text)
+
+
+        #only one param type at the moment.
         if param_type != 'state':
             return 'error','uknnown parameter type in : '+ line,'','',[],0
         else:
             params_length = 1
             params_check = ('on','off')
 
+
         params=[]
-        for index in range(2, 2+params_length):
+        for index in range(start_params, start_params+ params_length):
             param=fields[index]
             if not param in  params_check:
-                return 'error','unknown paramter value in : '+ line,'','',[],0
+                return 'error','unknown parameter value in : '+ line,'','',[],0
             params.append(param)
         
-        if len(fields) == 2+params_length:
-            delay_text='0'
-        else:
-            delay_text=fields[2+params_length]
-        
-        if  not delay_text.isdigit():
-            return 'error','Delay is not an integer in : '+ line,'','','off',0
-        delay=int(delay_text)
         return 'normal','event parsed OK',name,param_type,params,delay
+        
+

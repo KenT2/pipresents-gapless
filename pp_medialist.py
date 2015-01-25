@@ -82,7 +82,7 @@ class MediaList(object):
 
     def track(self,index):
         return self._tracks[index]
-    
+
     def selected_track(self):
         """returns a dictionary containing all fields in the selected track """
         return self._selected_track

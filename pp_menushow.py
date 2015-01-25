@@ -367,7 +367,8 @@ class MenuShow(Show):
     # and if necessary close it
     def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
-        self.sr.enable_click_areas(self.controls_list)
+        if self.menu_showing is True:
+            self.sr.enable_click_areas(self.controls_list)
         Show.base_track_ready_callback(self,enable_show_background)
 
     # callback from begining of a subshow, provide previous shower player to called show        

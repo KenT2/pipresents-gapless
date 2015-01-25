@@ -205,8 +205,8 @@ class HyperlinkShow(Show):
             elif link_op == 'exit':
                 self.exit()
                 
-            elif link_op=='no-command':
-                pass
+            elif link_op in ('no-command','null'):
+                return
             
             # in-track operations
             elif link_op =='pause':
@@ -334,7 +334,7 @@ class HyperlinkShow(Show):
 
 
         # read the show links. Track links will be added by track_ready_callback
-        # needs to be done in loop as each track adds different links o the show links
+        # needs to be done in loop as each track adds different links to the show links
         links_text=self.show_params['links']
         reason,message,self.links=self.path.parse_links(links_text,self.allowed_links)
         if reason == 'error':
@@ -582,8 +582,9 @@ class HyperlinkShow(Show):
         links_text=self.current_player.get_links()
         reason,message,track_links=self.path.parse_links(links_text,self.allowed_links)
         if reason == 'error':
-            self.mon.err(self,message + " in page")
-            self.end('error',message)
+            self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+            self.req_next='error'
+            self.what_next_after_showing()
         self.path.merge_links(self.links,track_links)
         
         # enable the click-area that are in the list of links

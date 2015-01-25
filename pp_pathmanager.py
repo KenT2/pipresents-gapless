@@ -7,7 +7,7 @@ class PathManager(object):
         self.debug=False
 
         # remove the # to enable display of the path operations and stack in the terminal window.
-        self.debug=False
+        # self.debug=True
         
         self.path_stack=[]
 
@@ -111,7 +111,7 @@ class PathManager(object):
                 arg=''                                                                                                                                                                                          
             return '',[symbol,operation,arg]
         else:
-            return "unknown operation",['','','']
+            return "unknown operation: "+operation,['','','']
 
 
     def merge_links(self,current_links,track_links):

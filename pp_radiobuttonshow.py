@@ -64,7 +64,7 @@ class RadioButtonShow(Show):
         # create an instance of PathManager -  only used to parse the links.
         self.path = PathManager()
 
-        self.allowed_links=('play','pause','exit','return')
+        self.allowed_links=('play','pause','exit','return','null','no-command')
         # init variables
         self.track_timeout_timer=None
         self.show_timeout_timer=None
@@ -87,12 +87,7 @@ class RadioButtonShow(Show):
         
         self.mon.trace(self,self.show_params['show-ref'])
         
-        # read the show links. Track links will NOT be added by ready_callback
-        links_text=self.show_params['links']
-        reason,message,self.links=self.path.parse_links(links_text,self.allowed_links)
-        if reason == 'error':
-            self.mon.err(self,message + " in show")
-            self.end('error',message)
+
       
         # get the previous player and show from calling show
         # Show.base_get_previous_player_from_parent(self)
@@ -149,6 +144,9 @@ class RadioButtonShow(Show):
         elif link_op =='pause':
             if self.current_player is not  None:
                 self.current_player.input_pressed(link_op)
+
+        elif link_op in ('no-command','null'):
+            return
                 
         elif link_op[0:4] == 'omx-' or link_op[0:6] == 'mplay-'or link_op[0:5] == 'uzbl-':
             if self.current_player is not None:
@@ -233,6 +231,14 @@ class RadioButtonShow(Show):
         # start timeout for the track if required           
         if self.current_track_ref != self.first_track_ref and int(self.show_params['track-timeout']) != 0:
             self.track_timeout_timer=self.canvas.after(int(self.show_params['track-timeout'])*1000,self.track_timeout_callback)
+
+        # read the show links. Track links will  be added by ready_callback
+        # needs to be done in show loop as each track adds different links to the show links
+        links_text=self.show_params['links']
+        reason,message,self.links=self.path.parse_links(links_text,self.allowed_links)
+        if reason == 'error':
+            self.mon.err(self,message + " in show")
+            self.end('error',message)
             
         # load the track or show
         # params - track,, track loaded callback, end eshoer callback,enable_menu
@@ -349,6 +355,16 @@ class RadioButtonShow(Show):
     # and if necessary close it
     def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
+
+        #merge links from the track
+        links_text=self.current_player.get_links()
+        reason,message,track_links=self.path.parse_links(links_text,self.allowed_links)
+        if reason == 'error':
+            self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+            self.req_next='error'
+            self.what_next_after_showing()
+        self.path.merge_links(self.links,track_links)
+        
         # enable the click-area that are in the list of links
         self.sr.enable_click_areas(self.links)
         Show.base_track_ready_callback(self,enable_show_background)

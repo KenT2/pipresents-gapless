@@ -73,14 +73,17 @@ class Monitor(object):
     # PRINTING
   
     def newline(self,num):
-        for i in range(0,num):
-            print
+        if Monitor.log_level & ~ (Monitor.m_warn|Monitor.m_err|Monitor.m_fatal) != 0:
+            for i in range(0,num):
+                print
 
     def fatal(self,caller,text):
         r_class=caller.__class__.__name__
+        r_func = sys._getframe(1).f_code.co_name
+        r_line =  str(sys._getframe(1).f_lineno)
         if self.enabled(r_class,Monitor.m_fatal) is True: 
-            print "%.2f" % (time.time()-Monitor.start_time), " FATAL: ",r_class+": ", text
-            Monitor.ofile.write (" SYSTEM ERROR: " + r_class + ":  " + text + "\n")
+            print "%.2f" % (time.time()-Monitor.start_time), " FATAL: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
+            Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
         tkMessageBox.showwarning(r_class ,text)
 
     def err(self,caller,text):

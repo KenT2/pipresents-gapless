@@ -23,6 +23,20 @@ class ControlsManager(object):
                 controls_list.append([control[0],control[1]])
             return 'normal','controls read',controls_list
 
+    def merge_controls(self,current_controls,track_controls):
+        for track_control in track_controls:
+            for control in current_controls:
+                if track_control[0] ==  control[0]:
+                    # link exists so overwrite
+                    control[1]=track_control[1]
+                    break
+            else:
+                # new link so append it
+                current_controls.append([track_control[0],track_control[1]])
+        # print "\n merging"
+        # print current_controls
+
+
                                             
     #  parse controls from controls field in a show
     def parse_controls(self,controls_text):
@@ -45,7 +59,7 @@ class ControlsManager(object):
             return "incorrect number of fields in control "+line,['','']
         symbol=fields[0]
         operation=fields[1]
-        if operation  in ('stop','play','up','down','pause','exit') or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
+        if operation  in ('stop','play','up','down','pause','exit','null','no-command') or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
             return '',[symbol,operation]
         else:
             return "controls, unknown operation in\n "+ line,['','']

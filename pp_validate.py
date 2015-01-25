@@ -57,7 +57,7 @@ class Validator(object):
                 self.result.display('t', "Validation Aborted")
                 return False
                 
-            if medialist_file.endswith(".json") and medialist_file != 'pp_showlist.json':
+            if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','pp_schedule.json'):
                 self.result.display('t',"\nChecking medialist '"+medialist_file+"'")
                 v_media_lists.append(medialist_file)
 
@@ -87,6 +87,8 @@ class Validator(object):
                     if track['track-ref'] == '':
                         anonymous+=1
                     else:
+                        if track['track-ref'] in v_track_labels:
+                            self.result.display('f',"'duplicate track reference: "+ track['track-ref'])
                         v_track_labels.append(track['track-ref'])
      
                     # warn if media tracks blank  where optional
@@ -222,7 +224,7 @@ class Validator(object):
                 # make a list of the track labels
                 v_track_labels=[]
                 for track in tracks:
-                    if track['track-ref'] in ('pp-menu-background','pp-child-show'):
+                    if track['track-ref'] !='':
                         v_track_labels.append(track['track-ref'])
                 
                 
@@ -247,7 +249,7 @@ class Validator(object):
                 if show['type'] in ("mediashow",'liveshow'):
                     if show['child-track-ref'] != '':
                         if show['child-track-ref'] not in v_track_labels:
-                            self.result.display('f',"'child track ' is not in medialist: " + show['child-track-ref'])             
+                            self.result.display('f',"'Child Track ' " + show['child-track-ref'] + ' is not in medialist' )             
                         if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
                         if not show['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
 

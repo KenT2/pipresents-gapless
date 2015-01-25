@@ -69,18 +69,7 @@ class GapShow(Show):
         # get the previous shower and player from calling show
        # Show.base_get_previous_player_from_parent(self)
 
-        # get control bindings for this show
-        controlsmanager=ControlsManager()
-        if self.show_params['disable-controls'] == 'yes':
-            self.controls_list=[]
-        else:
-            reason,message,self.controls_list= controlsmanager.get_controls(self.show_params['controls'])
-            if reason=='error':
-                self.mon.err(self,message)
-                self.end('error',"error in controls")
-                return
 
-            # print 'controls',reason,self.show_params['controls'],self.controls_list
 
         # unpack end trigger 
         if self.show_params['trigger-end-type'] == 'duration':
@@ -185,11 +174,18 @@ class GapShow(Show):
         elif operation == 'pause':
             if self.current_player is not None:
                 self.current_player.input_pressed('pause')
+
+        elif operation in ('no-command','null'):
+            return
                 
         # if the operation is omxplayer mplayer or uzbl runtime control then pass it to player if running
         elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
             if self.current_player is not None:
                 self.current_player.input_pressed(operation)
+
+        else:
+            self.mon.err(self,"unknown operation: "+ operation)
+            self.end('error',"unknown operation")
 
        
 
@@ -299,9 +295,9 @@ class GapShow(Show):
                 self.start_load_show_loop(self.medialist.selected_track())
         else:
             if self.medialist.start() is False:
-                # list is empty - display a message for 10 secs and then retry
+                # list is empty - display a message for 5 secs and then retry
                 Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
-                self.canvas.after(10000,self.remove_list_empty_message)
+                self.canvas.after(5000,self.remove_list_empty_message)
             else:
                 self.start_load_show_loop(self.medialist.selected_track())
 
@@ -327,6 +323,20 @@ class GapShow(Show):
             self.enable_child=True
         else:
             self.enable_child=False
+
+        # get control bindings for this show
+        # needs to be done for each track as track can override the show controls
+        self.controlsmanager=ControlsManager()
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+
+            # print 'controls',reason,self.show_params['controls'],self.controls_list
 
         # load the track or show
         # params - track,enable_menu
@@ -393,7 +403,7 @@ class GapShow(Show):
         state += '\n* previous track  signal ' + str(self.previous_track_signal)
         state += '\n* next track  signal ' + str(self.next_track_signal)
         state += '\n* req_next ' + self.req_next
-        state +=  '\n * direction ?old ' + self.direction
+        state +=  '\n * direction ' + self.direction
         return state +'\n'
         
 
@@ -435,7 +445,7 @@ class GapShow(Show):
             if self.interval_timer_signal is True:
                 self.interval_timer_signal=False
                 self.waiting_for_interval=False
-                # print 'RECEIVED INTERAL TIMER SIGNAL - STARTING SHOW'
+                # print 'RECEIVED INTERNAL TIMER SIGNAL - STARTING SHOW'
                 self.wait_for_trigger()
             else:
                 self.poll_for_interval_timer=self.canvas.after(1000,self.what_next_after_showing)
@@ -448,15 +458,13 @@ class GapShow(Show):
             self.ending_reason='user-stop'
             Show.base_close_or_unload(self)
 
-##        # has content of list been changed (replaced if it has, used for content of livelist)
-##        elif self.medialist.replace_if_changed() is True:
-##            self.ending_reason='change-medialist'
-##            self.wait_for_trigger()
-##
-##        elif self.medialist.length() == 0:
-##            self.load_first_track()
+        # has content of list been changed (replaced if it has, used for content of livelist)
+        elif self.medialist.replace_if_changed() is True:
+            self.ending_reason='change-medialist'
+            Show.base_close_or_unload(self)
 
-        # otherwise show the next track          
+
+        # otherwise consider operation that might show the next track          
         else:
             # setup default direction for if statement
             self.direction='forward'
@@ -489,7 +497,9 @@ class GapShow(Show):
                     self.start_load_show_loop(child_track)
                 else:
                     self.mon.err(self,"Child not found in medialist: "+ self.child_track_ref)
-                    self.end('error',"child not found in medialist")
+                    self.ending_reason='error'
+                    Show.base_close_or_unload(self)
+                    # self.end('error',"child not found in medialist")
 
             # skip to next track on user input or after subshow
             elif self.next_track_signal is True or self.req_next == 'do-next':
@@ -500,14 +510,22 @@ class GapShow(Show):
                     if  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'repeat':
                         # self.state='waiting'
                         self.wait_for_trigger()
-                    elif  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level != 0:
-                        self.end('do-next',"Return from Sub Show")
+                    elif  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run':
+                        if self.level != 0:
+                            self.direction='forward'
+                            self.end('do-next',"Return from Sub Show")
+                        else:
+                            # end of single run and at top - exit the show
+                            self.stop_timers()
+                            self.ending_reason='user-stop'
+                            Show.base_close_or_unload(self)
                     else:
-                        # repeat if at top level even if single run
+                        # shuffling  - just do next track
+                        self.direction='forward'
                         self.medialist.next(self.show_params['sequence'])
-                        self.start_load_show_loop(self.medialist.selected_track())               
+                        self.start_load_show_loop(self.medialist.selected_track())      
                 else:
-                    # print 'not at end'
+                    # not at end just do next track
                     self.medialist.next(self.show_params['sequence'])
                     self.start_load_show_loop(self.medialist.selected_track())
                 
@@ -522,15 +540,22 @@ class GapShow(Show):
                         # self.state='waiting'
                         self.direction='backward'
                         self.wait_for_trigger()
-                    elif  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run' and self.level != 0:
-                        self.direction='backward'
-                        self.end('do-previous',"Return from Sub Show")
+                    elif  self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run':
+                        if self.level != 0:
+                            self.direction='backward'
+                            self.end('do-previous',"Return from Sub Show")
+                        else:
+                            # end of single run and at top - exit the show
+                            self.stop_timers()
+                            self.ending_reason='user-stop'
+                            Show.base_close_or_unload(self)
                     else:
-                        # repeat if at top level even if single run
+                        # shuffling  - just do previous track
                         self.direction='backward'
                         self.medialist.previous(self.show_params['sequence'])
                         self.start_load_show_loop(self.medialist.selected_track())               
                 else:
+                    # not at end just do next track
                     self.medialist.previous(self.show_params['sequence'])              
                     self.start_load_show_loop(self.medialist.selected_track())
 
@@ -558,7 +583,15 @@ class GapShow(Show):
 
                 # single run
                 elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run':
-                    self.end('normal',"End of Single Run")
+                    # if not at top return to parent
+                    if self.level !=0:
+                        self.end('normal',"End of Single Run")
+                    else:
+                        # at top so close the show
+                        self.stop_timers()
+                        self.ending_reason='user-stop'
+                        Show.base_close_or_unload(self)
+                        
 
                 # shuffling so there is no end condition, get out of end test
                 elif self.show_params['sequence'] == "shuffle":
@@ -587,6 +620,19 @@ class GapShow(Show):
     # and if necessary close it
     def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
+
+        if self.show_params['disable-controls'] != 'yes':        
+            #merge controls from the track
+            controls_text=self.current_player.get_links()
+            reason,message,track_controls=self.controlsmanager.parse_controls(controls_text)
+            if reason == 'error':
+                self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+                self.req_next='error'
+                self.what_next_after_showing()
+            self.controlsmanager.merge_controls(self.controls_list,track_controls)
+
+
+        
         # enable the click-area that are in the list of controls
         self.sr.enable_click_areas(self.controls_list)
         Show.base_track_ready_callback(self,enable_show_background)

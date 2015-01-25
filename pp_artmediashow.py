@@ -28,9 +28,10 @@ class ArtMediaShow(ArtShow):
                          command_callback)
 
         
+    def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
+
         # use the appropriate medialist
-        self.medialist=MediaList(show_params['sequence'])
+        self.medialist=MediaList(self.show_params['sequence'])
         
-
-
+        ArtShow.play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
         

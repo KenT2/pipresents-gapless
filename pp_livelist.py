@@ -22,19 +22,17 @@ class LiveList(object):
         """
         opens a saved medialist
         medialists are stored as json arrays.
-        In medialists for liveshows igore any anymous tracks so length=0
+        In liveshows tracks from the medialist are stored speretaley from live tracks. Only track with track references are used
         """
         ifile  = open(filename, 'rb')
         mdict = json.load(ifile)
         ifile.close()
-        self._tracks = mdict['tracks']
+        self.medialist_tracks = mdict['tracks']
         if 'issue' in mdict:
             self.issue= mdict['issue']
         else:
             self.issue="1.0"
         if self.issue==showlist_issue:
-            self._num_tracks=0
-            self._selected_track_index=-1
             return True
         else:
             return False
@@ -62,8 +60,22 @@ class LiveList(object):
             # print self._selected_track_index
             self.select(self._selected_track_index)
             return True
-            
 
+
+    def previous(self,sequence):
+        if sequence=='ordered':
+            if self._selected_track_index == 0:
+                self._selected_track_index=self._num_tracks-1
+            else:
+                self._selected_track_index -=1
+            self.select(self._selected_track_index)
+            return True            
+        else:
+            self._selected_track_index=random.randint(0,self._num_tracks-1)
+            # print self._selected_track_index
+            self.select(self._selected_track_index)
+            return True
+        
     def start(self):
         self.new_livelist_create()
         self._tracks = copy.deepcopy(self.new_livelist)
@@ -111,9 +123,19 @@ class LiveList(object):
         """returns a dictionary containing all fields in the selected track """
         return self._selected_track
 
-    # lookup index from show_ref, return -1 because liveshow does not have child tracks.
-    def index_of_track(self,show_ref):
+
+    # lookup index from show_ref
+    def index_of_track(self,wanted_track):
+        index = 0
+        for track in self.medialist_tracks:
+            if track['track-ref']==wanted_track:
+                return index
+            index +=1
         return -1
+
+    # in livelist medialist tracks and live tracks are stored seperately
+    def track(self,index):
+        return self.medialist_tracks[index]
    
     def replace_if_changed(self):
         self.new_livelist_create()

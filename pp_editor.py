@@ -516,7 +516,7 @@ class PPEditor(object):
     def open_medialists(self,profile_dir):
         self.medialists = []
         for this_file in os.listdir(profile_dir):
-            if this_file.endswith(".json") and this_file != 'pp_showlist.json':
+            if this_file.endswith(".json") and this_file not in ('pp_showlist.json','pp_schedule.json'):
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
         for index in range (len(self.medialists)):
@@ -790,7 +790,7 @@ class PPEditor(object):
         
         # UPDATE MEDIALISTS AND THEIR TRACKS
         for this_file in os.listdir(self.pp_profile_dir):
-            if this_file.endswith(".json") and this_file != 'pp_showlist.json':
+            if this_file.endswith(".json") and this_file not in  ('pp_showlist.json','pp_schedule.json'):
                 self.mon.log (self,"Updating medialist " + this_file)
                 # open a medialist and update its tracks
                 ifile  = open(self.pp_profile_dir + os.sep + this_file, 'rb')

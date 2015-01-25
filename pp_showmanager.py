@@ -4,13 +4,13 @@ from pp_utils import Monitor
 
 class ShowManager(object):
     """
-    ShowManager manages PiPresents' concurrent shows. It does not manage sub-shows or child-shows.
-    concurrent shows are always top level (level 0 shows:
-    They can be started by the start show or by 'myshow start' in the Show Control field of players
-    They can be exiteded either by 'myshow exit' in the Show Control field in players
+    ShowManager manages PiPresents' concurrent shows. It does not manage sub-shows or child-shows but has a bit of common code to initilise them
+    concurrent shows are always top level (level 0) shows:
+    They can be opened/closed  by the start show(open only) or by 'open/close myshow' in the Show Control field of players, by time of day sceduler or by OSC
+    
+   Two shows with the same show reference cannot be run concurrently as there is no way to reference an individual instance.
+   However a workaround is to make the secong instance a subshow of a mediashow with a different reference.
 
-    a show with the same reference should not be run twice as there is no way to reference an individual instance when exiting
-    ??? this could be changed as there is single-run to exit them, the exit command could exit all instances.
     """
     
     # Declare class variables
@@ -20,29 +20,32 @@ class ShowManager(object):
     SHOW_TEMPLATE=['',None]
     SHOW_REF= 0   # show-reference  - name of the show as in editor
     SHOW_OBJ = 1   # the python object
+    showlist=[]
 
 
-    # Initialise, first time through only in pipresents.py
+    # Initialise class variables, first time through only in pipresents.py
 
-    def init(self,canvas,all_shows_ended_callback,command_callback):
+    def init(self,canvas,all_shows_ended_callback,command_callback,showlist):
         ShowManager.all_shows_ended_callback=all_shows_ended_callback
         ShowManager.shows=[]
         ShowManager.shutdown_required=False
         ShowManager.canvas=canvas
         ShowManager.command_callback = command_callback
+        ShowManager.showlist = showlist
 
 # **************************************
 # functions to manipulate show register
 # **************************************
 
-    def pretty_shows(self):
-        shows='\n'
-        for show in ShowManager.shows:
-            shows += show[0] +'\n'
-        return shows
+    def register_shows(self):
+        for show in ShowManager.showlist.shows():
+            if show['show-ref'] != 'start':
+                reason,message=self.register_show(show['show-ref'])
+                if reason =='error':
+                    return reason,message
+        return 'normal','shows regiistered'
             
 
-# adds a new concurrent show to the register if not already there, returns an index for use by start and exit
 
     def register_show(self,ref):
         registered=self.show_registered(ref)
@@ -51,14 +54,14 @@ class ShowManager(object):
             index=len(ShowManager.shows)-1
             ShowManager.shows[index][ShowManager.SHOW_REF]=ref
             ShowManager.shows[index][ShowManager.SHOW_OBJ]=None
-            self.mon.trace(self,' - new show: show_ref = ' + ref + ' index = ' + str(index))
-            return index
+            self.mon.trace(self,' - register show: show_ref = ' + ref + ' index = ' + str(index))
+            return'normal','show registered'
         else:
-            self.mon.warn(self, ' show already registerd: show_ref = ' + ref + ' show_id= ' + registered)
-            return registered
+            # self.mon.err(self, ' more than one show in showlist with show-ref: ' + ref )
+            return 'error', ' more than one show in showlist with show-ref: ' + ref 
         
-# is the show registered?
-# can be used to return the index to the show
+    # is the show registered?
+    # can be used to return the index to the show
     def show_registered(self,show_ref):
         index=0
         for show in ShowManager.shows:
@@ -67,13 +70,13 @@ class ShowManager(object):
             index+=1
         return -1
 
-# needs calling program to check that the show is not already running
+    # needs calling program to check that the show is not already running
     def set_running(self,index,show_obj):
         ShowManager.shows[index][ShowManager.SHOW_OBJ]=show_obj
         self.mon.trace(self, 'show_ref= ' + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id= ' + str(index))
-        self.mon.trace(self,'concurrent shows:\n' + self.pretty_shows())
 
-# is the show running?
+
+    # is the show running?
     def show_running(self,index):
         if ShowManager.shows[index][ShowManager.SHOW_OBJ] is not None:
             return ShowManager.shows[index][ShowManager.SHOW_OBJ]
@@ -83,10 +86,10 @@ class ShowManager(object):
     def set_exited(self,index):
         ShowManager.shows[index][ShowManager.SHOW_OBJ]=None
         self.mon.trace(self,'show_ref= ' + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id= ' + str(index))
-        self.mon.trace(self,'concurrent shows:\n' + self.pretty_shows())
 
 
-# are all shows exited?
+
+    # are all shows exited?
     def all_shows_exited(self):
         all_exited=True
         for show in ShowManager.shows:
@@ -94,7 +97,13 @@ class ShowManager(object):
                 all_exited=False
         return all_exited
 
-
+    # fromat for printing
+    def pretty_shows(self):
+        shows='\n'
+        for show in ShowManager.shows:
+            shows += show[ShowManager.SHOW_REF] +'\n'
+        return shows
+            
 # *********************************
 # show control
 # *********************************
@@ -139,19 +148,18 @@ class ShowManager(object):
             
 
     def start_show(self,show_ref):
-        show_index = self.showlist.index_of_show(show_ref)
-        if show_index <0:
+        index=self.show_registered(show_ref)
+        if index <0:
             return 'error',"Show not found in showlist: "+ show_ref
-        
+        show_index = self.showlist.index_of_show(show_ref)
         show=self.showlist.show(show_index)
-        index=self.register_show(show_ref)
         reason,message,show_canvas=self.compute_show_canvas(show)
         if reason == 'error':
             return reason,message
         # print 'STARTING TOP LEVEL SHOW',show_canvas
-        self.mon.log(self,'Starting Show from: ' + self.show_params['show-ref']+ ' '+ str(self.show_id)+" show_ref:"+ show_ref + ' show_id' + str(index) )
+        self.mon.log(self,'Starting Show: ' + show_ref  + ' from: ' + self.show_params['show-ref'])
         if self.show_running(index):
-            self.mon.log(self,"show already running "+show_ref)
+            self.mon.warn(self,"show already running so ignoring command: "+show_ref)
             return 'normal','this concurrent show already running'
         show_obj = self.init_show(index,show,show_canvas)
         if show_obj is None:
@@ -271,8 +279,8 @@ class ShowManager(object):
         canvas['canvas-obj']= ShowManager.canvas
         status,message,self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2= self.parse_show_canvas(show_params['show-canvas'])
         if status  == 'error':
-            self.mon.err(self,'show canvas error: ' + message + ' in ' + show_params['show-canvas'])
-            return 'error',message,canvas
+            # self.mon.err(self,'show canvas error: ' + message + ' in ' + show_params['show-canvas'])
+            return 'error','show canvas error: ' + message + ' in ' + show_params['show-canvas'],canvas
         else:
             self.show_canvas_width = self.show_canvas_x2 - self.show_canvas_x1
             self.show_canvas_height=self.show_canvas_y2 - self.show_canvas_y1

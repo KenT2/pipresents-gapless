@@ -145,7 +145,7 @@ class Player(object):
         for line in lines:
             if line.strip() == "":
                 continue
-            # print 'show control command: ',linr
+            # print 'show control command: ',line
             self.command_callback(line)
 
 

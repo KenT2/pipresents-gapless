@@ -168,7 +168,7 @@ class ArtShow(Show):
     def load_first_track(self):
         self.mon.trace(self,'')
         if self.medialist.start() is False:
-            # list is empty - display a message for 10 secs and then retry
+            # list is empty - display a message for 5 secs and then retry
             Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
             self.canvas.after(5000,self.remove_list_empty_message)
         else:
@@ -268,7 +268,6 @@ class ArtShow(Show):
 
             else:
                 # otherwise show the next track
-                print 'show next track after end'
                 self.show_next_track()
         else:
             # otherwise show the next track
@@ -280,7 +279,7 @@ class ArtShow(Show):
         self.previous_player=self.current_player
         self.current_player=self.next_player
         self.next_player=None
-        self.mon.trace(self,'AFTER SHUFFLE n-c-p' +  self.next_player + ' ' + self.current_player + ' ' + self.previous_player)
+        self.mon.trace(self,'AFTER SHUFFLE n-c-p' +  str(self.next_player) + ' ' + str(self.current_player) + ' ' + str(self.previous_player))
         self.mon.trace(self, 'showing track')
         if self.end_medialist_warning is True:
             self.end_medialist_signal = True
@@ -369,7 +368,7 @@ class ArtShow(Show):
 
 
     def end_close_current(self,reason,message):
-        self.mon.log(self,"end_close_current - Current closed with reason: "+ reason + ' and message: '+ message)
+        self.mon.log(self,"Current track closed with reason: "+ reason + ' and message: '+ message)
         self.mon.trace(self,' - current closed')
         self.current_player=None    # safer to delete the player here rather than in player as play-state is read elsewhere.
 
@@ -412,14 +411,14 @@ class ArtShow(Show):
                 self.mon.err(self,"Unhandled ending_reason: ")
                 self.end('error',"Unhandled ending_reason")                
 
-    def track_ready_callback(self):
+    def track_ready_callback(self,enable_show_background):
         self.mon.trace(self, '')
         # close the player from the previous track
         if self.previous_player is not None:
-            self.mon.trace(self, 'hiding previous: ' + self.previous_player)
+            self.mon.trace(self, 'hiding previous: ' + str(self.previous_player))
             self.previous_player.hide()
             if self.previous_player.get_play_state() == 'showing':
-                self.mon.trace(self,'closing previous: ' + self.previous_player)
+                self.mon.trace(self,'closing previous: ' + str(self.previous_player))
                 self.previous_player.close(self.closed_callback)
             else:
                 self.mon.trace(self, 'previous is none')

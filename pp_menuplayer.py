@@ -640,7 +640,7 @@ class MenuPlayer(Player):
                     standard=self.pp_dir+os.sep+'pp_home'+os.sep+'pp_resources'+os.sep+icon_type+'.png'
                     if os.path.exists(standard) is True:
                         self.pil_image=Image.open(standard)
-                        self.mon.log(self,'WARNING: default thumbnail used for '+self.medialist.selected_track()['title'])
+                        self.mon.warn(self,'Default thumbnail used for '+self.medialist.selected_track()['title'])
                     else:
                         self.pil_image=None
 

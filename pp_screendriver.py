@@ -1,18 +1,25 @@
 import os
 import ConfigParser
+import copy
+from Tkinter import NW
+from PIL import Image
+from PIL import ImageTk
 from pp_utils import Monitor
 
 
 class ScreenDriver(object):
     config=None
     canvas = None  ##The Pi presents canvas, click areas are draawn on this, not individual show canvases.
-
+    image_obj=[]
+    
     def __init__(self):
         self.mon=Monitor()
 
 
     # read screen.cfg    
     def read(self,pp_dir,pp_home,pp_profile):
+        self.pp_dir=pp_dir
+        self.pp_home=pp_home
         if ScreenDriver.config is None:
             # try inside profile
             tryfile=pp_profile+os.sep+"screen.cfg"
@@ -39,7 +46,6 @@ class ScreenDriver(object):
             self.mon.log(self,"screen.cfg read from "+ filename)
             return 'normal','screen.cfg read'
 
-
     def click_areas(self):
         return ScreenDriver.config.sections()
 
@@ -53,6 +59,7 @@ class ScreenDriver(object):
         ScreenDriver.canvas=canvas
         self.callback=callback
         reason=''
+        ScreenDriver.image_obj=[]
         for area in self.click_areas():
             reason,message,points = self.parse_points(self.get(area,'points'),self.get(area,'name'))
             if reason == 'error':
@@ -62,6 +69,34 @@ class ScreenDriver(object):
                                        outline=self.get (area,'outline-colour'),
                                        tags=("pp-click-area",self.get(area,'name')),
                                        state='hidden')
+
+            # image for the button
+            image_name=self.get(area,'image')
+            if image_name !='':
+                image_width = int(self.get(area,'image-width'))
+                image_height = int(self.get(area,'image-height'))
+                image_path=self.complete_path(image_name)
+                # image_path=image_name
+                if os.path.exists(image_path) is False:
+                    self.pil_image=None
+                    reason='error'
+                    message = 'image not found: '+ image_path
+                    break
+                else:
+                    self.pil_image=Image.open(image_path)
+                if self.pil_image is not None:
+                    self.pil_image=self.pil_image.resize((image_width,image_height))                 
+                    self.photo_image_id=ImageTk.PhotoImage(self.pil_image)
+                    image_id=self.canvas.create_image(points[0],points[1],
+                                             image=self.photo_image_id,
+                                             anchor=NW,
+                                            tags=('pp-click-area',self.get(area,'name')),
+                                            state='hidden')
+                    del self.pil_image
+                    ScreenDriver.image_obj.append(self.photo_image_id)
+                
+
+            
             # write the label at the centroid
             if self.get(area,'text') != '':
                 vertices = len(points)/2
@@ -83,6 +118,7 @@ class ScreenDriver(object):
                                         tags=('pp-click-area',self.get(area,'name')),
                                         state='hidden')
             ScreenDriver.canvas.bind('<Button-1>',self.click_pressed)
+
                                                       
         if reason == 'error':
             return 'error',message
@@ -120,7 +156,7 @@ class ScreenDriver(object):
         # hide  click areas
         for link in links:
             if self.is_click_area(link[0]) and link[1] != 'null':
-                print 'disabling link ',link[0]
+                # print 'disabling link ',link[0]
                 ScreenDriver.canvas.itemconfig(link[0],state='hidden')
 
         # this does not seem to change the colour of the polygon
@@ -141,3 +177,9 @@ class ScreenDriver(object):
                 return 'error','point is not a positive integer in click area: '+area,[]
         return 'normal','parsed points OK',points
 
+
+    def complete_path(self,track_file):
+        #  complete path of the filename of the selected entry
+        if track_file != '' and track_file[0]=="+":
+            track_file=self.pp_home+track_file[1:]
+        return track_file   
