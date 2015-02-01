@@ -106,7 +106,7 @@ class PPEditor(object):
         menubar.add_cascade(label='Show', menu = showmenu)
 
         stypemenu = Menu(showmenu, tearoff=0, bg="grey", fg="black")
-        stypemenu.add_command(label='Menu', command = self.add_menu)
+        stypemenu.add_command(label='Menu', command = self.add_menushow)
         stypemenu.add_command(label='MediaShow', command = self.add_mediashow)
         stypemenu.add_command(label='LiveShow', command = self.add_liveshow)
         stypemenu.add_command(label='HyperlinkShow', command = self.add_hyperlinkshow)
@@ -119,6 +119,7 @@ class PPEditor(object):
         menubar.add_cascade(label='MediaList', menu = medialistmenu)
         medialistmenu.add_command(label='Add', command = self.add_medialist)
         medialistmenu.add_command(label='Delete', command = self.remove_medialist)
+        medialistmenu.add_command(label='Copy To', command = self.copy_medialist)
       
         trackmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         trackmenu.add_command(label='Delete', command = self.remove_track)
@@ -136,6 +137,7 @@ class PPEditor(object):
         typemenu.add_command(label='Web', command = self.new_web_track)
         typemenu.add_command(label='Message', command = self.new_message_track)
         typemenu.add_command(label='Show', command = self.new_show_track)
+        typemenu.add_command(label='Menu Track', command = self.new_menu_track)
         trackmenu.add_cascade(label='New', menu = typemenu)
 
         toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
@@ -428,7 +430,7 @@ class PPEditor(object):
     def add_artmediashow(self):
         self.add_show(PPdefinitions.new_shows['artmediashow'])
         
-    def add_menu(self):
+    def add_menushow(self):
         self.add_show(PPdefinitions.new_shows['menu'])
 
     def add_start(self):  
@@ -558,6 +560,53 @@ class PPEditor(object):
         return name
 
 
+    def copy_medialist(self,to_file=None):
+        if self.current_medialist is not None:
+            #from_file= self.current_medialist 
+            from_file= self.medialists[self.current_medialists_index]
+            if to_file is None:
+                d = Edit1Dialog(self.root,"Copy Medialist","File", "")
+                if d.result  is  None:
+                    return ''
+                to_file=str(d.result)
+                if to_file == "":
+                    tkMessageBox.showwarning("Copy medialist","Name is blank")
+                    return ''
+                
+            success_file = self.copy_medialist_file(from_file,to_file)
+            if success_file =='':
+                return ''
+
+            # append it to the list
+            self.medialists.append(copy.deepcopy(success_file))
+            # add title to medialists display
+            self.medialists_display.insert(END, success_file)
+            # and reset  selected medialist
+            self.current_medialist=None
+            self.refresh_medialists_display()
+            self.refresh_tracks_display()
+            return success_file
+        else:
+            return ''
+
+    def copy_medialist_file(self,from_file,to_file):
+        if not to_file.endswith(".json"):
+            to_file+=(".json")
+                
+        to_path = self.pp_profile_dir + os.sep + to_file
+        if os.path.exists(to_path) is  True:
+            tkMessageBox.showwarning("Copy medialist","Medialist file exists\n(%s)" % to_path)
+            return ''
+        
+        from_path= self.pp_profile_dir + os.sep + from_file
+        if os.path.exists(from_path) is  False:
+            tkMessageBox.showwarning("Copy medialist","Medialist file not found\n(%s)" % from_path)
+            return ''
+
+        shutil.copy(from_path,to_path)
+        return to_file
+
+
     def remove_medialist(self):
         if self.current_medialist is not None:
             if tkMessageBox.askokcancel("Delete Medialist","Delete Medialist"):
@@ -598,11 +647,12 @@ class PPEditor(object):
         medialist_file = self.pp_profile_dir+ os.sep + basefile
         self.current_medialist.save_list(medialist_file)
 
+  
           
     # ***************************************
     #   Tracks
     # ***************************************
-                
+          
     def refresh_tracks_display(self):
         self.tracks_display.delete(0,self.tracks_display.size())
         if self.current_medialist is not None:
@@ -676,6 +726,9 @@ class PPEditor(object):
 
     def new_show_track(self):
         self.new_track(PPdefinitions.new_tracks['show'],None)
+
+    def new_menu_track(self):
+        self.new_track(PPdefinitions.new_tracks['menu'],None)
  
     def remove_track(self):
         if  self.current_medialist is not None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
@@ -777,18 +830,88 @@ class PPEditor(object):
         tkMessageBox.showwarning("Pi Presents","All profiles updated")
             
     def update_profile(self):
-        # open showlist and update its shows
+
+        self.update_medialists()   # medialists and their tracks
+        self.update_shows()         #shows in showlist, also creates menu tracks for 1.2>1.3
+        
+
+    def update_shows(self):
+        # open showlist into a list of dictionaries
         self.mon.log (self,"Updating show ")
         ifile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", 'rb')
         shows = json.load(ifile)['shows']
         ifile.close()
-        replacement_shows=self.update_shows(shows)
+
+        # special 1.2>1.3 create menu medialists with menu track from show
+        #go through shows - if type = menu and version is greater copy its medialist to a new medialist with  name = <show-ref>-menu1p3.json
+        for show in shows:
+            #create a new medialist medialist != show-ref as menus can't now share medialists
+            if show['type']=='menu' and float(self.current_showlist.sissue())<float(self.editor_issue):
+                to_file=show['show-ref']+'-menu1p3.json'
+                from_file = show['medialist']
+                if to_file != from_file:
+                    self.copy_medialist_file(from_file,to_file)
+                else:
+                    self.mon.warn(self, 'medialist file' + to_file + ' already exists, must exit with incomplete update')
+                    return False
+
+                #update the reference to the medialist
+                show['medialist']=to_file
+                
+                #delete show fields so they are recreated with new default content
+                del show['controls']
+                
+                # open the  medialist and add the menu track then populate some of its fields from the show
+                ifile  = open(self.pp_profile_dir + os.sep + to_file, 'rb')
+                tracks = json.load(ifile)['tracks']
+                ifile.close()
+                
+                new_track=copy.deepcopy(PPdefinitions.new_tracks['menu'])
+                tracks.append(copy.deepcopy(new_track))
+
+                # copy menu parameters from menu show to menu track and init values of some              
+                self.transfer_show_params(show,tracks,'menu-track',("entry-colour","entry-font", "entry-select-colour", 
+                                                                    "hint-colour", "hint-font", "hint-text", "hint-x","hint-y",
+                                                                    "menu-bullet", "menu-columns", "menu-direction", "menu-guidelines",
+                                                                    "menu-horizontal-padding", "menu-horizontal-separation", "menu-icon-height", "menu-icon-mode",
+                                                                    "menu-icon-width", "menu-rows", "menu-strip", "menu-strip-padding",  "menu-text-height", "menu-text-mode", "menu-text-width",
+                                                                     "menu-vertical-padding", "menu-vertical-separation",
+                                                                    "menu-window"))
+                                          
+                # and save the medialist
+                dic={'issue':self.editor_issue,'tracks':tracks}
+                ofile  = open(self.pp_profile_dir + os.sep + to_file, "wb")
+                json.dump(dic,ofile,sort_keys=True,indent=1)
+                # end for show in shows
+
+        #update the fields in  all shows
+        replacement_shows=self.update_shows_in_showlist(shows)
         dic={'issue':self.editor_issue,'shows':replacement_shows}
         ofile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
+        return True
 
+
+    def transfer_show_params(self,show,tracks,track_ref,fields):
+        # find the menu track in medialist
+        for index,track in enumerate(tracks):
+            if track['track-ref']== 'menu-track':
+                break
+            
+        #update soem fields with new default content
+        tracks[index]['links']=PPdefinitions.new_tracks['menu']['links']
+
+        #transfer values from show to track
+        for field in fields:
+            tracks[index][field]=show[field]
+            # print show[field], tracks[index][field]
+            pass
+            
         
-        # UPDATE MEDIALISTS AND THEIR TRACKS
+                                          
+
+    def update_medialists(self):
+         # UPDATE MEDIALISTS AND THEIR TRACKS
         for this_file in os.listdir(self.pp_profile_dir):
             if this_file.endswith(".json") and this_file not in  ('pp_showlist.json','pp_schedule.json'):
                 self.mon.log (self,"Updating medialist " + this_file)
@@ -799,7 +922,8 @@ class PPEditor(object):
                 replacement_tracks=self.update_tracks(tracks)
                 dic={'issue':self.editor_issue,'tracks':replacement_tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + this_file, "wb")
-                json.dump(dic,ofile,sort_keys=True,indent=1)
+                json.dump(dic,ofile,sort_keys=True,indent=1)       
+
 
 
     def update_tracks(self,old_tracks):
@@ -808,26 +932,29 @@ class PPEditor(object):
         for old_track in old_tracks:
             # print '\nold track ',old_track
             track_type=old_track['type']
-            spec_fields=PPdefinitions.new_tracks[track_type]
-            left_overs=dict()
-            # go through track and delete fields not in spec
-            for key in old_track.keys():
-                if key in spec_fields:
-                    left_overs[key]=old_track[key]
-            # print '\n leftovers',left_overs
-            replacement_track=copy.deepcopy(PPdefinitions.new_tracks[track_type])
-            # print '\n before update', replacement_track
-            replacement_track.update(left_overs)
-            # print '\nafter update',replacement_track
-            replacement_tracks.append(copy.deepcopy(replacement_track))
+            #update if new tracks has the track type otherwise skip
+            if track_type in PPdefinitions.new_tracks:
+                spec_fields=PPdefinitions.new_tracks[track_type]
+                left_overs=dict()
+                # go through track and delete fields not in spec
+                for key in old_track.keys():
+                    if key in spec_fields:
+                        left_overs[key]=old_track[key]
+                # print '\n leftovers',left_overs
+                replacement_track=copy.deepcopy(PPdefinitions.new_tracks[track_type])
+                # print '\n before update', replacement_track
+                replacement_track.update(left_overs)
+                # print '\nafter update',replacement_track
+                replacement_tracks.append(copy.deepcopy(replacement_track))
         return replacement_tracks
 
 
-    def update_shows(self,old_shows):
+    def update_shows_in_showlist(self,old_shows):
         # get correct spec from type of field
         replacement_shows=[]
         for old_show in old_shows:
             show_type=old_show['type']
+            ## menu to menushow
             spec_fields=PPdefinitions.new_shows[show_type]
             left_overs=dict()
             # go through track and delete fields not in spec

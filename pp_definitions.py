@@ -55,13 +55,7 @@ class PPdefinitions(object):
                  
         'menu':[
             'tab-show','sep',  
-                'type','title','show-ref','medialist','show-timeout','track-timeout','menu-background-colour','menu-background-image','entry-font','entry-colour', 'entry-select-colour','show-canvas',
-            'tab-menu-geometry','sep',
-                'menu-window','menu-direction','menu-rows','menu-columns','menu-icon-mode','menu-text-mode','menu-bullet','menu-icon-width','menu-icon-height',
-                'menu-horizontal-padding','menu-vertical-padding','menu-text-width','menu-text-height','menu-horizontal-separation','menu-vertical-separation',
-            'menu-strip','menu-strip-padding','menu-guidelines',
-            'tab-menu-text','sep',
-                   'hint-text', 'hint-x', 'hint-y', 'hint-font', 'hint-colour','sep', 'menu-text', 'menu-text-x', 'menu-text-y', 'menu-text-font', 'menu-text-colour',
+                'type','title','show-ref','medialist','show-timeout','track-timeout','menu-track-ref','show-canvas',
             'tab-eggtimer','sep',  
                  'eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',  
@@ -89,7 +83,8 @@ class PPdefinitions(object):
             'tab-controls','sep',  
                 'disable-controls','controls'
             ],
-        
+
+
                    
         'hyperlinkshow':[
             'tab-show','sep',  
@@ -120,10 +115,11 @@ class PPdefinitions(object):
                 'links'
                     ],
               
-                'start':[
+            'start':[
                     'tab-show','sep',  
                         'type','title','show-ref','start-show'
                     ]
+
              }
 
 
@@ -181,24 +177,18 @@ class PPdefinitions(object):
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
                             'live-tracks-dir1':'','live-tracks-dir2':'',
                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
-            
-                'menu':{'show-ref': '','show-canvas':'', 'title': 'New Menu','type': 'menu','medialist': '',
-                        'disable-controls':'no','show-timeout': '0','track-timeout':'0','menu-background-colour':'black','menu-background-image':'',
-                        'entry-font': 'Helvetica 30 bold','entry-colour': 'white', 'entry-select-colour': 'red',
-                        'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
-                         'menu-text': '', 'menu-text-x':'200','menu-text-y': '20', 'menu-text-font': 'Helvetica 30 bold', 'menu-text-colour': 'white',                       
-                         'menu-window':'300 250','menu-direction':'vertical','menu-rows':'10','menu-columns':'1','menu-icon-mode':'bullet','menu-text-mode':'right',
-                        'menu-bullet':'/home/pi/pipresents/pp_home/pp_resources/bullet_square_grey.png',
-                        'menu-icon-width':'80','menu-icon-height':'80',
-                        'menu-horizontal-padding':'10','menu-vertical-padding':'10','menu-text-width':'800','menu-text-height':'50',
-                        'menu-horizontal-separation':'20','menu-vertical-separation':'20','menu-strip':'no','menu-strip-padding':'5','menu-guidelines':'never',
+                
+       
+              'menu':{'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
+                        'show-timeout': '0','track-timeout':'0','menu-track-ref':'menu-track',
                          'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',                       
                         'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
                         'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
-                        'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
+                        'disable-controls':'no','controls':'pp-stop stop\npp-pause pause\npp-exit exit\n'},    
             
-                'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}  
+                'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}
+                            
             }
     
     show_field_specs={
@@ -212,64 +202,24 @@ class PPdefinitions(object):
                     'disable-controls':{'param':'disable-controls','shape':'option-menu','text':'Disable Controls ','must':'no','read-only':'no','values':['yes','no']},
                     'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
                     'eggtimer-x':{'param':'eggtimer-x','shape':'entry','text':'Egg Timer x Position','must':'no','read-only':'no'},
-
                     'eggtimer-y':{'param':'eggtimer-y','shape':'entry','text':'Egg Timer y Position','must':'no','read-only':'no'},
                     'eggtimer-font':{'param':'eggtimer-font','shape':'font','text':'Egg Timer Font','must':'no','read-only':'no'},
                     'eggtimer-colour':{'param':'eggtimer-colour','shape':'colour','text':'Egg Timer Colour','must':'no','read-only':'no'},
-  
-                    'entry-font':{'param':'entry-font','shape':'font','text':'Entry Font','must':'no','read-only':'no'},
-                    'entry-colour':{'param':'entry-colour','shape':'colour','text':'Entry Colour','must':'no','read-only':'no'},
-                    'entry-select-colour':{'param':'entry-select-colour','shape':'colour','text':'Selected Entry Colour','must':'no','read-only':'no'},
-                    'timeout-track-ref':{'param':'timeout-track-ref','shape':'entry','text':'Timeout Track','must':'no','read-only':'no'},
                     'first-track-ref':{'param':'first-track-ref','shape':'entry','text':'First Track','must':'no','read-only':'no'},
                     'has-background':{'param':'has-background','shape':'option-menu','text':'Has Background Image','must':'no','read-only':'no','values':['yes','no']},
+                    'home-track-ref':{'param':'home-track-ref','shape':'entry','text':'Home Track','must':'no','read-only':'no'},
                     'hint-text':{'param':'hint-text','shape':'text','text':'Hint Text','must':'no','read-only':'no'},
                     'hint-x':{'param':'hint-x','shape':'entry','text':'Hint Text x Position','must':'no','read-only':'no'},
-
                     'hint-y':{'param':'hint-y','shape':'entry','text':'Hint Text y Position','must':'no','read-only':'no'},
                     'hint-font':{'param':'hint-font','shape':'font','text':'Hint Font','must':'no','read-only':'no'},
                     'hint-colour':{'param':'hint-colour','shape':'colour','text':'Hint Colour','must':'no','read-only':'no'},
-                    'home-track-ref':{'param':'home-track-ref','shape':'entry','text':'Home Track','must':'no','read-only':'no'},
                     'image-window':{'param':'image-window','shape':'entry','text':'Image Window','must':'no','read-only':'no'},
                     'links':{'param':'links','shape':'text','text':'Links','must':'no','read-only':'no'},
                     'live-tracks-dir1':{'param':'live-tracks-dir1','shape':'entry','text':'Live Tracks Directory 1','must':'no','read-only':'no'},
                     'live-tracks-dir2':{'param':'live-tracks-dir2','shape':'entry','text':'Live Tracks Directory 2 ','must':'no','read-only':'no'},
                     'medialist':{'param':'medialist','shape':'entry','text':'Medialist','must':'no','read-only':'no'},
+                    'menu-track-ref':{'param':'menu-track-ref','shape':'entry','text':'Menu Track','must':'no','read-only':'no'},
                     'message-font':{'param':'message-font','shape':'font','text':'Text Font','must':'yes','read-only':'no'},
-                    'menu-background-colour':{'param':'menu-background-colour','shape':'colour','text':'Menu Background Colour','must':'no','read-only':'no'},
-                    'menu-background-image':{'param':'menu-background-image','shape':'browse','text':'Menu Background Image','must':'no','read-only':'no'},
-                    'menu-text':{'param':'menu-text','shape':'text','text':'Menu Text','must':'no','read-only':'no'},
-                    'menu-text-font':{'param':'menu-text-font','shape':'font','text':'Menu Text Font','must':'no','read-only':'no'},
-                    'menu-text-colour':{'param':'menu-text-colour','shape':'colour','text':'Menu Text Colour','must':'no','read-only':'no'},
-                    'menu-text-x':{'param':'menu-text-x','shape':'entry','text':'Menu Text x Position','must':'no','read-only':'no'},
-                    'menu-text-y':{'param':'menu-text-y','shape':'entry','text':'Menu Text y Position','must':'no','read-only':'no'},
-
-
-                    'menu-window':{'param':'menu-window','shape':'entry','text':'Menu Window','must':'no','read-only':'no'},
-                    'menu-direction':{'param':'menu-direction','shape':'option-menu','text':'Direction','must':'no','read-only':'no',
-                                       'values':['horizontal','vertical']},
-                    'menu-rows':{'param':'menu-rows','shape':'entry','text':'Rows','must':'no','read-only':'no'},
-                    'menu-columns':{'param':'menu-columns','shape':'entry','text':'Columns','must':'no','read-only':'no'},
-                    'menu-icon-mode':{'param':'menu-icon-mode','shape':'option-menu','text':'Icon Mode','must':'no','read-only':'no',
-                                       'values':['none','thumbnail','bullet']},
-                    'menu-text-mode':{'param':'menu-text-mode','shape':'option-menu','text':'Text Mode','must':'no','read-only':'no',
-                                       'values':['none','overlay','right','below']},
-                    'menu-strip':{'param':'menu-strip','shape':'option-menu','text':'Stipple Background','must':'no','read-only':'no',
-                                       'values':['no','yes']},
-                    'menu-strip-padding':{'param':'menu-strip-padding','shape':'entry','text':'Stipple Background Padding','must':'no','read-only':'no'},
-
-                    'menu-guidelines':{'param':'menu-guidelines','shape':'option-menu','text':'Guidelines','must':'no','read-only':'no',
-                                       'values':['never','auto','always']},
-                    'menu-bullet':{'param':'menu-bullet','shape':'browse','text':'Bullet','must':'no','read-only':'no'},
-                    'menu-icon-width':{'param':'menu-icon-width','shape':'entry','text':'Icon Width','must':'no','read-only':'no'},
-                    'menu-icon-height':{'param':'menu-icon-height','shape':'entry','text':'Icon Height','must':'no','read-only':'no'},
-                    'menu-horizontal-padding':{'param':'menu-horizontal-padding','shape':'entry','text':'Horizontal Padding','must':'no','read-only':'no'},
-                    'menu-vertical-padding':{'param':'menu-vertical-padding','shape':'entry','text':'Vertical Padding','must':'no','read-only':'no'},
-                    'menu-horizontal-separation':{'param':'menu-horizontal-separation','shape':'entry','text':'Horizontal Separation','must':'no','read-only':'no'},
-                    'menu-vertical-separation':{'param':'menu-vertical-separation','shape':'entry','text':'Vertical Separation','must':'no','read-only':'no'},
-                    'menu-text-width':{'param':'menu-text-width','shape':'entry','text':'Text Width','must':'no','read-only':'no'},
-                    'menu-text-height':{'param':'menu-text-height','shape':'entry','text':'Text Height','must':'no','read-only':'no'},
-                    
                     'message-colour':{'param':'message-colour','shape':'colour','text':'Text Colour','must':'yes','read-only':'no'},
                     'mplayer-audio':{'param':'mplayer-audio','shape':'option-menu','text':'Audio Player Audio','must':'no','read-only':'no',
                                        'values':['hdmi','local']},
@@ -300,7 +250,7 @@ class PPdefinitions(object):
                     'tab-controls':{'shape':'tab','name':'controls','text':'Controls'},
                     'tab-eggtimer':{'shape':'tab','name':'eggtimer','text':'Egg Timer'},
                     'tab-links':{'shape':'tab','name':'links','text':'Links'},
-                    'tab-menu-geometry':{'shape':'tab','name':'menu-geometry','text':'Geometry'},
+
                     'tab-show':{'shape':'tab','name':'show','text':'Show'},
                     'tab-show-text':{'shape':'tab','name':'show-text','text':'Show Background and Text'},
                     'tab-menu-text':{'shape':'tab','name':'menu-text','text':'Menu Text'},
@@ -308,6 +258,7 @@ class PPdefinitions(object):
                     'tab-tracks':{'shape':'tab','name':'tracks','text':'Track Defaults'},
                     'text':{'param':'text','shape':'text','text':'Message Text','must':'no','read-only':'no'},
                     'show-timeout':{'param':'show-timeout','shape':'entry','text':'Show Timeout (secs)','must':'no','read-only':'no'},
+                    'timeout-track-ref':{'param':'timeout-track-ref','shape':'entry','text':'Timeout Track','must':'no','read-only':'no'},
                     'title':{'param':'title','shape':'entry','text':'Title','must':'no','read-only':'no'},
                     'track-timeout':{'param':'track-timeout','shape':'entry','text':'Track Timeout (secs)','must':'no','read-only':'no'},
                     'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no',
@@ -372,7 +323,24 @@ class PPdefinitions(object):
                 'animate-begin','animate-clear','animate-end'
             ],
 
-                       
+
+        'menu':[
+            'tab-track','sep',
+                'type','title','track-ref','background-colour','background-image','entry-font','entry-colour', 'entry-select-colour','display-show-background','plugin',
+            'tab-menu-geometry','sep',
+                'menu-window','menu-direction','menu-rows','menu-columns','menu-icon-mode','menu-text-mode','menu-bullet','menu-icon-width','menu-icon-height',
+                'menu-horizontal-padding','menu-vertical-padding','menu-text-width','menu-text-height','menu-horizontal-separation','menu-vertical-separation',
+            'menu-strip','menu-strip-padding','menu-guidelines',
+            'tab-track-text','sep',
+                   'hint-text', 'hint-x', 'hint-y', 'hint-font', 'hint-colour','sep', 'track-text', 'track-text-font', 'track-text-colour','track-text-x', 'track-text-y', 'display-show-text',
+            'tab-links','sep',  
+               'links',
+            'tab-show-control','sep',
+                 'show-control-begin','show-control-end',
+            'tab-animate','sep',
+                 'animate-begin','animate-clear','animate-end'
+            ],
+               
         'audio':[
             'tab-track','sep',  
                 'type','title','track-ref','location','thumbnail','duration','audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options',
@@ -403,12 +371,10 @@ class PPdefinitions(object):
                  'animate-begin','animate-clear','animate-end'
                  ]
 
- 
-
                          }                   
 
     new_tracks={
-        
+
                 'video':{'title':'New Video','track-ref':'','type':'video','location':'','thumbnail':'','freeze-at-end':'yes','seamless-loop':'no',
                          'omx-audio':'','omx-volume':'','omx-window':'','omx-other-options': '','background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes',
                          'track-text':'','track-text-font':'Helvetica 20 bold',
@@ -432,8 +398,24 @@ class PPdefinitions(object):
                 'web':{'title':'New Web','track-ref':'','type':'web','location':'', 'thumbnail':'','duration':'','web-window':'','display-show-text':'yes',
                           'background-colour':'','background-image':'','display-show-background':'yes',
                        'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'',
-                       'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','browser-commands':'','plugin':''}
+                       'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','browser-commands':'','plugin':''},
+
+                'menu':{'type':'menu','title':'Menu Track','track-ref':'menu-track','background-colour':'','background-image':'','display-show-background':'yes','plugin':'',
+                        'entry-font': 'Helvetica 30 bold','entry-colour': 'white', 'entry-select-colour': 'red',
+                         'menu-window':'300 250','menu-direction':'vertical','menu-rows':'10','menu-columns':'1','menu-icon-mode':'bullet','menu-text-mode':'right',
+                        'menu-bullet':'/home/pi/pipresents/pp_home/pp_resources/bullet_square_grey.png',
+                        'menu-icon-width':'80','menu-icon-height':'80',
+                        'menu-horizontal-padding':'10','menu-vertical-padding':'10','menu-text-width':'800','menu-text-height':'50',
+                        'menu-horizontal-separation':'20','menu-vertical-separation':'20','menu-strip':'no','menu-strip-padding':'5','menu-guidelines':'never',
+                        'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
+                         'display-show-text':'yes','track-text': '', 'track-text-x':'200','track-text-y': '20', 'track-text-font': 'Helvetica 30 bold', 'track-text-colour': 'white',
+                        'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'',
+                        'links':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-exit exit\n'
                          }
+                }
+
+
+
 
 
     
@@ -454,9 +436,52 @@ class PPdefinitions(object):
                             'display-show-text':{'param':'display-show-text','shape':'option-menu','text':'Display Show Text','must':'no','read-only':'no',
                                        'values':['yes','no','']},
                             'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
+                       
+                    'entry-font':{'param':'entry-font','shape':'font','text':'Entry Font','must':'no','read-only':'no'},
+                    'entry-colour':{'param':'entry-colour','shape':'colour','text':'Entry Colour','must':'no','read-only':'no'},
+                    'entry-select-colour':{'param':'entry-select-colour','shape':'colour','text':'Selected Entry Colour','must':'no','read-only':'no'},
+
+                    'hint-text':{'param':'hint-text','shape':'text','text':'Hint Text','must':'no','read-only':'no'},
+                    'hint-x':{'param':'hint-x','shape':'entry','text':'Hint Text x Position','must':'no','read-only':'no'},
+
+                    'hint-y':{'param':'hint-y','shape':'entry','text':'Hint Text y Position','must':'no','read-only':'no'},
+                    'hint-font':{'param':'hint-font','shape':'font','text':'Hint Font','must':'no','read-only':'no'},
+                    'hint-colour':{'param':'hint-colour','shape':'colour','text':'Hint Colour','must':'no','read-only':'no'},
+
+                       
                             'image-window':{'param':'image-window','shape':'entry','text':'Image Window','must':'no','read-only':'no'},
                             'location':{'param':'location','shape':'browse','text':'Location','must':'no','read-only':'no'},
-                            'links':{'param':'links','shape':'text','text':'Links','must':'no','read-only':'no'},
+                            'links':{'param':'links','shape':'text','text':'Links/Controls','must':'no','read-only':'no'},
+                    'menu-background-colour':{'param':'menu-background-colour','shape':'colour','text':'Menu Background Colour','must':'no','read-only':'no'},
+                    'menu-background-image':{'param':'menu-background-image','shape':'browse','text':'Menu Background Image','must':'no','read-only':'no'},
+
+
+                    'menu-window':{'param':'menu-window','shape':'entry','text':'Menu Window','must':'no','read-only':'no'},
+                    'menu-direction':{'param':'menu-direction','shape':'option-menu','text':'Direction','must':'no','read-only':'no',
+                                       'values':['horizontal','vertical']},
+                    'menu-rows':{'param':'menu-rows','shape':'entry','text':'Rows','must':'no','read-only':'no'},
+                    'menu-columns':{'param':'menu-columns','shape':'entry','text':'Columns','must':'no','read-only':'no'},
+                    'menu-icon-mode':{'param':'menu-icon-mode','shape':'option-menu','text':'Icon Mode','must':'no','read-only':'no',
+                                       'values':['none','thumbnail','bullet']},
+                    'menu-text-mode':{'param':'menu-text-mode','shape':'option-menu','text':'Text Mode','must':'no','read-only':'no',
+                                       'values':['none','overlay','right','below']},
+                    'menu-strip':{'param':'menu-strip','shape':'option-menu','text':'Stipple Background','must':'no','read-only':'no',
+                                       'values':['no','yes']},
+                    'menu-strip-padding':{'param':'menu-strip-padding','shape':'entry','text':'Stipple Background Padding','must':'no','read-only':'no'},
+
+                    'menu-guidelines':{'param':'menu-guidelines','shape':'option-menu','text':'Guidelines','must':'no','read-only':'no',
+                                       'values':['never','auto','always']},
+                    'menu-bullet':{'param':'menu-bullet','shape':'browse','text':'Bullet','must':'no','read-only':'no'},
+                    'menu-icon-width':{'param':'menu-icon-width','shape':'entry','text':'Icon Width','must':'no','read-only':'no'},
+                    'menu-icon-height':{'param':'menu-icon-height','shape':'entry','text':'Icon Height','must':'no','read-only':'no'},
+                    'menu-horizontal-padding':{'param':'menu-horizontal-padding','shape':'entry','text':'Horizontal Padding','must':'no','read-only':'no'},
+                    'menu-vertical-padding':{'param':'menu-vertical-padding','shape':'entry','text':'Vertical Padding','must':'no','read-only':'no'},
+                    'menu-horizontal-separation':{'param':'menu-horizontal-separation','shape':'entry','text':'Horizontal Separation','must':'no','read-only':'no'},
+                    'menu-vertical-separation':{'param':'menu-vertical-separation','shape':'entry','text':'Vertical Separation','must':'no','read-only':'no'},
+                    'menu-text-width':{'param':'menu-text-width','shape':'entry','text':'Text Width','must':'no','read-only':'no'},
+                    'menu-text-height':{'param':'menu-text-height','shape':'entry','text':'Text Height','must':'no','read-only':'no'},
+                    
+
                             'message-font':{'param':'message-font','shape':'font','text':'Text Font','must':'no','read-only':'no'},
                             'message-colour':{'param':'message-colour','shape':'colour','text':'Text Colour','must':'no','read-only':'no'},
                             'message-justify':{'param':'message-justify','shape':'option-menu','text':'Justification','must':'no','read-only':'no',
@@ -484,6 +509,7 @@ class PPdefinitions(object):
 
                             'tab-animate':{'shape':'tab','name':'animate','text':'Animation'},
                             'tab-browser-commands':{'shape':'tab','name':'browser-commands','text':'Browser Commands'},
+                        'tab-menu-geometry':{'shape':'tab','name':'menu-geometry','text':'Geometry'},
                             'tab-show-control':{'shape':'tab','name':'show-control','text':'Show Control'},
                             'tab-links':{'shape':'tab','name':'links','text':'Links'},
                             'tab-track-text':{'shape':'tab','name':'track-text','text':'Text'},

@@ -107,6 +107,9 @@ class Show(object):
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Starting show")
 
         # check  data files are available.
+        if self.show_params['medialist'] == '':
+            self.mon.err(self,"Blank Medialist in : "+ self.show_params['title'])
+            self.end('error',"Blank Medialist")
         self.medialst_file = self.pp_profile + "/" + self.show_params['medialist']
         if not os.path.exists(self.medialst_file):
             self.mon.err(self,"Medialist file not found: "+ self.medialst_file)
@@ -177,11 +180,16 @@ class Show(object):
             self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Track type is: "+ track_type)
             
             self.current_player=self.base_init_selected_player(selected_track)
+            #menu has no track file
+            if selected_track['type']=='menu':
+                track_file=''
+                
             # messageplayer passes the text not a file name
-            if selected_track['type'] == 'message':
+            elif selected_track['type'] == 'message':
                 track_file=selected_track['text']
             else:
                 track_file=self.base_complete_path(selected_track['location'])
+                
             self.mon.trace(self,' - track is: ' + track_file)
             self.mon.trace(self,' - current_player is: '+ self.mon.pretty_inst(self.current_player))
             self.current_player.load(track_file,
@@ -250,8 +258,11 @@ class Show(object):
         # show the show background done for every track but quick operation
         if enable_show_background is True:
             self.base_show_show_background()
-            if self.previous_shower != None:
-                self.previous_shower.base_withdraw_show_background()
+        else:
+            self.base_withdraw_show_background()
+        # !!!!!!!!!
+#        if self.previous_shower != None:
+#            self.previous_shower.base_withdraw_show_background()
         # close the player from the previous track
         if self.previous_player is not  None:
             self.mon.trace(self,' - hiding previous: ' + self.mon.pretty_inst(self.previous_player))
@@ -274,7 +285,7 @@ class Show(object):
     # used by end_shower to get the last track of the subshow
     def base_end_shower(self):
         self.mon.trace(self,' -  returned back to level: ' +str(self.level))
-        # get the last track played from the subshow
+        # get the previous subshow and last track it played 
         self.previous_shower,self.current_player=self.shower.base_subshow_ended_callback()
         if self.previous_shower!= None:
             self.previous_shower.base_withdraw_show_background()
@@ -521,7 +532,7 @@ class Show(object):
             return 'normal','no backgound to load'
               
     def base_show_show_background(self):
-        if self.background_obj!= None:
+        if self.background_obj is not None:
             self.canvas.itemconfig(self.background_obj,state='normal')
             # self.canvas.update_idletasks( )    
 

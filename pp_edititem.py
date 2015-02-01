@@ -386,11 +386,11 @@ class EditItem(tkSimpleDialog.Dialog):
         for field in record_fields:
             # get the details of this field
             field_spec=self.field_specs[field]
-            # print  'reading row',field_index,field_spec['shape']
+            print  'reading row',field_index,field_spec['shape']
             
             # and get the value
             if field_spec['shape']not in ('sep','tab'):
-                # print field_spec['param']
+                print field_spec['param']
                 
                 if field_spec['shape']=='text':
                     self.field_content[field_spec['param']]=self.fields[field_index].get(1.0,END).rstrip('\n')
@@ -401,7 +401,7 @@ class EditItem(tkSimpleDialog.Dialog):
                 else:
                     self.field_content[field_spec['param']]=self.fields[field_index].get().strip()
                     
-                # print self.field_content[field_spec['param']]    
+                print self.field_content[field_spec['param']]    
                 field_index +=1
                 
         self.result=True

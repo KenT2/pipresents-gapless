@@ -40,6 +40,8 @@ class GapShow(Show):
         # instatiatate the screen driver - used only to access enable and hide click areas
         self.sr=ScreenDriver()
 
+        self.controlsmanager=ControlsManager()
+
         # Init variables special to this show
         self.poll_for_interval_timer=None
         self.interval_timer_signal=False
@@ -183,11 +185,6 @@ class GapShow(Show):
             if self.current_player is not None:
                 self.current_player.input_pressed(operation)
 
-        else:
-            self.mon.err(self,"unknown operation: "+ operation)
-            self.end('error',"unknown operation")
-
-       
 
     def next(self):
         # stop track if running and set signal
@@ -326,7 +323,6 @@ class GapShow(Show):
 
         # get control bindings for this show
         # needs to be done for each track as track can override the show controls
-        self.controlsmanager=ControlsManager()
         if self.show_params['disable-controls'] == 'yes':
             self.controls_list=[]
         else:

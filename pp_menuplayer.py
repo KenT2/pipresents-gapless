@@ -48,7 +48,8 @@ class MenuPlayer(Player):
 
         
         # bodge for menuplayer, pass medialist through track parameters
-        self.medialist=self.track_params['medialist_obj']
+        self.medialist=self.show_params['medialist_obj']
+
 
         # and initialise things for this player
         self.display_guidelines=track_params['menu-guidelines']
@@ -164,13 +165,13 @@ class MenuPlayer(Player):
             return reason,message
 
         # display menu text if enabled
-        if self.track_params['menu-text'] != '':
-            self.menu_text_obj=self.canvas.create_text(int(self.track_params['menu-text-x'])+self.show_canvas_x1,
-                                                       int(self.track_params['menu-text-y'])+self.show_canvas_y1,
+        if self.track_params['track-text'] != '':
+            self.menu_text_obj=self.canvas.create_text(int(self.track_params['track-text-x'])+self.show_canvas_x1,
+                                                       int(self.track_params['track-text-y'])+self.show_canvas_y1,
                                                        anchor=NW,
-                                                       text=self.track_params['menu-text'],
-                                                       fill=self.track_params['menu-text-colour'],
-                                                       font=self.track_params['menu-text-font'])
+                                                       text=self.track_params['track-text'],
+                                                       fill=self.track_params['track-text-colour'],
+                                                       font=self.track_params['track-text-font'])
 
         # display instructions (hint)
         hint_text=self.track_params['hint-text']
@@ -235,7 +236,7 @@ class MenuPlayer(Player):
         self.text_id_index=3 # the text - need when no icon is displayed - object
         # and 5 other to do with the strip
 
-        # select the startof the medialist
+        # select the start of the medialist
         self.medialist.start()
 
         # loop through menu entries

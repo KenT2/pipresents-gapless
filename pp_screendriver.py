@@ -1,7 +1,7 @@
 import os
 import ConfigParser
 import copy
-from Tkinter import NW
+from Tkinter import NW,CENTER
 from PIL import Image
 from PIL import ImageTk
 from pp_utils import Monitor
@@ -64,6 +64,22 @@ class ScreenDriver(object):
             reason,message,points = self.parse_points(self.get(area,'points'),self.get(area,'name'))
             if reason == 'error':
                 break
+
+            # calculate centre of polygon
+            vertices = len(points)/2
+            # print area, 'vertices',vertices
+            sum_x=0
+            sum_y=0
+            for i in range(0,vertices):
+                # print i
+                sum_x=sum_x+int(points[2*i])
+                # print int(points[2*i])
+                sum_y=sum_y+int(points[2*i+1])
+                # print int(points[2*i+1])
+            polygon_centre_x=sum_x/vertices
+            polygon_centre_y=sum_y/vertices
+
+            
             ScreenDriver.canvas.create_polygon(points,
                                        fill=self.get (area,'fill-colour'),
                                        outline=self.get (area,'outline-colour'),
@@ -85,41 +101,27 @@ class ScreenDriver(object):
                 else:
                     self.pil_image=Image.open(image_path)
                 if self.pil_image is not None:
-                    self.pil_image=self.pil_image.resize((image_width,image_height))                 
+                    self.pil_image=self.pil_image.resize((image_width-1,image_height-1))                 
                     self.photo_image_id=ImageTk.PhotoImage(self.pil_image)
-                    image_id=self.canvas.create_image(points[0],points[1],
+                    image_id=self.canvas.create_image(polygon_centre_x,polygon_centre_y,
                                              image=self.photo_image_id,
-                                             anchor=NW,
+                                             anchor=CENTER,
                                             tags=('pp-click-area',self.get(area,'name')),
                                             state='hidden')
                     del self.pil_image
                     ScreenDriver.image_obj.append(self.photo_image_id)
-                
 
-            
             # write the label at the centroid
             if self.get(area,'text') != '':
-                vertices = len(points)/2
-                # print area, 'vertices',vertices
-                sum_x=0
-                sum_y=0
-                for i in range(0,vertices):
-                    # print i
-                    sum_x=sum_x+int(points[2*i])
-                    # print int(points[2*i])
-                    sum_y=sum_y+int(points[2*i+1])
-                    # print int(points[2*i+1])
-                text_centre_x=sum_x/vertices
-                text_centre_y=sum_y/vertices
-                ScreenDriver.canvas.create_text(text_centre_x,text_centre_y,
+                ScreenDriver.canvas.create_text(polygon_centre_x,polygon_centre_y,
                                         text=self.get(area,'text'),
                                         fill=self.get(area,'text-colour'),
                                         font=self.get(area,'text-font'),
                                         tags=('pp-click-area',self.get(area,'name')),
                                         state='hidden')
+                
             ScreenDriver.canvas.bind('<Button-1>',self.click_pressed)
-
-                                                      
+                                 
         if reason == 'error':
             return 'error',message
         else:
@@ -167,15 +169,48 @@ class ScreenDriver(object):
     def parse_points(self,points_text,area):
         if points_text.strip() == '':
             return 'error','No points in click area: '+area,[]
-        points=points_text.split()
-        if len(points) < 6:
-            return 'error','Less than 3 vertices in click area: '+area,[]
-        if len(points)%2 != 0:
-            return 'error','Odd number of points in click area: '+area,[]      
-        for point in points:
-            if not point.isdigit():
-                return 'error','point is not a positive integer in click area: '+area,[]
-        return 'normal','parsed points OK',points
+        if '+' in points_text:
+            # parse  x+y+width*height
+            fields=points_text.split('+')
+            if len(fields) != 3:
+                return 'error','Do not understand click area points: '+area,[]
+            dimensions=fields[2].split('*')
+            if len(dimensions)!=2:
+                return 'error','Do not understand click area points: '+area,[]
+            
+            if not fields[0].isdigit():
+                return 'error','x1 is not a positive integer in click area: '+area,[]
+            else:
+                x1=int(fields[0])
+            
+            if not fields[1].isdigit():
+                return 'error','y1 is not a positive integer in click area: '+area,[]
+            else:
+                y1=int(fields[1])
+                
+            if not dimensions[0].isdigit():
+                return 'error','width1 is not a positive integer in click area: '+area,[]
+            else:
+                width=int(dimensions[0])
+                
+            if not dimensions[1].isdigit():
+                return 'error','height is not a positive integer in click area: '+area,[]
+            else:
+                height=int(dimensions[1])
+
+            return 'normal','',[str(x1),str(y1),str(x1+width),str(y1),str(x1+width),str(y1+height),str(x1),str(y1+height)]
+            
+        else:
+            # parse unlimited set of x,y,coords
+            points=points_text.split()
+            if len(points) < 6:
+                return 'error','Less than 3 vertices in click area: '+area,[]
+            if len(points)%2 != 0:
+                return 'error','Odd number of points in click area: '+area,[]      
+            for point in points:
+                if not point.isdigit():
+                    return 'error','point is not a positive integer in click area: '+area,[]
+            return 'normal','parsed points OK',points
 
 
     def complete_path(self,track_file):

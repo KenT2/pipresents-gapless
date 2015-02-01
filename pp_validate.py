@@ -103,7 +103,7 @@ class Validator(object):
                             track_file=pp_home+track_file[1:]
                             if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " media file not found")
 
-                    if track['type'] in ('video','audio','message','image','web'):
+                    if track['type'] in ('video','audio','message','image','web','menu'):
                         # check common fields
                         self.check_animate('animate-begin',track['animate-begin'])
                         self.check_animate('animate-end',track['animate-end'])
@@ -117,7 +117,11 @@ class Validator(object):
                                 if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
 
                         
-                    # Check simple fields                        
+                    # Check simple fields
+                    if track['type']=='menu':
+                        self.check_menu(track)
+
+                    
                     if track['type'] == "image":
                         if track['duration'] != "" and not track['duration'].isdigit(): self.result.display('f',"'duration' is not blank, 0 or a positive integer")
                         if track['track-text'] != "":
@@ -273,16 +277,11 @@ class Validator(object):
 
                             
                 if show['type'] == "menu":
-                    self.check_menu(show)
                     if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
                     if not show['track-timeout'].isdigit(): self.result.display('f',"'track timeout' is not 0 or a positive integer")
-                    if not show['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
-                    if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
+                    if show['menu-track-ref'] not in v_track_labels:
+                        self.result.display('f',"'menu track ' is not in medialist: " + show['menu-track-ref'])     
                     self.check_web_window('show','web-window',show['web-window'])
-                    background_image_file=show['menu-background-image']
-                    if background_image_file.strip() != '' and  background_image_file[0] == "+":
-                        track_file=pp_home+background_image_file[1:]
-                        if not os.path.exists(track_file): self.result.display('f',"location "+show['menu-background-image']+ " menu background image file not found")
                     self.check_controls('controls',show['controls'])
 
   
@@ -448,30 +447,33 @@ class Validator(object):
 # window
 # consistencty of modes
         
-    def check_menu(self,show):
+    def check_menu(self,track):
 
-        if not show['menu-rows'].isdigit(): self.result.display('f'," Menu Rows is not 0 or a positive integer")
-        if not show['menu-columns'].isdigit(): self.result.display('f'," Menu Columns is not 0 or a positive integer")     
-        if not show['menu-icon-width'].isdigit(): self.result.display('f'," Icon Width is not 0 or a positive integer") 
-        if not show['menu-icon-height'].isdigit(): self.result.display('f'," Icon Height is not 0 or a positive integer")
-        if not show['menu-horizontal-padding'].isdigit(): self.result.display('f'," Horizontal Padding is not 0 or a positive integer")
-        if not show['menu-vertical-padding'].isdigit(): self.result.display('f'," Vertical padding is not 0 or a positive integer") 
-        if not show['menu-text-width'].isdigit(): self.result.display('f'," Text Width is not 0 or a positive integer") 
-        if not show['menu-text-height'].isdigit(): self.result.display('f'," Text Height is not 0 or a positive integer")
-        if not show['menu-horizontal-separation'].isdigit(): self.result.display('f'," Horizontal Separation is not 0 or a positive integer") 
-        if not show['menu-vertical-separation'].isdigit(): self.result.display('f'," Vertical Separation is not 0 or a positive integer")
-        if not show['menu-strip-padding'].isdigit(): self.result.display('f'," Stipple padding is not 0 or a positive integer")    
+        if not track['menu-rows'].isdigit(): self.result.display('f'," Menu Rows is not 0 or a positive integer")
+        if not track['menu-columns'].isdigit(): self.result.display('f'," Menu Columns is not 0 or a positive integer")     
+        if not track['menu-icon-width'].isdigit(): self.result.display('f'," Icon Width is not 0 or a positive integer") 
+        if not track['menu-icon-height'].isdigit(): self.result.display('f'," Icon Height is not 0 or a positive integer")
+        if not track['menu-horizontal-padding'].isdigit(): self.result.display('f'," Horizontal Padding is not 0 or a positive integer")
+        if not track['menu-vertical-padding'].isdigit(): self.result.display('f'," Vertical padding is not 0 or a positive integer") 
+        if not track['menu-text-width'].isdigit(): self.result.display('f'," Text Width is not 0 or a positive integer") 
+        if not track['menu-text-height'].isdigit(): self.result.display('f'," Text Height is not 0 or a positive integer")
+        if not track['menu-horizontal-separation'].isdigit(): self.result.display('f'," Horizontal Separation is not 0 or a positive integer") 
+        if not track['menu-vertical-separation'].isdigit(): self.result.display('f'," Vertical Separation is not 0 or a positive integer")
+        if not track['menu-strip-padding'].isdigit(): self.result.display('f'," Stipple padding is not 0 or a positive integer")    
 
-        if not show['menu-text-x'].isdigit(): self.result.display('f'," Menu Text x is not 0 or a positive integer") 
-        if not show['menu-text-y'].isdigit(): self.result.display('f'," Menu Text y is not 0 or a positive integer")
+        if not track['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
+        if not track['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
 
-        if show['menu-icon-mode'] == 'none' and show['menu-text-mode'] == 'none':
+        if not track['track-text-x'].isdigit(): self.result.display('f'," Menu Text x is not 0 or a positive integer") 
+        if not track['track-text-y'].isdigit(): self.result.display('f'," Menu Text y is not 0 or a positive integer")
+
+        if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'none':
             self.result.display('f'," Icon and Text are both None") 
 
-        if show['menu-icon-mode'] == 'none' and show['menu-text-mode'] == 'overlay':
+        if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'overlay':
             self.result.display('f'," cannot overlay none icon") 
             
-        self.check_menu_window(show['menu-window'])
+        self.check_menu_window(track['menu-window'])
 
     def check_menu_window(self,line):
         if line  == '':
@@ -601,12 +603,33 @@ class Validator(object):
             return
         symbol=fields[0]
         operation=fields[1]
-        if operation in ('return','home','call','null','exit','goto','jump','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('home','null','exit','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
+
+        elif operation in ('call','goto','jump'):
+            if len(fields)!=3:
+                self.result.display('f','incorrect number of fields in link: ' + line)
+                return
+            else:
+                operand=fields[2]
+                if operand not in v_track_labels:
+                    self.result.display('f',operand + " link argument is not in medialist: " + line)
+                    return
+
+        elif operation == 'return':
+            if len(fields)==2:
+                return
+            else:
+                operand=fields[2]
+                if operand.isdigit() is True:
+                    return
+                else:
+                    if operand not in v_track_labels:
+                        self.result.display('f',operand + " link argument is not in medialist: " + line)
+                        return
         else:
             self.result.display('f',"unknown command in link: " + line)
-        if symbol not in v_track_labels:
-            self.result.display('f',symbol + " is not in medialist: " + line)
+
 
 # *******************   
 # Check radiobuttonshow  links
@@ -619,20 +642,29 @@ class Validator(object):
                 continue
             self.check_radiobutton_link(line,v_track_labels)
 
-
     def check_radiobutton_link(self,line,v_track_labels):
         fields = line.split()
-        if len(fields) != 2:
+        if len(fields) not in (2,3):
             self.result.display('f',"incorrect number of fields in link: " + line)
             return
-        symbol = fields[0]
+        symbol=fields[0]
         operation=fields[1]
-        if operation not in ('play','return','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('return','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
+        
+        elif operation == 'play':
+            if len(fields)!=3:
+                self.result.display('f','incorrect number of fields in link: ' + line)
+                return
+            else:
+                operand=fields[2]
+                if operand not in v_track_labels:
+                    self.result.display('f',operand + " link argument is not in medialist: " + line)
+                    return
         else:
             self.result.display('f',"unknown command in link: " + line)
-        if symbol not in v_track_labels:
-            self.result.display('f',symbol + " is not in medialist: " + line)
+
+
 
 
 # ***********************************

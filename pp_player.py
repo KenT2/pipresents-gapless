@@ -347,10 +347,12 @@ class Player(object):
         # self.canvas.update_idletasks( )
 
         # decide whether the show background should be enabled.
+        # print 'DISPLAY SHOW BG',self.track_params['display-show-background'],self.background_obj
         if self.background_obj is None and self.track_params['display-show-background']=='yes':
             self.enable_show_background=True
         else:
             self.enable_show_background=False
+        # print 'ENABLE SB',self.enable_show_background
 
 
     def hide_x_content(self):

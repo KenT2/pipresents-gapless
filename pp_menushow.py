@@ -43,6 +43,8 @@ class MenuShow(Show):
         # instatiatate the screen driver - used only to access enable and hide click areas
         self.sr=ScreenDriver()
 
+        self.controlsmanager=ControlsManager()
+
         # init variables
         self.show_timeout_timer=None
         self.track_timeout_timer=None
@@ -61,26 +63,12 @@ class MenuShow(Show):
               level is 0 when the show is top level (run from [start] or from show control)
               direction_command  - not used other than it being passed to a show
         """
-        # need to instantiate the medialist here as in gapshow done in derived class
+        # need to instantiate the medialist here as not using gapshow
         self.medialist=MediaList('ordered')
 
         Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
         
         self.mon.trace(self,self.show_params['show-ref'])
-
-
-        # get control bindings for this show
-        controlsmanager=ControlsManager()
-        if self.show_params['disable-controls'] == 'yes':
-            self.controls_list=[]
-        else:
-            reason,message,self.controls_list= controlsmanager.get_controls(self.show_params['controls'])
-            if reason=='error':
-                self.mon.err(self,message)
-                self.end('error',"error in controls")
-                return
-
-
 
         # condition the show timeout
         self.show_timeout_value=int(self.show_params['show-timeout'])*1000                               
@@ -132,6 +120,7 @@ class MenuShow(Show):
         self.mon.trace(self,operation)
         if operation =='exit':
             self.exit()
+            
         elif operation == 'stop':
             self.stop_timers()
             if self.current_player is not None:
@@ -155,6 +144,7 @@ class MenuShow(Show):
         elif operation =='play':
             self.next_track_signal=True
             self.next_track=self.medialist.selected_track()
+            self.current_player.stop()
 
 
             # cancel show timeout
@@ -219,25 +209,17 @@ class MenuShow(Show):
         # init the index used to hiighlight the selected menu entry by menuplayer
         self.menu_index=0
 
-        # create track paramters from show parameters and doctor as necessary
-        self.menu_track_params=copy.deepcopy(self.show_params)
-        self.menu_track_params['location']=''
-        self.menu_track_params['track-text']=''
-        self.menu_track_params['animate-begin']=''
-        self.menu_track_params['animate-end']=''
-        self.menu_track_params['animate-clear']='no'
-        self.menu_track_params['show-control-begin']=''
-        self.menu_track_params['show-control-end']=''
-        self.menu_track_params['plugin']=''
-        self.menu_track_params['display-show-background']='yes'
-        self.menu_track_params['display-show-text']='no'
-        self.menu_track_params['background-colour']=self.show_params['menu-background-colour']
-        self.menu_track_params['background-image']=self.show_params['menu-background-image']
-        self.menu_track_params['medialist_obj']=self.medialist
+        index = self.medialist.index_of_track(self.show_params['menu-track-ref'])
+        if index == -1:
+                self.mon.err(self,"'menu-track' not in medialist: " + self.show_params['menu-track-ref'])
+                self.end('error',"menu-track not in medialist: ")
+                return
         
-        # load the menu track by using the show parameters as track parameters Yields type=menu
-        self.start_load_show_loop(self.menu_track_params)
-
+        #make the medialist available to the menuplayer for cursor scrolling
+        self.show_params['medialist_obj']=self.medialist
+        
+        # load the menu track 
+        self.start_load_show_loop(self.medialist.track(index))
 
 
 # *********************
@@ -249,7 +231,18 @@ class MenuShow(Show):
         Show.base_shuffle(self)
         self.mon.trace(self,'')
         self.display_eggtimer(Show.base_resource(self,'menushow','m01'))
-            
+
+        # get control bindings for this show
+        # needs to be done for each track as track can override the show controls
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+
         # load the track or show
         Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,False)
 
@@ -367,8 +360,19 @@ class MenuShow(Show):
     # and if necessary close it
     def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
-        if self.menu_showing is True:
-            self.sr.enable_click_areas(self.controls_list)
+
+        if self.show_params['disable-controls'] != 'yes':        
+            #merge controls from the track
+            controls_text=self.current_player.get_links()
+            reason,message,track_controls=self.controlsmanager.parse_controls(controls_text)
+            if reason == 'error':
+                self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+                self.req_next='error'
+                self.what_next_after_showing()
+            self.controlsmanager.merge_controls(self.controls_list,track_controls)
+
+        self.sr.enable_click_areas(self.controls_list)
+        
         Show.base_track_ready_callback(self,enable_show_background)
 
     # callback from begining of a subshow, provide previous shower player to called show        
