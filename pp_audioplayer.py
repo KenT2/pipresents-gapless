@@ -117,7 +117,7 @@ class AudioPlayer(Player):
                 self.loaded_callback('error',message)
                 return
 
-        if track !='' and not os.path.exists(track):
+        if track !='' and self.duration_limit!=0 and not os.path.exists(track):
             self.mon.err(self,"Track file not found: "+ track)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
@@ -125,7 +125,7 @@ class AudioPlayer(Player):
                 return
 
         # just create instance of mplayer don't bother with any pre-load
-        self.mplayer=MplayerDriver(self.canvas)
+        self.mplayer=MplayerDriver(self.canvas,self.pp_dir)
         self.play_state='loaded'
         self.mon.log(self,"<Track loaded from show Id: "+ str(self.show_id))
         if self.loaded_callback is not None:
@@ -150,12 +150,6 @@ class AudioPlayer(Player):
         # do animation begin etc. 
         Player.pre_show(self)
 
-       # select the sound device
-        if self.mplayer_audio != "":
-            if self.mplayer_audio == 'hdmi':
-                os.system("amixer -q -c 0 cset numid=3 2")
-            else:
-                os.system("amixer -q -c 0 cset numid=3 1")
         
         # start playing the track.
         self.mon.log(self,">start playing track: "+ str(self.show_id))
@@ -232,11 +226,20 @@ class AudioPlayer(Player):
 
  
     def start_play_state_machine_show(self):
+
+                
         if self.play_state == 'loaded':
             # initialise all the state machine variables
             self.duration_count = 0
 
-            # play the track
+            # select the sound device
+            if self.mplayer_audio != "":
+                if self.mplayer_audio == 'hdmi':
+                    os.system("amixer -q -c 0 cset numid=3 2")
+                else:
+                    os.system("amixer -q -c 0 cset numid=3 1")
+                    
+             # play the track               
             options = self.show_params['mplayer-other-options'] + '-af '+ self.speaker_option+','+self.volume_option + ' '
             if self.track != '':
                 self.mplayer.play(self.track,options)

@@ -26,7 +26,7 @@ class ResourceReader(object):
                 else:
                     # try inside pipresents
                     # self.mon.log(self,"resources.cfg not found at "+ tryfile + " trying inside pipresents")
-                    tryfile=pp_dir+os.sep+'pp_home'+os.sep+"resources.cfg"
+                    tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"resources.cfg"
                     if os.path.exists(tryfile):
                         filename=tryfile
                     else:

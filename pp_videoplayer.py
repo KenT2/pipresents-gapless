@@ -165,7 +165,7 @@ class VideoPlayer(Player):
         # get the length of the video
 
         # create an  instance of omxdriver to obtain the duration
-        self.omx_dur=OMXDriver(self.canvas)
+        self.omx_dur=OMXDriver(self.canvas,self.pp_dir)
         self.omx_dur.get_duration(self.track)
         self._wait_for_duration(self._load_after_get_duration)
 

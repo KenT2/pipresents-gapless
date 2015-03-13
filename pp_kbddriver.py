@@ -23,13 +23,13 @@ class KbdDriver(object):
 
 
     def specific_key(self,callback,name):
-        callback(name,'front','key')
+        callback(name,'KBD')
 
     # alphanumeric keys- convert to symbolic by adding pp-key-
     def normal_key(self,callback,event):
         key=event.char
         if key != '':
-            callback('pp-key-'+key,'front','key')
+            callback('pp-key-'+key,'KBD')
 
 
 
@@ -50,7 +50,7 @@ class KbdDriver(object):
                 else:
                     # try inside pipresents
                     # self.mon.log(self,"keys.cfg not found at "+ tryfile + " trying inside pipresents")
-                    tryfile=pp_dir+os.sep+'pp_home'+os.sep+"keys.cfg"
+                    tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"keys.cfg"
                     if os.path.exists(tryfile):
                         filename=tryfile
                     else:

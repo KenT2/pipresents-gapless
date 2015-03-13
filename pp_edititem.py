@@ -283,17 +283,20 @@ class EditItem(tkSimpleDialog.Dialog):
         
         # populate the dialog box using the record fields to determine the order
         for field in record_fields:
+            #print 'BODY_FIELDS',field,field['shape']
             # get list of values where required
             values=[]
             if self.field_specs[field]['shape']in("option-menu",'spinbox'):
-                if self.field_specs[field]['param']in ('sub-show','start-show','controlled-show'):
+                # print 'should be field name', field
+                # print 'should be shape',self.field_specs[field]['shape']
+                if field in ('sub-show','start-show'):
                     values=self.show_refs                    
                 else:
                     values=self.field_specs[field]['values']
             else:
                 values=[]
             # make the entry
-            obj=self.make_entry(master,self.field_specs[field],values,bar)
+            obj=self.make_entry(master,field,self.field_specs[field],values,bar)
             if obj is not  None:
                 self.fields.append(obj)
                 self.field_index +=1
@@ -302,8 +305,8 @@ class EditItem(tkSimpleDialog.Dialog):
 
 
     # create an entry in a dialog box
-    def make_entry(self,master,field_spec,values,bar):
-        # print 'make row',self.field_index,field_spec['shape']
+    def make_entry(self,master,field,field_spec,values,bar):
+        # print 'make entry',self.field_index,field,field_spec
         if field_spec['shape']=='tab':
             self.current_tab = Tab(master, field_spec['name'])
             bar.add(self.current_tab,field_spec['text'])
@@ -315,12 +318,12 @@ class EditItem(tkSimpleDialog.Dialog):
             return None
 
         else:
-            # get the name of the field
-            parameter=field_spec['param']
-            # print 'content', parameter, self.field_content[field_spec['param']]
+
+            # print 'replace param in make entry',field
+            # print 'content', field, self.field_content[field]
             # is it in the field content dictionary
-            if not parameter in self.field_content:
-                self.mon.log(self,"Value for field not found in opened file: " + parameter)
+            if not field in self.field_content:
+                self.mon.log(self,"Value for field not found in opened file: " + field)
                 return None
             else:
                 if field_spec['must']=='yes':
@@ -334,24 +337,24 @@ class EditItem(tkSimpleDialog.Dialog):
                 # make the editable field
                 if field_spec['shape']in ('entry','colour','browse','font'):
                     obj=Entry(self.current_tab,bg=bg,width=40,font='arial 11')
-                    obj.insert(END,self.field_content[field_spec['param']])
+                    obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='text':
                     obj=ScrolledText(self.current_tab,bg=bg,height=8,width=40,font='arial 11')
-                    obj.insert(END,self.field_content[field_spec['param']])
+                    obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='spinbox':
                     obj=Spinbox(self.current_tab,bg=bg,values=values,wrap=True)
-                    obj.insert(END,self.field_content[field_spec['param']])
+                    obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='option-menu': 
                     self.option_val = StringVar(self.current_tab)    
-                    self.option_val.set(self.field_content[field_spec['param']])
+                    self.option_val.set(self.field_content[field])
                     obj = apply(OptionMenu, [self.current_tab, self.option_val] + values)
                     self.entries.append(self.option_val)
                     
                 else:
-                    self.mon.log(self,"Uknown shape for: " + parameter)
+                    self.mon.log(self,"Uknown shape for: " + field)
                     return None
                 
                 if field_spec['read-only']=='yes':
@@ -382,32 +385,32 @@ class EditItem(tkSimpleDialog.Dialog):
         
         field_index=0 # index to self.fields - not incremented for tab and sep
         entry_index=0  # index of stringvars for option_menu
-        
+
         for field in record_fields:
+            # print field
             # get the details of this field
             field_spec=self.field_specs[field]
-            print  'reading row',field_index,field_spec['shape']
+            # print  'reading row',field_index,field_spec['shape']
             
             # and get the value
             if field_spec['shape']not in ('sep','tab'):
-                print field_spec['param']
+
                 
                 if field_spec['shape']=='text':
-                    self.field_content[field_spec['param']]=self.fields[field_index].get(1.0,END).rstrip('\n')
+                    self.field_content[field]=self.fields[field_index].get(1.0,END).rstrip('\n')
                     
                 elif field_spec['shape']=='option-menu':
-                    self.field_content[field_spec['param']]=self.entries[entry_index].get()
+                    self.field_content[field]=self.entries[entry_index].get()
                     entry_index+=1
                 else:
-                    self.field_content[field_spec['param']]=self.fields[field_index].get().strip()
+                    self.field_content[field]=self.fields[field_index].get().strip()
                     
-                print self.field_content[field_spec['param']]    
+                # print self.field_content[field]    
                 field_index +=1
                 
         self.result=True
         return self.result
- 
-
+        
 
 
     def pick_colour(self,obj):
@@ -419,7 +422,7 @@ class EditItem(tkSimpleDialog.Dialog):
             
     def pick_font(self,obj):
         font=askChooseFont(self.root)
-        print font
+        # print font
         if font is not None:
             obj.delete(0,END)
             obj.insert(END,font)

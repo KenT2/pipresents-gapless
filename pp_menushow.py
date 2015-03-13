@@ -56,26 +56,31 @@ class MenuShow(Show):
 
 
 
-    def play(self,end_callback,show_ready_callback,direction_command,level,controls_list):
+    def play(self,end_callback,show_ready_callback,parent_kickback_signal,level,controls_list):
         """ displays the menu 
               end_callback - function to be called when the menu exits
               show_ready_callback - callback when menu is ready to display (not used)
               level is 0 when the show is top level (run from [start] or from show control)
-              direction_command  - not used other than it being passed to a show
+              parent_kickback_signal  - not used other than it being passed to a show
         """
         # need to instantiate the medialist here as not using gapshow
         self.medialist=MediaList('ordered')
 
-        Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
+        Show.base_play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list)
         
         self.mon.trace(self,self.show_params['show-ref'])
 
-        # condition the show timeout
-        self.show_timeout_value=int(self.show_params['show-timeout'])*1000                               
+        #parse the show and track timeouts
+        reason,message,self.show_timeout=Show.calculate_duration(self,self.show_params['show-timeout'])
+        if reason =='error':
+            self.mon.err(self,'Show Timeout has bad time: '+self.show_params['show-timeout'])
+            self.end('error','show timeout, bad time')
 
-        # get the previous player and show from calling show
-        # Show.base_get_previous_player_from_parent(self)
-        
+        reason,message,self.track_timeout=Show.calculate_duration(self,self.show_params['track-timeout'])
+        if reason=='error':
+            self.mon.err(self,'Track Timeout has bad time: '+self.show_params['track-timeout'])
+            self.end('error','track timeout, bad time')
+            
         # and delete eggtimer
         if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()
@@ -104,17 +109,17 @@ class MenuShow(Show):
         Show.base_terminate(self)            
 
 
-    def input_pressed(self,symbol,edge,source):
-        Show.base_input_pressed(self,symbol,edge,source)
+    def  handle_input_event(self,symbol):
+        Show.base_handle_input_event(self,symbol)
 
 
-    def input_pressed_this_show(self,symbol,edge,source):
+    def handle_input_event_this_show(self,symbol):
         # menushow has only internal operation
         operation=self.base_lookup_control(symbol,self.controls_list)
-        self.do_operation(operation,edge,source)
+        self.do_operation(operation)
 
 
-    def do_operation(self,operation,edge,source):
+    def do_operation(self,operation):
         # service the standard inputs for this show
 
         self.mon.trace(self,operation)
@@ -134,8 +139,8 @@ class MenuShow(Show):
             if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 # and start it again
-                if self.show_timeout_value != 0:
-                    self.show_timeout_timer=self.canvas.after(self.show_timeout_value,self.show_timeout_stop)
+                if self.show_timeout != 0:
+                    self.show_timeout_timer=self.canvas.after(self.show_timeout*1000,self.show_timeout_stop)
             if operation=='up':
                 self.previous()
             else:
@@ -157,7 +162,9 @@ class MenuShow(Show):
                 self.current_player.input_pressed('stop')
             else:
                 self.what_next_after_showing()
-
+                
+        elif operation  in ('no-command','null'):
+            return
 
         elif operation == 'pause':
             if self.current_player is not None:
@@ -197,14 +204,14 @@ class MenuShow(Show):
 # *********************
 
     def track_timeout_callback(self):
-        self.do_operation('stop','none','timeout')
+        self.do_operation('stop')
 
     def do_menu_track(self):
         self.menu_showing=True
         self.mon.trace(self,'')
         # start show timeout alarm if required
-        if int(self.show_params['show-timeout']) != 0:
-            self.show_timeout_timer=self.canvas.after(self.show_timeout_value,self.show_timeout_stop)
+        if self.show_timeout != 0:
+            self.show_timeout_timer=self.canvas.after(self.show_timeout *1000,self.show_timeout_stop)
 
         # init the index used to hiighlight the selected menu entry by menuplayer
         self.menu_index=0
@@ -230,7 +237,7 @@ class MenuShow(Show):
         # shuffle players
         Show.base_shuffle(self)
         self.mon.trace(self,'')
-        self.display_eggtimer(Show.base_resource(self,'menushow','m01'))
+        self.display_eggtimer()
 
         # get control bindings for this show
         # needs to be done for each track as track can override the show controls
@@ -343,8 +350,8 @@ class MenuShow(Show):
             self.next_track_signal=False
             self.menu_showing=False
             # start timeout for the track if required           
-            if int(self.show_params['track-timeout']) != 0:
-                self.track_timeout_timer=self.canvas.after(int(self.show_params['track-timeout'])*1000,self.track_timeout_callback)
+            if self.track_timeout != 0:
+                self.track_timeout_timer=self.canvas.after(self.track_timeout*1000,self.track_timeout_callback)
             self.start_load_show_loop(self.next_track)
             
         else:

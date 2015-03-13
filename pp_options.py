@@ -26,3 +26,10 @@ def ed_options():
     parser.add_argument( '--forceupdate', action='store_true',help='Force Update')
     args=parser.parse_args()
     return  vars(args)
+
+def remote_options():
+    """ reads the command line options and returns a dictionary of them"""
+    parser = argparse.ArgumentParser(description = 'Pi Presents Remote')
+    parser.add_argument( '-d','--debug', nargs='?', default='7', const='15',help='Debug output to terminal window')
+    args=parser.parse_args()
+    return  vars(args)

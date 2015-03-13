@@ -256,8 +256,12 @@ class Validator(object):
                             self.result.display('f',"'Child Track ' " + show['child-track-ref'] + ' is not in medialist' )             
                         if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
                         if not show['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
+                        
+                    if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
+                    if not show['track-count-limit'].isdigit(): self.result.display('f',"'Track Count Limit' is not 0 or a positive integer")
+                    if not show['interval'].isdigit(): self.result.display('f',"'interval' is not 0 or a positive integer")
 
-                    if show['trigger-start-type']in('input','input-quiet','input-persist'):
+                    if show['trigger-start-type']in('input','input-persist'):
                         self.check_triggers('Trigger for Start',show['trigger-start-param'])
 
                     if show['trigger-next-type'] == 'input':
@@ -265,15 +269,8 @@ class Validator(object):
 
                     if show['trigger-end-type'] == 'input':
                         self.check_triggers('Trigger for End',show['trigger-end-param'])                        
-                    if show['trigger-end-type'] == 'count':
-                        if not show['trigger-end-param'].isdigit(): self.result.display('f',"'count' is not 0 or a positive integer")
-                    if show['trigger-end-type'] == 'duration':
-                        self.check_duration('Duration',show['trigger-end-param'])
-                    if show['trigger-end-type'] == 'interval':
-                        self.check_duration('Interval',show['trigger-end-param'])
                     self.check_web_window('show','web-window',show['web-window'])
                     self.check_controls('controls',show['controls'])
-
 
                             
                 if show['type'] == "menu":
@@ -742,11 +739,11 @@ class Validator(object):
             filename=tryfile
         else:
             self.result.display('t', "gpio.cfg not found in pp_home")
-            tryfile=pp_dir+os.sep+'pp_home'+os.sep+"gpio.cfg"
+            tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"gpio.cfg"
             if os.path.exists(tryfile):
                 filename=tryfile
             else:
-                self.result.display('w', "gpio.cfg not found in pipresents/pp_home - GPIO checking turned off")
+                self.result.display('w', "gpio.cfg not found in pipresents/pp_resources - GPIO checking turned off")
                 return False
         self.config = ConfigParser.ConfigParser()
         self.config.read(filename)

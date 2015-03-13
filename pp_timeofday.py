@@ -45,7 +45,7 @@ class TimeOfDay(object):
 
         # init variables
         # if testing is True then time now can be set by line 58 ish.
-        self.testing=False
+        self.testing=True
         self.tod_tick=500
         self.tick_timer=None
         TimeOfDay.last_poll_time=long(time.time())
@@ -55,19 +55,19 @@ class TimeOfDay(object):
         
         #create the initial events list
         if self.testing:
-            now = datetime(day = 31, month =8, year=2014,hour=10, minute=0, second=0)
+            now = datetime(day = 31, month =8, year=2014,hour=10, minute=45, second=0)
             self.sim_now=now
             print 'initial SIMULATED time',now.ctime()
         else:
             now = datetime.now()
-            # print 'initial REAL time',now.ctime()
+            print 'initial REAL time',now.ctime()
         midnight = now.replace(hour=0, minute=0, second=0)
         delta=(now-midnight)
         now_seconds= delta.seconds
         self.build_schedule_for_today(self.schedule,now)
-        # self.print_todays_schedule()
+        self.print_todays_schedule()
         self.build_events_lists(now_seconds)
-        # self.print_events_lists()
+        self.print_events_lists()
         # and start any show that should be running at start up time
         self.catchup=True
 
@@ -174,26 +174,7 @@ class TimeOfDay(object):
     def open_schedule(self):
         # look for the schedule.json file
         # try inside profile
-        tryfile=self.pp_profile+os.sep+"schedule.json"
-        # self.mon.log(self,"Trying schedule.json in profile at: "+ tryfile)
-        if os.path.exists(tryfile):
-            filename=tryfile
-        else:
-            # try inside pp_home
-            # self.mon.log(self,"schedule.json not found at "+ tryfile+ " trying pp_home")
-            tryfile=self.pp_home+os.sep+"schedule.json"
-            if os.path.exists(tryfile):
-                filename=tryfile
-            else:
-                # try inside pipresents
-                # self.mon.log(self,"schedule.json not found at "+ tryfile + " trying inside pipresents")
-                tryfile=self.pp_dir+os.sep+'pp_home'+os.sep+"schedule.json"
-                if os.path.exists(tryfile):
-                    filename=tryfile
-                else:
-                    self.mon.log(self,"schedule.json not found at "+ tryfile)
-                    self.mon.err(self,"schedule.json not found  at "+ tryfile)
-                    return False
+        filename=self.pp_profile+os.sep+"schedule.json"
         ifile  = open(filename, 'rb')
         schedule= json.load(ifile)
         ifile.close()
@@ -203,7 +184,7 @@ class TimeOfDay(object):
 
     def build_schedule_for_today(self,schedule,now):
         this_day=now
-        # print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
+        print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
         """
         self.todays_schedule is a dictionary the keys being show-refs.
         Each dictionary entry is a list of time_elements

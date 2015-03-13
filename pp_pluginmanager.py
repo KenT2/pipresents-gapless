@@ -44,7 +44,7 @@ class PluginManager(object):
         self.plugin_params=self.read(plugin_cfg_file)
         # print self.plugin_params
         # checks the plugin exists
-        plugin_dir = self.pp_dir+os.sep+'pp_home'+os.sep+'pp_plugins'
+        plugin_dir = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_plugins'
         plugin_file = plugin_dir+os.sep+self.plugin_params['plugin']+'.py'
 
         if not os.path.exists(plugin_file):

@@ -96,7 +96,7 @@ class Animate(object):
     def animate(self,text,tag):
         lines = text.split("\n")
         for line in lines:
-            reason,message,name,param_type,param_values,delay=self.parse_animate_fields(line)
+            reason,message,delay,name,param_type,param_values=self.parse_animate_fields(line)
             if reason == 'error':
                 return 'error',message
             if name !='':
@@ -178,35 +178,23 @@ class Animate(object):
         if len(fields) == 0:
             return 'normal','no fields','','',[],0
             
-        elif len(fields) not in (3,4): 
+        elif len(fields) < 4: 
             return 'error','Wrong number of fields in : '+ line,'','',[],0
 
-        elif len(fields)== 3:
-
-            name=fields[0]
-            param_type=fields[1]
-            delay_text='0'
-            start_params=2
-
-        elif len(fields)== 4:
-            delay_text=fields[0]
-            name=fields[1]
-            param_type=fields[2]
-            start_params=3
-
-        else:
-            return 'error','Wrong number of fields in : '+ line,'','',[],0            
-
+        delay_text=fields[0]
+        name=fields[1]
+        param_type=fields[2]
+        start_params = 3
+       
         # check each field
         if  not delay_text.isdigit():
             return 'error','Delay is not an integer in : '+ line,'','',[],0
         else:
             delay=int(delay_text)
 
-
         #only one param type at the moment.
         if param_type != 'state':
-            return 'error','uknnown parameter type in : '+ line,'','',[],0
+            return 'error','uknown parameter type in : '+ line,'','',[],0
         else:
             params_length = 1
             params_check = ('on','off')
@@ -219,6 +207,6 @@ class Animate(object):
                 return 'error','unknown parameter value in : '+ line,'','',[],0
             params.append(param)
         
-        return 'normal','event parsed OK',name,param_type,params,delay
+        return 'normal','event parsed OK',delay,name,param_type,params
         
 

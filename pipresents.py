@@ -24,13 +24,13 @@ from pp_options import command_options
 from pp_showlist import ShowList
 from pp_validate import Validator
 from pp_showmanager import ShowManager
-from pp_resourcereader import ResourceReader
 from pp_screendriver import ScreenDriver
 from pp_timeofday import TimeOfDay
 from pp_kbddriver import KbdDriver
 from pp_utils import Monitor
 from pp_utils import StopWatch
 from pp_animate import Animate
+from pp_oscdriver import OSCDriver
 
 
 class PiPresents(object):
@@ -69,8 +69,8 @@ class PiPresents(object):
         # Init in PiPresents only
         self.mon.init()
 
-        # uncomment to enable cobtrol of logging from within a class
-        # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mom.set_log_level()
+        # uncomment to enable control of logging from within a class
+        # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mon.set_log_level()
         
         # make a shorter list to log/trace only some classes without using enable_in_code.
         Monitor.classes  = ['PiPresents',
@@ -80,8 +80,7 @@ class PiPresents(object):
                             'MediaList','LiveList','ShowList',
                             'PathManager','ControlsManager','ShowManager','PluginManager',
                             'MplayerDriver','OMXDriver','UZBLDriver',
-                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate',
-                            'ResourceReader'
+                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
         
         # get global log level from command line
@@ -89,10 +88,15 @@ class PiPresents(object):
         
         self.mon.newline(3)    
         self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue)
-        self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
+        # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
-        # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME'))
-        # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))
+        if os.geteuid() !=0:
+            user=os.getenv('USER')
+        else:
+            user = os.getenv('SUDO_USER')
+        self.mon.log(self,'User is: '+ user)
+        # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME')) # does not work
+        # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))   # does not work
 
         # optional other classes used
         self.root=None
@@ -100,6 +104,7 @@ class PiPresents(object):
         self.tod=None
         self.animate=None
         self.gpiodriver=None
+        self.oscdriver=None
          
         # get profile path from -p option
         if self.options['profile'] != '':
@@ -109,14 +114,14 @@ class PiPresents(object):
         
        # get directory containing pp_home from the command,
         if self.options['home']  == "":
-            home = os.path.expanduser('~')+ os.sep+"pp_home"
+            home = os.sep+ 'home' + os.sep + user + os.sep+"pp_home"
         else:
             home = self.options['home'] + os.sep+ "pp_home"         
         self.mon.log(self,"pp_home directory is: " + home)
-        
+
+
         # check if pp_home exists.
         # try for 10 seconds to allow usb stick to automount
-        self.pp_home=pp_dir+"/pp_home"
         found=False
         for i in range (1, 10):
             self.mon.log(self,"Trying pp_home at: " + home +  " (" + str(i)+')')
@@ -128,7 +133,7 @@ class PiPresents(object):
         if found is True:
             self.mon.log(self,"Found Requested Home Directory, using pp_home at: " + home)
         else:
-            self.mon.err(self,"Failed to find pp_home"+ self.pp_home)
+            self.mon.err(self,"Failed to find pp_home directory at " + home)
             self.end('error','Failed to find pp_home')
 
 
@@ -146,13 +151,7 @@ class PiPresents(object):
                 self.mon.err(self,"Validation Failed")
                 self.end('error','Validation Failed')
 
-                
-        # open the resources
-        self.rr=ResourceReader()
-        # read the file, done once for all the other classes to use.
-        if self.rr.read(pp_dir,self.pp_home,self.pp_profile) is False:
-            self.end('error','cannot find resources.cfg')            
-
+         
         # initialise and read the showlist in the profile
         self.showlist=ShowList()
         self.showlist_file= self.pp_profile+ "/pp_showlist.json"
@@ -205,7 +204,9 @@ class PiPresents(object):
             if reason =='error':
                 self.mon.err(self,message)
                 self.end('error',message)
-        
+
+        self.mon.log(self, 'commanded screen dimensions are ' + str(self.screen_width) + ' x ' + str(self.screen_height) + ' pixcels')
+       
         # set window dimensions and decorations
         if self.options['fullscreen'] is False:
             self.window_width=int(self.root.winfo_screenwidth()*self.nonfull_window_width)
@@ -264,7 +265,7 @@ class PiPresents(object):
         kbd=KbdDriver()
         if kbd.read(pp_dir,self.pp_home,self.pp_profile) is False:
             self.end('error','cannot find or error in keys.cfg')
-        kbd.bind_keys(self.root,self.input_pressed)
+        kbd.bind_keys(self.root,self.handle_input_event)
 
         self.sr=ScreenDriver()
         # read the screen click area config file
@@ -272,9 +273,10 @@ class PiPresents(object):
         if reason == 'error':
             self.end('error','cannot find screen.cfg')
 
+
         # create click areas on the canvas, must be polygon as outline rectangles are not filled as far as find_closest goes
         # click areas are made on the Pi Presents canvas not the show canvases.
-        reason,message = self.sr.make_click_areas(self.canvas,self.input_pressed)
+        reason,message = self.sr.make_click_areas(self.canvas,self.handle_input_event)
         if reason == 'error':
             self.mon.err(self,message)
             self.end('error',message)
@@ -291,18 +293,37 @@ class PiPresents(object):
             from pp_gpiodriver import GPIODriver
             # initialise the GPIO
             self.gpiodriver=GPIODriver()
-            # PPIO.gpio_enabled=False
-            reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.gpio_pressed)
+            reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.handle_input_event)
             if reason == 'error':
                 self.end('error',message)
                 
             # and start polling gpio
             self.gpiodriver.poll()
 
+        # Init OSCDriver, read config and start OSC server
+        self.osc_enabled=False
+        if os.path.exists(self.pp_profile + os.sep +  'osc.cfg'):
+            self.oscdriver=OSCDriver()
+            reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
+            if reason == 'error':
+                self.end('error',message)
+            else:
+                self.osc_enabled=True
+                self.root.after(1000,self.oscdriver.start_server())
+
         # kick off animation sequencer
         self.animate = Animate()
         self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
         self.animate.poll()
+
+
+        self.tod_enabled=False
+        if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):
+            # kick off the time of day scheduler which may run additional shows
+            self.tod=TimeOfDay()
+            self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
+            self.tod_enabled = True
+
 
         # Create list of start shows initialise them and then run them
         show_id=-1
@@ -318,12 +339,11 @@ class PiPresents(object):
         # and run the start shows
         self.run_start_shows()
 
-        # kick off the time of day scheduler which may run additional shows
-        self.tod=TimeOfDay()
-        # self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
-        # self.tod.poll()
+        # then start the time of day scheduler
+        if self.tod_enabled is True:
+            self.tod.poll()
 
-        # start tkinters event loop
+        # start Tkinters event loop
         self.root.mainloop( )
 
 
@@ -354,17 +374,14 @@ class PiPresents(object):
 # *********************
 # User inputs
 # ********************
-
-    # gpio callback - symbol provided by gpiodriver
-    def gpio_pressed(self,index,symbol,edge):
-        self.mon.log(self, "GPIO Pressed: "+ symbol)
-        self.input_pressed(symbol,edge,'gpio')
-
-
     # handles one command provided as a line of text
     def handle_command(self,command_text):
         self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
+            return
+
+        if command_text[0]=='/' and self.osc_enabled is True:
+            self.oscdriver.send_command(command_text)
             return
         
         fields= command_text.split()
@@ -379,45 +396,84 @@ class PiPresents(object):
             
         elif show_command == 'exitpipresents':
             self.exitpipresents_required=True
-            reason,message= self.show_manager.exit_all_shows()
+            if self.show_manager.all_shows_exited() is True:
+                # need root.after to get out of st thread
+                self.root.after(1,self.e_all_shows_ended_callback)
+                return
+            else:
+                reason,message= self.show_manager.exit_all_shows()
 
         elif show_command == 'shutdownnow':
-            reason='normal'
-            message='shutdownnow'
-            self.shutdown_pressed('now')
+            # need root.after to get out of st thread
+            self.root.after(1,self.e_shutdown_pressed)
+            return
         else:
             reason='error'
-            message='command not recognised '+ command_text
+            message = 'command not recognised: '+ show_command
             
         if reason=='error':
             self.mon.err(self,message)
         return
 
-                            
-    def handle_output_event(self,symbol,param_type,param_values,req_time):
-        reason,message=self.gpiodriver.handle_output_event(symbol,param_type,param_values,req_time)
-        if reason =='error':
+    def e_all_shows_ended_callback(self):
+            self.all_shows_ended_callback('normal','no shows running')
+
+    def e_shutdown_pressed(self):
+            self.shutdown_pressed('now')
+
+
+    def e_osc_handle_output_event(self,line):
+        #jump  out of server thread
+        self.root.after(1, lambda arg=line: self.osc_handle_output_event(arg))
+
+    def  osc_handle_output_event(self,line):
+        self.mon.log(self,"output event received: "+ line)
+        #osc sends output events as a string
+        reason,message,delay,name,param_type,param_values=self.animate.parse_animate_fields(line)
+        if reason == 'error':
             self.mon.err(self,message)
-            self.end(reason,message)            
-        
+            self.end(reason,message)
+        self.handle_output_event(name,param_type,param_values,0)
+
+               
+    def handle_output_event(self,symbol,param_type,param_values,req_time):
+        if self.options['gpio'] is True and self.gpiodriver is not None:
+            reason,message=self.gpiodriver.handle_output_event(symbol,param_type,param_values,req_time)
+            if reason =='error':
+                self.mon.err(self,message)
+                self.end(reason,message)
+        else:
+            self.mon.warn(self,'GPIO not enabled')
 
 
     # all input events call this callback with a symbolic name.
     # handle events that affect PP overall, otherwise pass to all active shows
-    def input_pressed(self,symbol,edge,source):
-        self.mon.log(self,"event received: "+symbol)
+    def handle_input_event(self,symbol,source):
+        self.mon.log(self,"event received: "+symbol + ' from '+ source)
         if symbol == 'pp-terminate':
             self.terminate()
+            
         elif symbol == 'pp-shutdown':
             self.shutdown_pressed('delay')
+            
         elif symbol == 'pp-shutdownnow':
-            self.shutdown_pressed('now')
+            # need root.after to grt out of st thread
+            self.root.after(1,self.e_shutdown_pressed)
+            return
+        
+        elif symbol == 'pp-exitpipresents':
+            self.exitpipresents_required=True
+            if self.show_manager.all_shows_exited() is True:
+                # need root.after to grt out of st thread
+                self.root.after(1,self.e_all_shows_ended_callback)
+                return
+            reason,message= self.show_manager.exit_all_shows()
         else:
             # events for shows affect the show and could cause it to exit.
             for show in self.show_manager.shows:
                 show_obj=show[ShowManager.SHOW_OBJ]
                 if show_obj is not None:
-                    show_obj.input_pressed(symbol,edge,source)
+                    show_obj.handle_input_event(symbol)
 
 
 
@@ -426,15 +482,23 @@ class PiPresents(object):
             self.root.after(5000,self.on_shutdown_delay)
         else:
             self.shutdown_required=True
-            # calls exit method of all shows, results in all_shows_closed_callback
-            self.show_manager.exit_all_shows()           
+            if self.show_manager.all_shows_exited() is True:
+               self.all_shows_ended_callback('normal','no shows running')
+            else:
+                # calls exit method of all shows, results in all_shows_closed_callback
+                self.show_manager.exit_all_shows()           
 
 
     def on_shutdown_delay(self):
         # 5 second delay is up, if shutdown button still pressed then shutdown
         if self.gpiodriver.shutdown_pressed():
             self.shutdown_required=True
-            self.show_manager.exit_all_shows()
+            if self.show_manager.all_shows_exited() is True:
+               self.all_shows_ended_callback('normal','no shows running')
+            else:
+                # calls exit method of all shows, results in all_shows_closed_callback
+                self.show_manager.exit_all_shows()
+
 
 
     def terminate(self):
@@ -493,6 +557,7 @@ class PiPresents(object):
     
     # tidy up all the peripheral bits of Pi Presents
     def tidy_up(self):
+        self.mon.log(self, "Tidying Up")
         # turn screen blanking back on
         if self.options['noblank'] is True:
             call(["xset","s", "on"])
@@ -501,36 +566,22 @@ class PiPresents(object):
         # tidy up animation and gpio
         if self.animate is not None:
             self.animate.terminate()
+            
         if self.options['gpio'] is True and self.gpiodriver is not None:
             self.gpiodriver.terminate()
+
+        if self.osc_enabled is True:
+            self.oscdriver.terminate()
             
         # tidy up time of day scheduler
-        if self.tod is not None:
-            pass
-            # self.tod.terminate()
+        if self.tod_enabled is True:
+            self.tod.terminate()
 
-
-
-## *****************************
-## utilitities
-## ****************************
-##
-##    def resource(self,section,item):
-##        value=self.rr.get(section,item)
-##        if value is False:
-##            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-##            self.terminate("error")
-##        else:
-##            return value
-
-          
+         
 if __name__ == '__main__':
-
     pp = PiPresents()
-    # try:
-            # pp = PiPresents()
-    # except:
-            # traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
-            # pass
+
+
+
 
 

@@ -49,9 +49,9 @@ class ArtShow(Show):
         self.req_next=''
 
 
-    def play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
+    def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
         self.mon.trace(self,self.show_params['show-ref'])
-        Show.base_play(self,end_callback,show_ready_callback,direction_command, level,controls_list)
+        Show.base_play(self,end_callback,show_ready_callback,parent_kickback_signal, level,controls_list)
 
         # get control bindings for this show
         controlsmanager=ControlsManager()
@@ -101,22 +101,22 @@ class ArtShow(Show):
 
  
    # respond to key presses.
-    def input_pressed(self,symbol,edge,source):
+    def handle_input_event(self,symbol):
         self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input: " + symbol)
-        Show.base_input_pressed(self,symbol,edge,source)
+        Show.base_handle_input_event(self,symbol)
 
 
 
-    def input_pressed_this_show(self,symbol,edge,source):
+    def handle_input_event_this_show(self,symbol):
         operation=self.base_lookup_control(symbol,self.controls_list)
-        self.do_operation(operation,edge,source)
+        self.do_operation(operation)
 
 
     def do_trigger_or_link(self,symbol,edge,source):
         pass
 
     # service the standard operations for this show
-    def do_operation(self,operation,edge,source):
+    def do_operation(self,operation):
         self.mon.trace(self,operation)
         # service the standard inputs for this show
         if operation == 'exit':
@@ -142,6 +142,9 @@ class ArtShow(Show):
             if self.current_player is not None:
                 self.current_player.input_pressed('pause')
 
+        elif operation  in ('no-command','null'):
+            return
+        
         elif operation[0:4] == 'omx-' or operation[0:6] == 'mplay-':
             if self.current_player is not None:
                 self.current_player.input_pressed(operation)
@@ -279,7 +282,7 @@ class ArtShow(Show):
         self.previous_player=self.current_player
         self.current_player=self.next_player
         self.next_player=None
-        self.mon.trace(self,'AFTER SHUFFLE n-c-p' +  str(self.next_player) + ' ' + str(self.current_player) + ' ' + str(self.previous_player))
+        self.mon.trace(self,'AFTER SHUFFLE n-c-p' +  self.mon.pretty_inst(self.next_player) + ' ' + self.mon.pretty_inst(self.current_player) + ' ' + self.mon.pretty_inst(self.previous_player) )
         self.mon.trace(self, 'showing track')
         if self.end_medialist_warning is True:
             self.end_medialist_signal = True
@@ -292,6 +295,7 @@ class ArtShow(Show):
         # showing has finished with 'pause at end', showing the next track will close it after next has started showing
         self.mon.trace(self,' - pause at end')
         self.mon.log(self,"finished_showing - pause at end of showing with reason: "+reason+ ' and message: '+ message)
+    
         if self.current_player.play_state == 'show-failed':
             self.req_next = 'error'
             self.what_next()
@@ -415,10 +419,10 @@ class ArtShow(Show):
         self.mon.trace(self, '')
         # close the player from the previous track
         if self.previous_player is not None:
-            self.mon.trace(self, 'hiding previous: ' + str(self.previous_player))
+            self.mon.trace(self, 'hiding previous: ' + self.mon.pretty_inst(self.previous_player))
             self.previous_player.hide()
             if self.previous_player.get_play_state() == 'showing':
-                self.mon.trace(self,'closing previous: ' + str(self.previous_player))
+                self.mon.trace(self,'closing previous: ' + self.mon.pretty_inst(self.previous_player))
                 self.previous_player.close(self.closed_callback)
             else:
                 self.mon.trace(self, 'previous is none')
@@ -435,7 +439,7 @@ class ArtShow(Show):
         self.mon.trace(self, '')
         # close the player from the previous track
         if self.previous_player is not  None:
-            self.mon.trace(self, 'previous is not None ' + self.previous_player)
+            self.mon.trace(self, 'previous is not None ' + self.mon.pretty_inst(self.previous_player))
             if self.previous_player.get_play_state() == 'showing':
                 # showing or frozen
                 self.mon.trace(self,'closing previous ' + self.previous_player)
@@ -451,7 +455,7 @@ class ArtShow(Show):
             
                 
     def _base_close_previous_callback(self,status,message):
-        self.mon.trace(self,' previous is None  - was ' + self.previous_player)
+        self.mon.trace(self,' previous is None  - was ' + self.mon.pretty_inst(self.previous_player))
         self.previous_player.hide()
         self.previous_player=None
         self.end(self.ending_reason,'')

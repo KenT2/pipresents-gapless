@@ -8,7 +8,6 @@ from pp_utils import Monitor
 
 
 class ScreenDriver(object):
-    config=None
     canvas = None  ##The Pi presents canvas, click areas are draawn on this, not individual show canvases.
     image_obj=[]
     
@@ -20,37 +19,36 @@ class ScreenDriver(object):
     def read(self,pp_dir,pp_home,pp_profile):
         self.pp_dir=pp_dir
         self.pp_home=pp_home
-        if ScreenDriver.config is None:
-            # try inside profile
-            tryfile=pp_profile+os.sep+"screen.cfg"
-            # self.mon.log(self,"Trying screen.cfg in profile at: "+ tryfile)
+        # try inside profile
+        tryfile=pp_profile+os.sep+"screen.cfg"
+        # self.mon.log(self,"Trying screen.cfg in profile at: "+ tryfile)
+        if os.path.exists(tryfile):
+            filename=tryfile
+        else:
+            # try inside pp_home
+            self.mon.log(self,"screen.cfg not found at "+ tryfile+ " trying pp_home")
+            tryfile=pp_home+os.sep+"screen.cfg"
             if os.path.exists(tryfile):
                 filename=tryfile
             else:
-                # try inside pp_home
-                # self.mon.log(self,"screen.cfg not found at "+ tryfile+ " trying pp_home")
-                tryfile=pp_home+os.sep+"screen.cfg"
-                if os.path.exists(tryfile):
-                    filename=tryfile
-                else:
-                    # try inside pipresents
-                    # self.mon.log(self,"screen.cfg not found at "+ tryfile + " trying inside pipresents")
-                    tryfile=pp_dir+os.sep+'pp_home'+os.sep+"screen.cfg"
-                    if os.path.exists(tryfile):
-                        filename=tryfile
-                    else:
-                        self.mon.err(self,"screen.cfg not found at " + tryfile)
-                        return 'error','scrren.cfg not found'   
-            ScreenDriver.config = ConfigParser.ConfigParser()
-            ScreenDriver.config.read(filename)
+                self.mon.log(self,"screen.cfg not found at "+ tryfile+ " click areas not used")
+                #give congiparser an empty filename so it returns an empty config.
+                filename=''
+        ScreenDriver.config = ConfigParser.ConfigParser()
+        ScreenDriver.config.read(filename)
+        if filename != '':
             self.mon.log(self,"screen.cfg read from "+ filename)
-            return 'normal','screen.cfg read'
+        return 'normal','screen.cfg read'
 
     def click_areas(self):
         return ScreenDriver.config.sections()
 
     def get(self,section,item):
         return ScreenDriver.config.get(section,item)
+
+    def is_in_config(self,section,item):
+        return ScreenDriver.config.has_option(section,item)
+
     
     # make click areas on the screen, bind them to their symbolic name, and create a callback if it is clicked.
     # click areas must be polygon as outline rectangles are not filled as far as find_closest goes
@@ -87,19 +85,26 @@ class ScreenDriver(object):
                                        state='hidden')
 
             # image for the button
+            if not self.is_in_config(area,'image'):
+                reason='error'
+                message='missing image fields in screen.cfg, see 1.3 release notes'
+                break
             image_name=self.get(area,'image')
             if image_name !='':
                 image_width = int(self.get(area,'image-width'))
                 image_height = int(self.get(area,'image-height'))
                 image_path=self.complete_path(image_name)
-                # image_path=image_name
-                if os.path.exists(image_path) is False:
-                    self.pil_image=None
-                    reason='error'
-                    message = 'image not found: '+ image_path
-                    break
-                else:
+                if os.path.exists(image_path) is True:
                     self.pil_image=Image.open(image_path)
+                else:
+                    image_path=self.pp_dir+os.sep+'pp_resources'+os.sep+'button.jpg'
+                    if os.path.exists(image_path) is True:
+                        self.mon.warn(self,'Default button image used for '+ area)
+                        self.pil_image=Image.open(image_path)
+                    else:
+                        self.mon.warn(self,'Button image does not exist for '+ area)
+                        self.pil_image=None
+                        
                 if self.pil_image is not None:
                     self.pil_image=self.pil_image.resize((image_width-1,image_height-1))                 
                     self.photo_image_id=ImageTk.PhotoImage(self.pil_image)
@@ -134,7 +139,7 @@ class ScreenDriver(object):
             # print ScreenDriver.canvas.gettags(item)
             if ('pp-click-area' in ScreenDriver.canvas.gettags(item)) and ScreenDriver.canvas.itemcget(item,'state') == 'normal':
                 self.mon.log(self, "Click on screen: "+ ScreenDriver.canvas.gettags(item)[1])
-                self.callback(ScreenDriver.canvas.gettags(item)[1],'front','screen')
+                self.callback(ScreenDriver.canvas.gettags(item)[1],'SCREEN')
                 # need break as find_overlapping returns two results for each click, one with 'current' one without.
                 break
 

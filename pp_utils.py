@@ -1,5 +1,6 @@
 import time
 import sys
+import os
 import tkMessageBox
 
 class StopWatch(object):
@@ -54,7 +55,7 @@ class Monitor(object):
     def init(self):
         if Monitor.ofile is None:
             bufsize=0
-            Monitor.ofile=open(Monitor.log_path+"/pp_log.log","w",bufsize)
+            Monitor.ofile=open(Monitor.log_path+ os.sep+'pp_logs' + os.sep + 'pp_log.txt','w',bufsize)
         Monitor.log_level=0
         Monitor.classes  = []
         Monitor.enable_in_code = False  # enables use of self.mon.set_log_level(nn) in classes

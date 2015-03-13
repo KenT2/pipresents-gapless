@@ -20,6 +20,7 @@ from pp_utils import Monitor
 from pp_options import ed_options
 from pp_validate import Validator
 from pp_definitions import PPdefinitions
+from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 
 # **************************
 # Pi Presents Editor Class
@@ -140,6 +141,13 @@ class PPEditor(object):
         typemenu.add_command(label='Menu Track', command = self.new_menu_track)
         trackmenu.add_cascade(label='New', menu = typemenu)
 
+        oscmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
+        menubar.add_cascade(label='OSC', menu = oscmenu)
+        oscmenu.add_command(label='Create OSC configuration', command = self.create_osc)
+        oscmenu.add_command(label='Edit OSC Configuration', command = self.edit_osc)
+        oscmenu.add_command(label='Delete OSC Configuration', command = self.delete_osc)
+
+
         toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         menubar.add_cascade(label='Tools', menu = toolsmenu)
         toolsmenu.add_command(label='Update All', command = self.update_all)
@@ -212,7 +220,7 @@ class PPEditor(object):
 
         # define display of showlist 
         scrollbar = Scrollbar(shows_frame, orient=VERTICAL)
-        self.shows_display = Listbox(shows_frame, selectmode=SINGLE, height=7,
+        self.shows_display = Listbox(shows_frame, selectmode=SINGLE, height=12,
                                      width = 40, bg="white",activestyle=NONE,
                                      fg="black", yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.shows_display.yview)
@@ -223,7 +231,7 @@ class PPEditor(object):
     
         # define display of medialists
         scrollbar = Scrollbar(medialists_frame, orient=VERTICAL)
-        self.medialists_display = Listbox(medialists_frame, selectmode=SINGLE, height=7,
+        self.medialists_display = Listbox(medialists_frame, selectmode=SINGLE, height=12,
                                           width = 40, bg="white",activestyle=NONE,
                                           fg="black",yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.medialists_display.yview)
@@ -234,7 +242,7 @@ class PPEditor(object):
 
         # define display of tracks
         scrollbar = Scrollbar(tracks_frame, orient=VERTICAL)
-        self.tracks_display = Listbox(tracks_frame, selectmode=SINGLE, height=15,
+        self.tracks_display = Listbox(tracks_frame, selectmode=SINGLE, height=25,
                                       width = 40, bg="white",activestyle=NONE,
                                       fg="black",yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.tracks_display.yview)
@@ -243,8 +251,9 @@ class PPEditor(object):
         self.tracks_display.bind("<ButtonRelease-1>", self.e_select_track)
 
 
-        # initialise editor options class
+        # initialise editor options class and OSC config class
         self.options=Options(self.pp_dir) # creates options file in code directory if necessary
+        self.osc_config=OSCConfig()
         
         # initialise variables      
         self.init()
@@ -269,6 +278,8 @@ class PPEditor(object):
         self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
         self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
         self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
+        self.pp_profile_dir=''
+        self.osc_config_file = ''
         self.current_medialist=None
         self.current_showlist=None
         self.current_show=None
@@ -288,6 +299,7 @@ class PPEditor(object):
         if eo.result is True: self.init()
 
 
+
     def show_help (self):
         tkMessageBox.showinfo("Help","Read 'manual.pdf'")
   
@@ -301,6 +313,29 @@ class PPEditor(object):
         val =Validator()
         val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,self.pp_profile_dir,self.editor_issue,True)
 
+
+    # **************
+    # OSC CONFIGURATION
+    # **************
+
+    def create_osc(self):
+        if self.pp_profile_dir=='':
+            return
+        if self.osc_config.read(self.osc_config_file) is False:
+            self.osc_config.create(self.osc_config_file)
+
+    def edit_osc(self):
+        if self.osc_config.read(self.osc_config_file) is False:
+            print 'no config file'
+            return
+        osc_ut=OSCUnitType(self.root,self.osc_config.this_unit_type)
+        self.req_unit_type=osc_ut.result
+        if self.req_unit_type != None:
+            print self.req_unit_type
+            eosc = OSCEditor(self.root, self.osc_config_file,self.req_unit_type,'Edit OSC Configuration')
+            
+    def delete_osc(self):
+        pass
 
     
     # **************
@@ -330,6 +365,7 @@ class PPEditor(object):
             return
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
+        self.osc_config_file=self.pp_profile_dir+'/osc.cfg'
 
 
     def new_profile(self,profile):
@@ -350,39 +386,41 @@ class PPEditor(object):
 
         
     def new_exhibit_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_exhibit"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit'
         self.new_profile(profile)
 
     def new_interactive_profile(self):
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_interactive'
         profile = self.pp_dir+"/pp_home/pp_profiles/ppt_interactive"
         self.new_profile(profile)
 
     def new_menu_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_menu"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_menu'
         self.new_profile(profile)
 
     def new_presentation_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_presentation"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_presentation'
         self.new_profile(profile)
 
     def new_blank_profile(self):
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit'
         profile = self.pp_dir+"/pp_home/pp_profiles/ppt_blank"
         self.new_profile(profile)
 
     def new_mediashow_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_mediashow"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_mediashow'
         self.new_profile(profile)
         
     def new_liveshow_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_liveshow"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_liveshow'
         self.new_profile(profile)
 
     def new_radiobuttonshow_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_radiobuttonshow"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_radiobuttonshow'
         self.new_profile(profile)
 
     def new_hyperlinkshow_profile(self):
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_hyperlinkshow"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow'
         self.new_profile(profile)
 
     # ***************************************
@@ -797,7 +835,7 @@ class PPEditor(object):
         elif ext.lower() in PPdefinitions.WEB_FILES:
             self.new_track(PPdefinitions.new_tracks['web'],{'title':title,'track-ref':'','location':location})
         else:
-            self.mon.err(self,afile + " - file extension not recognised")
+            self.mon.err(self,afile + " - cannot determine track type, use menu track>new")
 
 
 
@@ -898,7 +936,7 @@ class PPEditor(object):
             if track['track-ref']== 'menu-track':
                 break
             
-        #update soem fields with new default content
+        #update some fields with new default content
         tracks[index]['links']=PPdefinitions.new_tracks['menu']['links']
 
         #transfer values from show to track
@@ -1040,8 +1078,6 @@ class Options(object):
             config.set('config','home',os.path.expanduser('~')+'/pp_home')
             config.set('config','media',os.path.expanduser('~'))
             config.set('config','offset','')
-            # config.set('config','home','/home/pi/pp_home')
-            # config.set('config','media','/home/pi')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
 

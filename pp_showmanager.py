@@ -46,7 +46,6 @@ class ShowManager(object):
         return 'normal','shows regiistered'
             
 
-
     def register_show(self,ref):
         registered=self.show_registered(ref)
         if registered == -1:
@@ -88,7 +87,6 @@ class ShowManager(object):
         self.mon.trace(self,'show_ref= ' + ShowManager.shows[index][ShowManager.SHOW_REF] + ' show_id= ' + str(index))
 
 
-
     # are all shows exited?
     def all_shows_exited(self):
         all_exited=True
@@ -96,6 +94,7 @@ class ShowManager(object):
             if show[ShowManager.SHOW_OBJ] is not None:
                 all_exited=False
         return all_exited
+
 
     # fromat for printing
     def pretty_shows(self):
@@ -131,13 +130,15 @@ class ShowManager(object):
         else:
             return 'error','command not recognised '+ show_command
 
+
     def exit_all_shows(self):
         for show in ShowManager.shows:
             self.exit_show(show[ShowManager.SHOW_REF])
         return 'normal','exited all shows'
 
+
     # kick off the exit sequence of a show by calling the shows exit method.
-    # it will result in al the shows in a stack being closed and end_play_show being called
+    # it will result in all the shows in a stack being closed and end_play_show being called
     def exit_show(self,show_ref):
         index=self.show_registered(show_ref)
         self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
@@ -166,8 +167,8 @@ class ShowManager(object):
             return 'error',"unknown show type in start concurrent show - "+ show['type']
         else:
             self.set_running(index,show_obj)
-            # params - end_callback, show_ready_callback, direction_command, level
-            show_obj.play(self._end_play_show,None,'nil',0,[])
+            # params - end_callback, show_ready_callback, parent_kickback_signal, level
+            show_obj.play(self._end_play_show,None,False,0,[])
             return 'normal','concurrent show started'
 
  

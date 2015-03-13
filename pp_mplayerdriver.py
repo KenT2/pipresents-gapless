@@ -1,6 +1,6 @@
 import pexpect
 import re
-
+import os
 
 from threading import Thread
 from time import sleep
@@ -46,9 +46,10 @@ class MplayerDriver(object):
 
     _LAUNCH_CMD = 'mplayer  -quiet '
 
-    def __init__(self,widget):
+    def __init__(self,widget,pp_dir):
 
         self.widget=widget
+        self.pp_dir=pp_dir
         
         self.mon=Monitor()
         
@@ -114,7 +115,7 @@ class MplayerDriver(object):
         self._process = pexpect.spawn(cmd)
         
         # uncomment to monitor output to and input from mplayer (read pexpect manual)
-        fout= file('/home/pi/pipresents/mplayerlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
+        fout= file(self.pp_dir + os.sep + 'pp_logs'  + os.sep + 'mplayerlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
         # self._process.logfile_send = sys.stdout  # send just commands to stdout
         self._process.logfile=fout  # send all communications to log file
 

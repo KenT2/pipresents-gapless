@@ -64,6 +64,12 @@ class ImagePlayer(Player):
             self.image_window= self.show_params['image-window'].strip()
 
 
+        # get  image rotation from profile
+        if self.track_params['image-rotate'].strip() != '':
+            self.image_rotate = int(self.track_params['image-rotate'].strip())
+        else:
+            self.image_rotate= int(self.show_params['image-rotate'].strip())
+
         self.track_image_obj=None
         self.tk_img=None
 
@@ -82,7 +88,7 @@ class ImagePlayer(Player):
         Player.pre_load(self)
 
         # parse the image_window
-        status,self.command,self.has_coords,self.image_x1,self.image_y1,self.image_x2,self.image_y2,self.image_filter=self.parse_window(self.image_window)
+        status,self.command,self.has_coords,self.window_x1,self.window_y1,self.window_x2,self.window_y2,self.image_filter=self.parse_window(self.image_window)
         if status  == 'error':
             self.mon.err(self,'image window error: '+self.image_window)
             self.play_state='load-failed'
@@ -196,18 +202,12 @@ class ImagePlayer(Player):
                 self.dwell_counter=self.dwell_counter+1
 
             # one time flipping of pause text
-            pause_text= self.resource('imageplayer','m01')
-            if pause_text==False:
-                self.mon.err(self, 'pause txt  - imageplayer m01 - not in resources.cfg')
-                self.play_state='show-failed'
-                if self.finished_callback is not None:
-                    self.finished_callback('error','pause text not found')
-                    return
+            pause_text= self.track_params['pause-text']
             if self.paused is True and self.pause_text_obj is None:
-                self.pause_text_obj=self.canvas.create_text(100,100, anchor=NW,
+                self.pause_text_obj=self.canvas.create_text(self.track_params['pause-text-x'],self.track_params['pause-text-y'], anchor=NW,
                                                         text=pause_text,
-                                                        fill="white",
-                                                        font="arial 25 bold")
+                                                        fill=self.track_params['pause-text-colour'],
+                                                        font=self.track_params['pause-text-font'])
                 self.canvas.update_idletasks( )
                 
             if self.paused is False and self.pause_text_obj is not None:
@@ -242,13 +242,20 @@ class ImagePlayer(Player):
             self.track_image_obj=None
             return 'error','Track file not found '+ self.track
 
-        # display track image                                    
+        # display track image
         if ppil_image is not None:
+            #rotate the image
+            # print self.image_width,self.image_height
+            if self.image_rotate!=0:
+                ppil_image=ppil_image.rotate(self.image_rotate,expand=True)      
             self.image_width,self.image_height=ppil_image.size
+            # print self.image_width,self.image_height
 
+            
             if self.command == 'original':
                 # display image at its original size
                 if self.has_coords is False:
+                    
                     # load and display the unmodified image in centre
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
@@ -259,18 +266,18 @@ class ImagePlayer(Player):
                     # load and display the unmodified image at x1,y1
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
-                    self.track_image_obj = self.canvas.create_image(self.image_x1+self.show_canvas_x1,
-                                                                    self.image_y1+self.show_canvas_y1,
+                    self.track_image_obj = self.canvas.create_image(self.window_x1+self.show_canvas_x1,
+                                                                    self.window_y1+self.show_canvas_y1,
                                                                     image=self.tk_img, anchor=NW)
 
 
             elif self.command in ('fit','shrink'):
                 # shrink fit the window or screen preserving aspect
                 if self.has_coords is True:
-                    window_width=self.image_x2 - self.image_x1
-                    window_height=self.image_y2 - self.image_y1
-                    window_centre_x=(self.image_x2+self.image_x1)/2
-                    window_centre_y= (self.image_y2+self.image_y1)/2
+                    window_width=self.window_x2 - self.window_x1
+                    window_height=self.window_y2 - self.window_y1
+                    window_centre_x=(self.window_x2+self.window_x1)/2
+                    window_centre_y= (self.window_y2+self.window_y1)/2
                 else:
                     window_width=self.show_canvas_width
                     window_height=self.show_canvas_height
@@ -279,7 +286,7 @@ class ImagePlayer(Player):
                 
                 if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
                     # original image is larger or , shrink it to fit the screen preserving aspect
-                    ppil_image.thumbnail((window_width,window_height),eval(self.image_filter))                 
+                    ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))                 
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
                     self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
@@ -297,7 +304,7 @@ class ImagePlayer(Player):
                     increased_width=int(self.image_width * prop)
                     increased_height=int(self.image_height * prop)
                     # print 'result',prop, increased_width,increased_height
-                    ppil_image=ppil_image.resize((increased_width, increased_height),eval(self.image_filter))
+                    ppil_image=ppil_image.resize((int(increased_width), int(increased_height)),eval(self.image_filter))
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
                     self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
@@ -307,17 +314,18 @@ class ImagePlayer(Player):
             elif self.command in ('warp'):
                 # resize to window or screen without preserving aspect
                 if self.has_coords is True:
-                    window_width=self.image_x2 - self.image_x1
-                    window_height=self.image_y2 - self.image_y1
-                    window_centre_x=(self.image_x2+self.image_x1)/2
-                    window_centre_y= (self.image_y2+self.image_y1)/2
+                    window_width=self.window_x2 - self.window_x1
+                    window_height=self.window_y2 - self.window_y1
+                    window_centre_x=(self.window_x2+self.window_x1)/2
+                    window_centre_y= (self.window_y2+self.window_y1)/2
                 else:
                     window_width=self.show_canvas_width
                     window_height=self.show_canvas_height
                     window_centre_x=self.show_canvas_centre_x
                     window_centre_y=self.show_canvas_centre_y
-                
-                ppil_image=ppil_image.resize((window_width, window_height),eval(self.image_filter))
+
+                print 'window',window_width,window_height,window_centre_x,window_centre_y,self.show_canvas_x1,self.show_canvas_y1,'\n'
+                ppil_image=ppil_image.resize((int(window_width), int(window_height)),eval(self.image_filter))
                 self.tk_img=ImageTk.PhotoImage(ppil_image)
                 del ppil_image
                 self.track_image_obj = self.canvas.create_image(window_centre_x+ self.show_canvas_x1,
@@ -354,7 +362,7 @@ class ImagePlayer(Player):
                 if not (fields[1].isdigit() and fields[2].isdigit()):
                     return 'error','',False,0,0,0,0,''
                 has_window=True
-                return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),0,0,image_filter
+                return 'normal',fields[0],has_window,float(fields[1]),float(fields[2]),0,0,image_filter
             else:
                 # no window
                 has_window=False 
@@ -383,7 +391,7 @@ class ImagePlayer(Player):
                 image_filter=fields[5]
             else:
                 image_filter='Image.NEAREST'
-                return 'normal',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4]),image_filter
+                return 'normal',fields[0],has_window,float(fields[1]),float(fields[2]),float(fields[3]),float(fields[4]),image_filter
         else:
             # no window
             has_window=False

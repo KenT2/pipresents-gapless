@@ -7,8 +7,7 @@ from pp_player import Player
 class MenuPlayer(Player):
 
     """
-        A special player that displays a menu as an internal first track of MenuShow
-        The menu track that cannot be edited, the parameters of the track are the menushow parameters with a few fudges.
+        A special player that displays a menu as the first track of MenuShow
 
         __init_ just makes sure that all the things the player needs are available
         load and unload loads and unloads the track
@@ -47,13 +46,12 @@ class MenuPlayer(Player):
         self.mon.trace(self,'')      
 
         
-        # bodge for menuplayer, pass medialist through track parameters
-        self.medialist=self.show_params['medialist_obj']
-
-
         # and initialise things for this player
         self.display_guidelines=track_params['menu-guidelines']
         self.play_state='initialised'
+        self.menu_entry_id=[]
+        self.menu_text_obj = None
+        self.hint_text_obj = None
 
 
 
@@ -64,6 +62,16 @@ class MenuPlayer(Player):
         self.loaded_callback=loaded_callback   #callback when loaded
         
         self.mon.trace(self,'')
+
+        # bodge for menuplayer, pass medialist through track parameters
+        if 'medialist_obj' in self.show_params:
+            self.medialist=self.show_params['medialist_obj']
+        else:
+            self.mon.err(self,'A Menu Track must be run from a Menu Show')
+            self.play_state='load-failed'
+            if self.loaded_callback is not  None:
+                self.loaded_callback('error','A Menu Track must be run from a Menu Show')
+                return
         
         # load the images and text
         status,message=Player.load_x_content(self,enable_menu)
@@ -638,7 +646,7 @@ class MenuPlayer(Player):
                 else:
                     # use a standard thumbnail
                     icon_type=self.medialist.selected_track()['type']
-                    standard=self.pp_dir+os.sep+'pp_home'+os.sep+'pp_resources'+os.sep+icon_type+'.png'
+                    standard=self.pp_dir+os.sep+'pp_resources'+os.sep+icon_type+'.png'
                     if os.path.exists(standard) is True:
                         self.pil_image=Image.open(standard)
                         self.mon.warn(self,'Default thumbnail used for '+self.medialist.selected_track()['title'])
@@ -659,10 +667,16 @@ class MenuPlayer(Player):
                     
         elif self.track_params['menu-icon-mode']  == 'bullet':
             bullet=self.complete_path(self.track_params['menu-bullet'])                  
-            if os.path.exists(bullet) is False:
-                self.pil_image=None                          
-            else:
+            if os.path.exists(bullet) is True:
                 self.pil_image=Image.open(bullet)
+            else:
+                bullet=self.pp_dir+os.sep+'pp_resources'+os.sep+'bullet.png'
+                if os.path.exists(bullet) is True:
+                    self.mon.warn(self,'Default bullet used for '+self.medialist.selected_track()['title'])
+                    self.pil_image=Image.open(bullet)
+                else:
+                    self.pil_image=None
+                    
             if self.pil_image is not None:
                 self.pil_image=self.pil_image.resize((self.icon_width-2,self.icon_height-2))                 
                 photo_image_id=ImageTk.PhotoImage(self.pil_image)

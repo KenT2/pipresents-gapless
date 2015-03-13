@@ -46,6 +46,14 @@ class LiveList(object):
         return self._num_tracks
 
 
+    def display_length(self):
+        self.new_livelist_create()
+        self._tracks=copy.deepcopy(self.new_livelist)
+        self._num_tracks=len(self._tracks)
+        self._selected_track_index=-1
+        return self._num_tracks
+    
+    
     def next(self,sequence):
         if sequence=='ordered':
             if self._selected_track_index==self._num_tracks-1:

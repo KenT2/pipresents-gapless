@@ -60,7 +60,7 @@ class GPIODriver(object):
     shutdown_index=0  #index of shutdown pin
     pins=[]
     options=None
-    # gpio_enabled=False
+    gpio_enabled=False
 
 
     # executed by main program and by each object using gpio
@@ -82,6 +82,10 @@ class GPIODriver(object):
 
         GPIODriver.options=command_options()
         GPIODriver.shutdown_index=0
+
+        if os.geteuid() !=0:
+            self.mon.err(self,'GPIO requires Pi Presents to be run as root\nhint: sudo pipresents.py .... ')
+            return 'error','GPIO without sudo'
 
         # read gpio.cfg file.
         reason,message=self.read(self.pp_dir,self.pp_home,self.pp_profile)
@@ -146,6 +150,7 @@ class GPIODriver(object):
                 self.GPIO.setup(num,self.GPIO.OUT)
                 self.GPIO.setup(num,False)
         self.reset_input_state()
+        
         GPIODriver.gpio_enabled=True
 
         # init timer
@@ -161,10 +166,11 @@ class GPIODriver(object):
 
     # called by main program only                
     def terminate(self):
-        if self.button_tick_timer is not None:
-            self.widget.after_cancel(self.button_tick_timer)
-        self.reset_outputs()
-        self.GPIO.cleanup()
+        if GPIODriver.gpio_enabled is True:
+            if self.button_tick_timer is not None:
+                self.widget.after_cancel(self.button_tick_timer)
+            self.reset_outputs()
+            self.GPIO.cleanup()
 
 
 # ************************************************
@@ -207,20 +213,20 @@ class GPIODriver(object):
                     pin[GPIODriver.LAST]=pin[GPIODriver.PRESSED]
                     pin[GPIODriver.REPEAT_COUNT]=pin[GPIODriver.REPEAT]
                     if  pin[GPIODriver.FALLING_NAME] != '' and self.button_callback  is not  None:
-                        self.button_callback(index, pin[GPIODriver.FALLING_NAME],"falling")
+                        self.button_callback(pin[GPIODriver.FALLING_NAME],"GPIO")
                # rising edge
                 if pin[GPIODriver.PRESSED] is False and pin[GPIODriver.LAST] is True:
                     pin[GPIODriver.LAST]=pin[GPIODriver.PRESSED]
                     pin[GPIODriver.REPEAT_COUNT]=pin[GPIODriver.REPEAT]
                     if  pin[GPIODriver.RISING_NAME] != '' and self.button_callback  is not  None:
-                        self.button_callback(index, pin[GPIODriver.RISING_NAME],"rising")
+                        self.button_callback(pin[GPIODriver.RISING_NAME],"GPIO")
 
                 # do state callbacks
                 if pin[GPIODriver.REPEAT_COUNT] == 0:
                     if pin[GPIODriver.ZERO_NAME] != '' and pin[GPIODriver.PRESSED] is True and self.button_callback is not None:
-                        self.button_callback(index, pin[GPIODriver.ZERO_NAME],"zero")
+                        self.button_callback(pin[GPIODriver.ZERO_NAME],"GPIO")
                     if pin[GPIODriver.ONE_NAME] != '' and pin[GPIODriver.PRESSED] is False and self.button_callback is not None:
-                        self.button_callback(index, pin[GPIODriver.ONE_NAME],"one")
+                        self.button_callback(pin[GPIODriver.ONE_NAME],"GPIO")
                     pin[GPIODriver.REPEAT_COUNT]=pin[GPIODriver.REPEAT]
                 else:
                     if pin[GPIODriver.REPEAT] != -1:
@@ -230,6 +236,9 @@ class GPIODriver(object):
 
     # execute an output event
     def handle_output_event(self,name,param_type,param_values,req_time):
+        if GPIODriver.gpio_enabled is False:
+            return 'normal','gpio not enabled'
+        
         #gpio only handles state parameters
         if param_type != 'state':
             return 'error','gpio does not handle: ' + param_type
@@ -298,7 +307,7 @@ class GPIODriver(object):
             else:
                 # try inside pipresents
                 # self.mon.log(self,"gpio.cfg not found at "+ tryfile + " trying inside pipresents")
-                tryfile=pp_dir+os.sep+'pp_home'+os.sep+"gpio.cfg"
+                tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"gpio.cfg"
                 if os.path.exists(tryfile):
                     filename=tryfile
                 else:

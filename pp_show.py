@@ -3,7 +3,6 @@ from Tkinter import NW
 from PIL import Image
 from PIL import ImageTk
 
-from pp_resourcereader import ResourceReader
 from pp_showmanager import ShowManager
 from pp_timeofday import TimeOfDay
 from pp_imageplayer import ImagePlayer
@@ -58,8 +57,7 @@ class Show(object):
         # set up logging 
         self.mon=Monitor()
         self.mon.set_log_level(16)
-        # open resources
-        self.rr=ResourceReader()
+
 
         # create and instance of TimeOfDay scheduler so we can add events
         self.tod=TimeOfDay()
@@ -83,23 +81,25 @@ class Show(object):
         self.background_obj=None
         self.background_file=''
         self.level=0
+        self.subshow_kickback_signal=False
+        self.kickback_for_next_track=False
         
         # get background image from profile.
         if self.show_params['background-image'] != '':
             self.background_file= self.show_params['background-image']
 
-    def base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list):
+    def base_play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
 
         """ starts the common parts of the show
               end_callback - function to be called when the show exits- callback gets last player of subshow
               show_ready_callback - callback at start to get previous_player
               top is True when the show is top level (run from [start] or by show command from another show)
-              direction_command - 'forward' or 'backward' direction to play a subshow (default 'nil')
+              direction_command - 'forward' or 'backward' direction to play a subshow
         """
         # instantiate the arguments
         self.end_callback=end_callback
         self.show_ready_callback=show_ready_callback
-        self.direction_command=direction_command
+        self.parent_kickback_signal=parent_kickback_signal
         self.level=level
         # not needed as controls list is not passed down to subshows.
         # self.controls_list=controls_list
@@ -129,7 +129,7 @@ class Show(object):
         reason,message=Show.base_load_show_background(self)
         if reason=='error':
             self.mon.err(self,message)
-            self.end(reason,message)
+            self.end('error',message)
 
     # dummy, must be overidden by derived class
     def subshow_ready_callback(self):
@@ -174,7 +174,8 @@ class Show(object):
                     self.what_next_after_showing()
                 else:
                     # empty controls list as not used, pleases landscape
-                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.direction_command,self.level+1,[])
+                    # print 'send direction to subshow from show',self.kickback_for_next_track
+                    self.shower.play(end_shower_callback,self.subshow_ready_callback,self.kickback_for_next_track,self.level+1,[])
         else:
             # dispatch track by type
             self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Track type is: "+ track_type)
@@ -288,6 +289,8 @@ class Show(object):
         # get the previous subshow and last track it played 
         self.previous_shower,self.current_player=self.shower.base_subshow_ended_callback()
         if self.previous_shower!= None:
+            self.subshow_kickback_signal=self.shower.subshow_kickback_signal
+            # print 'get subshow kickback from subshow',self.subshow_kickback_signal
             self.previous_shower.base_withdraw_show_background()
             self.base_show_show_background()
         self.previous_player=None
@@ -312,6 +315,10 @@ class Show(object):
         else:
             # current_player is None because closed further down show stack
             self.mon.trace(self,' - show ended with current_player=None because: ' + self.ending_reason)
+
+            # if exiting pipresents then need to close previous show else get memotry leak
+            # if not exiting pipresents the keep previous so it can be closed when showing the next track
+            print 'CURRENT PLAYER IS NONE' ,self.ending_reason
             if self.ending_reason == 'killed':
                 self.base_close_previous()
 
@@ -342,7 +349,8 @@ class Show(object):
                 self.canvas.after(50,self._wait_for_end)
             else:
                 self.mon.trace(self,' - current closed '+ self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)
-         
+
+                 #why is some of thsi different to close and unload????????????? perhaps because current_player isn't none, just closed
                 if self.ending_reason == 'killed':
                     self.current_player.hide()
                     self.current_player=None
@@ -362,6 +370,7 @@ class Show(object):
                     self.current_player.hide()
                     self.current_player=None
                     # self.base_close_previous()
+                    # go to start of list via wait for trigger.
                     self.wait_for_trigger()
                     
                 elif self.ending_reason == 'show-timeout':
@@ -489,16 +498,16 @@ class Show(object):
 
 
   # respond to input events
-    def base_input_pressed(self,symbol,edge,source):
+    def base_handle_input_event(self,symbol):
         self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input event: " + symbol)
 
         if self.shower is not None:
-            self.shower.input_pressed(symbol,edge,source)
+            self.shower.handle_input_event(symbol)
         else:
-            self.input_pressed_this_show(symbol,edge,source)
+            self.handle_input_event_this_show(symbol)
 
     #dummy must be overridden in derived class
-    def input_pressed_this_show(self,symbol,edge,source):
+    def handle_input_event_this_show(self,symbol):
         self.mon.err(self,"input_pressed_this_show not overidden")
         self.ending_reason='killed'
         Show.base_close_or_unload(self)
@@ -553,19 +562,6 @@ class Show(object):
 
 
 # ******************************
-# reading resources.cfg
-# ******************************
-
-    def base_resource(self,section,item):
-        value=self.rr.get(section,item)
-        if value is False:
-            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self.terminate()
-        else:
-            return value
-
-
-# ******************************
 # lookup controls 
 # *********************************
     def base_lookup_control(self,symbol,controls_list):
@@ -579,7 +575,8 @@ class Show(object):
 # Eggtimer
 # *********************************
         
-    def display_eggtimer(self,text):
+    def display_eggtimer(self):
+        text=self.show_params['eggtimer-text']
         if text != '':
             self.egg_timer=self.canvas.create_text(int(self.show_params['eggtimer-x'])+ self.show_canvas_x1,
                                                    int(self.show_params['eggtimer-y']) + self.show_canvas_y1,
@@ -605,11 +602,11 @@ class Show(object):
 
     def display_admin_message(self,text):
 
-        self.admin_message=self.canvas.create_text(int(self.show_params['eggtimer-x']) + self.show_canvas_x1,
-                                                   int(self.show_params['eggtimer-y'])+self.show_canvas_y1,
+        self.admin_message=self.canvas.create_text(int(self.show_params['admin-x']) + self.show_canvas_x1,
+                                                   int(self.show_params['admin-y'])+self.show_canvas_y1,
                                                    text= text,
-                                                   fill=self.show_params['eggtimer-colour'],
-                                                   font=self.show_params['eggtimer-font'],
+                                                   fill=self.show_params['admin-colour'],
+                                                   font=self.show_params['admin-font'],
                                                    anchor='nw')
             
         self.canvas.update_idletasks( )
@@ -649,7 +646,10 @@ class Show(object):
             secs=fields[2]
             minutes=fields[1]
             hours=fields[0]
-        self.duration=3600*long(hours)+60*long(minutes)+long(secs)
-        return ''
+        if not secs.isdigit() or not minutes.isdigit() or not hours.isdigit():
+            return 'error','bad time',0
+        else:
+            return 'normal','',3600*long(hours)+60*long(minutes)+long(secs)
+
 
 

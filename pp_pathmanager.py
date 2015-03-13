@@ -4,9 +4,9 @@ import copy
 class PathManager(object):
 
     def __init__(self):
-        self.debug=False
+        
+        self.debug=False   #shows the path commands and the stack
 
-        # remove the # to enable display of the path operations and stack in the terminal window.
         # self.debug=True
         
         self.path_stack=[]
@@ -17,7 +17,7 @@ class PathManager(object):
     # if stop-at is not found returns ''
 
     def back_to(self,stop_at,):
-        if self.debug: print 'pathmanager command   -    back_to: ',stop_at
+        if self.debug: print 'pathmanager command - back_to: ',stop_at
         for page in self.path_stack:
             if page[0] ==  stop_at:
                 break
@@ -29,7 +29,6 @@ class PathManager(object):
             self.path_stack.pop()
         track_to_play = self.path_stack[len(self.path_stack)-1][0]
         self.path_stack.pop()
-        if self.debug:  print self.pretty_path()
         return track_to_play
 
 
@@ -37,9 +36,8 @@ class PathManager(object):
     # then pops back one further and returns the track-ref of this track for replaying
     # if stop-at is not found and everything is popped the stack is left empty and the first track is returned
 
-
     def back_by(self,stop_at,back_by_text='1000'):
-        if self.debug:  print 'pathmanager command    -    back by: ',back_by_text,' or stop at: ',stop_at
+        if self.debug:  print 'pathmanager command  -   back by: ',back_by_text,' or stop at: ',stop_at
         back_by=int(back_by_text)
         count=0
         while self.path_stack != []:
@@ -53,28 +51,29 @@ class PathManager(object):
         track_to_play = top[0]
         if self.debug: 
             print '   removed for playing: ',track_to_play
-            print self.pretty_path()
         return track_to_play
     
     def append(self,page):
-        if self.debug:  print 'pathmanager command   -   append: ',page
+        if self.debug:  print 'pathmanager command - append: ',page
         self.path_stack.append([page])
-        if self.debug: print self.pretty_path()
+
 
     def empty(self):
         self.path_stack=[]
 
+
     # sibling - just pop the media track so sibling is appended and can go back to page track
     def pop_for_sibling(self):
-        if self.debug: print 'pathmanger: pop for sibling'
+        if self.debug: print 'pathmanger command - pop for sibling: '
         self.path_stack.pop()
-        if self.debug: print self.pretty_path()
+
 
         
     def pretty_path(self):
         path= '\nPath now is:'
         for page in self.path_stack:
             path  += "\n      " + page[0]
+        print
         return path
  
 

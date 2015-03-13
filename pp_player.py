@@ -5,7 +5,6 @@ from PIL import ImageTk
 
 from pp_pluginmanager import PluginManager
 from pp_animate import Animate
-from pp_resourcereader import ResourceReader
 from pp_utils import Monitor
 
 class Player(object):
@@ -49,10 +48,7 @@ class Player(object):
         self.pp_profile=pp_profile
         self.end_callback=end_callback
         self.command_callback=command_callback
-        
-        # open resources
-        self.rr=ResourceReader()
-                        
+                
         # get background image from profile.
         self.background_file=''
         if self.track_params['background-image'] != '':

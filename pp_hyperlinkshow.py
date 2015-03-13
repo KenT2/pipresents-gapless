@@ -92,13 +92,19 @@ class HyperlinkShow(Show):
                           pp_profile,
                           command_callback)
 
-        # create a path stack
-        self.path = PathManager()
 
         # instatiatate the screen driver - used only to access enable and hide click areas
         self.sr=ScreenDriver()
 
-        self.allowed_links=('return','home','call','null','exit','goto','play','jump','repeat','pause','no-command')
+        # create a path stack and control path debugging
+        if self.show_params['debug-path']=='yes':
+            self.debug=True
+        else:
+            self.debug=False
+        self.path = PathManager()
+        
+        self.allowed_links=('return','home','call','null','exit','goto','play','jump','repeat','pause','no-command','stop')
+        
         # init variables
         self.track_timeout_timer=None
         self.show_timeout_timer=None
@@ -109,17 +115,17 @@ class HyperlinkShow(Show):
         self.req_next=''
 
 
-    def play(self,end_callback,show_ready_callback,direction_command,level,controls_list):
+    def play(self,end_callback,show_ready_callback,parent_kickback_signal,level,controls_list):
         """ starts the hyperlink show at start-track 
               end_callback - function to be called when the show exits
               show_ready_callback - callback to get previous show and track
               level is 0 when the show is top level (run from [start] or from show control)
-              direction_command is not used oassed to subshow
+              parent_kickback_signal is not used passed to subshow by base class as parent_kickback_signal
         """
         # need to instantiate the medialist here as in gapshow done in derived class
         self.medialist=MediaList('ordered')        
 
-        Show.base_play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
+        Show.base_play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list)
 
         #dummy as it gets passed down to subshow, however it isn't actuallly used.
         self.controls_list=[]
@@ -132,10 +138,18 @@ class HyperlinkShow(Show):
         self.home_track_ref=self.show_params['home-track-ref']
         self.timeout_track_ref=self.show_params['timeout-track-ref']
 
+
+        #parse the show and track timeouts
+        reason,message,self.show_timeout=Show.calculate_duration(self,self.show_params['show-timeout'])
+        if reason =='error':
+            self.mon.err(self,'Show Timeout has bad time: '+self.show_params['show-timeout'])
+            self.end('error','show timeout, bad time')
+
+        reason,message,self.track_timeout=Show.calculate_duration(self,self.show_params['track-timeout'])
+        if reason=='error':
+            self.mon.err(self,'Track Timeout has bad time: '+self.show_params['track-timeout'])
+            self.end('error','track timeout, bad time')
   
-        # get the previous player from calling show
-        # Show.base_get_previous_player_from_parent(self)
-        
         # and delete eggtimer
         if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()
@@ -163,11 +177,11 @@ class HyperlinkShow(Show):
           
 
    # respond to inputs  - call base_input_pressed to pass to subshow
-    def input_pressed(self,symbol,edge,source):
-        Show.base_input_pressed(self,symbol,edge,source)
+    def handle_input_event(self,symbol):
+        Show.base_handle_input_event(self,symbol)
 
 
-    def input_pressed_this_show(self,symbol,edge,source):
+    def handle_input_event_this_show(self,symbol):
         # does the symbol match a link, if so execute it
         # some link commands do a subset of the internal operations
         # find the first entry in links that matches the symbol and execute its operation
@@ -179,32 +193,35 @@ class HyperlinkShow(Show):
                 self.show_timeout_timer=None
                 
             if link_op == 'home':
-                self.decode_home(edge,source)
+                self.decode_home()
                 self.stop_current_track()
                 
             elif link_op  == 'return':
-                self.decode_return(link_arg,edge,source)
+                self.decode_return(link_arg)
                 self.stop_current_track()
                 
             elif link_op  == 'call':
-                self.decode_call(link_arg,edge,source)
+                self.decode_call(link_arg)
                 self.stop_current_track()
                 
             elif link_op  == 'goto':
-                self.decode_goto(link_arg,edge,source)
+                self.decode_goto(link_arg)
                 self.stop_current_track()
                 
             elif link_op  == 'jump':
-                self.decode_jump(link_arg,edge,source)
+                self.decode_jump(link_arg)
                 self.stop_current_track()
                 
             elif link_op  ==  'repeat':
-                self.decode_repeat(edge,source)
+                self.decode_repeat()
                 self.stop_current_track()
                 
             elif link_op == 'exit':
                 self.exit()
-                
+
+            elif link_op == 'stop':
+                self.do_stop()
+                        
             elif link_op in ('no-command','null'):
                 return
             
@@ -220,6 +237,24 @@ class HyperlinkShow(Show):
             else:
                 self.mon.err(self,"unknown link command: "+ link_op)
                 self.end('error',"unknown link command")
+
+    def do_operation(self,operation):
+        if operation == 'stop':
+            self.do_stop()
+
+
+    def do_stop(self):
+        # print link_op,self.current_player,self.current_track_ref,self.level
+            #quiescent in all tracks
+        if self.level != 0:
+            # lower level so exit to level above
+            self.stop_timers()
+            self.user_stop_signal=True
+            if self.current_player is not None:
+                self.current_player.input_pressed('stop')  
+        else:
+            # at top do nothing
+            pass
 
                 
 # *********************
@@ -239,38 +274,38 @@ class HyperlinkShow(Show):
 
     def stop_current_track(self):
         if self.shower is not None:
-            self.shower.input_pressed('stop','front','timeout')
+            self.shower.do_operation('stop')
         elif self.current_player is not None:
             self.current_player.input_pressed('stop')
         else:
             self.what_next_after_showing()
 
 
-    def decode_call(self,track_ref,edge,source):
+    def decode_call(self,track_ref):
         if track_ref != self.current_track_ref:
             self.mon.log(self, 'call: '+track_ref)
             self.next_track_signal=True
             self.next_track_op='call'
             self.next_track_arg=track_ref
 
-    def decode_goto(self,to,edge,source):
+    def decode_goto(self,to):
         self.mon.log(self,'goto: '+to)
         self.next_track_signal=True
         self.next_track_op='goto'
         self.next_track_arg=to
 
-    def decode_jump(self,to,edge,source):
+    def decode_jump(self,to):
         self.mon.log(self,'jump to: '+to)
         self.next_track_signal=True
         self.next_track_op='jump'
         self.next_track_arg=to
 
-    def decode_repeat(self,edge,source):
+    def decode_repeat(self):
         self.mon.log(self,'repeat: ')
         self.next_track_signal=True
         self.next_track_op='repeat'
   
-    def decode_return(self,to,edge,source):
+    def decode_return(self,to):
         self.next_track_signal=True
         if to.isdigit() or to == '':
             self.mon.log(self,'hyperlink command - return by: '+to)
@@ -284,7 +319,7 @@ class HyperlinkShow(Show):
             self.next_track_op='return-to'
             self.next_track_arg=to        
 
-    def decode_home(self,edge,source):
+    def decode_home(self):
         self.mon.log(self,'hyperlink command - home')
         self.next_track_signal=True
         self.next_track_op='home'
@@ -299,7 +334,7 @@ class HyperlinkShow(Show):
             first_track=self.medialist.track(index)
             self.current_track_ref=first_track['track-ref']
             self.path.append(first_track['track-ref'])
-            self.mon.trace(self,first_track['track-ref']+self.path.pretty_path())
+            if self.debug: print 'First Track: ' + first_track['track-ref']+self.path.pretty_path()
             self.start_load_show_loop(first_track)
         else:
             self.mon.err(self,"first-track not found in medialist: "+ self.show_params['first-track-ref'])
@@ -312,7 +347,7 @@ class HyperlinkShow(Show):
 
         self.mon.trace(self, '')
                                       
-        self.display_eggtimer(Show.base_resource(self,'hyperlinkshow','m01'))
+        self.display_eggtimer()
 
 
         # start the show timer when displaying the first track
@@ -320,8 +355,8 @@ class HyperlinkShow(Show):
             if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
-            if int(self.show_params['show-timeout']) != 0:
-                self.show_timeout_timer=self.canvas.after(int(self.show_params['show-timeout'])*1000 ,self.show_timeout_stop)
+            if show_timeout != 0:
+                self.show_timeout_timer=self.canvas.after(self.show_timeout*1000 ,self.show_timeout_stop)
 
         
        # start timeout for the track if required   ???? differnet to radiobuttonshow
@@ -329,17 +364,20 @@ class HyperlinkShow(Show):
             if self.track_timeout_timer is not None:
                 self.canvas.after_cancel(self.track_timeout_timer)
                 self.track_timeout_timer=None
-            if self.current_track_ref != self.first_track_ref and int(self.show_params['track-timeout']) != 0:
-                self.track_timeout_timer=self.canvas.after(int(self.show_params['track-timeout'])*1000,self.track_timeout_callback)
+            if self.current_track_ref != self.first_track_ref and self.track_timeout != 0:
+                self.track_timeout_timer=self.canvas.after(self.track_timeout*1000,self.track_timeout_callback)
 
 
+        # get control bindings for this show
+        # needs to be done for each track as track can override the show controls
         # read the show links. Track links will be added by track_ready_callback
-        # needs to be done in loop as each track adds different links to the show links
-        links_text=self.show_params['links']
-        reason,message,self.links=self.path.parse_links(links_text,self.allowed_links)
-        if reason == 'error':
-            self.mon.err(self,message + " in show")
-            self.end('error',message)
+        if self.show_params['disable-controls'] == 'yes':
+            self.links=[]
+        else:
+            reason,message,self.links=self.path.parse_links(self.show_params['links'],self.allowed_links)
+            if reason == 'error':
+                self.mon.err(self,message + " in show")
+                self.end('error',message)
 
         # load the track or show
         # params - track,, track loaded callback, end eshoer callback,enable_menu
@@ -453,7 +491,7 @@ class HyperlinkShow(Show):
                 # play home
                 self.next_track_ref=self.home_track_ref
                 self.path.append(self.next_track_ref)
-                self.mon.trace(self, 'Executed Home ' + self.path.pretty_path())
+                if self.debug: print 'Executed Home ' + self.path.pretty_path()
 
             # return-by
             elif self.next_track_op in ('return-by'):
@@ -464,7 +502,7 @@ class HyperlinkShow(Show):
                     # use returned track
                     self.next_track_ref=back_ref
                     self.path.append(self.next_track_ref)
-                    self.mon.trace(self,'Executed Return ' + self.next_track_arg + self.path.pretty_path())
+                    if self.debug: print 'Executed Return By' + self.next_track_arg + self.path.pretty_path()
 
             # repeat is return by 1
             elif self.next_track_op in ('repeat'):
@@ -474,7 +512,7 @@ class HyperlinkShow(Show):
                 self.next_track_ref=self.current_track_ref
                 self.path.append(self.current_track_ref)
                 self.continue_timeout=True
-                self.mon.trace(self,'Executed Repeat ' + self.path.pretty_path())
+                if self.debug: print 'Executed Repeat ' + self.path.pretty_path()
 
             # return-to
             elif self.next_track_op in ('return-to'):
@@ -486,14 +524,14 @@ class HyperlinkShow(Show):
                 # and append the return to track
                 self.next_track_ref=self.next_track_arg
                 self.path.append(self.next_track_ref)
-                self.mon.trace(self,'Executed Return ' + self.next_track_arg + self.path.pretty_path())
+                if self.debug: print 'Executed Return To' + self.next_track_arg + self.path.pretty_path()
                 
             # call
             elif self.next_track_op in ('call'):
                 # append the required track
                 self.path.append(self.next_track_arg)
                 self.next_track_ref=self.next_track_arg
-                self.mon.trace(self,'Executed Call ' + self.next_track_arg + self.path.pretty_path())
+                if self.debug: print 'Executed Call ' + self.next_track_arg + self.path.pretty_path()
 
             # goto
             elif self.next_track_op in ('goto'):
@@ -501,7 +539,7 @@ class HyperlinkShow(Show):
                 # add the goto track
                 self.next_track_ref=self.next_track_arg
                 self.path.append(self.next_track_arg)
-                self.mon.trace(self,'Executed Goto ' + self.next_track_arg + self.path.pretty_path())
+                if self.debug: print 'Executed Goto ' + self.next_track_arg + self.path.pretty_path()
 
             # jump
             elif self.next_track_op in ('jump'):
@@ -515,7 +553,7 @@ class HyperlinkShow(Show):
                 # append the jumped to track
                 self.next_track_ref=self.next_track_arg
                 self.path.append(self.next_track_ref)
-                self.mon.trace(self,'Executed Jump ' + self.next_track_arg + self.path.pretty_path())
+                if self.debug: 'Executed Jump ' + self.next_track_arg + self.path.pretty_path()
 
             else:
                 self.mon.err(self,"unaddressed what next: "+ self.next_track_op+ ' '+self.next_track_arg)
@@ -535,36 +573,36 @@ class HyperlinkShow(Show):
             # track ends naturally look to see if there is a pp-onend link
             found,link_op,link_arg=self.path.find_link('pp-onend',self.links)
             if found is True:
-                edge=''
-                source='pp-onend'
                 if link_op=='exit':
                     self.user_stop_signal=True                   
                     self.current_player.input_pressed('stop')
                     self.what_next_after_showing()
                 elif link_op == 'home':
-                    self.decode_home(edge,source)
+                    self.decode_home()
                     self.what_next_after_showing()
                 elif link_op  == 'return':
-                    self.decode_return(link_arg,edge,source)
+                    self.decode_return(link_arg)
                     self.what_next_after_showing()
                 elif link_op  == 'call':
-                    self.decode_call(link_arg,edge,source)
+                    self.decode_call(link_arg)
                     self.what_next_after_showing()
                 elif link_op  == 'goto':
-                    self.decode_goto(link_arg,edge,source)
+                    self.decode_goto(link_arg)
                     self.what_next_after_showing()
                 elif link_op  == 'jump':
-                    self.decode_jump(link_arg,edge,source)
+                    self.decode_jump(link_arg)
                     self.what_next_after_showing()
                 elif link_op  ==  'repeat':
-                    self.decode_repeat(edge,source)
+                    self.decode_repeat()
                     self.what_next_after_showing() 
                 else:
                     self.mon.err(self,"unknown link command for pp_onend: "+ link_op)
                     self.end('error',"unkown link command for pp-onend")
             else:
-                self.mon.err(self,"pp-onend for this track not found: "+ link_op)
-                self.end('error',"pp-onend for this track not found")
+                if self.show_params['disable-controls']!='yes':
+                    self.mon.err(self,"pp-onend for this track not found: "+ link_op)
+                    self.end('error',"pp-onend for this track not found")
+
 
 
 ##            else:
@@ -578,13 +616,18 @@ class HyperlinkShow(Show):
     def track_ready_callback(self,enable_show_background):
         # called from a Player when ready to play, merge the links from the track with those from the show
         # and then enable the click areas
-        self.delete_eggtimer()                         
-        links_text=self.current_player.get_links()
-        reason,message,track_links=self.path.parse_links(links_text,self.allowed_links)
-        if reason == 'error':
-            self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
-            self.req_next='error'
-            self.what_next_after_showing()
+        self.delete_eggtimer()
+        
+        if self.show_params['disable-controls'] == 'yes':
+            track_links=[]
+        else:
+            links_text=self.current_player.get_links()
+            reason,message,track_links=self.path.parse_links(links_text,self.allowed_links)
+            if reason == 'error':
+                self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+                self.req_next='error'  
+                self.what_next_after_showing()
+                
         self.path.merge_links(self.links,track_links)
         
         # enable the click-area that are in the list of links
