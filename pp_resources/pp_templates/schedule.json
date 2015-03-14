@@ -5,14 +5,14 @@
 		"shows":[
 					{"show-ref":"xmediashow",
 					"times":[
-					["start","9:50"],["exit","10:00"],
-					["start","10:30"],["exit","12:40"] 
+					["open","9:50"],["close","10:00"],
+					["open","10:30"],["close","12:40"] 
 							]
 					},
 					{"show-ref":"xmenushow",
 					"times":[
-					["start","10:50"],["exit","11:00"],
-					["start","11:30"],["exit","13:40"] 
+					["open","10:50"],["close","11:00"],
+					["open","11:30"],["close","13:40"] 
 							]
 					}
 				]
@@ -26,14 +26,14 @@
 		"shows":[
 					{"show-ref":"xmediashow",
 					"times":[
-					["start","19:50"],["exit","20:00"],
-					["start","20:30"],["exit","22:40"]
+					["open","19:50"],["close","20:00"],
+					["open","20:30"],["close","22:40"]
 							]
 					},
 					{"show-ref":"xmenushow",
 					"times":[
-					["start","20:50"],["exit","21:00"],
-					["start","21:30"],["exit","23:40"] 
+					["open","20:50"],["close","21:00"],
+					["open","21:30"],["close","23:40"] 
 							]
 					}
 				]
@@ -42,8 +42,8 @@
 		"shows":[
 					{"show-ref":"xmediashow",
 					"times":[
-					["start","9:50"],["exit","10:00"],
-					["start","10:30"],["exit","10:40"] 
+					["open","9:50"],["close","10:00"],
+					["open","10:30"],["close","10:40"] 
 							]
 					},
 					{"show-ref":"xmenushow",
@@ -62,8 +62,8 @@
 		"shows":[
 					{"show-ref":"xradiobuttonshow",
 					"times":[
-					["start","19:50"],["exit","20:00"],
-					["start","20:30"],["exit","22:40"]
+					["open","19:50"],["close","20:00"],
+					["open","20:30"],["close","22:40"]
 							]
 					}
 				]
@@ -78,14 +78,14 @@
 		"shows":[
 					{"show-ref":"xmediashow",
 					"times":[
-					["start","09:00:00"],
-					["start","23:59:50"],["exit","23:59:55"]
+					["open","09:00:00"],
+					["open","23:59:50"],["close","23:59:55"]
 							]
 					},
 					{"show-ref":"xmenushow",
 					"times":[
-					["start","09:00:00"],["exit","10:00:00"],
-					["start","23:59:50"],["exit","23:59:55"]
+					["open","09:00:00"],["close","10:00:00"],
+					["open","23:59:50"],["close","23:59:55"]
 							]
 					}
 				]
@@ -94,12 +94,12 @@
 		"shows":[
 					{"show-ref":"xmediashow",
 					"times":[
-					["start","00:00:00"],["exit","00:00:01"]
+					["open","00:00:00"],["close","00:00:01"]
 							]
 					},
 					{"show-ref":"xmenushow",
 					"times":[
-					["start","00:00:01"],["exit","00:00:02"]
+					["open","00:00:01"],["close","00:00:02"]
 							]
 					}
 				]

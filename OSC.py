@@ -1,5 +1,7 @@
 #!/usr/bin/python
 """
+This is a copy of pyosc with some minor temporary mods. https://gitorious.org/pyosc
+
 This module contains an OpenSoundControl implementation (in Pure Python), based (somewhat) on the 
 good old 'SimpleOSC' implementation by Daniel Holth & Clinton McChesney.
 
