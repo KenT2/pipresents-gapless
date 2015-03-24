@@ -355,7 +355,7 @@ class HyperlinkShow(Show):
             if self.show_timeout_timer is not None:
                 self.canvas.after_cancel(self.show_timeout_timer)
                 self.show_timeout_timer=None
-            if show_timeout != 0:
+            if self.show_timeout != 0:
                 self.show_timeout_timer=self.canvas.after(self.show_timeout*1000 ,self.show_timeout_stop)
 
         

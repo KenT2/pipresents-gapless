@@ -225,7 +225,7 @@ class Show(object):
                                self.show_params,selected_track,self.pp_dir,self.pp_home,
                                self.pp_profile,self.end,self.command_callback)
 
-        elif track_type == "web":
+        elif track_type == "web" and self.show_params['type'] not in ('artmediashow','artliveshow'):
             return BrowserPlayer(self.show_id,self.showlist,self.root,self.show_canvas,
                                  self.show_params,selected_track,self.pp_dir,self.pp_home,
                                  self.pp_profile,self.end,self.command_callback)

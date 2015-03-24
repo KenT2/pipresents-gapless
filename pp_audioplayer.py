@@ -204,7 +204,7 @@ class AudioPlayer(Player):
     def stop(self):
         # send signal to stop the track to the state machine
         self.mon.log(self,">stop received")
-        if self.play_state=='showing':
+        if self.play_state in ('starting','showing'):
             self.quit_signal=True
 
          

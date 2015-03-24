@@ -30,6 +30,7 @@ from pp_kbddriver import KbdDriver
 from pp_utils import Monitor
 from pp_utils import StopWatch
 from pp_animate import Animate
+from pp_gpiodriver import GPIODriver
 from pp_oscdriver import OSCDriver
 
 
@@ -105,6 +106,9 @@ class PiPresents(object):
         self.animate=None
         self.gpiodriver=None
         self.oscdriver=None
+        self.osc_enabled=False
+        self.gpio_enabled=False
+        self.tod_enabled=False
          
         # get profile path from -p option
         if self.options['profile'] != '':
@@ -289,16 +293,18 @@ class PiPresents(object):
         self.exitpipresents_required=False
         
         # kick off GPIO if enabled by command line option
-        if self.options['gpio'] is True:
-            from pp_gpiodriver import GPIODriver
+        self.gpio_enabled=False
+        if os.path.exists(self.pp_profile + os.sep +  'gpio.cfg'):
             # initialise the GPIO
             self.gpiodriver=GPIODriver()
             reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.handle_input_event)
             if reason == 'error':
                 self.end('error',message)
-                
-            # and start polling gpio
-            self.gpiodriver.poll()
+            else:
+                self.gpio_enabled=True
+                # and start polling gpio
+                self.gpiodriver.poll()
+            
 
         # Init OSCDriver, read config and start OSC server
         self.osc_enabled=False
@@ -316,7 +322,21 @@ class PiPresents(object):
         self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
         self.animate.poll()
 
+        #create a showmanager ready for time of day sceduker
+        show_id=-1
+        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        # first time through set callback to terminate Pi Presents if all shows have ended.
+        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command,self.showlist)
+        # Register all the shows in the showlist
+        reason,message=self.show_manager.register_shows()
+        if reason == 'error':
+            self.mon.err(self,message)
+            self.end('error',message)
 
+        # and run the start shows
+        self.run_start_shows()
+
+       # set up the time of day scheduler including catchup         
         self.tod_enabled=False
         if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):
             # kick off the time of day scheduler which may run additional shows
@@ -324,20 +344,6 @@ class PiPresents(object):
             self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
             self.tod_enabled = True
 
-
-        # Create list of start shows initialise them and then run them
-        show_id=-1
-        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
-        
-        # first time through so  register shows and set callback to terminate Pi Presents if all shows have ended.
-        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command,self.showlist)
-        reason,message=self.show_manager.register_shows()
-        if reason == 'error':
-            self.mon.err(self,message)
-            self.end('error',message)
-            
-        # and run the start shows
-        self.run_start_shows()
 
         # then start the time of day scheduler
         if self.tod_enabled is True:
@@ -437,7 +443,7 @@ class PiPresents(object):
 
                
     def handle_output_event(self,symbol,param_type,param_values,req_time):
-        if self.options['gpio'] is True and self.gpiodriver is not None:
+        if self.gpio_enabled is True:
             reason,message=self.gpiodriver.handle_output_event(symbol,param_type,param_values,req_time)
             if reason =='error':
                 self.mon.err(self,message)
@@ -491,7 +497,7 @@ class PiPresents(object):
 
     def on_shutdown_delay(self):
         # 5 second delay is up, if shutdown button still pressed then shutdown
-        if self.gpiodriver.shutdown_pressed():
+        if self.gpiodriver.shutdown_pressed() is True:
             self.shutdown_required=True
             if self.show_manager.all_shows_exited() is True:
                self.all_shows_ended_callback('normal','no shows running')
@@ -548,6 +554,7 @@ class PiPresents(object):
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
+                # print 'SHUTDOWN'
                 call(['sudo', 'shutdown', '-h', '-t 5','now'])
                 sys.exit()
             else:
@@ -567,7 +574,7 @@ class PiPresents(object):
         if self.animate is not None:
             self.animate.terminate()
             
-        if self.options['gpio'] is True and self.gpiodriver is not None:
+        if self.gpio_enabled==True:
             self.gpiodriver.terminate()
 
         if self.osc_enabled is True:

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Pi Presents Examples
+Comment= Examples for Pi Presnets Version 1.3 [gapless]
+Exec= /home/pi/pipresents/examples.sh
+Icon=/home/pi/pipresents/pp_resources/billboard_picture.png
+Terminal=false
+MultipleArgs=false
+Type=Application
+Categories=Application;Development;
+StartupNotify=true

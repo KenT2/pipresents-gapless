@@ -3,7 +3,7 @@ import copy
 import os
 import ConfigParser
 from pp_utils import Monitor
-from pp_options import command_options
+
 
 class GPIODriver(object):
     """
@@ -80,7 +80,6 @@ class GPIODriver(object):
         self.button_tick=button_tick
         self.button_callback=button_callback
 
-        GPIODriver.options=command_options()
         GPIODriver.shutdown_index=0
 
         if os.geteuid() !=0:
@@ -117,7 +116,7 @@ class GPIODriver(object):
                         pin[GPIODriver.ONE_NAME]=self.config.get(pin_def,'one-name')
                         pin[GPIODriver.ZERO_NAME]=self.config.get(pin_def,'zero-name')
                         if pin[GPIODriver.FALLING_NAME] == 'pp-shutdown':
-                            GPIODriver.SHUTDOWN_INDEX=index
+                            GPIODriver.shutdown_index=index
                         if self.config.get(pin_def,'repeat') != '':
                             pin[GPIODriver.REPEAT]=int(self.config.get(pin_def,'repeat'))
                         else:
@@ -139,7 +138,7 @@ class GPIODriver(object):
         # setup GPIO
         self.GPIO.setwarnings(True)        
         self.GPIO.setmode(self.GPIO.BOARD)
-        
+
 
         # set up the GPIO inputs and outputs
         for index, pin in enumerate(GPIODriver.pins):
@@ -264,7 +263,7 @@ class GPIODriver(object):
 # ************************************************
 
     def reset_outputs(self):
-        if GPIODriver.options['gpio'] is True:
+        if GPIODriver.gpio_enabled is True:
             self.mon.log(self,'reset outputs')
             for index, pin in enumerate(GPIODriver.pins):
                 num = pin[GPIODriver.PIN]
@@ -294,28 +293,14 @@ class GPIODriver(object):
 
     def read(self,pp_dir,pp_home,pp_profile):
         # try inside profile
-        tryfile=pp_profile+os.sep+"gpio.cfg"
-        # self.mon.log(self,"Trying gpio.cfg in profile at: "+ tryfile)
-        if os.path.exists(tryfile):
-            filename=tryfile
+        filename=pp_profile+os.sep+"gpio.cfg"
+        # self.mon.log(self,"Trying gpio.cfg in profile at: "+ filename)
+        if os.path.exists(filename):
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(filename)
+            self.mon.log(self,"gpio.cfg read from "+ filename)
+            return 'normal','gpio.cfg read'
         else:
-            # try inside pp_home
-            # self.mon.log(self,"gpio.cfg not found at "+ tryfile+ " trying pp_home")
-            tryfile=pp_home+os.sep+"gpio.cfg"
-            if os.path.exists(tryfile):
-                filename=tryfile
-            else:
-                # try inside pipresents
-                # self.mon.log(self,"gpio.cfg not found at "+ tryfile + " trying inside pipresents")
-                tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"gpio.cfg"
-                if os.path.exists(tryfile):
-                    filename=tryfile
-                else:
-                    self.mon.err(self,"gpio.cfg not found at "+ tryfile)
-                    return 'error',"gpio.cfg not found at "+ tryfile
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(filename)
-        self.mon.log(self,"gpio.cfg read from "+ filename)
-        return 'normal','gpio.cfg read'
+            return 'error','gpio.cfg not found at: '+filename
 
 

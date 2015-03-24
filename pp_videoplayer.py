@@ -193,7 +193,7 @@ class VideoPlayer(Player):
         else:        
             self.mon.log(self,">load track received from show Id: "+ str(self.show_id) + ' using duration from track')
             # create an  instance of omxdriver
-            self.omx=OMXDriver(self.canvas)
+            self.omx=OMXDriver(self.canvas,self.pp_dir)
             self.start_state_machine_load(self.track,duration)
 
 

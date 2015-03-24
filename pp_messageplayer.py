@@ -187,9 +187,12 @@ class MessagePlayer(Player):
                                                    fill=self.track_params['message-colour'],
                                                    font=self.track_params['message-font'],
                                                    justify=self.track_params['message-justify'])     
-
+        self.canvas.itemconfig(self.track_obj,state='hidden')
         return 'normal','message loaded'
     
+
+    def show_track_content(self):
+        self.canvas.itemconfig(self.track_obj,state='normal')
 
     def hide_track_content(self):
         self.canvas.itemconfig(self.track_obj,state='hidden')

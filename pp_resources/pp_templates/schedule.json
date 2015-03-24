@@ -1,110 +1,82 @@
 {
-"everyday":
-	[
-	{"day":"everyday",
-		"shows":[
-					{"show-ref":"xmediashow",
-					"times":[
-					["open","9:50"],["close","10:00"],
-					["open","10:30"],["close","12:40"] 
-							]
-					},
-					{"show-ref":"xmenushow",
-					"times":[
-					["open","10:50"],["close","11:00"],
-					["open","11:30"],["close","13:40"] 
-							]
-					}
+"simulate-time":"yes",
+"sim-year":"2014",
+"sim-month":"9",
+"sim-day":"3",
+"sim-hour":"9",
+"sim-minute":"49",
+"sim-second":"55",
+"shows":
+[
+	{"show-ref":"pp_core",
+		"everyday":{
+			"day":["everyday"],
+			"times":[
+				["exitpipresents","23:50"]
 				]
-	}
-	],
-
-
-"weekdays":
-	[
-	{"day":"saturday",
-		"shows":[
-					{"show-ref":"xmediashow",
-					"times":[
-					["open","19:50"],["close","20:00"],
-					["open","20:30"],["close","22:40"]
-							]
-					},
-					{"show-ref":"xmenushow",
-					"times":[
-					["open","20:50"],["close","21:00"],
-					["open","21:30"],["close","23:40"] 
-							]
-					}
-				]
-	},
-	{"day":"thursday",
-		"shows":[
-					{"show-ref":"xmediashow",
-					"times":[
-					["open","9:50"],["close","10:00"],
-					["open","10:30"],["close","10:40"] 
-							]
-					},
-					{"show-ref":"xmenushow",
-					"times":[
-							]
-					}				
-				]
-	}
-	],
-
-
-
-"monthdays":
-	[
-	{"day":"1",
-		"shows":[
-					{"show-ref":"xradiobuttonshow",
-					"times":[
-					["open","19:50"],["close","20:00"],
-					["open","20:30"],["close","22:40"]
-							]
-					}
-				]
-	}
-	],
-
-
-
-"specialdays":
-	[
-	{"day":"2014-08-31",
-		"shows":[
-					{"show-ref":"xmediashow",
-					"times":[
-					["open","09:00:00"],
-					["open","23:59:50"],["close","23:59:55"]
-							]
-					},
-					{"show-ref":"xmenushow",
-					"times":[
-					["open","09:00:00"],["close","10:00:00"],
-					["open","23:59:50"],["close","23:59:55"]
-							]
-					}
-				]
-	},
-	{"day":"2014-09-01",
-		"shows":[
-					{"show-ref":"xmediashow",
-					"times":[
-					["open","00:00:00"],["close","00:00:01"]
-							]
-					},
-					{"show-ref":"xmenushow",
-					"times":[
-					["open","00:00:01"],["close","00:00:02"]
-							]
-					}
-				]
-	}
-	]	
-
-}
+			   }
 	
+	
+	},
+	{"show-ref":"mediashow",
+
+		"everyday":{
+			"day":["everyday"],
+			"times":[
+				["open","9:50"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			  },
+
+		"weekday":{
+			"day":["wednesday","tuesday"],
+			"times":[
+				["open","19:50"],["close","20:00"],
+				["open","11:30"],["close","13:40"] 
+				]
+			},
+
+		"monthday":{
+			"day":["1","3"],
+			"times":[
+				["open","9:00"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			}
+	},
+
+	{"show-ref":"audioshow",
+		"everyday":{
+			"day":["everyday"],
+			"times":[
+				["open","9:50"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			},
+
+		"weekday":{
+			"day":["monday","tuesday"],
+			"times":[
+				["open","9:50"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			},
+
+		"monthday":{
+			"day":["1","2"],
+			"times":[
+				["open","9:50"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			},
+
+		"specialday":{
+			"day":["2014-09-03"],
+			"times":[
+				["open","0:00"],["close","10:00"],
+				["open","10:30"],["close","12:40"] 
+				]
+			}
+	}
+]
+}

@@ -2,7 +2,7 @@ import pexpect
 import re
 import signal
 import os
-killall
+
 from threading import Thread
 from time import sleep
 from pp_utils import Monitor

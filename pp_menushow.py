@@ -258,6 +258,10 @@ class MenuShow(Show):
     def what_next_after_load(self,status,message):
         # get the calculated length of the menu for the loaded menu track
         if self.current_player.__class__.__name__ == 'MenuPlayer':
+            if self.medialist.display_length()==0:
+                self.req_next='error'
+                self.what_next_after_showing()
+                return
             self.medialist.start()
             self.menu_index=0
             self.menu_length=self.current_player.menu_length

@@ -1,0 +1,52 @@
+{
+ "issue": "1.3", 
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "hyperlinkshow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "audio-speaker": "stereo", 
+   "background-colour": "", 
+   "background-image": "", 
+   "debug-path": "no", 
+   "disable-controls": "no", 
+   "duration": "0", 
+   "eggtimer-colour": "white", 
+   "eggtimer-font": "Helvetica 10 bold", 
+   "eggtimer-text": "Loading....", 
+   "eggtimer-x": "100", 
+   "eggtimer-y": "100", 
+   "first-track-ref": "home", 
+   "freeze-at-end": "yes", 
+   "home-track-ref": "home", 
+   "image-rotate": "0", 
+   "image-window": "original", 
+   "links": "", 
+   "medialist": "hyperlinkshow.json", 
+   "mplayer-audio": "hdmi", 
+   "mplayer-other-options": "", 
+   "mplayer-volume": "0", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "omx-volume": "0", 
+   "omx-window": "warp 300 300 655 500", 
+   "show-canvas": "", 
+   "show-ref": "hyperlinkshow", 
+   "show-text": "", 
+   "show-text-colour": "white", 
+   "show-text-font": "Helvetica 20 bold", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
+   "show-timeout": "0", 
+   "timeout-track-ref": "", 
+   "title": "hyperlinkshow", 
+   "track-timeout": "0", 
+   "transition": "cut", 
+   "type": "hyperlinkshow", 
+   "web-window": "warp 300 300 700 700"
+  }
+ ]
+}

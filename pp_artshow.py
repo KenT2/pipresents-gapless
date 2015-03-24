@@ -178,11 +178,15 @@ class ArtShow(Show):
             # otherwise load the first track
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
-                self.mon.err(self,"Unknown Track Type")
+                self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
                 self.req_next='error'
                 self.what_next()
             else:
-                track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
+                # messageplayer passes the text not a file name
+                if self.medialist.selected_track()['type'] == 'message':
+                    track_file=self.medialist.selected_track()['text']
+                else:
+                    track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
                 self.next_player.load(track_file,
                                       self.loaded_callback,
                                       enable_menu=False)
@@ -334,7 +338,7 @@ class ArtShow(Show):
             self.end_medialist_warning=True
         self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
         if self.next_player is None:
-            self.mon.err(self,"Unknown Track Type: ")
+            self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
             self.req_next='error'
             self.what_next()
         else:
@@ -343,7 +347,11 @@ class ArtShow(Show):
 
     def load_next(self):
         # load the next track while current is showing
-        track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
+        # messageplayer passes the text not a file name
+        if self.medialist.selected_track()['type'] == 'message':
+            track_file=self.medialist.selected_track()['text']
+        else:
+            track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
         self.mon.trace(self, track_file)
         self.next_player.load(track_file,
                               self.loaded_callback,

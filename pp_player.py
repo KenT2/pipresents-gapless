@@ -98,13 +98,13 @@ class Player(object):
         # show_x_content moved to just before ready_callback to improve flicker.
         self.show_x_content()
 
+        # and whatecer the plugin has created
+        self.pim.show_plugin()
+        
         #ready callback hides and closes players from previous track, also displays show background
         if self.ready_callback is not None:
             self.ready_callback(self.enable_show_background)
 
-        # but pim needs to be done here as it uses the pp-plugin-content tag which needs to be created later
-        self.pim.show_plugin()
-        
         # Control other shows at beginning
         self.show_control(self.track_params['show-control-begin'])
         
@@ -228,6 +228,12 @@ class Player(object):
             reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'])
             return reason,message
 
+    def draw_plugin(self):
+        # load the plugin if required
+        if self.track_params['plugin'] != '':
+            self.pim.draw_plugin()
+            return
+
     def load_x_content(self,enable_menu):
         self.mon.trace(self,'')
         self.background_obj=None
@@ -294,6 +300,8 @@ class Player(object):
                                                   anchor=NW)
 
         self.display_show_canvas_rectangle()
+
+        self.pim.draw_plugin()
 
         self.canvas.tag_raise('pp-click-area')
         self.canvas.itemconfig(self.background_obj,state='hidden')

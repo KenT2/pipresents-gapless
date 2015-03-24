@@ -1,0 +1,47 @@
+{
+ "issue": "1.3", 
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "artmediashow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "audio-speaker": "stereo", 
+   "background-colour": "", 
+   "background-image": "", 
+   "controls": "pp-down down\npp-stop stop\npp-pause pause\n", 
+   "disable-controls": "no", 
+   "duration": "5", 
+   "eggtimer-colour": "white", 
+   "eggtimer-font": "Helvetica 10 bold", 
+   "eggtimer-text": "Loading....", 
+   "eggtimer-x": "100", 
+   "eggtimer-y": "100", 
+   "freeze-at-end": "yes", 
+   "image-rotate": "0", 
+   "image-window": "original", 
+   "medialist": "artmediashow.json", 
+   "mplayer-audio": "hdmi", 
+   "mplayer-other-options": "", 
+   "mplayer-volume": "0", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "omx-volume": "0", 
+   "omx-window": "warp 300 300 655 500", 
+   "repeat": "repeat", 
+   "sequence": "ordered", 
+   "show-canvas": "", 
+   "show-ref": "artmediashow", 
+   "show-text": "", 
+   "show-text-colour": "white", 
+   "show-text-font": "Helvetica 20 bold", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
+   "title": "artmediashow", 
+   "transition": "cut", 
+   "type": "artmediashow"
+  }
+ ]
+}

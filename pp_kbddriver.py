@@ -37,7 +37,7 @@ class KbdDriver(object):
     def read(self,pp_dir,pp_home,pp_profile):
         if KbdDriver.config is None:
             # try inside profile
-            tryfile=pp_profile+os.sep+"keys.cfg"
+            tryfile=pp_profile+os.sep+'keys.cfg'
             # self.mon.log(self,"Trying keys.cfg in profile at: "+ tryfile)
             if os.path.exists(tryfile):
                 filename=tryfile
@@ -50,7 +50,7 @@ class KbdDriver(object):
                 else:
                     # try inside pipresents
                     # self.mon.log(self,"keys.cfg not found at "+ tryfile + " trying inside pipresents")
-                    tryfile=pp_dir+os.sep+'pp_resources'+os.sep+"keys.cfg"
+                    tryfile=pp_dir+os.sep+'pp_config'+os.sep+"keys.cfg"
                     if os.path.exists(tryfile):
                         filename=tryfile
                     else:

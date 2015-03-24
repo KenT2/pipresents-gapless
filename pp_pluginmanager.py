@@ -30,10 +30,11 @@ class PluginManager(object):
         self.plugin_timer=None
         self.plugin=None
         self.plugin_draw_time=0
+        self.draw_objects=[]
 
  
     # called by players to load a plugin during load
-    # load_plugin is expected to modify track file and kick off drawing to the canvas
+    # load_plugin is expected to modify track file and load ant Tkinter objects to the canvas hiding them
     def load_plugin(self,track_file,plugin_cfg):
 
         # checks existence of and reads the plugin config file
@@ -44,7 +45,7 @@ class PluginManager(object):
         self.plugin_params=self.read(plugin_cfg_file)
         # print self.plugin_params
         # checks the plugin exists
-        plugin_dir = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_plugins'
+        plugin_dir = self.pp_dir+os.sep+'pp_track_plugins'
         plugin_file = plugin_dir+os.sep+self.plugin_params['plugin']+'.py'
 
         if not os.path.exists(plugin_file):
@@ -63,35 +64,35 @@ class PluginManager(object):
             liveshow=False
             track_type=self.track_params['type']
 
-        error,message,used_track,self.plugin_draw_time=self.plugin.load(track_file,liveshow,track_type)
-        # self.canvas.itemconfig('pp-plugin-content',state='hidden')
+        # call the plugins load method
+        error,message,used_track=self.plugin.load(track_file,liveshow,track_type)
+        self.canvas.update_idletasks()        
         if error  !=  'normal':
             return error,message,''
         else:
             return 'normal','',used_track
+
+    def draw_plugin(self):
+        if self.plugin is not None:
+            self.plugin_redraw_time=self.plugin.draw()
         
 
     # called by players show method to start the plugin's display.
     def show_plugin(self):
-        # do anything in the plugins show method
+        # call the plugins show method to unhide the objects
         if self.plugin is not None:
             self.plugin.show()
-        # delete any old drawn content
-        self.canvas.delete('pp-plugin-content')
-        if self.plugin is not None and self.plugin_draw_time>=0:
-            self.plugin.draw()
-            self.canvas.itemconfig('pp-plugin-content',state='normal')
             self.canvas.update_idletasks()
             # and repeat if time>0
-            if self.plugin_draw_time>0:
-                self.plugin_timer=self.canvas.after(self.plugin_draw_time,self._repeat_plugin)
+            if self.plugin_redraw_time>0:
+                self.plugin_timer=self.canvas.after(self.plugin_redraw_time,self._redraw_plugin)
 
-    def _repeat_plugin(self):
-        self.canvas.delete('pp-plugin-content')
-        self.plugin.draw()
-        self.canvas.itemconfig('pp-plugin-content',state='normal')
-        self.canvas.update_idletasks()
-        self.plugin_timer=self.canvas.after(self.plugin_draw_time,self._repeat_plugin)
+    def _redraw_plugin(self):
+        # call the plugins repeat method
+        if self.plugin is not None:
+            self.plugin.redraw()
+            self.canvas.update_idletasks()
+            self.plugin_timer=self.canvas.after(self.plugin_draw_time,self._redraw_plugin)
 
 
     # called by players at the end of a track
@@ -99,13 +100,8 @@ class PluginManager(object):
         # stop the timer as the stop_plugin may have been called while it is running
         if self.plugin_timer is not None:
             self.canvas.after_cancel(self.plugin_timer)
-        if self.plugin is not None:
-            self.canvas.itemconfig('pp-plugin-content',state='hidden')
-            self.canvas.delete('pp-plugin-content')
-            self.canvas.update_idletasks()
-            # and call the plugin's hide method to allow tidy up.
             self.plugin.hide()
-
+            self.canvas.update_idletasks()
 
 
 # **************************************
@@ -119,6 +115,8 @@ class PluginManager(object):
         self.plugin=plugin_class(self.root,self.canvas,
                                  self.plugin_params,self.track_params,self.show_params,
                                  self.pp_dir,self.pp_home,self.pp_profile)
+
+
 
 
 

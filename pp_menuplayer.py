@@ -219,6 +219,9 @@ class MenuPlayer(Player):
 
     def display_menu(self):
 
+        if self.medialist.display_length()==0:
+            return 'error','no tracks to show in menu'
+
         # calculate menu geometry
         reason,message=self.calculate_geometry()
         if reason == 'error':

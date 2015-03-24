@@ -91,10 +91,12 @@ class PPEditor(object):
         ptypemenu = Menu(profilemenu, tearoff=0, bg="grey", fg="black")
         ptypemenu.add_command(label='Exhibit', command = self.new_exhibit_profile)
         ptypemenu.add_command(label='Media Show', command = self.new_mediashow_profile)
+        ptypemenu.add_command(label='Art Media Show', command = self.new_artmediashow_profile)
         ptypemenu.add_command(label='Menu', command = self.new_menu_profile)
         ptypemenu.add_command(label='Presentation', command = self.new_presentation_profile)
         ptypemenu.add_command(label='Interactive', command = self.new_interactive_profile)
         ptypemenu.add_command(label='Live Show', command = self.new_liveshow_profile)
+        ptypemenu.add_command(label='Art Live Show', command = self.new_artliveshow_profile)
         ptypemenu.add_command(label='RadioButton Show', command = self.new_radiobuttonshow_profile)
         ptypemenu.add_command(label='Hyperlink Show', command = self.new_hyperlinkshow_profile)
         ptypemenu.add_command(label='Blank', command = self.new_blank_profile)
@@ -386,41 +388,47 @@ class PPEditor(object):
 
         
     def new_exhibit_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit_1p3'
         self.new_profile(profile)
 
     def new_interactive_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_interactive'
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_interactive"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_interactive_1p3'
         self.new_profile(profile)
 
     def new_menu_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_menu'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_menu_1p3'
         self.new_profile(profile)
 
     def new_presentation_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_presentation'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_presentation_1p3'
         self.new_profile(profile)
 
     def new_blank_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit'
-        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_blank"
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep +"ppt_blank_1p3"
         self.new_profile(profile)
 
     def new_mediashow_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_mediashow'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_mediashow_1p3'
         self.new_profile(profile)
         
     def new_liveshow_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_liveshow'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_liveshow_1p3'
+        self.new_profile(profile)
+
+    def new_artmediashow_profile(self):
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_artmediashow_1p3'
+        self.new_profile(profile)
+        
+    def new_artliveshow_profile(self):
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_artliveshow_1p3'
         self.new_profile(profile)
 
     def new_radiobuttonshow_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_radiobuttonshow'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_radiobuttonshow_1p3'
         self.new_profile(profile)
 
     def new_hyperlinkshow_profile(self):
-        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow'
+        profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow_1p3'
         self.new_profile(profile)
 
     # ***************************************
@@ -556,7 +564,7 @@ class PPEditor(object):
     def open_medialists(self,profile_dir):
         self.medialists = []
         for this_file in os.listdir(profile_dir):
-            if this_file.endswith(".json") and this_file not in ('pp_showlist.json','pp_schedule.json'):
+            if this_file.endswith(".json") and this_file not in ('pp_showlist.json','schedule.json'):
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
         for index in range (len(self.medialists)):
@@ -951,7 +959,7 @@ class PPEditor(object):
     def update_medialists(self):
          # UPDATE MEDIALISTS AND THEIR TRACKS
         for this_file in os.listdir(self.pp_profile_dir):
-            if this_file.endswith(".json") and this_file not in  ('pp_showlist.json','pp_schedule.json'):
+            if this_file.endswith(".json") and this_file not in  ('pp_showlist.json','schedule.json'):
                 self.mon.log (self,"Updating medialist " + this_file)
                 # open a medialist and update its tracks
                 ifile  = open(self.pp_profile_dir + os.sep + this_file, 'rb')
@@ -1052,7 +1060,7 @@ class Options(object):
 
 
         # create an options file if necessary
-        self.options_file = app_dir+os.sep+'pp_editor.cfg'
+        self.options_file = app_dir+os.sep+'pp_config'+ os.sep + 'pp_editor.cfg'
         if not os.path.exists(self.options_file):
             self.create()
 

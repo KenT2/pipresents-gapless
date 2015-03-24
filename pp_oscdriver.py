@@ -12,15 +12,10 @@ or run pydoc pyOSC.py. you can also get the docs by opening a python shell and d
 import os
 from pp_utils import Monitor
 from pp_oscconfig import OSCConfig
-import OSC
 import time, threading
 import ConfigParser
 
-
-class myOSCServer(OSC.OSCServer):
-    allow_reuse_address=True
-    print_tracebacks = True                 
-                  
+                 
 class OSCDriver(object):
 
     # executed by main program
@@ -53,6 +48,11 @@ class OSCDriver(object):
 
         if self.this_unit_type not in ('master','slave','master+slave'):
             return 'error','this unit type not known: '+self.this_unit_type
+
+        import OSC
+        class myOSCServer(OSC.OSCServer):
+            allow_reuse_address=True
+            print_tracebacks = True
 
         if self.this_unit_type in('slave','master+slave'):
             #start the client that sends replies to controlling unit
@@ -225,6 +225,9 @@ class Options(object):
             return True
         else:
             return False
+        
+
+
 
 if __name__ == '__main__':
 
@@ -242,7 +245,6 @@ if __name__ == '__main__':
         
     def output_event_callback(args):
         print 'animate: ' + pretty_list(args)
-
 
 
     od = OSCDriver('/home/pi/pipresents',show_command_callback,input_event_callback,output_event_callback)

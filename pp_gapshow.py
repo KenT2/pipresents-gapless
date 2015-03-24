@@ -63,6 +63,7 @@ class GapShow(Show):
         self.interval=0
         self.duration=0
         self.controls_list=[]
+        self.enable_hint=True
         
 
     def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
@@ -329,6 +330,7 @@ class GapShow(Show):
         else:
             self.enable_child=False
 
+        
         # get control bindings for this show
         # needs to be done for each track as track can override the show controls
         if self.show_params['disable-controls'] == 'yes':
@@ -344,7 +346,7 @@ class GapShow(Show):
 
         # load the track or show
         # params - track,enable_menu
-        Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,self.enable_child)
+        Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,self.enable_hint)
         
 
     # track has loaded so show it.
@@ -411,6 +413,8 @@ class GapShow(Show):
         self.mon.trace(self,self.pretty_what_next_after_showing_state())
                         
         self.track_count+=1
+        # set fals when child rack is to be played
+        self.enable_hint=True
 
         # first of all deal with conditions that do not require the next track to be shown
         # some of the conditions can happen at any time, others only when a track is closed or at pause_at_end
@@ -514,6 +518,7 @@ class GapShow(Show):
                     # don't use select the track as need to preserve mediashow sequence for returning from child
                     child_track=self.medialist.track(index)
                     self.display_eggtimer()
+                    self.enable_hint=False
                     self.start_load_show_loop(child_track)
                 else:
                     self.mon.err(self,"Child not found in medialist: "+ self.child_track_ref)

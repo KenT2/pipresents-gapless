@@ -152,14 +152,14 @@ class PPdefinitions(object):
                          'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
                             'controls':'','live-tracks-dir1':'','live-tracks-dir2':'',
-                               'controls':'pp-down down\npp-stop stop\npp-pause pause\npp-exit exit\n'},
+                               'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
 
                 'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
                         'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                         'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
                          'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':'pp-down down\npp-stop stop\npp-pause pause\npp-exit exit\n'},
+                            'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
 
                'hyperlinkshow':{ 'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'','debug-path':'no',
                     'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
@@ -188,7 +188,7 @@ class PPdefinitions(object):
                             'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                             'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
                              'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
+                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
                                      
                 'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow','show-timeout': '0','interval':'0','track-count-limit':'0',
                             'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
@@ -199,7 +199,7 @@ class PPdefinitions(object):
                          'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
                             'live-tracks-dir1':'','live-tracks-dir2':'',
-                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\npp-exit exit\n'},
+                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
                 
        
               'menu':{'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
@@ -208,7 +208,7 @@ class PPdefinitions(object):
                         'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
                         'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
-                        'disable-controls':'no','controls':'pp-stop stop\npp-pause pause\npp-exit exit\n'},    
+                        'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},    
             
                 'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}
                             
