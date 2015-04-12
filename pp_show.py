@@ -175,6 +175,7 @@ class Show(object):
                 else:
                     # empty controls list as not used, pleases landscape
                     # print 'send direction to subshow from show',self.kickback_for_next_track
+                    # Show.base_withdraw_show_background(self)
                     self.shower.play(end_shower_callback,self.subshow_ready_callback,self.kickback_for_next_track,self.level+1,[])
         else:
             # dispatch track by type
@@ -261,9 +262,9 @@ class Show(object):
             self.base_show_show_background()
         else:
             self.base_withdraw_show_background()
-        # !!!!!!!!!
-#        if self.previous_shower != None:
-#            self.previous_shower.base_withdraw_show_background()
+        # !!!!!!!!! withdraw the background from the parent show
+        if self.previous_shower != None:
+            self.previous_shower.base_withdraw_show_background()
         # close the player from the previous track
         if self.previous_player is not  None:
             self.mon.trace(self,' - hiding previous: ' + self.mon.pretty_inst(self.previous_player))
@@ -542,19 +543,20 @@ class Show(object):
               
     def base_show_show_background(self):
         if self.background_obj is not None:
+            # print 'show show background'
             self.canvas.itemconfig(self.background_obj,state='normal')
             # self.canvas.update_idletasks( )    
 
     def base_withdraw_show_background(self):
         self.mon.trace(self,'')
-        if self.background_obj!= None:
+        if self.background_obj is not None:
             # print 'withdraw background obj', self.background_obj
             self.canvas.itemconfig(self.background_obj,state='hidden')
             # self.canvas.update_idletasks( )
 
 
     def base_delete_show_background(self):
-        if self.background_obj!= None:
+        if self.background_obj is not None:
             self.canvas.delete(self.background_obj)
             self.background=None
             # self.canvas.update_idletasks( )

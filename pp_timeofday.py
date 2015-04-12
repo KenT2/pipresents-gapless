@@ -139,7 +139,10 @@ class TimeOfDay(object):
             catchup_time+=1
             TimeOfDay.now = TimeOfDay.now + timedelta(seconds=1)
         # and loop
-        self.tick_timer=TimeOfDay.root.after(self.tod_tick,self.poll)
+        if self.testing:
+            self.tick_timer=TimeOfDay.root.after(1000,self.poll)
+        else:
+            self.tick_timer=TimeOfDay.root.after(self.tod_tick,self.poll)
 
 
      # called by main program only           
@@ -164,7 +167,7 @@ class TimeOfDay(object):
             self.build_events_lists()
             # self.print_events_lists()
 
-
+        # print TimeOfDay.scheduler_time
         for show_ref in TimeOfDay.events:      
             # print 'scheduler time match', show_ref
             times = TimeOfDay.events[show_ref]

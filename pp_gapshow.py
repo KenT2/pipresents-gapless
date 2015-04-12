@@ -63,7 +63,7 @@ class GapShow(Show):
         self.interval=0
         self.duration=0
         self.controls_list=[]
-        self.enable_hint=True
+        self.enable_hint= False
         
 
     def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
@@ -346,7 +346,8 @@ class GapShow(Show):
 
         # load the track or show
         # params - track,enable_menu
-        Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,self.enable_hint)
+        enable=self.enable_child & self.enable_hint
+        Show.base_load_track_or_show(self,selected_track,self.what_next_after_load,self.end_shower,enable)
         
 
     # track has loaded so show it.
@@ -413,7 +414,7 @@ class GapShow(Show):
         self.mon.trace(self,self.pretty_what_next_after_showing_state())
                         
         self.track_count+=1
-        # set fals when child rack is to be played
+        # set false when child rack is to be played
         self.enable_hint=True
 
         # first of all deal with conditions that do not require the next track to be shown

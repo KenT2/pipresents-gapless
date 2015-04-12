@@ -110,7 +110,7 @@ class MplayerDriver(object):
         self.end_play_signal=False
         self.terminate_reason=''
         track= "'"+ track.replace("'","'\\''") + "'"
-        cmd = MplayerDriver._LAUNCH_CMD + options +" " + track
+        cmd = MplayerDriver._LAUNCH_CMD +' '+options +" " + track
         self.mon.log(self, "Send command to mplayer: "+ cmd)
         self._process = pexpect.spawn(cmd)
         

@@ -283,8 +283,11 @@ class ImagePlayer(Player):
                     window_height=self.show_canvas_height
                     window_centre_x=self.show_canvas_centre_x
                     window_centre_y=self.show_canvas_centre_y
-                
                 if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
+                    # print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
+                    # print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
+                    # print 'window dimensions/centre',window_width,window_height,window_centre_x,window_centre_y
+                    # print
                     # original image is larger or , shrink it to fit the screen preserving aspect
                     ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))                 
                     self.tk_img=ImageTk.PhotoImage(ppil_image)

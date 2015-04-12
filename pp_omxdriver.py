@@ -173,9 +173,10 @@ class OMXDriver(object):
         self.omxplayer_cmd = OMXDriver._LAUNCH_CMD + options +" " + track
         self.mon.log(self, "Send command to omxplayer: "+ self.omxplayer_cmd)
         self._process = pexpect.spawn(self.omxplayer_cmd)
-
+        pid=self._process.pid
         # uncomment to monitor output to and input from omxplayer.bin (read pexpect manual)
-        fout= file(self.pp_dir + os.sep + 'pp_logs'  + os.sep +' omxlogfile.log','w')  #uncomment and change sys.stdout to fout to log to a file
+        fout= file(self.pp_dir + os.sep + 'pp_logs'  + os.sep + 'omxlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
+        # fout= file(self.pp_dir + os.sep + 'pp_logs'  + os.sep + str(pid) + 'omxlogfile.txt','a')  #uncomment and change sys.stdout to fout to log to a file
         # self._process.logfile_send = sys.stdout  # send just commands to stdout
         self._process.logfile=fout  # send all communications to log file
          

@@ -65,10 +65,11 @@ class AudioPlayer(Player):
             
         # get audio volume from profile.
         if  self.track_params['mplayer-volume'] != "":
-            self.mplayer_volume= self.track_params['mplayer-volume'].strip()
+            mplayer_volume= self.track_params['mplayer-volume'].strip()
         else:
-            self.mplayer_volume= self.show_params['mplayer-volume'].strip()
-        self.volume_option= 'volume=' + self.mplayer_volume
+            mplayer_volume= self.show_params['mplayer-volume'].strip()
+        mplayer_volume_int=int(mplayer_volume)+100
+        self.volume_option= '-volume ' + str(mplayer_volume_int)
 
         # get speaker from profile
         if  self.track_params['audio-speaker'] != "":
@@ -237,10 +238,9 @@ class AudioPlayer(Player):
                 if self.mplayer_audio == 'hdmi':
                     os.system("amixer -q -c 0 cset numid=3 2")
                 else:
-                    os.system("amixer -q -c 0 cset numid=3 1")
-                    
-             # play the track               
-            options = self.show_params['mplayer-other-options'] + '-af '+ self.speaker_option+','+self.volume_option + ' '
+                    os.system("amixer -q -c 0 cset numid=3 1")   
+            # play the track               
+            options = self.show_params['mplayer-other-options'] +  self.volume_option + ' -af '+ self.speaker_option + ' '
             if self.track != '':
                 self.mplayer.play(self.track,options)
                 self.mon.log (self,'Playing audio track from show Id: '+ str(self.show_id))

@@ -448,7 +448,7 @@ class PPdefinitions(object):
                         'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
                          'display-show-text':'yes','track-text': '', 'track-text-x':'200','track-text-y': '20', 'track-text-font': 'Helvetica 30 bold', 'track-text-colour': 'white',
                         'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'',
-                        'links':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-exit exit\n'
+                        'links':'pp-down down\npp-up up\npp-play play\npp-stop stop\n'
                          }
                 }
 

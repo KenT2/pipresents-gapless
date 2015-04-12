@@ -9,7 +9,7 @@ Pi Presents to display its output.
 import time
 from Tkinter import NW
 
-class krt_time(object):
+class krt_time_concurrent(object):
 
     def __init__(self,root,canvas,plugin_params,track_params,show_params,pp_dir,pp_home,pp_profile):
         # called when a player is executed for a track
@@ -46,22 +46,13 @@ class krt_time(object):
         # returns the above value
 
         # draw objects direct to the screen setting their state to 'hidden' so they are not seen until show is called
-        time_text='My Local Time is: ' + time.asctime()
+        time_text= time.asctime()
 
-        plugin_obj1=self.canvas.create_text(100,500,
-                                        anchor=NW,
-                                      text='Text drawn directly to the screen',
-                                      fill='red',
-                                      font='arial 20 bold',
-                                     state = 'hidden'
-                                )
-        self.plugin_objects.append(plugin_obj1)
-        
-        plugin_obj2=self.canvas.create_text(100,600,
+        plugin_obj2=self.canvas.create_text(100,100,
                                         anchor=NW,
                                       text=time_text,
                                       fill='green',
-                                      font='arial 20 bold',
+                                      font='arial 25 bold',
                                      state = 'hidden'
                                 )
         self.plugin_objects.append(plugin_obj2)
@@ -78,8 +69,8 @@ class krt_time(object):
 
     def redraw(self):
         # update the text of the second object with the latest time
-        time_text='My Local Time is: ' + time.asctime()
-        self.canvas.itemconfig(self.plugin_objects[1],text=time_text)
+        time_text= time.asctime()
+        self.canvas.itemconfig(self.plugin_objects[0],text=time_text)
     
 
     def hide(self):
