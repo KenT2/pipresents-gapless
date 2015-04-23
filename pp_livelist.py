@@ -164,17 +164,25 @@ class LiveList(object):
         if os.path.exists(self.pp_live_dir1):
             for track_file in os.listdir(self.pp_live_dir1):
                 track_file = self.pp_live_dir1 + os.sep + track_file
-                (root_file,ext_file)= os.path.splitext(track_file)
-                if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
-                    self.livelist_add_track(track_file)
-                    
+                (root_name,leaf)=os.path.split(track_file)
+                if leaf[0] == '.':
+                    break
+                else:
+                    (root_file,ext_file)= os.path.splitext(track_file)
+                    if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
+                        self.livelist_add_track(track_file)
+                        
         if os.path.exists(self.pp_live_dir2):
             for track_file in os.listdir(self.pp_live_dir2):
                 track_file = self.pp_live_dir2 + os.sep + track_file
-                (root_file,ext_file)= os.path.splitext(track_file)
-                if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
-                    self.livelist_add_track(track_file)
-                    
+                (root_name,leaf)=os.path.split(track_file)
+                if leaf[0] == '.':
+                    break
+                else:
+                    (root_file,ext_file)= os.path.splitext(track_file)
+                    if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
+                        self.livelist_add_track(track_file)
+                        
 
         self.new_livelist= sorted(self.new_livelist, key= lambda track: os.path.basename(track['location']).lower())
         # self.print_livelist()

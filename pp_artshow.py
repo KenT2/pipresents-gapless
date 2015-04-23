@@ -172,10 +172,11 @@ class ArtShow(Show):
         self.mon.trace(self,'')
         if self.medialist.start() is False:
             # list is empty - display a message for 5 secs and then retry
-            Show.display_admin_message(self,Show.base_resource(self,'mediashow','m11'))
+            Show.display_admin_message(self,self.show_params['empty-text'])
             self.canvas.after(5000,self.remove_list_empty_message)
         else:
             # otherwise load the first track
+            # print "!!!!! artshow init first"
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
                 self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
@@ -187,6 +188,7 @@ class ArtShow(Show):
                     track_file=self.medialist.selected_track()['text']
                 else:
                     track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
+                # print "!!!!! artshow load first ",track_file
                 self.next_player.load(track_file,
                                       self.loaded_callback,
                                       enable_menu=False)
@@ -249,11 +251,6 @@ class ArtShow(Show):
             self.ending_reason='user-stop'
             self.close_current_and_next()
             
-        # has content of list been changed (replaced if it has, used for content of livelist)
-        elif self.medialist.replace_if_changed() is True:
-            self.ending_reason='change-medialist'
-            self.close_current_and_next()
-
         elif self.medialist.length() == 0:
             self.load_first_track()
 
@@ -261,12 +258,11 @@ class ArtShow(Show):
         elif self.end_medialist_signal is True:
             self.end_medialist_signal=False
             self.end_medialist_warning=False
-            # test for oredered since medialist at end gives false positives for shuffle
+            # test for ordered since medialist at end gives false positives for shuffle
             
             # repeat so go back to start
             if self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'repeat':
-                # self.state='waiting'
-                self.wait_for_trigger()
+                self.show_next_track()
 
             # single run so end
             elif self.show_params['sequence'] == "ordered" and self.show_params['repeat'] == 'single-run':
@@ -332,18 +328,24 @@ class ArtShow(Show):
         if self.terminate_signal is True or self.exit_signal is True or self.req_next=='error':
             self.what_next()
 
-        # get the next track and init player
-        self.medialist.next(self.show_params['sequence'])
-        if self.medialist.at_end() is True:
-            self.end_medialist_warning=True
-        self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
-        if self.next_player is None:
-            self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
-            self.req_next='error'
-            self.what_next()
+        # has content of list been changed (replaced if it has, used for content of livelist)
+        if self.medialist.replace_if_changed() is True:
+            self.ending_reason='change-medialist'
+            self.close_current_and_next()
         else:
-            # and load the next after a wait to allow animation etc to be timely.
-            self.canvas.after(self.load_delay,self.load_next)
+            # get the next track and init player
+            self.medialist.next(self.show_params['sequence'])
+            if self.medialist.at_end() is True:
+                self.end_medialist_warning=True
+            # print "!!!!! artshow init next "
+            self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
+            if self.next_player is None:
+                self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
+                self.req_next='error'
+                self.what_next()
+            else:
+                # and load the next after a wait to allow animation etc to be timely.
+                self.canvas.after(self.load_delay,self.load_next)
 
     def load_next(self):
         # load the next track while current is showing
@@ -352,6 +354,7 @@ class ArtShow(Show):
             track_file=self.medialist.selected_track()['text']
         else:
             track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
+        # print "!!!!! artshow load next ",track_file
         self.mon.trace(self, track_file)
         self.next_player.load(track_file,
                               self.loaded_callback,
@@ -425,6 +428,15 @@ class ArtShow(Show):
 
     def track_ready_callback(self,enable_show_background):
         self.mon.trace(self, '')
+        # show the show background done for every track but quick operation
+        if enable_show_background is True:
+            self.base_show_show_background()
+        else:
+            self.base_withdraw_show_background()
+        # !!!!!!!!! withdraw the background from the parent show
+        if self.previous_shower != None:
+            self.previous_shower.base_withdraw_show_background()
+            
         # close the player from the previous track
         if self.previous_player is not None:
             self.mon.trace(self, 'hiding previous: ' + self.mon.pretty_inst(self.previous_player))
@@ -474,6 +486,8 @@ class ArtShow(Show):
 # ***************************
 
     def end(self,reason,message):
+        self.base_withdraw_show_background()
+        self.base_delete_show_background()
         self.mon.log(self,"Ending Mediashow: "+ self.show_params['show-ref'])
         self.end_callback(self.show_id,reason,message)
         self=None

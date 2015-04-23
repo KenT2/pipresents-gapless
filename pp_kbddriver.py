@@ -42,21 +42,15 @@ class KbdDriver(object):
             if os.path.exists(tryfile):
                 filename=tryfile
             else:
-                # try inside pp_home
-                # self.mon.log(self,"keys.cfg not found at "+ tryfile+ " trying pp_home")
-                tryfile=pp_home+os.sep+"keys.cfg"
+                # try inside pipresents
+                # self.mon.log(self,"keys.cfg not found at "+ tryfile + " trying inside pipresents")
+                tryfile=pp_dir+os.sep+'pp_config'+os.sep+"keys.cfg"
                 if os.path.exists(tryfile):
                     filename=tryfile
                 else:
-                    # try inside pipresents
-                    # self.mon.log(self,"keys.cfg not found at "+ tryfile + " trying inside pipresents")
-                    tryfile=pp_dir+os.sep+'pp_config'+os.sep+"keys.cfg"
-                    if os.path.exists(tryfile):
-                        filename=tryfile
-                    else:
-                        self.mon.log(self,"keys.cfg not found at "+ tryfile)
-                        self.mon.err(self,"keys.cfg not found")
-                        return False   
+                    self.mon.log(self,"keys.cfg not found at "+ tryfile)
+                    self.mon.err(self,"keys.cfg not found")
+                    return False   
             KbdDriver.config = ConfigParser.ConfigParser()
             KbdDriver.config.optionxform=str
             KbdDriver.config.read(filename)

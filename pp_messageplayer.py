@@ -125,6 +125,8 @@ class MessagePlayer(Player):
         self.mon.trace(self,'')
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
+        if self.tick_timer!= None:
+            self.canvas.after_cancel(self.tick_timer)
         self.play_state='closed'
         if self.closed_callback is not None:
             self.closed_callback('normal','Messageplayer closed')
@@ -173,9 +175,9 @@ class MessagePlayer(Player):
     # called from Player, load_x_content       
     def load_track_content(self):
         # load message text
-        print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
-        print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
-        print
+        # print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
+        #  print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
+        #  print
         if self.track_params['message-x'] != '':
             self.track_obj=self.canvas.create_text(int(self.track_params['message-x'])+self.show_canvas_x1,
                                                    int(self.track_params['message-y'])+self.show_canvas_y1,

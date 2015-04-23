@@ -58,11 +58,11 @@ class TimeOfDay(object):
             second= int(self.schedule['sim-second'])
             TimeOfDay.now = datetime(day = day, month =month, year=year,hour=hour, minute=minute, second=second)
             self.testing=True
-            print 'initial SIMULATED time',TimeOfDay.now.ctime()
+            print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
         else:
             #get the current date/time only this once
             TimeOfDay.now = datetime.now().replace(microsecond=0)
-            print 'initial REAL time',TimeOfDay.now.ctime()
+            # print '\nInitial REAL time',TimeOfDay.now.ctime()
             self.testing=False
         TimeOfDay.last_now = TimeOfDay.now - timedelta(seconds=1)           
         self.build_schedule_for_today(self.schedule)
@@ -70,7 +70,7 @@ class TimeOfDay(object):
             self.print_todays_schedule()
         self.build_events_lists()
         # self.print_events_lists()
-        # and start any show that should be running at start up time
+        # and do exitpipresents or start any show that should be running at start up time
         self.do_catchup()
 
 
@@ -79,8 +79,14 @@ class TimeOfDay(object):
             # shutdown or exit if current time is later than time in event list
             for show_ref in TimeOfDay.events:
                 if show_ref == 'pp_core':
-                    pass
-                    #if need to shutdown on or before current time, do so
+                    times = TimeOfDay.events[show_ref]
+                    for time_element in reversed(times):
+                        # print 'now', TimeOfDay.scheduler_time, 'time from events', time_element[1], time_element[0]
+                        # got past current time can give up and execute exitpipresents or closedown
+                        if   TimeOfDay.scheduler_time >= time_element[1]:
+                            self.do_event(show_ref,time_element)
+                            return 'exiting'
+
                     
             # do the catchup for each real show in turn
             for show_ref in TimeOfDay.events:
@@ -115,7 +121,7 @@ class TimeOfDay(object):
 ##                        if time_element[1]  ==  TimeOfDay.scheduler_time:
 ##                            print ' do event  - catchup', TimeOfDay.scheduler_time, 'time from events', time_element[1], time_element[0]
 ##                            self.do_event(show_ref,time_element)
-
+            return 'not exiting'        
 
     # called by main program only         
     def poll(self):

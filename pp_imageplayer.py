@@ -50,7 +50,7 @@ class ImagePlayer(Player):
         
         self.mon.trace(self,'')
         # and initialise things for this player
-        
+        # print 'imageplayer init'
         # get duration from profile
         if self.track_params['duration'] != '':
             self.duration= int(self.track_params['duration'])
@@ -81,6 +81,7 @@ class ImagePlayer(Player):
     def load(self,track,loaded_callback,enable_menu):  
         # instantiate arguments
         self.track=track
+        # print 'imageplayer load',self.track
         self.loaded_callback=loaded_callback   # callback when loaded
         self.mon.trace(self,'')
 
@@ -157,6 +158,8 @@ class ImagePlayer(Player):
         self.mon.trace(self,'')
         self.closed_callback=closed_callback
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
+        if self.tick_timer!= None:
+            self.canvas.after_cancel(self.tick_timer)
         self.play_state='closed'
         if self.closed_callback is not None:
             self.closed_callback('normal','imageplayer closed')
@@ -327,7 +330,7 @@ class ImagePlayer(Player):
                     window_centre_x=self.show_canvas_centre_x
                     window_centre_y=self.show_canvas_centre_y
 
-                print 'window',window_width,window_height,window_centre_x,window_centre_y,self.show_canvas_x1,self.show_canvas_y1,'\n'
+                # print 'window',window_width,window_height,window_centre_x,window_centre_y,self.show_canvas_x1,self.show_canvas_y1,'\n'
                 ppil_image=ppil_image.resize((int(window_width), int(window_height)),eval(self.image_filter))
                 self.tk_img=ImageTk.PhotoImage(ppil_image)
                 del ppil_image

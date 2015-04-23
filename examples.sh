@@ -11,7 +11,7 @@ while [ $RET -eq 0 ]; do
     --title="Pi Presents" \
     --text="Examples of Pi Presents in Operation, CTRL-BREAK to return" \
     --column="Example" --column="Description" \
-    pp_mediashow_1p3 "A Repeating multi-media show for a Visitor Centre" \
+    pp_mediashow_1p3 "A Repeating multi-media show" \
     pp_interactive_1p3 "An Interactive Show for a Visitor Centre" \
     pp_exhibit_1p3 "A track or show triggered by a button or PIR" \
     pp_openclose_1p3 "Start when the lid is opened, stop on close (requires gpio)" \
@@ -26,6 +26,8 @@ while [ $RET -eq 0 ]; do
     pp_web_1p3 "Demonstration of Web Browser Player" \
     pp_concurrent_1p3 "Play many shows simultaneously" \
     pp_multiwindow_1p3 "Many concurrent shows sharing the screen" \
+    pp_artmediashow_1p3 "A gapless multi-media show" \
+    pp_artliveshow_1p3 "A gapless liveshow" \
     pp_showcontrol_1p3 "Control one show from another" \
     pp_timeofday_1p3 "Run shows at specfied times each day" \
     pp_animate_1p3 "Demonstration of Animation Control" \

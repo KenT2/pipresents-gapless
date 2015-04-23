@@ -85,6 +85,7 @@ class Show(object):
         self.kickback_for_next_track=False
         
         # get background image from profile.
+        # print 'background', self.show_params['background-image']
         if self.show_params['background-image'] != '':
             self.background_file= self.show_params['background-image']
 
@@ -319,7 +320,7 @@ class Show(object):
 
             # if exiting pipresents then need to close previous show else get memotry leak
             # if not exiting pipresents the keep previous so it can be closed when showing the next track
-            print 'CURRENT PLAYER IS NONE' ,self.ending_reason
+            # print 'CURRENT PLAYER IS NONE' ,self.ending_reason
             if self.ending_reason == 'killed':
                 self.base_close_previous()
 
@@ -557,6 +558,7 @@ class Show(object):
 
     def base_delete_show_background(self):
         if self.background_obj is not None:
+            # print 'delete background obj'
             self.canvas.delete(self.background_obj)
             self.background=None
             # self.canvas.update_idletasks( )

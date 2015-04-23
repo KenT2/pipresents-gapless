@@ -83,21 +83,21 @@ class Monitor(object):
         r_func = sys._getframe(1).f_code.co_name
         r_line =  str(sys._getframe(1).f_lineno)
         if self.enabled(r_class,Monitor.m_fatal) is True: 
-            print "%.2f" % (time.time()-Monitor.start_time), " FATAL: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
+            print "%.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
             Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
-        tkMessageBox.showwarning(r_class ,text)
+        tkMessageBox.showwarning(r_class ,'System Error:\n'+text)
 
     def err(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_err) is True:        
-            print "%.2f" % (time.time()-Monitor.start_time), " ERROR: ",r_class+": ", text
+            print "%.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
             Monitor.ofile.write (" ERROR: " + r_class + ":  " + text + "\n")
-        tkMessageBox.showwarning(r_class ,text)
+        tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_warn) is True:     
-            print "%.2f" % (time.time()-Monitor.start_time), " WARNING: ",r_class +": ", text
+            print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",r_class +": ", text
             Monitor.ofile.write (" WARNING: " + r_class+ ":  " + text + "\n")
 
     def log(self,caller,text):

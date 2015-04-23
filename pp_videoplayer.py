@@ -60,7 +60,7 @@ class VideoPlayer(Player):
                          pp_profile,
                          end_callback,
                          command_callback)
-
+        # print ' !!!!!!!!!!!videoplayer init'
         self.mon.trace(self,'')
 
         # get player parameters
@@ -114,7 +114,7 @@ class VideoPlayer(Player):
         # instantiate arguments
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
-
+        # print '!!!!!!!!!!! videoplayer load',self.track
         self.mon.trace(self,'')
 
         # do common bits of  load
@@ -200,7 +200,7 @@ class VideoPlayer(Player):
 
      # SHOW - show a track      
     def show(self,ready_callback,finished_callback,closed_callback):
-                         
+        # print "!!!! videoplayer show"             
         # instantiate arguments
         self.ready_callback=ready_callback         # callback when ready to show video
         self.finished_callback=finished_callback         # callback when finished showing
@@ -525,7 +525,6 @@ class VideoPlayer(Player):
         if self.play_state == 'showing':
             # service any queued stop signals by sending quit to omxplayer
             # self.mon.log(self,"      State machine: " + self.play_state)
-            # must_quit is set by close when it uses the show state machine by setting state back to showing
             if self.quit_signal is True:
                 self.quit_signal=False
                 self.mon.log(self,"      quit video - Send stop to omxdriver")

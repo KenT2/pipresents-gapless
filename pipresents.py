@@ -114,7 +114,8 @@ class PiPresents(object):
         if self.options['profile'] != '':
             self.pp_profile_path="/pp_profiles/"+self.options['profile']
         else:
-            self.pp_profile_path = "/pp_profiles/pp_profile"
+            self.mon.err(self,"Profile not specified in command ")
+            self.end('error','No profile in command')
         
        # get directory containing pp_home from the command,
         if self.options['home']  == "":
@@ -146,7 +147,7 @@ class PiPresents(object):
         if os.path.exists(self.pp_profile):
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:
-            self.mon.err(self,"Failed to find requested profile"+ self.pp_profile)
+            self.mon.err(self,"Failed to find requested profile: "+ self.pp_profile)
             self.end('error','Failed to find profile')
         
         if self.options['verify'] is True:

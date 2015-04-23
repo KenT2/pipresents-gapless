@@ -8,10 +8,14 @@
    "type": "start"
   }, 
   {
+   "admin-colour": "white", 
+   "admin-font": "Helvetica 10 bold", 
+   "admin-x": "100", 
+   "admin-y": "200", 
    "audio-speaker": "stereo", 
    "background-colour": "", 
    "background-image": "", 
-   "controls": "pp-down down\npp-stop stop\npp-pause pause\n", 
+   "controls": "pp-down down\npp-stop stop\npp-pause pause", 
    "disable-controls": "no", 
    "duration": "5", 
    "eggtimer-colour": "white", 
@@ -19,6 +23,7 @@
    "eggtimer-text": "Loading....", 
    "eggtimer-x": "100", 
    "eggtimer-y": "100", 
+   "empty-text": "Nothing to show", 
    "freeze-at-end": "yes", 
    "image-rotate": "0", 
    "image-window": "original", 

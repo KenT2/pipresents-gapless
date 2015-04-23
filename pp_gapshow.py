@@ -63,7 +63,7 @@ class GapShow(Show):
         self.interval=0
         self.duration=0
         self.controls_list=[]
-        self.enable_hint= False
+        self.enable_hint= True
         
 
     def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
