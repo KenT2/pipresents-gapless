@@ -1,5 +1,3 @@
-**** Not quite ready for use, nearly there. *****
-
 PI PRESENTS  - Version 1.3.1
 ============================
 

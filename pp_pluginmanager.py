@@ -29,7 +29,7 @@ class PluginManager(object):
 
         self.plugin_timer=None
         self.plugin=None
-        self.plugin_draw_time=0
+        self.plugin_redraw_time=0
         self.draw_objects=[]
 
  
@@ -92,7 +92,7 @@ class PluginManager(object):
         if self.plugin is not None:
             self.plugin.redraw()
             self.canvas.update_idletasks()
-            self.plugin_timer=self.canvas.after(self.plugin_draw_time,self._redraw_plugin)
+            self.plugin_timer=self.canvas.after(self.plugin_redraw_time,self._redraw_plugin)
 
 
     # called by players at the end of a track
