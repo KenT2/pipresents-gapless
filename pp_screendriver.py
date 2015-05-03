@@ -20,20 +20,13 @@ class ScreenDriver(object):
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         # try inside profile
-        tryfile=pp_profile+os.sep+"screen.cfg"
+        tryfile=pp_profile+os.sep+'pp_io_config'+os.sep+'screen.cfg'
         # self.mon.log(self,"Trying screen.cfg in profile at: "+ tryfile)
         if os.path.exists(tryfile):
             filename=tryfile
         else:
-            # try inside pp_home
-            self.mon.log(self,"screen.cfg not found at "+ tryfile+ " trying pp_home")
-            tryfile=pp_home+os.sep+"screen.cfg"
-            if os.path.exists(tryfile):
-                filename=tryfile
-            else:
-                self.mon.log(self,"screen.cfg not found at "+ tryfile+ " click areas not used")
-                #give congiparser an empty filename so it returns an empty config.
-                filename=''
+            #give congiparser an empty filename so it returns an empty config.
+            filename=''
         ScreenDriver.config = ConfigParser.ConfigParser()
         ScreenDriver.config.read(filename)
         if filename != '':

@@ -1,0 +1,138 @@
+Version 1.3.1a 3/5/2015
+This version has many new fields so the major version number has increased from 1.2 to 1.3
+
+* This version of Pi Presents will not run shows prepared under previous versions of pp_editor.
+
+* Using the Version 1.3 editor on a previous version of a profile will automatically upgrade the profile fields to the current version. However there are many additional changes you will have to do manually. The changes described in the last section of the manual.
+
+* You may find it easier to construct your profiles from the templates/examples than to do all the moodifications that are necessary.
+
+---------------------------------------------------------------------
+Version 1.2.3d 22/6/2014
+If you want an example of the repeat command in a hyperlinkshow download pp_hyperlinkshow_1p2 example profile
+
+Version 1.2.3b 28/11/2013
+bug correction release
+liveshow now works with -l option
+pp_menu_1p2 example profile updated. No need to download just run editor on it with --forceupdate then correct the xxx window errors
+manual updated to change warped to warp in the various Window fields
+
+
+Version 1.2.3 17/11/2013
+
+uzbl needs to be installed -  sudo apt-get update sudo apt-get install uzbl
+
+There has been a change of profile since 1.2.2. However I have not changed the profile major version number since this is a beta. You must update the profiles by force; to do this run the editor with the --forceupdate command line option.
+
+To ease the updating task there is an editor menu option 'tools>update'  which will update all profiles in a pp_home.
+
+Play safe, keep backups!
+
+In addition the following will need to be changed:
+
+The format of Image Window has changed to allow 4 resizing options.
+You will need to edit the Image Window field of every show and any image tracks as follows:
+   centred > original
+   1 2 > original 1 2
+   1 2 3 4 > shrink 1234   You may prefer fit or warp to shrink (see manual)
+
+The format of Video Window (was OMX window) has changed to match Image Window and to allow 4 resizing options in future.
+You will need to edit the Video Window field in every show and any video tracks 
+   centred > original
+   1 2 > original 1 2
+   1 2 3 4 > warp 1 2 3 4
+
+The menushow parameters have changed significantly to accomodate the much enhanced menu displays.
+The best way to convert from an old menushow to the new is to delete the old show
+and replace it with a new one by doing show>new>menu in the editor. Details:
+  - Remember the Show Reference of the old menu and the file name of its Medialist.
+  - Delete the menu show but not its medialist
+  - Create a new menu and give it the same show reference as the old when it is being created.
+  - You may get a message saying the medialist already exists, just click OK
+  - Edit the Medialist field in the new menu to be the old medialist name.
+  - If the old menu and its medialist had different names you may now have an additional EMPTY medialst
+    with the name of the menu. You can delete it.
+You should then have a menu looking a bit like the old except it has bullets. Now read the menu to improve it.
+The pp_menu_1p2 example shows what can be achieved.
+The new menu has the menu background disabled by default.
+
+In Track Defaults in mediashows and menus and in the menu itself the Hint Text Y position
+is noo wrt to the top of the screen rather than the bottom. There is also a Hont Text x position.
+   
+There are new examples, additional media and the changes above made to the examples. Best to re-download  the [pipresents-next-examples].
+
+
+
+
+
+
+
+Version 1.2.2a (beta)
+
+There has been a change of profile since 1.2.1d. However I have not changed the profile major version number since this is a beta. You must update the profiles by force; to do this run the editor with the --forceupdate command line option.
+
+To ease the updating task there is a now an editor menu option 'tools>update'  which will update all profiles in a pp_home.
+
+Play safe, keep backups!
+
+In addition the following will need to be changed:
+
+Audio Tracks - change Duration from 0 to <blank>. Zero now means zero duration; <blank> will allow the track to run to completion. Other values of Duration can be used, see the manual.
+
+Mediashows - change the Trigger for Start field to match the new input binding system:
+* To trigger off the Return or Down cursor keys:
+    Trigger For Start -> input or input-quiet Start Trigger-> <blank>
+* To trigger off a GPIO button:
+    Trigger For Start -> input or input-quiet Start Trigger-> pp-play (symbolic name bound to P1-18)
+* To trigger off a PIR:
+    Trigger For Start -> input or input-quiet Start Trigger-> PIR (bound to P1-11)	
+PIR and pp-play are now symbolic names not internal operations.
+
+All Shows - Users of earlier versions of [pipresents-next] will need to update OMX Window  from <blank> to centred.
+
+Mediashows - change the Trigger For Next field:
+* Change from none to continue (just a tidy up of the meaning, operation is the same).
+* Change from GPIO to input and change the Next Input field to be a symbolic name.
+
+Control Tracks - These have been removed. All other track types now have Show Control fields  at Beginning and End of the track.
+
+gpio.cfg - the format has been modified. Any edits you have made to previous gpio.cfg will need to be made to copies of the new file. Also all operations such as play, stop have been changed to symbolic names e.g. pp-play, pp-stop to accomodate the redesigned input event binding system, do not change these back.
+
+resources.cfg - new messages have been added and the text improved. Some of the mediashowmesages have been reorgaanised.
+
+
+Version 1.2.1d (beta)
+
+There has been a change of profile since 1.2.1c I have added a number of new fields and a new type of track. However I have not changed the profile version number since this is a beta. You must update the profiles; to do this run the editor with the --forceupdate command line option.
+
+To ease the updating task there is a now editor menu option 'tools>update'  which will update all profiles in a pp_home.
+
+Version 1.2.1
+MPlayer must now be installed before using Pi Presents - sudo apt-get install mplayer
+
+This version has many new fields so the version number has increased from 1.1 to 1.2
+* This version of Pi Presents will not run shows prepared under previous versions of pp_editor
+* Using the editor on a previous version of a profile will automatically upgrade the profile to the current version HOWEVER SEE BELOW!!!
+* There is one change you might have to do manually. If you used PIR as the trigger for a mediashow change the 'Start Trigger' field to GPIO and enter PIR into the 'trigger input' field.
+
+There is a simplified way to do fullscreen so the --fullscreen (-f) command option now has no parameters. Also there is no need to edit the lxde-rc.xml file or change the taskbar to autohide. However if lxde-rc.xml is already edited just leave it it will not affect operation.
+
+The Version 1.1.x examples use omxplayer to play audio tracks. MPlayer can now be used. To do this in this beta you will need to delete the track and re-create it.
+
+In version 1.1.x at the end of a mediashow the screen went blank, this does not happen in version 1.2.1 as, in order to reduce the flicker between tracks I leave the previous track on display while displaying the next. You will need to add a 1 second blank message track if you want a blank screen. 
+
+This and future versions can potentially blow up your Pi as it controls the digital outputs. Until you are familiar with it I suggest ensuring all GPIO pins are disconnected when using Pi Presents.
+
+Take care when modifying gpio.cfg,  little error checking is done by Pi Presents
+
+Enjoy, feedback welcome.
+
+
+Version 1.1.2
+On a Windows PC the editor did not reliably save medialists. I have added a workaround which asks the user to re-try  the save it seems to always work on the second or third time.
+
+unclutter must be installed before using Pi Presents  (sudo apt-get install unclutter)
+
+In my tests liveshow coped well with deleting tracks at any time. However I can see there are potential problems as files could be deleted at the moment they are being read. If you have problems please report them and I will improve the mutual exclusion.
+
+Take care when modifying resources.cfg, little error checking is done by Pi Presents.

@@ -15,6 +15,7 @@ def read_pins():
             
 
 pins=[3,5,7,8,10,11,12,13,15,16,18,19, 21, 22, 23, 24, 26]
+# b+ etc. pins=[3,5,7,8,10,11,12,13,15,16,18,19, 21, 22, 23, 24, 26,29,31,32,33,35,36,37,38,40]
 
 # pins 3 and 5 have permanent 1.8k pull ups to 3.3 volts and will therefore be 1 even if PULL_UP=GPIO.PUD_DOWN
 # comment out all but the internal pullup value you want

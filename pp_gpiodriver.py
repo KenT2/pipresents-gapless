@@ -82,14 +82,14 @@ class GPIODriver(object):
 
         GPIODriver.shutdown_index=0
 
-        if os.geteuid() !=0:
-            self.mon.err(self,'GPIO requires Pi Presents to be run as root\nhint: sudo pipresents.py .... ')
-            return 'error','GPIO without sudo'
-
         # read gpio.cfg file.
         reason,message=self.read(self.pp_dir,self.pp_home,self.pp_profile)
         if reason =='error':
-            return reason,message
+            return 'error',message
+
+        if os.geteuid() !=0:
+            self.mon.err(self,'GPIO requires Pi Presents to be run as root\nhint: sudo pipresents.py .... ')
+            return 'error','GPIO without sudo'
 
         import RPi.GPIO as GPIO
         self.GPIO = GPIO
@@ -293,14 +293,13 @@ class GPIODriver(object):
 
     def read(self,pp_dir,pp_home,pp_profile):
         # try inside profile
-        filename=pp_profile+os.sep+"gpio.cfg"
-        # self.mon.log(self,"Trying gpio.cfg in profile at: "+ filename)
+        filename=pp_profile+os.sep+'pp_io_config'+os.sep+'gpio.cfg'
         if os.path.exists(filename):
             self.config = ConfigParser.ConfigParser()
             self.config.read(filename)
             self.mon.log(self,"gpio.cfg read from "+ filename)
             return 'normal','gpio.cfg read'
         else:
-            return 'error','gpio.cfg not found at: '+filename
+            return 'normal','gpio.cfg not found in profile: '+filename
 
 

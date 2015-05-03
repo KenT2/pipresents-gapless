@@ -29,6 +29,7 @@ while [ $RET -eq 0 ]; do
     pp_artmediashow_1p3 "A gapless multi-media show" \
     pp_artliveshow_1p3 "A gapless liveshow" \
     pp_showcontrol_1p3 "Control one show from another" \
+	pp_clickarea_1p3 "Touchscreen Click Areas and Soft Keys" \
     pp_timeofday_1p3 "Run shows at specfied times each day" \
     pp_animate_1p3 "Demonstration of Animation Control" \
     pp_subshow_1p3 "Demonstration of Subshows" \

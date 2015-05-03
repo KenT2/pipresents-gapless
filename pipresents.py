@@ -295,7 +295,7 @@ class PiPresents(object):
         
         # kick off GPIO if enabled by command line option
         self.gpio_enabled=False
-        if os.path.exists(self.pp_profile + os.sep +  'gpio.cfg'):
+        if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+os.sep+ 'gpio.cfg'):
             # initialise the GPIO
             self.gpiodriver=GPIODriver()
             reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.handle_input_event)
@@ -309,7 +309,7 @@ class PiPresents(object):
 
         # Init OSCDriver, read config and start OSC server
         self.osc_enabled=False
-        if os.path.exists(self.pp_profile + os.sep +  'osc.cfg'):
+        if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+ os.sep + 'osc.cfg'):
             self.oscdriver=OSCDriver()
             reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
             if reason == 'error':
@@ -387,8 +387,9 @@ class PiPresents(object):
         if command_text.strip()=="":
             return
 
-        if command_text[0]=='/' and self.osc_enabled is True:
-            self.oscdriver.send_command(command_text)
+        if command_text[0]=='/': 
+            if self.osc_enabled is True:
+                self.oscdriver.send_command(command_text)
             return
         
         fields= command_text.split()

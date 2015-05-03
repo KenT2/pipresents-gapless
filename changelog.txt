@@ -1,0 +1,338 @@
+Version 1.3.1a  3/5/2015
+
+GAPLESS TRANSITIONS
+New - all shows now have gapless transitions. In the case of video tracks by freezing the video just before the end of the track while the next track loads.
+New - artmediashow and artliveshow providing gapless transitions without freezing at end of track.
+
+
+TIME OF DAY SCHEDULER
+New - time of day scheduler that can control any type of show. Schedule can be different for days of the week, days of the month, and special days. When starting Pi Presents in the middle of a day it catches up by skipping through the schedule.
+
+MULTI-WINDOW
+New - it is now possible for concurrent shows to all display content on the screen. There is a show canvas field in show profiles to help with laying out multiple shows on the screen.
+New - The Live Tracks Directories for Liveshows can now be specified in the show profile. This allows two concurrent liveshows to have different content.
+Modified - show and track background images are warped to fit the screen or Show Canvas. If warping is undesirable then edit the image to match the dimensions of the screen or canvas.
+
+REMOTE CONTROL
+New - A Pi Presents unit can now be controlled from another Pi Presents unit or any computer, including Smartphones and Tablets that support Open Show Control.
+New - Editor can create, edit and delete OSC configuration files.
+
+PIPRESENTS
+New  - the --screensize command line option changes the effective screen size to assist development of profiles running on a target display with different pixel dimensions.
+Enhanced  - --home (-o) command line option is not required when using sudo. Pi Presents detects sudo and compensates.
+Enhanced - The -d command line option now logs the minor version number of Pi Presents and the reported screen size.
+Enhanced - The -d command line option has an optional parameter allowing finer control of logging.
+Modified - The -g command line option has been removed. GPIO is enabled by the presence of gpio.cfg in the profile.
+ 
+
+
+SHOWS
+Enhanced - All shows now have their own controls instead of inheriting from their parent. This allows, for example, mediashows which are subshows of hyperlinkshows to have controls. controls.cfg is redundant and has been removed.
+Enhanced - show background images are now not reloaded for every track, increasing speed of transition.
+Enhanced - Eggtimer now available for all shows. Its text and position are fully configurable in the profile.
+Modified  - removed reference to Internal operations and Links. There are now Commands and Controls for all shows with the available Commands for each type of show being different. A Control is the binding of a Symbolic Name to a Command which is stated in the Controls field of a Show or Track.
+Fixed - in mediashow and liveshow input events that affect triggers are now passed down to subshows
+Fixed - Stop now stops the show when the show is in the appropriate (quiescent) state. Before the effect of stop was non-intuitive.
+Enhancement - Exit command introduced for all shows to always exit the show whatever its state.
+Enhanced - Egg Timer text position and format is now programmable in the profile for a show
+Enhanced - menu, radiobuttonshow and  hyperlinkshow now have show timeout and track timeout.
+Enhanced - all administrative message text has been moved from resources.cfg allowing each show to have a different message.
+
+
+SYMBOLIC NAMES
+Modified - pp-exit pre-defined symbolic name is now pp-exitpipresents to avoid clashes of terminology.
+Modified - in keys.cfg  pp-exit is now pp-terminate to avoid clashes of terminology
+
+
+
+MEDIASHOWS/LIVESHOWS
+New - liveshows now have the same more extensive functionality as mediashows except for the source of the tracks(they share the majority of their code)
+New - trigger end of show from an input
+New - count limit field allowing the show to be n tracks long
+Enhanced - now shuffles the first track of a show (thanks drewkeller)
+New -  input-persist trigger designed to implement 'magic pictures'
+Enhanced - The Live Tracks Directories for Liveshows can now be specified in the show profile. This allows concurrent liveshows shows to have different content.
+Modified - repeat and triggers simplified (single shot and interval are now  special cases of repeat)
+Modified - waiting for start trigger. It cannot now be triggered by Play or Down commands. If trigger by a key is required then bind start trigger parameter to a key.
+Modified - input-quiet has been removed as the trigger text can now be edited.
+Enhanced - child tracks are allowed in addition to child shows. The Has-Child field has been replaced by the Child field which can contain a user defined track reference (which can be a show track) in the medialist of the show . The Child-Show track type has been removed.
+Modified - removed manual mode from mediashows. Can be simulated by making duration of tracks 0 and placing a blank track after a video track or freezing it.
+Enhanced - liveshow now ignores hidden files (leaf name has . as first character)
+Fixed - liveshow with media from usb stick but profile on SD card now waits for the stick to be mounted
+
+MENUSHOW
+Modified - the layout of the menu is now specified in a special Menu Track instead of in the show. The menu track is refered to in the show. The editor converts the profile to this format including moving all the data from the show to a new track in the medialist.
+Modified - menu background is now specified in the menu profile not as a menu background track in the medialist. menu background track has been removed.
+
+
+HYPERLINKSHOW
+Fixed - display of click areas is now correctly controlled by symbolic names in controls. Allows soft buttons.
+Modified - subshows return to the calling track instead of obeying links in the hyperlinkshow.
+Enhanced - It is now possible to pause tracks and use run-time controls.
+Enhanced - It is now possible to turn on the path debugging display from the profile. No code modification required.
+
+RADIOBUTTONSHOW
+Enhanced - there can be Controls in tracks overriding Controls in the show. Allows selective movement to other tracks.
+Enhancement - now has exit and return commands
+Enhancement - It is now possible to pause tracks and use run-time controls.
+Fixed - Links are checked against radiobuttonshow Commands not hyperlinkshow Commands
+
+CLICK AEAS AND SOFT BUTTONS
+Enhanced - All shows (not just hyperlinkshows), other than artshows, can have click areas and soft buttons.
+Enhanced - All tracks have controls the content of which are merged with and override show controls.
+Enhanced - Click areas can now have associated images which can be used as buttons.
+Enhanced - Points for rectangles can now be written as x+y+width*height in screen.cfg
+
+VIDEO TRACKS
+Enhanced - video tracks now have optional 'freeze at end' to cover gaps between tracks etc.
+Enhanced - video track now supports omxplayer loop option (--loop)
+Enhanced - 'video player options' now inherits from a show.
+Enhanced - 'both' -o option supported.
+Enhanced - more track types are allowed in liveshow and when 'adding from directory'
+
+AUDIO TRACKS
+Fixed - duration of an audio track in a liveshow is blank instead of inheriting from a show.
+Enhanced - track does not need to be blank when duration is zero as there will be no attempt to play it.
+Modified -  clear screen removed
+Fixed - mplayer volume is now reset at start of track so is reset after being changed by run-time commands.
+
+IMAGE TRACKS
+Enhanced - images can be rotated.
+
+TRACK PLUGINS
+Enhanced - It is now possible to draw any number of Tkinter canvas objects using the API.
+Modified - API has been modified because of gapless transitions and multi-window
+
+SHOW CONTROL
+Modified - change names from start/stop/exit to open/close/exitpipresents to avoid clashes of terminology.
+Modified - show control commands have their fields reversed e.g 'open show' not 'show open'
+
+ANIMATION
+Modified - the order of fields in the animate command has been altered and additional I/O types facilitated by the introduction of a type parameter. The delay paramter is now mandatory.
+Fixed - two events required at the same time are now executed in order they were created.
+
+GPIO
+Enhanced- gpio.cfg now contains pin definitions for B+ and 2B models.
+Modified  - GPIO is enabled by the presence of gpio.cfg in the profile. The -g command line option has been removed.
+
+
+CONFIGURATION DATA and /pipresents/pp_home
+Modified - configuration files screen.cfg, gpio.cfg, and keys.cfg are now limited to the /pp_io_config sub directory of profiles and cannot be placed in data home or /pipresents/pp_home. The presence of .cfg files will in future be the method of enabling user written I/O plugins. (There is an exception for keys.cfg, see manual)
+Modified - pp_home has been removed and its content reorganised:
+ -  pp_config contains configuration data that it is useful to stay in /pipresents including a fallback keys.cfg.
+ -  pp_resources contains a minimal set of icons used as fallback by Pi Presents.
+  - pp_resource/pp_templates contains examples of configuration files with instructions and show templates for use by the editor.
+  - pp_track_plugins contains the python code for track plugins.
+  - logs are now in pp_logs
+  - pp_io_plugins will contain the code for user written device drivers.
+Modified - pp_resources.cfg has been removed. All its content is now in show profiles allowing messages to be tailored to shows.
+
+EDITOR
+Enhanced - now has offset in it options dialogue allowing pp_profiles to have sub-directories.
+Enhanced - can now copy a medialist
+Enhanced - can create, edit and delete OSC configuration files.
+Enhanced - a readme.txt file is allowed in a profile so the profile can be documented.
+Fixed - --debug now works correctly
+
+Version 1.2.3e 11/8/2014
+Fixed bug in videoplayer where animation commands at the end of the track were those specified for the beginning of the track
+
+Version 1.2.3d 22/6/2014
+Removed output of Warnings when debug is disabled (no -d), modify pipresents.py line 75 ish if you wish to see warnings
+Now reports minor version e.g. 1.2.3d in debug output.
+hyperlinkshow - Improvements and bug fixes
+Use updated example for demonstration
+ - new repeat command to allow video and audio tracks to repeat
+ - fixed goto so that it forgets the path
+ - improved debugging trace. Now enabled from pp_hyperlinkshow.py
+ 
+Radiobuttonshow - bug fixes
+ - removed code that merged links from the first track, all links should be in the show.
+
+omxdriver.py - replace kill with SIGINT so so it has a chance to tidy up daemons and omxplayer.bin
+Improvements to manual
+
+Version 1.2.3c 4/1/2104
+hopefully fixed unreliable video playing
+additional checks in pp_omxdriver.py and pp_videoplayer.py for the incorrect termination of omxplayer
+at the end of a track. One in a thousand times or so it does not send 'have a nice day' or terminate itself.
+The code now detects these, ends the track, and kills omxplayer; some orphan dbus-daemons are left.
+Occurences are reported to the terminal and in pp_log.log event though the -d option is not set.
+
+Version 1.2.3b 28/11/2013
+bug correction release:
+fixed - liveshow now works with -l option
+fixed - pp_menu_1p2 example profile updated
+fixed - manual updated to change warped to warp in the various Window fields
+
+1.2.3 16/11/2013
+
+new - browser player to play web tracks stored locally or on the internet
+new - menushow has many new menu layouts with icons and bullets
+new - much improved scaling of images in ImagePlayer
+new - plugins (user provided python modules) allow dynamic content to modify images or to be written to the display
+
+enhancement - video window, image window and web window now use the same terminology
+enhancement -  menus can now have a background colour
+enhancement - hint positioning in mediashow and liveshow now more flexible
+enhancement - hint positioning in menu now more flexible
+enhancement - liveshow can now include web tracks
+enhancement - all track types now have the same set of ancillaries:
+   message player has track text
+   message player has show text
+enhancement - ability to inhibit display of show text and show background in individual tracks
+   all players have display show text
+   all players have display show background
+enhancement - changed titles from mplayer to Audio Player Options, Audio Player Audio, Audio Player Speaker, Audio Player Volume,
+    to allow audio players other than mplayer on other platforms
+enhancement - changed titles from OMXPlayer to Video Player Options Video Player Audio, Video Window, Video Player Volume,
+    to allow video players other than OMXplayer on other platforms
+enhancement - includes desktop files for examples.sh and pp_editor.py
+
+fixed - duration of Message Track set to '' in new_tracks
+fixed - track text now has font chooser
+
+
+1.2.2b 17/09/2013
+enhancement - non-fullscreen mode works much better, see manual for size adjustment.
+enhancements to editor - tabs, font chooser, colour chooser, location browser
+enhancements to editor - copy show, new show creates a medialist.
+enhancement - validation has caught up
+fixed - cancelling out of creating a new profile does not create profile 'None'
+tested with latest image 2013-09-10
+
+
+1.2.2 18/8/2013
+PLEASE READ RELEASE NOTES
+new - hyperlinkshow for touchscreen type shows in museums
+new - radiobuttonshow for kiosks with buttons
+new - input subsystem has been completely redesigned to facilitate the addition of new input device drivers.
+new - control track has been removed. Show Control is now available in all track types
+new - Audio tracks can now have zero duration to allow them to be used solely for animation and show control.
+enhancement - omxplayer now plays videos in a window
+enhancement - imageplayer images can be scaled to fit in a window
+enhancement - messageplayer, position of text can now be specified
+enhancement - all track types now have background colour, background images, show text, track text, and animation control
+enhancement - track and show text can now be multi-line
+enhancement - liveshows now have windows for images and videos, background images, and show text which can be applied to dynamic content.
+enhancement - shutdown the Pi or exit Pi Presents using Show Control
+enhancement - run-time controls  such as volume control for OMXPlayer and MPlayer
+enhancement - configuraton files xxx.cfg can now be in a profile or pp_home.
+enhancement - GPIO inputs can trigger events on both edges and repeatedly when in a state, fields of gpio.cfg have been modified as a consequence.
+enhancement - CTRL-BREAK can be reconfigured to another key.
+enhancement  - more/different messages in resources.cfg
+fixed - shutdown from gpio button now works again :-(
+fixed - in menus the timeout is cancelled by Up, Down etc.
+
+
+1.2.1d 14/5/2013
+PLEASE READ RELEASE NOTES
+new - facilities to control one concurrent show from another
+    control track
+	run-once repeat option in mediashow
+fixed - editor does not crash if a track is created when a medilist is not selected
+fixed - menu background is now always black
+
+
+1.2.1c 27/4/2013
+PLEASE READ RELEASE NOTES
+new - messageplayer now has a justify field to justify the text.
+new - in the editor use tools>update all to update all profiles in pp_home
+new - new editor command line option --forceupdate to force updating a profile if editor and profile versions are the same (useful for beta testers).
+enhancement - increase number of lines and font size in the editor's text field
+enhancement - add .wma to audio types
+
+fixed - shutdown using a button now works again
+fixed - playing an audio track does not reset backgound colour to black
+
+
+
+Version 1.2.1 beta 1 8/4/2013
+Major improvements:
+
+AUDIO PLAYER
+New audioplayer which will play audio tracks without affecting the display, uses MPlayer
+Audio tracks can be sent to left or right speakers or stereo.
+Audio tracks can have associate images and text.
+Volume of a track can be set.
+
+ANIMATION and GPIO
+New animation subsystem, turn GPIO on or off synchronised with tracks
+GPIO is now fully configurable, assign pins to buttons, trigger inputs or animation outputs
+
+TIME OF DAY TRIGGERS
+Time of day triggers for liveshow and mediashow, start a show at a time of day, end a show after a period of time or at a time of day.
+When waiting for time of day can display the time of the next show.
+
+CONCURRENCY
+Can now play two or more shows simultaneously
+Control keys and buttons can be disabled for chosen shows.
+
+MESSAGES
+Messages can now have background images or text.
+
+FULL SCREEN
+Simplified setup and use of fullscreen - thanks tjaehnel
+
+SHUFFLE
+Tracks in mediashow and liveshow can now be shuffled
+
+VIDEOPLAYER
+Provision in the editor for seamless looping (waiting for omxplayer to be upgraded)
+Provision in editor for windowed videos (waiting for omxplayer to be upgraded)
+Added .m4v to video types
+Volume of a track can now be set
+
+MEDIASHOW
+Enhanced triggering - moving to the next track can now be triggered by GPIO
+
+BUG FIXES
+As version 1.1.2b
+Improved implementation of possible fix for playing of videos crashing once in every few hours
+
+version 1.1.2b - 7/4/2013
+Fixed messages not being vertically centered in messageplayer
+Fixed duration of displayed messages increasing, as well as increasing CPU occupancy with time
+Possible  fix for playing of videos crashing once in every few hours
+
+version 1.1.2a - 19/2/2013
+Fixed sorting of files in liveshow
+
+version 1.1.2 - 12/2/2013
+Liveshow can now take its tracks from two directories
+Switched 'up' and 'down' cursor keys in mediashow to match other programs.
+Corrected response to buttons especially in complex shows
+in show error handling now exits cleanly.
+Examples always use hdmi for audio
+
+version 1.1.1b - 31/1/2013
+Workaround for editor not reliably saving medialists when used on a Windows PC
+
+version 1.1.1a - 28/1/2013
+Fixed bug in Track> Add Dir
+!!!! Editor does not reliably save medialists when used on a Windows PC !!!!!
+
+Version 1.1.1 - 28/1/2013
+Added a LiveShow capability, tracks can be dynamically uploaded using ftp while a show is running.
+Editor now works on a PC.
+Added resources.cfg that allows the administrative text that was displayed to customers to be modified.
+Removed the -c command line argument as Pi Presents automatically detects where its code is.
+Removed mouse pointer in fullscreen mode, requires unclutter to be installed (Thanks Azizar)
+Added .wav and .ogg to audio files as they can be played by omxplayer.
+
+
+Version 1.1.0 - 20/1/2013
+Added validation of profiles - all fields except for fonts and colours are validated.
+Added a system to check compatibiity between profiles, editor and Pi Presents. Uses first 2 digits of Version:
+   First digit - complete re-write.
+   Second digit - Incremented when profile definition has changed
+   Third digit - modifications that do not change the profile interface.
+Images can now display a text overlay - show-text and track-text
+Images can  be paused using 'space', 'p' or spacebar
+Reversed the polarity of PIR input as burglar alarm PIR's have nc connections.
+New image and message tracks now have blank durations so they inherit from show by default.
+Fixed bug in editor where add show and add track produced linked tracks.
+Other minor improvements
+
+Version 1.0 - 8/1/2013
+First Issue

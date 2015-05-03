@@ -52,12 +52,12 @@ class Validator(object):
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         v_media_lists = []
         for medialist_file in os.listdir(pp_profile):
-            if not medialist_file.endswith(".json") and medialist_file not in ('gpio.cfg','controls.cfg','screen.cfg','keys.cfg','resources.cfg','readme.txt'):
+            if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
                 self.result.display('f',"Invalid medialist in profile: "+ medialist_file)
                 self.result.display('t', "Validation Aborted")
                 return False
                 
-            if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','pp_schedule.json'):
+            if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
                 self.result.display('t',"\nChecking medialist '"+medialist_file+"'")
                 v_media_lists.append(medialist_file)
 
@@ -168,7 +168,7 @@ class Validator(object):
                 # check for duplicate track-labels
                 # !!!!!!!!!!!!!!!!!! add check for all labels
 
-        print v_media_lists
+
         # SHOWS
         # find start show and test it, test show-refs at the same time
         found=0
@@ -575,10 +575,10 @@ class Validator(object):
             self.result.display('f',"incorrect number of fields in Control: " + line)
             return
         operation=fields[1]
-        if operation in ('up','down','play','stop','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('up','down','play','stop','exit','pause','no-command','null') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
         else:
-            self.result.display('f',"unknown command in control: " + line)
+            self.result.display('f',"unknown Command in control: " + line)
 
 
 # *******************   
@@ -596,21 +596,21 @@ class Validator(object):
     def check_hyperlink(self,line,v_track_labels):
         fields = line.split()
         if len(fields) not in (2,3):
-            self.result.display('f',"incorrect number of fields in link: " + line)
+            self.result.display('f',"incorrect number of fields in Control: " + line)
             return
         symbol=fields[0]
         operation=fields[1]
-        if operation in ('home','null','exit','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('home','null','stop','exit','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
 
         elif operation in ('call','goto','jump'):
             if len(fields)!=3:
-                self.result.display('f','incorrect number of fields in link: ' + line)
+                self.result.display('f','incorrect number of fields in Control: ' + line)
                 return
             else:
                 operand=fields[2]
                 if operand not in v_track_labels:
-                    self.result.display('f',operand + " link argument is not in medialist: " + line)
+                    self.result.display('f',operand + " Command argument is not in medialist: " + line)
                     return
 
         elif operation == 'return':
@@ -646,7 +646,7 @@ class Validator(object):
             return
         symbol=fields[0]
         operation=fields[1]
-        if operation in ('return','exit','pause') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('return','stop','exit','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
         
         elif operation == 'play':
@@ -675,22 +675,25 @@ class Validator(object):
 
     def check_show_control_fields(self,line,v_show_labels):
         fields = line.split()
-        if len(fields) == 0: return
-        
-        elif len(fields)==1 and fields[0] not in ('exitpipresents','shutdownnow'):
-            self.result.display('f','Show control - Incorrect command in: ' + line)
+        if len(fields) == 0:
             return
-
+        # OSC command
+        elif len(fields)>0 and fields[0][0] =='/':
+                return
+        elif len(fields)==1:
+            if fields[0] not in ('exitpipresents','shutdownnow'):
+                self.result.display('f','Show control - Incorrect command in: ' + line)
+                return
         elif len(fields) == 2:
             if fields[0] not in ('open','close'):
                 self.result.display('f','Show Control - Incorrect command in: ' + line)
             if fields[1] not in v_show_labels:
-                self.result.display('f',"Show Control - cannot find show reference: "+ fields[0])
+                self.result.display('f',"Show Control - cannot find show reference: "+ line)
                 return
         else:
             self.result.display('f','Show Control - Incorrect number of fields in: ' + line)
             return
-             
+                 
             
 # ***********************************
 # checking animation
@@ -700,25 +703,24 @@ class Validator(object):
         fields= line.split()
         if len(fields) == 0: return
             
-        if len(fields)>3: self.result.display('f','Too many fields in: ' + field + ", " + line)
+        if len(fields)>4: self.result.display('f','Too many fields in: ' + field + ", " + line)
 
-        if len(fields)<2:
+        if len(fields)<4:
             self.result.display('f','Too few fields in: ' + field + ", " + line)
             return
-        
-        name = fields[0]
-        # name not checked - done at runtime
-        
-        to_state_text=fields[1]
-        if not (to_state_text  in ('on','off')): self.result.display('f','Illegal to-state in: ' + field + ", " + line)
-        
-        if len(fields) == 2:
-            delay_text='0'
-        else:
-            delay_text=fields[2]
-        
+
+        delay_text=fields[0]
         if  not delay_text.isdigit(): self.result.display('f','Delay is not 0 or a positive integer in:' + field + ", " + line)
 
+        name = fields[1]
+        # name not checked - done at runtime
+
+        out_type = fields[2]
+        if out_type != 'state': self.result.display('f','Illegal type in: ' + field + ", " + line)
+        
+        to_state_text=fields[3]
+        if not (to_state_text  in ('on','off')): self.result.display('f','Illegal paramter in: ' + field + ", " + line)
+        
         return
     
 

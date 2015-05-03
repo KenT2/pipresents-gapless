@@ -324,20 +324,26 @@ class PPEditor(object):
         if self.pp_profile_dir=='':
             return
         if self.osc_config.read(self.osc_config_file) is False:
+            iodir=self.pp_profile_dir+os.sep+'pp_io_config'
+            if not os.path.exists(iodir):
+                os.makedirs(iodir)
             self.osc_config.create(self.osc_config_file)
 
     def edit_osc(self):
         if self.osc_config.read(self.osc_config_file) is False:
-            print 'no config file'
+            # print 'no config file'
             return
         osc_ut=OSCUnitType(self.root,self.osc_config.this_unit_type)
         self.req_unit_type=osc_ut.result
         if self.req_unit_type != None:
-            print self.req_unit_type
+            # print self.req_unit_type
             eosc = OSCEditor(self.root, self.osc_config_file,self.req_unit_type,'Edit OSC Configuration')
             
     def delete_osc(self):
-        pass
+        if self.osc_config.read(self.osc_config_file) is False:
+            return
+        os.rename(self.osc_config_file,self.osc_config_file+'.bak')
+        
 
     
     # **************
@@ -367,7 +373,7 @@ class PPEditor(object):
             return
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
-        self.osc_config_file=self.pp_profile_dir+'/osc.cfg'
+        self.osc_config_file=self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg'
 
 
     def new_profile(self,profile):

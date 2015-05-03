@@ -37,19 +37,19 @@ class KbdDriver(object):
     def read(self,pp_dir,pp_home,pp_profile):
         if KbdDriver.config is None:
             # try inside profile
-            tryfile=pp_profile+os.sep+'keys.cfg'
-            # self.mon.log(self,"Trying keys.cfg in profile at: "+ tryfile)
+            tryfile=pp_profile+os.sep+'pp_io_config'+os.sep+'keys.cfg'
             if os.path.exists(tryfile):
+                self.mon.log(self,"Found keys.cfg in profile at: "+ tryfile)
                 filename=tryfile
             else:
                 # try inside pipresents
-                # self.mon.log(self,"keys.cfg not found at "+ tryfile + " trying inside pipresents")
                 tryfile=pp_dir+os.sep+'pp_config'+os.sep+"keys.cfg"
                 if os.path.exists(tryfile):
                     filename=tryfile
+                    self.mon.log(self,"Fallback keys.cfg found at "+ tryfile)
                 else:
                     self.mon.log(self,"keys.cfg not found at "+ tryfile)
-                    self.mon.err(self,"keys.cfg not found")
+                    self.mon.err(self,"keys.cfg not found in profile or fallback in Pi Presents")
                     return False   
             KbdDriver.config = ConfigParser.ConfigParser()
             KbdDriver.config.optionxform=str

@@ -5,7 +5,7 @@ Copyright (c) 2013, Ken Thompson. Contact for licencing: https://pipresents.word
 
 Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
 
-This software is Careware. If you are using this software and making a profit due to it please consider sharing some of those profits with the charity with which I am associated and which inspired Pi Presents.  If you sell Pi Presents as part of a supported product then I would appreciate a charitable donation and reserve the right to charge a royalty, or impose further conditions.
+This software is Careware. If you are using this software in a profit making situation please consider sharing some of those profits with the charity with which I am associated and which inspired Pi Presents.  If you sell Pi Presents as part of a product at a profit then I would appreciate a charitable donation and reserve the right to charge a royalty, or impose further conditions.
 
 My chosen charity:
 *  The Museum of Technology, a super little independent museum who are currently building themselves a larger home.

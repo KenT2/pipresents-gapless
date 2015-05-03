@@ -15,6 +15,10 @@ from pp_oscconfig import OSCConfig
 import time, threading
 import ConfigParser
 
+import OSC
+class myOSCServer(OSC.OSCServer):
+    allow_reuse_address=True
+    print_tracebacks = True
                  
 class OSCDriver(object):
 
@@ -27,11 +31,12 @@ class OSCDriver(object):
         self.output_event_callback=output_event_callback
 
         self.mon=Monitor()
-        config_file=self.pp_profile + '/osc.cfg'
+        config_file=self.pp_profile + os.sep +'pp_io_config'+os.sep+ 'osc.cfg'
         if not os.path.exists(config_file):
             self.mon.err(self, 'OSC Configuration file nof found: '+config_file)
             return'error','OSC Configuration file nof found: '+config_file
         
+        self.mon.log(self, 'OSC Configuration file found at: '+config_file)        
         self.options=OSCConfig()
         # only reads the  data for required unit_type 
         if self.options.read(config_file) ==False:
@@ -48,11 +53,6 @@ class OSCDriver(object):
 
         if self.this_unit_type not in ('master','slave','master+slave'):
             return 'error','this unit type not known: '+self.this_unit_type
-
-        import OSC
-        class myOSCServer(OSC.OSCServer):
-            allow_reuse_address=True
-            print_tracebacks = True
 
         if self.this_unit_type in('slave','master+slave'):
             #start the client that sends replies to controlling unit
@@ -174,7 +174,7 @@ class OSCDriver(object):
             return
         fields=text.split()
         address = fields[0]
-        print 'ADDRESS'+address
+        # print 'ADDRESS'+address
         address_fields=address[1:].split('/')
         if address_fields[0] != 'pipresents':
             self.mon.warn(self,'prefix is not pipresents: '+address_fields[0])
@@ -185,12 +185,12 @@ class OSCDriver(object):
 
 
     def send(self,address,arg_list):
-        print self.command_client
+        # print self.command_client
         msg = OSC.OSCMessage()
-        print address
+        # print address
         msg.setAddress(address)
         for arg in arg_list:
-            print arg
+            # print arg
             msg.append(arg)
         self.command_client.send(msg)    
 
@@ -238,13 +238,16 @@ if __name__ == '__main__':
         return text
 
     def show_command_callback(text):
-        print 'show control command: '+text
+        pass
+        # print 'show control command: '+text
 
     def input_event_callback(text):
-        print 'input event: '+ text
+        pass
+        # print 'input event: '+ text
         
     def output_event_callback(args):
-        print 'animate: ' + pretty_list(args)
+        pass
+        # print 'animate: ' + pretty_list(args)
 
 
     od = OSCDriver('/home/pi/pipresents',show_command_callback,input_event_callback,output_event_callback)

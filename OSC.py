@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-This is a copy of pyosc with some minor temporary mods. https://gitorious.org/pyosc
+KRT: This is a copy of pyosc with some minor temporary mods. https://gitorious.org/pyosc
 
 This module contains an OpenSoundControl implementation (in Pure Python), based (somewhat) on the 
 good old 'SimpleOSC' implementation by Daniel Holth & Clinton McChesney.
@@ -1135,10 +1135,10 @@ class OSCClient(object):
             raise OSCClientError("Timed out waiting for file descriptor")
         
         try:
-            print 'SENDALL'
+            # print 'SENDALL'
             self.socket.sendall(msg.getBinary())
         except socket.error, e:
-            print 'FAILED SENDALL'
+            # print 'FAILED SENDALL'
             if e[0] in (7, 65): # 7 = 'no address associated with nodename',  65 = 'no route to host'
                 raise e
             else:
@@ -1624,7 +1624,7 @@ class OSCRequestHandler(DatagramRequestHandler):
           - tags (string):  The OSC-typetags of the receied message's arguments, without ','
           - data (list):  The message arguments
         """
-        print 'MESSAGE RECEIVED'
+        # print 'MESSAGE RECEIVED'
         if len(tags) != len(data):
             raise OSCServerError("Malformed OSC-message; got %d typetags [%s] vs. %d values" % (len(tags), tags, len(data)))
         

@@ -383,7 +383,6 @@ class RadioButtonShow(Show):
                 self.req_next='error'
                 self.what_next_after_showing()
         self.path.merge_links(self.links,track_links)
-        
         # enable the click-area that are in the list of links
         self.sr.enable_click_areas(self.links)
         Show.base_track_ready_callback(self,enable_show_background)
