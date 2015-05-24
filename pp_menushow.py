@@ -177,26 +177,28 @@ class MenuShow(Show):
         
     def next(self):
         # remove highlight
-        self.current_player.highlight_menu_entry(self.menu_index,False)
-        self.medialist.next('ordered')
-        if self.menu_index==self.menu_length-1:
-            self.menu_index=0
-        else:
-            self.menu_index+=1
-        # and highlight the new entry
-        self.current_player.highlight_menu_entry(self.menu_index,True)     
+        if self.current_player.__class__.__name__ == 'MenuPlayer':
+            self.current_player.highlight_menu_entry(self.menu_index,False)
+            self.medialist.next('ordered')
+            if self.menu_index==self.menu_length-1:
+                self.menu_index=0
+            else:
+                self.menu_index+=1
+            # and highlight the new entry
+            self.current_player.highlight_menu_entry(self.menu_index,True)     
 
 
     def previous(self):
         # remove highlight
-        self.current_player.highlight_menu_entry(self.menu_index,False)
-        if self.menu_index==0:
-            self.menu_index=self.menu_length-1
-        else:
-            self.menu_index-=1
-        self.medialist.previous('ordered')
-        # and highlight the new entry
-        self.current_player.highlight_menu_entry(self.menu_index,True)
+        if self.current_player.__class__.__name__ == 'MenuPlayer':
+            self.current_player.highlight_menu_entry(self.menu_index,False)
+            if self.menu_index==0:
+                self.menu_index=self.menu_length-1
+            else:
+                self.menu_index-=1
+            self.medialist.previous('ordered')
+            # and highlight the new entry
+            self.current_player.highlight_menu_entry(self.menu_index,True)
         
 
 # *********************

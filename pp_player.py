@@ -88,6 +88,8 @@ class Player(object):
 
 
     def pre_load(self):
+        # Control other shows at beginning
+        self.show_control(self.track_params['show-control-begin'])
         pass
 
               
@@ -105,8 +107,7 @@ class Player(object):
         if self.ready_callback is not None:
             self.ready_callback(self.enable_show_background)
 
-        # Control other shows at beginning
-        self.show_control(self.track_params['show-control-begin'])
+
         
         # create animation events
         reason,message=self.animate.animate(self.animate_begin_text,id(self))

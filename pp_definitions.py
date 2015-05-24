@@ -314,7 +314,7 @@ class PPdefinitions(object):
                     'trigger-wait-text':{'shape':'text','text':'Trigger Wait Text','must':'no','read-only':'no'},
 
                     'type':{'shape':'entry','text':'Type','must':'no','read-only':'yes'},
-                    'web-window':{'shape':'entry','text':'Browser Window','must':'no','read-only':'no'},
+                    'web-window':{'shape':'entry','text':'Web Window','must':'no','read-only':'no'},
                           }
 
     track_types={
@@ -574,6 +574,6 @@ class PPdefinitions(object):
                             'track-text-y':{'shape':'entry','text':'Track Text y Position','must':'no','read-only':'no'},
                             'transition':{'shape':'option-menu','text':'Transition','must':'no','read-only':'no','values':['cut','']},
                             'type':{'shape':'entry','text':'Type','must':'no','read-only':'yes'},
-                            'web-window':{'shape':'entry','text':'Browser Window','must':'no','read-only':'no'},
+                            'web-window':{'shape':'entry','text':'Web Window','must':'no','read-only':'no'},
                           }
         

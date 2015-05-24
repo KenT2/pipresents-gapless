@@ -103,7 +103,8 @@ class Monitor(object):
     def log(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_log) is True:
-            print "%.2f" % (time.time()-Monitor.start_time), " ",r_class+": ", text
+            print "%.2f" % (time.time()-Monitor.start_time) +" "+r_class+": " + text
+            # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.id(caller)+": " + text
             Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + r_class +": " + text+"\n")
 
     def trace(self,caller,text):
@@ -143,4 +144,7 @@ class Monitor(object):
   
     def finish(self):
         Monitor.ofile.close()
+
+    def id(self,caller):
+        return self.pretty_inst(caller)
 

@@ -1,3 +1,22 @@
+Version 1.3.1b 24/5/2015
+
+Enhanced - Improved validation
+Modified  - in the Editor Browser Window is now called Web Window
+Enhanced - Improved sync between master and slave when using OSC by moving when show control commands are executed
+Fixed - bug in menushow where using cursor during a track caused a python error
+Fixed  - Increased omxplayer track load timeout to avoid crash when 100% loaded e.g. during pp_multiwindow_1p3 on Model B
+Fixed  - race condition where PP was not ready to action OSC commands if sent just after it had started.
+Modified - in radiobuttonshow you can now re-start a track while it is playing.
+      Very useful when using radiobuttonshow as a slave track player.(The recommended way of using OSC)
+      To stop re-starting a track while it is playibg bind the symbolic name to null in track Controls
+Fixed  - videoplayer and radiobuttonshow so radiobuttonshow does not leave processes alive when
+         track is stopped to play another track.
+Fixed - mediashow, liveshow, and menu produced an error if an event was received with a symbolic name that was not bound in Controls
+Enhanced - Warn rather than generate an error if a liveshow directory is not found when PP starts.
+        Allows a liveshow to be started and then USB stick to be plugged in after.
+Fixed - videoplayer sometimes left omxplayer process running after Ctrl-Break or use of Close icon
+
+
 Version 1.3.1a  3/5/2015
 
 GAPLESS TRANSITIONS

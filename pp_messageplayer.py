@@ -65,6 +65,9 @@ class MessagePlayer(Player):
         self.loaded_callback=loaded_callback   # callback when loaded
         self.mon.trace(self,'')
 
+        # do common bits of  load
+        Player.pre_load(self)   
+
         # load the plugin, this may modify self.ttack and enable the plugin drawign to canvas
         if self.track_params['plugin'] != '':
             status,message=self.load_plugin()
@@ -87,7 +90,7 @@ class MessagePlayer(Player):
         else:
             self.play_state='loaded'
             if self.loaded_callback is not None:
-                self.loaded_callback('loaded','image track loaded')
+                self.loaded_callback('loaded','message track loaded')
 
             
     # UNLOAD - abort a load when omplayer is loading or loaded

@@ -75,6 +75,9 @@ class BrowserPlayer(Player):
         self.loaded_callback=loaded_callback   # callback when loaded
         self.mon.trace(self,'')
 
+        # do common bits of  load
+        Player.pre_load(self)
+        
         #parse web window
         reason,message,command,has_window,x1,y1,x2,y2=self.parse_window(self.web_window)
         if reason == 'error':

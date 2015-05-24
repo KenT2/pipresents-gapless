@@ -128,7 +128,8 @@ class GapShow(Show):
         else:
             # event is not a trigger so must be internal operation
             operation=self.base_lookup_control(symbol,self.controls_list)
-            self.do_operation(operation)
+            if operation != '':
+                self.do_operation(operation)
 
 
     # overrides base
@@ -352,7 +353,7 @@ class GapShow(Show):
 
     # track has loaded so show it.
     def what_next_after_load(self,status,message):
-        self.mon.trace(self,' - load complete with status: ' + status +'  message: ' +message)
+        self.mon.log(self,'Show Id ' + str(self.show_id)+' load complete with status: ' + status +'  message: ' +message)
         if self.current_player.play_state == 'load-failed':
             self.error_signal=True
             self.what_next_after_showing()

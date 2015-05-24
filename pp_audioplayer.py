@@ -98,6 +98,9 @@ class AudioPlayer(Player):
         self.loaded_callback=loaded_callback   #callback when loaded
 
         self.mon.trace(self,'')
+
+        # do common bits of  load
+        Player.pre_load(self)
         
         # load the plugin, this may modify self.track and enable the plugin drawign to canvas
         if self.track_params['plugin'] != '':

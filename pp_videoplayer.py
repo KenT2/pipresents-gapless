@@ -252,13 +252,15 @@ class VideoPlayer(Player):
                 self.frozen_at_end=True
                 # pause the track
                 self.omx.pause('freeze at end from user stop')
+                self.quit_signal=True
                 # and return to show so it can end  the track and the video in track ready callback
-                if self.finished_callback is not None:
-                    self.finished_callback('pause_at_end','pause at end')
+##                if self.finished_callback is not None:
+##                    # print 'finished from stop'
+##                    self.finished_callback('pause_at_end','pause at end')
             else:
                 self.mon.log(self,"!<stop rejected")
         else:
-            # freeze not required ad its showing just stop the video
+            # freeze not required and its showing just stop the video
             if self.play_state=='showing':
                 self.quit_signal=True
             else:
@@ -348,7 +350,7 @@ class VideoPlayer(Player):
         options= ' --no-osd ' + self.omx_audio+ " " + self.omx_volume + ' ' + self.omx_window_processed + ' ' + self.seamless_loop + ' ' + self.omx_other_options +" "
         self.omx.load(track,options,self.video_duration)
         self.mon.log (self,'Loading track '+ self.track + 'with options ' + options + 'from show Id: '+ str(self.show_id))
-        
+        # print 'omx.load started ',self.track
         # and start polling for state changes
         self.tick_timer=self.canvas.after(50, self.load_state_machine)
 
@@ -422,9 +424,8 @@ class VideoPlayer(Player):
                 if self.omx.start_play_signal is True:
                     self.mon.log(self,"            <loading complete from show Id: "+ str(self.show_id))
                     if self.unload_signal is True:
-                        # print'unload sig=true so send stop and go to start_unload'
+                        # print'unload sig=true state= start_unload'
                         # need to unload, kick off state machine in 'start_unload' state
-                        # print 'seen unload signal, sending stop'
                         self.play_state='start_unload'
                         self.unloading_count=0
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
@@ -433,13 +434,14 @@ class VideoPlayer(Player):
                         self.play_state = 'loaded'
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                         if self.loaded_callback is not None:
+                            # print 'callback when loaded'
                             self.loaded_callback('normal','video loaded')
                 else:
                     # start play signal false - continue to wait
-                    if self.loading_count>20:  #4 seconds
+                    if self.loading_count>200:  #40 seconds
                         # deal with omxplayer crashing while  loading and hence not receive start_play_signal
                         self.mon.warn(self,self.track)
-                        self.mon.warn(self,"            <loading - omxplayer crashed when loading  track with: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
+                        self.mon.warn(self,"            <loading - videoplayer counted out: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
                         self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                         self.omx.kill()
                         self.mon.warn(self,'omxplayer counted out when loading track ')
@@ -492,7 +494,7 @@ class VideoPlayer(Player):
 
         elif self.play_state == 'unloading':
             # wait for unloading to complete
-            # self.mon.log(self,"      State machine: " + self.play_state)
+            self.mon.log(self,"      State machine: " + self.play_state)
             
             # if spawned process has closed can change to closed state
             if self.omx.is_running()  is False:

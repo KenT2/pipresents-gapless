@@ -39,7 +39,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1a'
+        self.pipresents_minorissue = '1.3.1b'
 
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
@@ -75,6 +75,7 @@ class PiPresents(object):
         
         # make a shorter list to log/trace only some classes without using enable_in_code.
         Monitor.classes  = ['PiPresents',
+                            
                             'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
                             'GapShow','Show','ArtShow',
                             'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
@@ -83,6 +84,8 @@ class PiPresents(object):
                             'MplayerDriver','OMXDriver','UZBLDriver',
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
+
+        # Monitor.classes=['MediaShow','VideoPlayer','OMXDriver']
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])
@@ -306,6 +309,21 @@ class PiPresents(object):
                 # and start polling gpio
                 self.gpiodriver.poll()
             
+        # kick off animation sequencer
+        self.animate = Animate()
+        self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
+        self.animate.poll()
+
+        #create a showmanager ready for time of day scheduler and osc server
+        show_id=-1
+        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
+        # first time through set callback to terminate Pi Presents if all shows have ended.
+        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command,self.showlist)
+        # Register all the shows in the showlist
+        reason,message=self.show_manager.register_shows()
+        if reason == 'error':
+            self.mon.err(self,message)
+            self.end('error',message)
 
         # Init OSCDriver, read config and start OSC server
         self.osc_enabled=False
@@ -317,22 +335,6 @@ class PiPresents(object):
             else:
                 self.osc_enabled=True
                 self.root.after(1000,self.oscdriver.start_server())
-
-        # kick off animation sequencer
-        self.animate = Animate()
-        self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
-        self.animate.poll()
-
-        #create a showmanager ready for time of day sceduker
-        show_id=-1
-        self.show_manager=ShowManager(show_id,self.showlist,self.starter_show,self.root,self.canvas,self.pp_dir,self.pp_profile,self.pp_home)
-        # first time through set callback to terminate Pi Presents if all shows have ended.
-        self.show_manager.init(self.canvas,self.all_shows_ended_callback,self.handle_command,self.showlist)
-        # Register all the shows in the showlist
-        reason,message=self.show_manager.register_shows()
-        if reason == 'error':
-            self.mon.err(self,message)
-            self.end('error',message)
 
         # and run the start shows
         self.run_start_shows()

@@ -270,7 +270,9 @@ class Show(object):
         if self.previous_player is not  None:
             self.mon.trace(self,' - hiding previous: ' + self.mon.pretty_inst(self.previous_player))
             self.previous_player.hide()
+            # print 'Not None  - previous state is',self.previous_player.get_play_state()
             if self.previous_player.get_play_state() == 'showing':
+                # print 'showing so closing previous'
                 # showing or frozen
                 self.mon.trace(self,' - closing previous: ' + self.mon.pretty_inst(self.previous_player))
                 self.previous_player.close(self._base_closed_callback_previous)
@@ -347,7 +349,7 @@ class Show(object):
         self.mon.trace(self, self.mon.pretty_inst(self.current_player))
         if self.current_player is not None:
             self.mon.trace(self,' - play state is ' +self.current_player.get_play_state())
-            if self.current_player.play_state not in ('unloaded','closed','initialised','load-failed'):
+            if self.current_player.play_state not in ('unloaded','closed','load-failed'):  ####
                 self.canvas.after(50,self._wait_for_end)
             else:
                 self.mon.trace(self,' - current closed '+ self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)
@@ -409,7 +411,7 @@ class Show(object):
         self.base_withdraw_show_background()
         self.base_delete_show_background()
         self.mon.trace(self,' at level ' + str(self.level) + '\n - Current is ' + self.mon.pretty_inst(self.current_player) + '\n - Previous is ' + self.mon.pretty_inst(self.previous_player) + '\n with reason' + reason + '\n\n')
-        self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Ending Show")
+        self.mon.log(self,self.show_params['show-ref']+ ' Show Id: '+ str(self.show_id)+ ": Ending Show")
         self.end_callback(self.show_id,reason,message)
         self=None
 

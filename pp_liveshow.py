@@ -55,8 +55,8 @@ class LiveShow(GapShow):
         if found is True:
             self.mon.log(self,"Found Requested live tracks Directory 1,  at: " + self.pp_live_dir1)
         else:
-            self.mon.err(self,"Failed to find live tracks Directory 1"+ self.pp_live_dir1)
-            self.end('error','Failed to find live tracks dir 1')
+            self.mon.warn(self,"Failed to find live tracks Directory 1"+ self.pp_live_dir1)
+            # self.end('error','Failed to find live tracks dir 1')
 
 
         if self.show_params['live-tracks-dir2'] != '':
@@ -78,8 +78,8 @@ class LiveShow(GapShow):
             if found is True:
                 self.mon.log(self,"Found Requested live tracks Directory 2,  at: " + self.pp_live_dir2)
             else:
-                self.mon.err(self,"Failed to find live tracks Directory 2"+ self.pp_live_dir2)
-                self.end('error','Failed to find live tracks dir 2')
+                self.mon.warn(self,"Failed to find live tracks Directory 2"+ self.pp_live_dir2)
+                # self.end('error','Failed to find live tracks dir 2')
             
         # use the appropriate medialist
         self.medialist=LiveList(self.show_params['sequence'])

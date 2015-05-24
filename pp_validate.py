@@ -101,9 +101,10 @@ class Validator(object):
                         track_file=track['location']
                         if track_file.strip() != '' and  track_file[0] == "+":
                             track_file=pp_home+track_file[1:]
-                            if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " media file not found")
+                            if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " Media File not Found")
 
                     if track['type'] in ('video','audio','message','image','web','menu'):
+                        
                         # check common fields
                         self.check_animate('animate-begin',track['animate-begin'])
                         self.check_animate('animate-end',track['animate-end'])
@@ -115,41 +116,38 @@ class Validator(object):
                             if track_file[0] == "+":
                                 track_file=pp_home+track_file[1:]
                                 if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
+                        if track['track-text'] != "":
+                            if not track['track-text-x'].isdigit(): self.result.display('f',"'Track Text x position' is not 0 or a positive integer")
+                            if not track['track-text-y'].isdigit(): self.result.display('f',"'Track Text y Position' is not 0 or a positive integer")
+                            if track['track-text-colour']=='': self.result.display('f',"'Track Text Colour' is blank")
+                            if track['track-text-font']=='': self.result.display('f',"'Track Text Font' is blank")                        
 
-                        
-                    # Check simple fields
+
                     if track['type']=='menu':
                         self.check_menu(track)
 
                     
                     if track['type'] == "image":
-                        if track['duration'] != "" and not track['duration'].isdigit(): self.result.display('f',"'duration' is not blank, 0 or a positive integer")
-                        if track['track-text'] != "":
-                            if not track['track-text-x'].isdigit(): self.result.display('f',"'track-text-x' is not 0 or a positive integer")
-                            if not track['track-text-y'].isdigit(): self.result.display('f',"'track-text-y' is not 0 or a positive integer")
+                        if track['duration'] != "" and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not blank, 0 or a positive integer")
+                        if track['image-rotate'] != "" and not track['image-rotate'].isdigit(): self.result.display('f',"'Image Rotation' is not blank, 0 or a positive integer")
                         self.check_image_window('track','image-window',track['image-window'])
 
-
                     if track['type'] == "video":
-                        if track['track-text'] != "":
-                            if not track['track-text-x'].isdigit(): self.result.display('f',"'track-text-x' is not 0 or a positive integer")
-                            if not track['track-text-y'].isdigit(): self.result.display('f',"'track-text-y' is not 0 or a positive integer")
                         self.check_omx_window('track','omx-window',track['omx-window'])
                         self.check_volume('track','omxplayer-volume',track['omx-volume'])
                             
                     if track['type'] == "audio":
-                        if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'duration' is not 0 or a positive integer")
+                        if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
                         if track['duration'] == '0' : self.result.display('w',"'Duration' of an audio track is zero")
-                        if track['track-text'] != "":
-                            if not track['track-text-x'].isdigit(): self.result.display('f',"'track-text-x' is not 0 or a positive integer")
-                            if not track['track-text-y'].isdigit(): self.result.display('f',"'track-text-y' is not 0 or a positive integer")
-                            self.check_volume('track','mplayer-volume',track['mplayer-volume'])
+                        self.check_volume('track','mplayer-volume',track['mplayer-volume'])
                         
                     if track['type'] == "message":
-                        if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'duration' is not 0 or a positive integer")
+                        if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
                         if track['text'] != "":
-                            if track['message-x'] != '' and not track['message-x'].isdigit(): self.result.display('f',"'message-x' is not blank, 0 or a positive integer")
-                            if track['message-y'] != '' and not track['message-y'].isdigit(): self.result.display('f',"'message-y' is not blank, 0 or a positive integer")
+                            if track['message-x'] != '' and not track['message-x'].isdigit(): self.result.display('f',"'Message x Position' is not blank, 0 or a positive integer")
+                            if track['message-y'] != '' and not track['message-y'].isdigit(): self.result.display('f',"'Message y Position' is not blank, 0 or a positive integer")
+                            if track['message-colour']=='': self.result.display('f',"'Message Text Colour' is blank")
+                            if track['message-font']=='': self.result.display('f',"Message Text Font' is blank")                        
                             
                     if track['type'] == 'web':
                         self.check_browser_commands(track['browser-commands'])
@@ -159,9 +157,9 @@ class Validator(object):
                     # CHECK CROSS REF TRACK TO SHOW
                     if track['type'] == 'show':
                         if track['sub-show'] == "":
-                            self.result.display('f',"No 'Show to Run'")
+                            self.result.display('f',"No 'Sub-show to Run'")
                         else:
-                            if track['sub-show'] not in v_show_labels: self.result.display('f',"show "+track['sub-show'] + " does not exist")
+                            if track['sub-show'] not in v_show_labels: self.result.display('f',"Sub-show "+track['sub-show'] + " does not exist")
                             
                 # if anonymous == 0 :self.result.display('w',"zero anonymous tracks in medialist " + file)
 
@@ -179,8 +177,8 @@ class Validator(object):
                 if show['show-ref'] !=  'start': self.result.display('f',"start show has incorrect label")
             else:
                 self.result.display('t',"Checking show '"+show['title'] + "' first pass")
-                if show['show-ref'] == '': self.result.display('f',"show-ref is blank")
-                if ' ' in show['show-ref']: self.result.display('f',"Spaces not allowed in show-ref " + show['show-ref'])
+                if show['show-ref'] == '': self.result.display('f',"Show Reference is blank")
+                if ' ' in show['show-ref']: self.result.display('f',"Spaces not allowed in Show Reference: " + show['show-ref'])
                 
         if found == 0:self.result.display('f',"There is no start show")
         if found > 1:self.result.display('f',"There is more than 1 start show")    
@@ -201,6 +199,8 @@ class Validator(object):
                 self.check_start_shows(show,v_show_labels)               
             else:
                 self.result.display('t',"Checking show '"+show['title']+ "' second pass" )
+
+                if show['medialist']=='': self.result.display('f', show['show-ref']+ " show has blank medialist")
                 
                 if '.json' not in show['medialist']:
                     self.result.display('f', show['show-ref']+ " show has invalid medialist")
@@ -232,34 +232,53 @@ class Validator(object):
                         v_track_labels.append(track['track-ref'])
                 
                 
-                # check common fields in the show   
+                # check common fields in the show
+                #show
+                self.check_show_canvas('show','Show Canvas',show['show-canvas'])
+                
+                #show background and text
                 if show['show-text'] != "":
-                    if not show['show-text-x'].isdigit(): self.result.display('f',"'show-text-x' is not 0 or a positive integer")
-                    if not show['show-text-y'].isdigit(): self.result.display('f',"'show-text-y' is not 0 or a positive integer")
-                if not show['duration'].isdigit(): self.result.display('f',"'duration' is not 0 or a positive integer")
+                    if not show['show-text-x'].isdigit(): self.result.display('f',"'Show Text x Position' is not 0 or a positive integer")
+                    if not show['show-text-y'].isdigit(): self.result.display('f',"'Show Text y Position' is not 0 or a positive integer")
+                    if show['show-text-colour']=='': self.result.display('f',"'Show Text Colour' is blank")
+                    if show['show-text-font']=='': self.result.display('f',"'Show Text Font' is blank")
                 background_image_file=show['background-image']
                 if background_image_file.strip() != '' and  background_image_file[0] == "+":
                     track_file=pp_home+background_image_file[1:]
-                    if not os.path.exists(track_file): self.result.display('f',"location "+show['background-image']+ " background image file not found")
-                self.check_volume('show','omx-volume',show['omx-volume'])
-                self.check_volume('show','mplayer-volume',show['mplayer-volume'])
-                self.check_omx_window('show','omx-window',show['omx-window'])
-                self.check_image_window('show','image-window',show['image-window'])
-                self.check_show_canvas('show','show canvas',show['show-canvas'])
-                if not show['eggtimer-x'].isdigit(): self.result.display('f',"'eggtimer-x' is not 0 or a positive integer")
-                if not show['eggtimer-y'].isdigit(): self.result.display('f',"'eggtimer-y' is not 0 or a positive integer")
+                    if not os.path.exists(track_file): self.result.display('f',"Background Image "+show['background-image']+ " background image file not found")
 
-                # Validate simple fields of show
+                #track defaults
+                if not show['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
+                if not show['image-rotate'].isdigit(): self.result.display('f',"'Image Rotation' is not 0 or a positive integer")
+                self.check_volume('show','Video Player Volume',show['omx-volume'])
+                self.check_volume('show','Audio Volume',show['mplayer-volume'])
+                self.check_omx_window('show','Video Window',show['omx-window'])
+                self.check_image_window('show','Image Window',show['image-window'])
+
+                #eggtimer
+                if show['eggtimer-text'] != "":
+                    if show['eggtimer-colour']=='': self.result.display('f',"'Eggtimer Colour' is blank")
+                    if show['eggtimer-font']=='': self.result.display('f',"'Eggtimer Font' is blank")                
+                    if not show['eggtimer-x'].isdigit(): self.result.display('f',"'Eggtimer x Position' is not 0 or a positive integer")
+                    if not show['eggtimer-y'].isdigit(): self.result.display('f',"'Eggtimer y Position' is not 0 or a positive integer")
+
+ 
+                # Validate simple fields of each show type
                 if show['type'] in ("mediashow",'liveshow'):
                     if show['child-track-ref'] != '':
                         if show['child-track-ref'] not in v_track_labels:
                             self.result.display('f',"'Child Track ' " + show['child-track-ref'] + ' is not in medialist' )             
-                        if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
-                        if not show['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
+                        if not show['hint-y'].isdigit(): self.result.display('f',"'Hint y Position' is not 0 or a positive integer")
+                        if not show['hint-x'].isdigit(): self.result.display('f',"'Hint x Position' is not 0 or a positive integer")
+                        if show['hint-colour']=='': self.result.display('f',"'Hint Colour' is blank")
+                        if show['hint-font']=='': self.result.display('f',"'Hint Font' is blank")
+
                         
-                    if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
+                    self.check_hh_mm_ss('Show Timeout',show['show-timeout'])
+                    
+                    self.check_hh_mm_ss('Repeat Interval',show['interval'])
+                    
                     if not show['track-count-limit'].isdigit(): self.result.display('f',"'Track Count Limit' is not 0 or a positive integer")
-                    if not show['interval'].isdigit(): self.result.display('f',"'interval' is not 0 or a positive integer")
 
                     if show['trigger-start-type']in('input','input-persist'):
                         self.check_triggers('Trigger for Start',show['trigger-start-param'])
@@ -268,14 +287,36 @@ class Validator(object):
                         self.check_triggers('Trigger for Next',show['trigger-next-param'])
 
                     if show['trigger-end-type'] == 'input':
-                        self.check_triggers('Trigger for End',show['trigger-end-param'])                        
+                        self.check_triggers('Trigger for End',show['trigger-end-param']) 
+                        
                     self.check_web_window('show','web-window',show['web-window'])
+                    
                     self.check_controls('controls',show['controls'])
 
+                    #notices
+                    if show['trigger-wait-text'] != "" or show['empty-text'] != "":
+                        if show['admin-colour']=='': self.result.display('f',"' Notice Text Colour' is blank")
+                        if show['admin-font']=='': self.result.display('f',"'Notice Text Font' is blank")                
+                        if not show['admin-x'].isdigit(): self.result.display('f',"'Notice Text x Position' is not 0 or a positive integer")
+                        if not show['admin-y'].isdigit(): self.result.display('f',"'Notice Text y Position' is not 0 or a positive integer")
+
+
+                if show['type'] in ("artmediashow",'artliveshow'):
+                    
+                    #notices
+                    if show['empty-text'] != "":
+                        if show['admin-colour']=='': self.result.display('f',"' Notice Text Colour' is blank")
+                        if show['admin-font']=='': self.result.display('f',"'Notice Text Font' is blank")                
+                        if not show['admin-x'].isdigit(): self.result.display('f',"'Notice Text x Position' is not 0 or a positive integer")
+                        if not show['admin-y'].isdigit(): self.result.display('f',"'Notice Text y Position' is not 0 or a positive integer")
+
+                    self.check_controls('controls',show['controls'])
+                    
                             
                 if show['type'] == "menu":
-                    if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
-                    if not show['track-timeout'].isdigit(): self.result.display('f',"'track timeout' is not 0 or a positive integer")
+                    self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
+                    self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
+                    
                     if show['menu-track-ref'] not in v_track_labels:
                         self.result.display('f',"'menu track ' is not in medialist: " + show['menu-track-ref'])     
                     self.check_web_window('show','web-window',show['web-window'])
@@ -290,8 +331,8 @@ class Validator(object):
                     if show['timeout-track-ref'] not in v_track_labels:
                         self.result.display('f',"'timeout track ' is not in medialist: " + show['timeout-track-ref'])            
                     self.check_hyperlinks('links',show['links'],v_track_labels)
-                    if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
-                    if not show['track-timeout'].isdigit(): self.result.display('f',"'track timeout' is not 0 or a positive integer")
+                    self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
+                    self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
                     self.check_web_window('show','web-window',show['web-window'])
 
                 if show['type'] == 'radiobuttonshow':
@@ -299,8 +340,8 @@ class Validator(object):
                         self.result.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])
                         
                     self.check_radiobutton_links('links',show['links'],v_track_labels)
-                    if not show['show-timeout'].isdigit(): self.result.display('f',"'show timeout' is not 0 or a positive integer")
-                    if not show['track-timeout'].isdigit(): self.result.display('f',"'track timeout' is not 0 or a positive integer")
+                    self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
+                    self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
                     self.check_web_window('show','web-window',show['web-window'])
 
         self.result.display('t', "\nValidation Complete")
@@ -309,7 +350,35 @@ class Validator(object):
             return True
         else:
             return False
- 
+
+    def check_hh_mm_ss(self,name,item):          
+        fields=item.split(':')
+        if len(fields) == 0:
+            return
+        if len(fields)>3:
+            self.result.display('f','Too many fields in '+ name + ': '  + item)
+            return
+        if len(fields) == 1:
+            seconds=fields[0]
+            minutes='0'
+            hours='0'
+        if len(fields) == 2:
+            seconds=fields[1]
+            minutes=fields[0]
+            hours='0'
+        if len(fields) == 3:
+            seconds=fields[2]
+            minutes=fields[1]
+            hours=fields[0]
+        if not seconds.isdigit() or not  minutes.isdigit() or  not hours.isdigit():
+            self.result.display('f','Fields of  '+ name + ' are not positive integers: ' + item)
+            return        
+        if int(minutes)>59 or int(seconds)>59:
+            if len(fields)<>1:
+                self.result.display('f','Fields of  '+ name + ' are out of range: ' + item)
+            else:
+                self.result.display('w','Seconds or Minutes is greater then 59 in '+ name + ': ' + item)          
+            return    
  
     def check_start_shows(self,show,v_show_labels):
         text=show['start-show']
@@ -318,9 +387,9 @@ class Validator(object):
         for field in fields:
             show_count+=1
             if field not in v_show_labels:
-                self.result.display('f',"start show has undefined start-show: "+ field)
+                self.result.display('f',"start show has undefined Start Show: "+ field)
         if show_count == 0:
-            self.result.display('w',"start show has zero start-shows")
+            self.result.display('w',"start show has zero Start Shows")
 
 
 # ***********************************
@@ -458,11 +527,11 @@ class Validator(object):
         if not track['menu-vertical-separation'].isdigit(): self.result.display('f'," Vertical Separation is not 0 or a positive integer")
         if not track['menu-strip-padding'].isdigit(): self.result.display('f'," Stipple padding is not 0 or a positive integer")    
 
-        if not track['hint-x'].isdigit(): self.result.display('f',"'hint-x' is not 0 or a positive integer")
-        if not track['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
+        if not track['hint-x'].isdigit(): self.result.display('f',"'Hint x Position' is not 0 or a positive integer")
+        if not track['hint-y'].isdigit(): self.result.display('f',"'Hint y Position' is not 0 or a positive integer")
 
-        if not track['track-text-x'].isdigit(): self.result.display('f'," Menu Text x is not 0 or a positive integer") 
-        if not track['track-text-y'].isdigit(): self.result.display('f'," Menu Text y is not 0 or a positive integer")
+        if not track['track-text-x'].isdigit(): self.result.display('f'," Menu Text x Position is not 0 or a positive integer") 
+        if not track['track-text-y'].isdigit(): self.result.display('f'," Menu Text y Position is not 0 or a positive integer")
 
         if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'none':
             self.result.display('f'," Icon and Text are both None") 
@@ -484,7 +553,7 @@ class Validator(object):
                 return
             if len(fields) == 1:
                 if fields[0] != 'fullscreen':
-                    self.result.display('f'," menu Window: single argumetn must be fullscreen")
+                    self.result.display('f'," menu Window: single argument must be fullscreen")
                     return
             if len(fields) == 2:                    
                 if not (fields[0].isdigit() and fields[1].isdigit()):
@@ -578,7 +647,7 @@ class Validator(object):
         if operation in ('up','down','play','stop','exit','pause','no-command','null') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
         else:
-            self.result.display('f',"unknown Command in control: " + line)
+            self.result.display('f',"unknown Command in Control: " + line)
 
 
 # *******************   
@@ -596,7 +665,7 @@ class Validator(object):
     def check_hyperlink(self,line,v_track_labels):
         fields = line.split()
         if len(fields) not in (2,3):
-            self.result.display('f',"incorrect number of fields in Control: " + line)
+            self.result.display('f',"Incorrect number of fields in Control: " + line)
             return
         symbol=fields[0]
         operation=fields[1]
@@ -605,7 +674,7 @@ class Validator(object):
 
         elif operation in ('call','goto','jump'):
             if len(fields)!=3:
-                self.result.display('f','incorrect number of fields in Control: ' + line)
+                self.result.display('f','Incorrect number of fields in Control: ' + line)
                 return
             else:
                 operand=fields[2]
@@ -622,10 +691,10 @@ class Validator(object):
                     return
                 else:
                     if operand not in v_track_labels:
-                        self.result.display('f',operand + " link argument is not in medialist: " + line)
+                        self.result.display('f',operand + " Command argument is not in medialist: " + line)
                         return
         else:
-            self.result.display('f',"unknown command in link: " + line)
+            self.result.display('f',"unknown Command in Control: " + line)
 
 
 # *******************   
@@ -642,7 +711,7 @@ class Validator(object):
     def check_radiobutton_link(self,line,v_track_labels):
         fields = line.split()
         if len(fields) not in (2,3):
-            self.result.display('f',"incorrect number of fields in link: " + line)
+            self.result.display('f',"Incorrect number of fields in Control: " + line)
             return
         symbol=fields[0]
         operation=fields[1]
@@ -651,15 +720,15 @@ class Validator(object):
         
         elif operation == 'play':
             if len(fields)!=3:
-                self.result.display('f','incorrect number of fields in link: ' + line)
+                self.result.display('f','Incorrect number of fields in Control: ' + line)
                 return
             else:
                 operand=fields[2]
                 if operand not in v_track_labels:
-                    self.result.display('f',operand + " link argument is not in medialist: " + line)
+                    self.result.display('f',operand + " Command argument is not in medialist: " + line)
                     return
         else:
-            self.result.display('f',"unknown command in link: " + line)
+            self.result.display('f',"unknown Command in Control: " + line)
 
 
 
@@ -682,13 +751,13 @@ class Validator(object):
                 return
         elif len(fields)==1:
             if fields[0] not in ('exitpipresents','shutdownnow'):
-                self.result.display('f','Show control - Incorrect command in: ' + line)
+                self.result.display('f','Show control - Unknown command in: ' + line)
                 return
         elif len(fields) == 2:
             if fields[0] not in ('open','close'):
-                self.result.display('f','Show Control - Incorrect command in: ' + line)
+                self.result.display('f','Show Control - Unknown command in: ' + line)
             if fields[1] not in v_show_labels:
-                self.result.display('f',"Show Control - cannot find show reference: "+ line)
+                self.result.display('f',"Show Control - cannot find Show Reference: "+ line)
                 return
         else:
             self.result.display('f','Show Control - Incorrect number of fields in: ' + line)
@@ -716,10 +785,10 @@ class Validator(object):
         # name not checked - done at runtime
 
         out_type = fields[2]
-        if out_type != 'state': self.result.display('f','Illegal type in: ' + field + ", " + line)
+        if out_type != 'state': self.result.display('f','Unknownl type in: ' + field + ", " + line)
         
         to_state_text=fields[3]
-        if not (to_state_text  in ('on','off')): self.result.display('f','Illegal paramter in: ' + field + ", " + line)
+        if not (to_state_text  in ('on','off')): self.result.display('f','Unknown parameter in: ' + field + ", " + line)
         
         return
     
@@ -770,7 +839,7 @@ class Validator(object):
         fields = line.split()
         
         if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','Show must have web window: ' + field + ", " + line)
+            self.result.display('f','Show must specify Web Window: ' + field + ", " + line)
             return
             
         if len(fields) == 0:
@@ -820,7 +889,7 @@ class Validator(object):
         fields = line.split()
         
         if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','Show must have image window: ' + field + ", " + line)
+            self.result.display('f','Show must specify Image Window: ' + field + ", " + line)
             return
             
         if len(fields) == 0:

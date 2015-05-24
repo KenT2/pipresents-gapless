@@ -63,6 +63,9 @@ class MenuPlayer(Player):
         
         self.mon.trace(self,'')
 
+        # do common bits of  load
+        Player.pre_load(self)   
+
         # bodge for menuplayer, pass medialist through track parameters
         if 'medialist_obj' in self.show_params:
             self.medialist=self.show_params['medialist_obj']
