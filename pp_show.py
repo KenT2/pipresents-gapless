@@ -503,7 +503,7 @@ class Show(object):
 
   # respond to input events
     def base_handle_input_event(self,symbol):
-        self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input event: " + symbol)
+        self.mon.log(self, self.show_params['show-ref']+ ' Show Id: '+ str(self.show_id)+": received input event: " + symbol)
 
         if self.shower is not None:
             self.shower.handle_input_event(symbol)

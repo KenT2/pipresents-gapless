@@ -1,5 +1,13 @@
-Version 1.3.1b 24/5/2015
+Version 1.3.1c 31/5/2105
+Enhanced - Artmediahow will now use the Controls in a track, merging them with the Controls from the Show
+Enhanced - Speeded up videoplayer by removing running of omxplayer just to obtain the duration of the track  - requires a later version of omxplayer. (see release notes)
+Enhanced - halved the timeout for killing omxplayer
+Fixed - mediahow controls could have been those set in the show only at the begining of showing a track.
+Fixed - calculation of time to freeze for video tracks.
+Enhanced - pp_radiobuttonshow_1p3 example updated so that a running track cannot be restarted.
 
+ 
+Version 1.3.1b 24/5/2015
 Enhanced - Improved validation
 Modified  - in the Editor Browser Window is now called Web Window
 Enhanced - Improved sync between master and slave when using OSC by moving when show control commands are executed

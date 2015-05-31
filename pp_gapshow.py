@@ -331,19 +331,7 @@ class GapShow(Show):
         else:
             self.enable_child=False
 
-        
-        # get control bindings for this show
-        # needs to be done for each track as track can override the show controls
-        if self.show_params['disable-controls'] == 'yes':
-            self.controls_list=[]
-        else:
-            reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
-            if reason=='error':
-                self.mon.err(self,message)
-                self.end('error',"error in controls")
-                return
-
-            # print 'controls',reason,self.show_params['controls'],self.controls_list
+    
 
         # load the track or show
         # params - track,enable_menu
@@ -658,7 +646,18 @@ class GapShow(Show):
     def track_ready_callback(self,enable_show_background):
         self.delete_eggtimer()
 
-        if self.show_params['disable-controls'] != 'yes':        
+        # get control bindings for this show
+        # needs to be done for each track as track can override the show controls
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+
+            # print 'controls',reason,self.show_params['controls'],self.controls_list
             #merge controls from the track
             controls_text=self.current_player.get_links()
             reason,message,track_controls=self.controlsmanager.parse_controls(controls_text)

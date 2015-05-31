@@ -39,7 +39,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1b'
+        self.pipresents_minorissue = '1.3.1c'
 
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
@@ -85,7 +85,7 @@ class PiPresents(object):
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
 
-        # Monitor.classes=['MediaShow','VideoPlayer','OMXDriver']
+        # Monitor.classes=['PiPresents','ArtMediaShow','VideoPlayer','OMXDriver']
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])

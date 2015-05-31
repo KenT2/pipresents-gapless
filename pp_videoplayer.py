@@ -115,6 +115,7 @@ class VideoPlayer(Player):
         self.track=track
         self.loaded_callback=loaded_callback   #callback when loaded
         # print '!!!!!!!!!!! videoplayer load',self.track
+        self.mon.log(self,"Load track received from show Id: "+ str(self.show_id) + ' ' +self.track)
         self.mon.trace(self,'')
 
         # do common bits of  load
@@ -161,40 +162,8 @@ class VideoPlayer(Player):
                 self.loaded_callback('error','track file not found')
                 return
 
-
-        # get the length of the video
-
-        # create an  instance of omxdriver to obtain the duration
-        self.omx_dur=OMXDriver(self.canvas,self.pp_dir)
-        self.omx_dur.get_duration(self.track)
-        self._wait_for_duration(self._load_after_get_duration)
-
-
-    def _get_duration(self,track):
-        self.omx_dur.get_duration(track)
-
-    def _wait_for_duration(self,measured_callback):
-        if self.omx_dur.duration_signal is True:
-            # self.omx_dur.kill()
-            measured_callback(self.omx_dur.measured_duration, self.omx_dur.duration_reason)
-        else:
-            self.root.after(100,lambda arg=measured_callback: self._wait_for_duration(arg))
-
-    # continue the loading after the get_duration callback 
-    def _load_after_get_duration(self,duration,status):
-        # print 'got duration from track',duration,status,self.omx_dur.duration_reason
-        self.omx_dur=None
-        if duration<=0:
-            self.mon.err(self,'Track does not provide duration so cannot play')
-            self.play_state='load-failed'
-            if self.loaded_callback is not  None:
-                self.loaded_callback('error','Track does not provide duration so cannot play')
-                return
-        else:        
-            self.mon.log(self,">load track received from show Id: "+ str(self.show_id) + ' using duration from track')
-            # create an  instance of omxdriver
-            self.omx=OMXDriver(self.canvas,self.pp_dir)
-            self.start_state_machine_load(self.track,duration)
+        self.omx=OMXDriver(self.canvas,self.pp_dir)
+        self.start_state_machine_load(self.track)
 
 
 
@@ -339,8 +308,7 @@ class VideoPlayer(Player):
     """
 
 
-    def start_state_machine_load(self,track,duration):
-        self.video_duration=duration
+    def start_state_machine_load(self,track):
         self.track=track
         # initialise all the state machine variables
         self.loading_count=0     # initialise loading timeout counter
@@ -348,8 +316,8 @@ class VideoPlayer(Player):
         
         # load the selected track
         options= ' --no-osd ' + self.omx_audio+ " " + self.omx_volume + ' ' + self.omx_window_processed + ' ' + self.seamless_loop + ' ' + self.omx_other_options +" "
-        self.omx.load(track,options,self.video_duration)
-        self.mon.log (self,'Loading track '+ self.track + 'with options ' + options + 'from show Id: '+ str(self.show_id))
+        self.omx.load(track,options,self.mon.pretty_inst(self))
+        # self.mon.log (self,'Send load command track '+ self.track + 'with options ' + options + 'from show Id: '+ str(self.show_id))
         # print 'omx.load started ',self.track
         # and start polling for state changes
         self.tick_timer=self.canvas.after(50, self.load_state_machine)
@@ -409,7 +377,7 @@ class VideoPlayer(Player):
             if self.omx.end_play_signal is True:
                 # got nice day, eof or timeout before the first timestamp
                 self.mon.warn(self,self.track)
-                self.mon.warn(self,"            <loading  - omxplayer ended before starting track with reason: " + self.omx.end_play_reason + ' at ' +str(self.omx.video_position))
+                self.mon.warn(self,"loading  - omxplayer ended before starting track with reason: " + self.omx.end_play_reason + ' at ' +str(self.omx.video_position))
                 self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                 self.omx.kill()
                 self.mon.err(self,'omxplayer ended before loading track')
@@ -422,7 +390,9 @@ class VideoPlayer(Player):
                 self.loading_count+=1
                 # video has loaded
                 if self.omx.start_play_signal is True:
-                    self.mon.log(self,"            <loading complete from show Id: "+ str(self.show_id))
+                    self.mon.log(self,"Loading complete from show Id: "+ str(self.show_id)+ ' ' +self.track)
+                    self.mon.log(self,'Got video duration from track, frezing at: '+ str(self.omx.duration)+ ' microsecs.')
+                    
                     if self.unload_signal is True:
                         # print'unload sig=true state= start_unload'
                         # need to unload, kick off state machine in 'start_unload' state
@@ -441,10 +411,10 @@ class VideoPlayer(Player):
                     if self.loading_count>200:  #40 seconds
                         # deal with omxplayer crashing while  loading and hence not receive start_play_signal
                         self.mon.warn(self,self.track)
-                        self.mon.warn(self,"            <loading - videoplayer counted out: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
+                        self.mon.warn(self,"loading - videoplayer counted out: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
                         self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
                         self.omx.kill()
-                        self.mon.warn(self,'omxplayer counted out when loading track ')
+                        self.mon.warn(self,'videoplayer counted out when loading track ')
                         self.play_state = 'load-failed'
                         self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
                         if self.loaded_callback is not None:
@@ -536,7 +506,7 @@ class VideoPlayer(Player):
             # omxplayer reports it is terminating
             elif self.omx.end_play_signal is True:
                 self.omx.end_play_signal=False
-                self.mon.log(self,"            <end play signal received with reason: " + self.omx.end_play_reason + ' at: ' + str(self.omx.video_position))
+                self.mon.log(self,"end play signal received with reason: " + self.omx.end_play_reason + ' at: ' + str(self.omx.video_position))
                 # paused at end of track so return so calling prog can release the pause
                 if self.omx.end_play_reason == 'pause_at_end':
                     self.frozen_at_end=True
@@ -554,11 +524,10 @@ class VideoPlayer(Player):
                     # problem with omxplayer
                     self.play_state='closing'
                     self.closing_count=0
-                    self.mon.warn(self,self.track)
+                    # self.mon.warn(self,self.track + ' ' + self.omx.caller)
                     self.mon.log(self,"      Entering state : " + self.play_state + ' from show Id: '+ str(self.show_id))
-                    self.mon.warn(self,"            <showing - eof or timeout detected at: " + str(self.omx.video_position))
-                    self.mon.warn(self,"            <pexpect reports: "+self.omx.end_play_reason)
-                    self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
+                    self.mon.warn(self,"unexpected termination - : "+self.omx.end_play_reason + ' at: ' + str(self.omx.video_position) + ' ' + self.track + ' ' + self.omx.caller)
+                    self.mon.trace(self,'pexpect.before  is'+self.omx.xbefore)
                     # print 'showing - eof or timeout so go to closing to wait for precess to be dead'
                     self.tick_timer=self.canvas.after(50, self.show_state_machine)
                 else:
@@ -590,12 +559,12 @@ class VideoPlayer(Player):
                 # process still running
                 self.closing_count+=1
                 # print 'closing - waiting for process to die',self.closing_count
-                if self.closing_count>20:
+                if self.closing_count>10:
                     # deal with omxplayer not terminating at the end of a track
-                    self.mon.warn(self,self.track)
-                    self.mon.warn(self,"            <closing - omxplayer failed to close at: " + str(self.omx.video_position))
-                    self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
-                    self.mon.warn(self,'omxplayer now being killed with SIGINT')
+                    # self.mon.warn(self,self.track)
+                    # self.mon.warn(self,"omxplayer failed to close at: " + str(self.omx.video_position))
+                    # self.mon.warn(self,'pexpect.before  is'+self.omx.xbefore)
+                    self.mon.warn(self,'failed to close - omxplayer now being killed with SIGINT')
                     self.omx.kill()
                     # print 'closing - precess will not die so ita been killed with SIGINT'
                     self.play_state = 'closed'

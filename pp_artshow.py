@@ -53,17 +53,6 @@ class ArtShow(Show):
         self.mon.trace(self,self.show_params['show-ref'])
         Show.base_play(self,end_callback,show_ready_callback,parent_kickback_signal, level,controls_list)
 
-        # get control bindings for this show
-        controlsmanager=ControlsManager()
-        if self.show_params['disable-controls'] == 'yes':
-            self.controls_list=[]
-        else:
-            reason,message,self.controls_list= controlsmanager.get_controls(self.show_params['controls'])
-            if reason=='error':
-                self.mon.err(self,message)
-                self.end('error',"error in controls")
-                return
-            # print 'controls',reason,self.show_params['controls'],self.controls_list
 
         # get the previous shower and player from calling show
         # Show.base_get_previous_player_from_parent(self)
@@ -102,7 +91,6 @@ class ArtShow(Show):
  
    # respond to key presses.
     def handle_input_event(self,symbol):
-        self.mon.log(self, self.show_params['show-ref']+ ' '+ str(self.show_id)+": received input: " + symbol)
         Show.base_handle_input_event(self,symbol)
 
 
@@ -428,6 +416,29 @@ class ArtShow(Show):
 
     def track_ready_callback(self,enable_show_background):
         self.mon.trace(self, '')
+
+        # get control bindings for this show
+        self.controlsmanager=ControlsManager()
+        if self.show_params['disable-controls'] == 'yes':
+            self.controls_list=[]
+        else:
+            reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
+            if reason=='error':
+                self.mon.err(self,message)
+                self.end('error',"error in controls")
+                return
+            # print '\nshow controls',self.show_params['controls']
+   
+            #merge controls from the track
+            controls_text=self.current_player.get_links()
+            # print 'current player controls',controls_text
+            reason,message,track_controls=self.controlsmanager.parse_controls(controls_text)
+            if reason == 'error':
+                self.mon.err(self,message + " in track: "+ self.current_player.track_params['track-ref'])
+                self.error_signal=True
+                self.what_next_after_showing()
+            self.controlsmanager.merge_controls(self.controls_list,track_controls)
+
         # show the show background done for every track but quick operation
         if enable_show_background is True:
             self.base_show_show_background()
@@ -462,7 +473,7 @@ class ArtShow(Show):
             self.mon.trace(self, 'previous is not None ' + self.mon.pretty_inst(self.previous_player))
             if self.previous_player.get_play_state() == 'showing':
                 # showing or frozen
-                self.mon.trace(self,'closing previous ' + self.previous_player)
+                self.mon.trace(self,'closing previous ' + self.mon.pretty_inst(self.previous_player))
                 self.previous_player.close(self._base_close_previous_callback)
             else:
                 self.mon.trace(self, 'previous is not showing')

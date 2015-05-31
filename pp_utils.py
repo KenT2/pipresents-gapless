@@ -91,21 +91,21 @@ class Monitor(object):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_err) is True:        
             print "%.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
-            Monitor.ofile.write (" ERROR: " + r_class + ":  " + text + "\n")
+            Monitor.ofile.write (" ERROR: " + self.pretty_inst(caller)+ ":  " + text + "\n")
         tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_warn) is True:     
-            print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",r_class +": ", text
-            Monitor.ofile.write (" WARNING: " + r_class+ ":  " + text + "\n")
+            print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",self.pretty_inst(caller) +": ", text
+            Monitor.ofile.write (" WARNING: " + self.pretty_inst(caller)+ ":  " + text + "\n")
 
     def log(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_log) is True:
             print "%.2f" % (time.time()-Monitor.start_time) +" "+r_class+": " + text
-            # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.id(caller)+": " + text
-            Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + r_class +": " + text+"\n")
+            # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.pretty_inst(caller)+": " + text
+            Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + self.pretty_inst(caller)+": " + text+"\n")
 
     def trace(self,caller,text):
         r_class=caller.__class__.__name__
@@ -116,8 +116,8 @@ class Monitor(object):
         r_longid = caller
         # self.print_info(r_class,Monitor.m_trace)
         if self.enabled(r_class,Monitor.m_trace) is True:
-            print  r_class+'/'+r_func, text
-            Monitor.ofile.write ( r_class +" /" + r_func +" " + text+"\n")
+            print  self.pretty_inst(caller)+'/'+r_func, text
+            Monitor.ofile.write ( self.pretty_inst(caller)+" /" + r_func +" " + text+"\n")
 
     def print_info(self,r_class,mask):
         print  'called from', r_class
@@ -140,11 +140,11 @@ class Monitor(object):
         if inst is None:
             return 'None'
         else:
-            return inst.__class__.__name__ + '/' + str(id(inst))
+            return inst.__class__.__name__ + '_' + str(id(inst))
   
     def finish(self):
         Monitor.ofile.close()
 
-    def id(self,caller):
-        return self.pretty_inst(caller)
+##    def id(self,caller):
+##        return self.pretty_inst(caller)
 
