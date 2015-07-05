@@ -128,8 +128,8 @@ class RadioButtonShow(Show):
 
    # respond to inputs
     def handle_input_event(self,symbol):
-        Show.base_handle_input_event(self,symbol)
-
+        # Show.base_handle_input_event(self,symbol)
+        self.handle_input_event_this_show(symbol)
 
     def handle_input_event_this_show(self,symbol):
         # for radiobuttonshow the symbolic names are links to play tracks, also a limited number of in-track operations

@@ -13,12 +13,14 @@ See manual.pdf for instructions.
 """
 import os
 import sys
+import signal
 from subprocess import call
 import time
 import gc
 import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
+
 
 from pp_options import command_options
 from pp_showlist import ShowList
@@ -39,15 +41,19 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1c'
-
+        self.pipresents_minorissue = '1.3.1d'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
         self.nonfull_window_y=0   # position of top left corner
+        self.pp_background='red'
 
         StopWatch.global_enable=False
+
+        # set up the handler for SIGTERM
+        signal.signal(signal.SIGTERM,self.handle_sigterm)
+        
 
 # ****************************************
 # Initialisation
@@ -201,7 +207,7 @@ class PiPresents(object):
         self.icon_text= 'Pi Presents'
         self.root.title(self.title)
         self.root.iconname(self.icon_text)
-        self.root.config(bg='black')
+        self.root.config(bg=self.pp_background)
 
         self.mon.log(self, 'native screen dimensions are ' + str(self.root.winfo_screenwidth()) + ' x ' + str(self.root.winfo_screenheight()) + ' pixcels')
         if self.options['screensize'] =='':        
@@ -240,10 +246,10 @@ class PiPresents(object):
         self.root.focus_set()
 
         # define response to main window closing.
-        self.root.protocol ("WM_DELETE_WINDOW", self.terminate)
+        self.root.protocol ("WM_DELETE_WINDOW", self.handle_user_abort)
 
         # setup a canvas onto which will be drawn the images or text
-        self.canvas = Canvas(self.root, bg='black')
+        self.canvas = Canvas(self.root, bg=self.pp_background)
 
 
         if self.options['fullscreen'] is True:
@@ -257,7 +263,7 @@ class PiPresents(object):
                                highlightcolor='yellow')
             
         self.canvas.place(x=0,y=0)
-
+        # self.canvas.config(bg='black')
         self.canvas.focus_set()
 
 
@@ -461,7 +467,7 @@ class PiPresents(object):
     def handle_input_event(self,symbol,source):
         self.mon.log(self,"event received: "+symbol + ' from '+ source)
         if symbol == 'pp-terminate':
-            self.terminate()
+            self.handle_user_abort()
             
         elif symbol == 'pp-shutdown':
             self.shutdown_pressed('delay')
@@ -510,9 +516,17 @@ class PiPresents(object):
                 self.show_manager.exit_all_shows()
 
 
+    def handle_sigterm(self,signum,frame):
+        self.mon.log(self,'SIGTERM received - '+ str(signum))
+        self.terminate()
+
+
+    def handle_user_abort(self):
+        self.mon.log(self,'User abort received')
+        self.terminate()
 
     def terminate(self):
-        self.mon.log(self, "terminate received from user")
+        self.mon.log(self, "terminate received")
         needs_termination=False
         for show in self.show_manager.shows:
             # print  show[ShowManager.SHOW_OBJ], show[ShowManager.SHOW_REF]
@@ -532,17 +546,17 @@ class PiPresents(object):
 
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message):
-        self.canvas.config(bg='black')
+        self.canvas.config(bg=self.pp_background)
         if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True:
             self.end(reason,message)
 
     def end(self,reason,message):
         self.mon.log(self,"Pi Presents ending with reason: " + reason)
-        # print gc.collect()
-        # print gc.garbage
         if self.root is not None:
             self.root.destroy()
         self.tidy_up()
+        # gc.collect()
+        # print gc.garbage
         if reason == 'killed':
             self.mon.log(self, "Pi Presents Aborted, au revoir")
             # close logging files 

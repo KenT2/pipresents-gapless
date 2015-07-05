@@ -1,8 +1,13 @@
+Version 1.3.1d 5/7/2105
+Enhanced - linux kill command will now exit pipresents cleanly (SIGTERM) pp_control.sh demonstrates
+Enhanced - colour of Pi Presents background can now be set (line 50 of pipresents.py pending inclusion in profile
+Fixed - In radiobuttonshow can now select an alternative track when in a subshow. This is at the expense of allowing a subshow to be controlled in a radiobuttonshow.
+
 Version 1.3.1c 31/5/2105
 Enhanced - Artmediahow will now use the Controls in a track, merging them with the Controls from the Show
 Enhanced - Speeded up videoplayer by removing running of omxplayer just to obtain the duration of the track  - requires a later version of omxplayer. (see release notes)
 Enhanced - halved the timeout for killing omxplayer
-Fixed - mediahow controls could have been those set in the show only at the begining of showing a track.
+Fixed - mediashow controls could have been those set in the show not those merged with a track. This happens only at the very beginning of showing a track.
 Fixed - calculation of time to freeze for video tracks.
 Enhanced - pp_radiobuttonshow_1p3 example updated so that a running track cannot be restarted.
 
