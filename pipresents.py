@@ -47,7 +47,7 @@ class PiPresents(object):
         self.nonfull_window_height= 0.7 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
         self.nonfull_window_y=0   # position of top left corner
-        self.pp_background='red'
+        self.pp_background='black'
 
         StopWatch.global_enable=False
 
