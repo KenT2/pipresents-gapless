@@ -16,10 +16,7 @@ import sys
 import signal
 from subprocess import call
 import time
-import gc
-import traceback
-from Tkinter import Tk, Canvas
-import tkMessageBox
+from subprocess import Popen, PIPE
 
 
 from pp_options import command_options
@@ -246,7 +243,8 @@ class PiPresents(object):
             self.window_width=self.screen_width
             self.window_height=self.screen_height
             self.root.attributes('-fullscreen', True)
-            os.system('unclutter &')
+            #os.system('unclutter &')
+            Popen(['unclutter'], stdout=PIPE, stderr=PIPE) # suppress 'someone created subwindow'
             self.window_x=0
             self.window_y=0  
             self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))
