@@ -123,29 +123,43 @@ class PiPresents(object):
         if self.options['profile'] != '':
             self.pp_profile_path="/pp_profiles/"+self.options['profile']
         else:
-            self.mon.err(self,"Profile not specified in command ")
-            self.end('error','No profile in command')
+            self.pp_profile_path = "/pp_profiles/pp_profile"
         
        # get directory containing pp_home from the command,
+        # if no home dir is given, default to /home/pi/pp_home
+        # if a home dir is given, try:
+        #   a) the given home dir
+        #   b) a 'pp_home' dir within the given home dir (original PP operation)
         if self.options['home']  == "":
-            home = os.sep+ 'home' + os.sep + user + os.sep+"pp_home"
+            home    = ""
+            home_pp = os.path.expanduser('~')+ os.sep+"pp_home"
         else:
-            home = self.options['home'] + os.sep+ "pp_home"         
-        self.mon.log(self,"pp_home directory is: " + home)
-
+            home    = self.options['home']
+            home_pp = self.options['home'] + os.sep + "pp_home"
+        self.mon.log(self,"PP home directory is: " + home + "[" + os.sep + "pp_home]")
 
         # check if pp_home exists.
         # try for 10 seconds to allow usb stick to automount
+        # fall back to pipresents/pp_home
+        self.pp_home=pp_dir+"/pp_home"
         found=False
         for i in range (1, 10):
-            self.mon.log(self,"Trying pp_home at: " + home +  " (" + str(i)+')')
-            if os.path.exists(home):
+            if os.path.exists(home_pp):
                 found=True
-                self.pp_home=home
+                self.pp_home=home_pp
                 break
+            if os.path.exists(home):
+                if os.path.exists(home + os.sep + "pp_profiles"):
+                  found=True
+                  self.pp_home=home
+                  break
+                self.mon.log(self,"Found the home directory, but no subdirectory pp_home or pp_pprofiles at: {0}".format(home, i))
+                break  # if we found the parent dir, the media is mounted... retries are not going to fix a missing sub dir
+            self.mon.log(self,"Did not find PP home with {0}pp_home at: {1} ({2} of 10)".format(os.sep, home_pp, i))
+            self.mon.log(self,"Did not find PP home with {0}pp_profiles at: {1} ({2} of 10)".format(os.sep, home, i))
             time.sleep (1)
-        if found is True:
-            self.mon.log(self,"Found Requested Home Directory, using pp_home at: " + home)
+        if found==True:
+            self.mon.log(self,"Found requested home directory, using: " + self.pp_home)
         else:
             self.mon.err(self,"Failed to find pp_home directory at " + home)
             self.end('error','Failed to find pp_home')
