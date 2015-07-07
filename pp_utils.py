@@ -35,13 +35,13 @@ class StopWatch(object):
 
 class Monitor(object):
 
-    m_fatal =1    # fatal erros caused by PiPresents, could be a consequence of an 'error'
-    m_err = 2  # PP cannot continue because of an error caused by user in profile or command
-    m_warn =4  # warning that something is not quite right but PP recovers gracefully
-    m_log =8  # log of interest to profile developers
-    m_trace =16 # trace for software development
+    m_fatal =  1  # fatal erros caused by PiPresents, could be a consequence of an 'error'
+    m_err   =  2  # PP cannot continue because of an error caused by user in profile or command
+    m_warn  =  4  # warning that something is not quite right but PP recovers gracefully
+    m_log   =  8  # log of interest to profile developers
+    m_trace = 16  # trace for software development
     m_trace_instance =32 # trace with id of instances of player and showers
-    m_leak = 64 # memory leak monitoring
+    m_leak  = 64  # memory leak monitoring
 
     classes  = []
     
@@ -83,27 +83,27 @@ class Monitor(object):
         r_func = sys._getframe(1).f_code.co_name
         r_line =  str(sys._getframe(1).f_lineno)
         if self.enabled(r_class,Monitor.m_fatal) is True: 
-            print "%.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
+            print "[fatal] %.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
             Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
         tkMessageBox.showwarning(r_class ,'System Error:\n'+text)
 
     def err(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_err) is True:        
-            print "%.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
+            print "[err]   %.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
             Monitor.ofile.write (" ERROR: " + self.pretty_inst(caller)+ ":  " + text + "\n")
         tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_warn) is True:     
-            print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",self.pretty_inst(caller) +": ", text
+            print "[warn]   %.2f" % (time.time()-Monitor.start_time), " Warning: ",self.pretty_inst(caller) +": ", text
             Monitor.ofile.write (" WARNING: " + self.pretty_inst(caller)+ ":  " + text + "\n")
 
     def log(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_log) is True:
-            print "%.2f" % (time.time()-Monitor.start_time) +" "+r_class+": " + text
+            print "[log]    %.2f" % (time.time()-Monitor.start_time) +" "+r_class+": " + text
             # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.pretty_inst(caller)+": " + text
             Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + self.pretty_inst(caller)+": " + text+"\n")
 
@@ -116,7 +116,7 @@ class Monitor(object):
         r_longid = caller
         # self.print_info(r_class,Monitor.m_trace)
         if self.enabled(r_class,Monitor.m_trace) is True:
-            print  self.pretty_inst(caller)+'/'+r_func, text
+            print  "[trace] " + self.pretty_inst(caller)+'/'+r_func, text
             Monitor.ofile.write ( self.pretty_inst(caller)+" /" + r_func +" " + text+"\n")
 
     def print_info(self,r_class,mask):
