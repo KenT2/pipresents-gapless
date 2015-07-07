@@ -83,11 +83,11 @@ class PiPresents(object):
         Monitor.classes  = ['PiPresents',
                             
                             'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
-                            'GapShow','Show','ArtShow',
-                            'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
-                            'MediaList','LiveList','ShowList',
+                            #'GapShow','Show','ArtShow',
+                            #'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
+                            #'MediaList','LiveList','ShowList',
                             'PathManager','ControlsManager','ShowManager','PluginManager',
-                            'MplayerDriver','OMXDriver','UZBLDriver',
+                            #'MplayerDriver','OMXDriver','UZBLDriver',
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
 

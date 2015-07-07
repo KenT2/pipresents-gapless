@@ -5,13 +5,14 @@ import ttk
 import tkFont
 import os
 import string
-import tkSimpleDialog
+import ttkSimpleDialog as ttkSimpleDialog
 import tkFileDialog
 from ScrolledText import ScrolledText
 from pp_utils import Monitor
+from tkconversions import *
 
 
-class FontChooser( tkSimpleDialog.Dialog ):
+class FontChooser( ttkSimpleDialog.Dialog ):
     BASIC = 1
     ALL   = 2
 
@@ -31,7 +32,7 @@ class FontChooser( tkSimpleDialog.Dialog ):
 
         self.sampleText      = None
 
-        tkSimpleDialog.Dialog.__init__( self, parent, 'Font Chooser' )
+        ttkSimpleDialog.Dialog.__init__( self, parent, 'Font Chooser' )
 
     def _initialize( self, aFont ):
         if not isinstance( aFont, tkFont.Font ):
@@ -49,8 +50,8 @@ class FontChooser( tkSimpleDialog.Dialog ):
     def body( self, master ):
         theRow = 0
 
-        Label( master, text="Font Family" ).grid( row=theRow, column=0 )
-        Label( master, text="Font Size" ).grid( row=theRow, column=2 )
+        ttkLabel( master, text="Font Family" ).grid( row=theRow, column=0 )
+        ttkLabel( master, text="Font Size" ).grid( row=theRow, column=2 )
 
         theRow += 1
 
@@ -81,21 +82,21 @@ class FontChooser( tkSimpleDialog.Dialog ):
         if self._showStyles is not None:
             theRow += 1
             if self._showStyles in ( FontChooser.ALL, FontChooser.BASIC ):
-                Label( master, text='Styles', anchor=W ).grid( row=theRow, column=0, pady=10, sticky=W )
+                ttkLabel( master, text='Styles', anchor=W ).grid( row=theRow, column=0, pady=10, sticky=W )
 
                 theRow += 1
 
-                Checkbutton( master, text="bold", command=self.selectionChanged, offvalue='normal', onvalue='bold', variable=self._weight ).grid(row=theRow, column=0)
-                Checkbutton( master, text="italic", command=self.selectionChanged, offvalue='roman', onvalue='italic', variable=self._slant ).grid(row=theRow, column=1)
+                ttkCheckbutton( master, text="bold", command=self.selectionChanged, offvalue='normal', onvalue='bold', variable=self._weight ).grid(row=theRow, column=0)
+                ttkCheckbutton( master, text="italic", command=self.selectionChanged, offvalue='roman', onvalue='italic', variable=self._slant ).grid(row=theRow, column=1)
 
         if self._showStyles == FontChooser.ALL:
-            Checkbutton( master, text="underline", command=self.selectionChanged, offvalue=False, onvalue=True, variable=self._isUnderline ).grid(row=theRow, column=2)
-            Checkbutton( master, text="overstrike", command=self.selectionChanged, offvalue=False, onvalue=True, variable=self._isOverstrike ).grid(row=theRow, column=3)
+            ttkCheckbutton( master, text="underline", command=self.selectionChanged, offvalue=False, onvalue=True, variable=self._isUnderline ).grid(row=theRow, column=2)
+            ttkCheckbutton( master, text="overstrike", command=self.selectionChanged, offvalue=False, onvalue=True, variable=self._isOverstrike ).grid(row=theRow, column=3)
 
         # Sample Text
             theRow += 1
 
-            Label( master, text='Sample Text', anchor=W ).grid( row=theRow, column=0, pady=10, sticky=W )
+            ttkLabel( master, text='Sample Text', anchor=W ).grid( row=theRow, column=0, pady=10, sticky=W )
 
             theRow += 1
 
@@ -164,85 +165,46 @@ def askChooseFont( parent, defaultfont=None, showstyles=FontChooser.ALL ):
     return  FontChooser( parent, defaultfont=defaultfont, showstyles=showstyles ).result
 
 
-
-
-###################################################
-# Tabbed interface script
-# www.sunjay-varma.com
-###################################################
-
-"""
-This script was written by Sunjay Varma - www.sunjay-varma.com
+__doc__ = info = '''
+This script replaces the one written by Sunjay Varma - www.sunjay-varma.com
 
 This script has two main classes:
 Tab - Basic tab used by TabBar for main functionality
-TabBar - The tab bar that is placed above tab bodies (Tabs)
-"""
-
-BASE = RAISED
-SELECTED = FLAT
+TabBar - The tab bar that is placed above tab bodies (Tabs), based on ttk.Notebook
+'''
 
 # a base tab class
-class Tab(Frame):
+class Tab(ttkFrame):
     def __init__(self, master, name):
-        Frame.__init__(self, master)
+        ttkFrame.__init__(self, master)
         self.tab_name = name
 
 # the bulk of the logic is in the actual tab bar
-class TabBar(Frame):
+class TabBar(ttk.Notebook):
     
     def __init__(self, master=None, init_name=None):
-        Frame.__init__(self, master)
-        self.tabs = {}
-        self.buttons = {}
-        self.current_tab = None
-        self.init_name = init_name
-
+        ttk.Notebook.__init__(self, master)
+        self.tabnames = {}
     
     def show(self):
-        # print 'show',self.tabs
         self.pack(side=TOP, expand=YES, fill=X)
-        self.switch_tab(self.init_name or self.tabs.keys()[-1])  # switch the tab to the first tab
-
 
     def add(self, tab,text):
-        tab.pack_forget()   # hide the tab on init
-        self.tabs[tab.tab_name] = tab   # add it to the list of tabs
-        b = Button(self, text=text, relief=BASE,font='arial 10',command=(lambda name=tab.tab_name: self.switch_tab(name)))  # set the command to switch tabs
-        b.pack(side=LEFT)    # pack the button to the left most of self
-        self.buttons[tab.tab_name] = b   # add it to the list of buttons
-        # print '\n'
-        # for xtab in self.tabs:
-        #     print xtab
-
+        self.tabnames[tab.tab_name] = tab   # add it to the list of tabs
+        ttk.Notebook.add(self, tab, text=text)
 
     def delete(self, tabname):
-        if tabname == self.current_tab:
-            self.current_tab = None
-            self.tabs[tabname].pack_forget()
-            del self.tabs[tabname]
-            self.switch_tab(self.tabs.keys()[0])
-        else:
-            del self.tabs[tabname]
-        self.buttons[tabname].pack_forget()
-        del self.buttons[tabname] 
-
+        self.forget(tabnames[tabname])
 
     def switch_tab(self, name):
-        if self.current_tab:
-            self.buttons[self.current_tab].config(relief=RAISED, fg='black')
-            self.tabs[self.current_tab].pack_forget()   # hide the current tab
-        self.tabs[name].pack(side=BOTTOM)  # add the new tab to the display
-        self.current_tab = name  # set the current tab to itself
-        self.buttons[name].config(relief=FLAT,fg='black')  # set it to the selected style
-
+        self.select(tabnames[name])
 
 
 # *************************************
 # EDIT SHOW AND TRACK CONTENT
 # ************************************
 
-class EditItem(tkSimpleDialog.Dialog):
+class EditItem(ttkSimpleDialog.Dialog):
 
     def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_home_dir,initial_tab):
         self.mon=Monitor()
@@ -261,7 +223,7 @@ class EditItem(tkSimpleDialog.Dialog):
         self.entries=[]
 
         # and call the base class _init_which calls body immeadiately and apply on OK pressed
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
+        ttkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self,root):
         self.root=root
@@ -313,7 +275,7 @@ class EditItem(tkSimpleDialog.Dialog):
             self.tab_row=1
             return None
         elif field_spec['shape']=='sep':
-            Label(self.current_tab,text='', anchor=W).grid(row=self.tab_row,column=0,sticky=W)
+            ttkLabel(self.current_tab,text='', anchor=W).grid(row=self.tab_row,column=0,sticky=W)
             self.tab_row+=1
             return None
 
@@ -332,11 +294,11 @@ class EditItem(tkSimpleDialog.Dialog):
                     bg='white'
                     
                 # write the label
-                Label(self.current_tab,text=field_spec['text'], anchor=W).grid(row=self.tab_row,column=0,sticky=W)
+                ttkLabel(self.current_tab,text=field_spec['text'], anchor=W).grid(row=self.tab_row,column=0,sticky=W)
                 
                 # make the editable field
                 if field_spec['shape']in ('entry','colour','browse','font'):
-                    obj=Entry(self.current_tab,bg=bg,width=40,font='arial 11')
+                    obj=ttkEntry(self.current_tab,bg=bg,width=40,font='arial 11')
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='text':
@@ -344,35 +306,41 @@ class EditItem(tkSimpleDialog.Dialog):
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='spinbox':
-                    obj=Spinbox(self.current_tab,bg=bg,values=values,wrap=True)
+                    obj=ttk.Combobox( master,  height=10, textvariable=self._family )
+                    obj.grid( row=theRow, column=0, columnspan=2, sticky=N+S+E+W, padx=10 )
+                    #obj=Spinbox(self.current_tab,bg=bg,values=values,wrap=True)
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='option-menu': 
                     self.option_val = StringVar(self.current_tab)    
                     self.option_val.set(self.field_content[field])
                     obj = apply(OptionMenu, [self.current_tab, self.option_val] + values)
+                    obj = ttkCombobox(self.current_tab, textvariable=self.option_val)
+                    self.apply()
+                    obj['values'] = values
                     self.entries.append(self.option_val)
                     
                 else:
                     self.mon.log(self,"Uknown shape for: " + field)
                     return None
                 
-                if field_spec['read-only']=='yes':
-                    obj.config(state="readonly",bg='dark grey')
+                #TODO: Need a style for read-only items
+                #if field_spec['read-only']=='yes':
+                #    obj.config(state="readonly",bg='dark grey')
                     
                 obj.grid(row=self.tab_row,column=1,sticky=W)
 
                 # display buttons where required
                 if field_spec['shape']=='browse':
-                    but=Button(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.browse(o)))
+                    but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.browse(o)))
                     but.grid(row=self.tab_row,column=2,sticky=W)
                     
                 elif field_spec['shape']=='colour':
-                    but=Button(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_colour(o)))
+                    but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_colour(o)))
                     but.grid(row=self.tab_row,column=2,sticky=W)
                     
                 elif field_spec['shape']=='font':
-                    but=Button(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_font(o)))
+                    but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_font(o)))
                     but.grid(row=self.tab_row,column=2,sticky=W)
 
                 self.tab_row+=1    
@@ -391,6 +359,8 @@ class EditItem(tkSimpleDialog.Dialog):
             # get the details of this field
             field_spec=self.field_specs[field]
             # print  'reading row',field_index,field_spec['shape']
+            if len(self.entries) <= entry_index:
+                continue
             
             # and get the value
             if field_spec['shape']not in ('sep','tab'):
@@ -399,7 +369,7 @@ class EditItem(tkSimpleDialog.Dialog):
                 if field_spec['shape']=='text':
                     self.field_content[field]=self.fields[field_index].get(1.0,END).rstrip('\n')
                     
-                elif field_spec['shape']=='option-menu':
+                elif field_spec['shape']=='option-menu' and len(self.entries) > entry_index:
                     self.field_content[field]=self.entries[entry_index].get()
                     entry_index+=1
                 else:
@@ -454,10 +424,10 @@ class EditItem(tkSimpleDialog.Dialog):
         override standard one to get rid of key bindings which cause trouble with text widget
         '''
 
-        box = Frame(self)
-        w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
+        box = ttkFrame(self)
+        w = ttkButton(box, text="OK", width=10, command=self.ok, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Cancel", width=10, command=self.cancel)
+        w = ttkButton(box, text="Cancel", width=10, command=self.cancel)
         w.pack(side=LEFT, padx=5, pady=5)
         # self.bind("<Return>", self.ok)
         # self.bind("<Escape>", self.cancel)

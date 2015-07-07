@@ -2,9 +2,11 @@
 
 from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry
 from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
+import ttk
+import Tkinter as tk
 import tkFileDialog
 import tkMessageBox
-import tkSimpleDialog
+import ttkSimpleDialog as ttkSimpleDialog
 import os
 import sys
 import ConfigParser
@@ -21,6 +23,7 @@ from pp_options import ed_options
 from pp_validate import Validator
 from pp_definitions import PPdefinitions
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
+from tkconversions import *
 
 # **************************
 # Pi Presents Editor Class
@@ -64,20 +67,23 @@ class PPEditor(object):
         # set up the gui
  
         # root is the Tkinter root widget
-        self.root = Tk()
+        self.root = tk.Tk()
         self.root.title("Editor for Pi Presents")
 
+        style = ttk.Style()
+        style.theme_use('clam')
         # self.root.configure(background='grey')
 
-        self.root.resizable(False,False)
+        #self.root.resizable(False,False)
+        self.root.resizable(True,True)
 
         # define response to main window closing
         self.root.protocol ("WM_DELETE_WINDOW", self.app_exit)
 
         # bind some display fields
-        self.filename = StringVar()
-        self.display_selected_track_title = StringVar()
-        self.display_show = StringVar()
+        self.filename = tk.StringVar()
+        self.display_selected_track_title = tk.StringVar()
+        self.display_show = tk.StringVar()
 
 
         # define menu
@@ -165,75 +171,89 @@ class PPEditor(object):
          
         self.root.config(menu=menubar)
 
-        top_frame=Frame(self.root)
-        top_frame.pack(side=TOP)
-        bottom_frame=Frame(self.root)
+# define frames
+
+        root_frame=ttkFrame(self.root)
+        root_frame.pack(fill=BOTH, expand=True)
+
+        # top = menu, bottom = main frame for content
+        top_frame=ttkFrame(root_frame)
+        top_frame.pack(side=TOP, fill=X, expand=False)
+        bottom_frame=ttkFrame(root_frame)
+
         bottom_frame.pack(side=TOP, fill=BOTH, expand=1)        
 
-        left_frame=Frame(bottom_frame, padx=5)
-        left_frame.pack(side=LEFT)
-        middle_frame=Frame(bottom_frame,padx=5)
-        middle_frame.pack(side=LEFT)              
-        right_frame=Frame(bottom_frame,padx=5,pady=10)
-        right_frame.pack(side=LEFT)
-        updown_frame=Frame(bottom_frame,padx=5)
+        # left   = shows list, media list
+        # middle = show buttons
+        # right  = tracks list
+        # updown = track buttons
+        left_frame=ttkFrame(bottom_frame, padx=5)
+        left_frame.pack(side=LEFT, fill=BOTH, expand=True)
+        notebook = ttk.Notebook(left_frame)
+        shows_tab=ttkFrame(notebook)
+        medialist_tab = ttkFrame(notebook)
+        notebook.add(shows_tab, text="Shows")
+        notebook.add(medialist_tab, text="Medialists")
+        notebook.pack(side=LEFT, fill=BOTH, expand=True)
+        
+        #middle_frame=ttkFrame(bottom_frame,padx=5)
+        #middle_frame.pack(side=LEFT, fill=BOTH, expand=False)
+        right_frame=ttkFrame(bottom_frame,padx=5,pady=10)
+        right_frame.pack(side=LEFT, fill=BOTH, expand=True)
+        updown_frame=ttkFrame(bottom_frame,padx=5)
         updown_frame.pack(side=LEFT)
         
-        tracks_title_frame=Frame(right_frame)
-        tracks_title_frame.pack(side=TOP)
-        tracks_label = Label(tracks_title_frame, text="Tracks in Selected Medialist")
-        tracks_label.pack()
-        tracks_frame=Frame(right_frame)
-        tracks_frame.pack(side=TOP)
-        shows_title_frame=Frame(left_frame)
-        shows_title_frame.pack(side=TOP)
-        shows_label = Label(shows_title_frame, text="Shows")
-        shows_label.pack()
-        shows_frame=Frame(left_frame)
-        shows_frame.pack(side=TOP)
-        shows_title_frame=Frame(left_frame)
-        shows_title_frame.pack(side=TOP)
-        medialists_title_frame=Frame(left_frame)
-        medialists_title_frame.pack(side=TOP)
-        medialists_label = Label(medialists_title_frame, text="Medialists")
-        medialists_label.pack()
-        medialists_frame=Frame(left_frame)
-        medialists_frame.pack(side=LEFT)
+        #ttk.Style().configure("TFrame", background="green")
+        #ttk.Style().configure("TButton", background="red")
+
+        tracks_title_frame=ttkFrame(right_frame, padding=4)
+        tracks_title_frame.pack(side=TOP, fill=X, expand=False)
+        self.tracks_label = ttk.Label(tracks_title_frame, text="Tracks in Selected Medialist")
+        self.tracks_label.configure(justify=CENTER)
+        self.tracks_label.pack(side=TOP, fill=X, expand=False)
+        tracks_frame=ttkFrame(right_frame, padding=0)
+        tracks_frame.pack(side=TOP, fill=BOTH, expand=True)
+        
+        shows_frame=ttkFrame(shows_tab, padding=0)
+        shows_frame.pack(side=TOP, fill=BOTH, expand=True)
+        medialists_frame=ttkFrame(medialist_tab, padding=0)
+        medialists_frame.pack(side=LEFT, fill=BOTH, expand=True)
         
         # define buttons 
 
-        add_button = Button(middle_frame, width = 5, height = 2, text='Edit\nShow',
+        add_button = ttkButton(shows_tab, width = 5, height = 2, text='Edit',
                             fg='black', command = self.m_edit_show, bg="light grey")
-        add_button.pack(side=RIGHT)
+        add_button.pack(side=BOTTOM)
         
-        add_button = Button(updown_frame, width = 5, height = 1, text='Add',
+        add_button = ttkButton(updown_frame, width = 5, height = 1, text='Add',
                             fg='black', command = self.add_track_from_file, bg="light grey")
         add_button.pack(side=TOP)
-        add_button = Button(updown_frame, width = 5, height = 1, text='Edit',
+        add_button = ttkButton(updown_frame, width = 5, height = 1, text='Edit',
                             fg='black', command = self.m_edit_track, bg="light grey")
         add_button.pack(side=TOP)
-        add_button = Button(updown_frame, width = 5, height = 1, text='Up',
+        add_button = ttkButton(updown_frame, width = 5, height = 1, text='Up',
                             fg='black', command = self.move_track_up, bg="light grey")
         add_button.pack(side=TOP)
-        add_button = Button(updown_frame, width = 5, height = 1, text='Down',
+        add_button = ttkButton(updown_frame, width = 5, height = 1, text='Down',
                             fg='black', command = self.move_track_down, bg="light grey")
         add_button.pack(side=TOP)
 
 
         # define display of showlist 
-        scrollbar = Scrollbar(shows_frame, orient=VERTICAL)
-        self.shows_display = Listbox(shows_frame, selectmode=SINGLE, height=12,
+        scrollbar = ttk.Scrollbar(shows_frame, orient=tk.VERTICAL)
+        self.shows_display = ttkListbox(shows_frame, selectmode=SINGLE, height=7,
                                      width = 40, bg="white",activestyle=NONE,
                                      fg="black", yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.shows_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
         self.shows_display.bind("<ButtonRelease-1>", self.e_select_show)
+        self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
 
     
         # define display of medialists
-        scrollbar = Scrollbar(medialists_frame, orient=VERTICAL)
-        self.medialists_display = Listbox(medialists_frame, selectmode=SINGLE, height=12,
+        scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
+        self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
                                           width = 40, bg="white",activestyle=NONE,
                                           fg="black",yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.medialists_display.yview)
@@ -243,15 +263,21 @@ class PPEditor(object):
 
 
         # define display of tracks
-        scrollbar = Scrollbar(tracks_frame, orient=VERTICAL)
-        self.tracks_display = Listbox(tracks_frame, selectmode=SINGLE, height=25,
+        scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
+        self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
                                       width = 40, bg="white",activestyle=NONE,
                                       fg="black",yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.tracks_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
         self.tracks_display.bind("<ButtonRelease-1>", self.e_select_track)
+        self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
 
+# define window sizer
+        sz = ttk.Sizegrip(root_frame)
+        sz.pack(side=RIGHT)
+        root_frame.columnconfigure(0, weight=1)
+        root_frame.rowconfigure(0, weight=1)
 
         # initialise editor options class and OSC config class
         self.options=Options(self.pp_dir) # creates options file in code directory if necessary
@@ -531,6 +557,9 @@ class PPEditor(object):
         self.shows_display.delete(0,self.shows_display.size())
         for index in range(self.current_showlist.length()):
             self.shows_display.insert(END, self.current_showlist.show(index)['title']+"   ["+self.current_showlist.show(index)['show-ref']+"]")        
+        self.highlight_shows_display()
+
+    def highlight_shows_display(self):
         if self.current_showlist.show_is_selected():
             self.shows_display.itemconfig(self.current_showlist.selected_show_index(),fg='red')            
             self.shows_display.see(self.current_showlist.selected_show_index())
@@ -540,14 +569,25 @@ class PPEditor(object):
         if self.current_showlist is not None and self.current_showlist.length()>0:
             mouse_item_index=int(event.widget.curselection()[0])
             self.current_showlist.select(mouse_item_index)
-            self.refresh_shows_display()
+            self.highlight_shows_display()
+            selected = self.current_showlist.selected_show()
+            self.medialists_display.selection_clear()
+            if 'medialist' in selected:
+                medialist = selected['medialist']
+                if self.medialists_display <> None:
+                        self.medialists_display.select(medialist)
+                self.select_medialist(None)
+            else:
+                self.current_medialists_index = -1
+                self.current_medialist = None
+                self.refresh_tracks_display()
 
     def copy_show(self):
         if  self.current_showlist is not None and self.current_showlist.show_is_selected():
             self.add_show(self.current_showlist.selected_show())
 
         
-    def m_edit_show(self):
+    def m_edit_show(self, *args, **kwargs):
         self.edit_show(PPdefinitions.show_types,PPdefinitions.show_field_specs)
         
      
@@ -672,15 +712,18 @@ class PPEditor(object):
         """
         user clicks on a medialst in a profile so try and select it.
         """
+        self.current_medialists_index = -1
+        self.current_medialist = None
         # needs forgiving int for possible tkinter upgrade
         if len(self.medialists)>0:
-            self.current_medialists_index=int(event.widget.curselection()[0])
-            self.current_medialist=MediaList('ordered')
-            if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
-                self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
-                self.app_exit()        
-            self.refresh_tracks_display()
-            self.refresh_medialists_display()
+            if len(self.medialists_display.curselection()) > 0:
+                self.current_medialists_index=int(self.medialists_display.curselection()[0])
+                self.current_medialist=MediaList('ordered')
+                if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
+                    self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
+                    self.app_exit()        
+                self.refresh_tracks_display()
+                self.refresh_medialists_display()
 
 
     def refresh_medialists_display(self):
@@ -707,6 +750,11 @@ class PPEditor(object):
           
     def refresh_tracks_display(self):
         self.tracks_display.delete(0,self.tracks_display.size())
+        if len(self.medialists) > 0 and self.current_medialists_index >= 0:
+            medialist = self.medialists[self.current_medialists_index]
+        else:
+            medialist = "(no medialist selected)"
+        self.tracks_label['text'] = "Tracks in %s" % medialist 
         if self.current_medialist is not None:
             for index in range(self.current_medialist.length()):
                 if self.current_medialist.track(index)['track-ref'] != '':
@@ -714,17 +762,22 @@ class PPEditor(object):
                 else:
                     track_ref_string=""
                 self.tracks_display.insert(END, self.current_medialist.track(index)['title']+track_ref_string)        
+            self.highlight_tracks_display()
+
+    def highlight_tracks_display(self):
             if self.current_medialist.track_is_selected():
                 self.tracks_display.itemconfig(self.current_medialist.selected_track_index(),fg='red')            
                 self.tracks_display.see(self.current_medialist.selected_track_index())
             
     def e_select_track(self,event):
         if self.current_medialist is not None and self.current_medialist.length()>0:
-            mouse_item_index=int(event.widget.curselection()[0])
-            self.current_medialist.select(mouse_item_index)
-            self.refresh_tracks_display()
+            selection = event.widget.curselection()
+            if len(selection) > 0:
+                    mouse_item_index=int(selection[0])
+                    self.current_medialist.select(mouse_item_index)
+                    self.refresh_tracks_display()
 
-    def m_edit_track(self):
+    def m_edit_track(self, *args, **kwargs):
         self.edit_track(PPdefinitions.track_types,PPdefinitions.track_field_specs)
 
     def edit_track(self,track_types,field_specs):      
@@ -733,7 +786,7 @@ class PPEditor(object):
                        self.show_refs(),self.initial_media_dir,self.pp_home_dir,'track')
             if d.result  is  True:
                 self.save_medialist()
-            self.refresh_tracks_display()
+            self.highlight_tracks_display()
 
     def move_track_up(self):
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
@@ -1025,19 +1078,19 @@ class PPEditor(object):
 # EDIT 1 DIALOG CLASS
 # ************************************
 
-class Edit1Dialog(tkSimpleDialog.Dialog):
+class Edit1Dialog(ttkSimpleDialog.Dialog):
 
     def __init__(self, parent, title, label, default):
         # save the extra args to instance variables
         self.label_1 = label
         self.default_1 = default     
         # and call the base class _init_which uses the args in body
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
+        ttkSimpleDialog.Dialog.__init__(self, parent, title)
 
 
     def body(self, master):
-        Label(master, text=self.label_1).grid(row=0)
-        self.field1 = Entry(master)
+        ttk.Label(master, text=self.label_1).grid(row=0)
+        self.field1 = ttk.Entry(master)
         self.field1.grid(row=0, column=1)
         self.field1.insert(0,self.default_1)
         return self.field1 # initial focus on title
@@ -1101,14 +1154,14 @@ class Options(object):
 # PP_EDITOR OPTIONS DIALOG CLASS
 # ************************************
 
-class OptionsDialog(tkSimpleDialog.Dialog):
+class OptionsDialog(ttkSimpleDialog.Dialog):
 
     def __init__(self, parent, options_file, title=None, ):
         # instantiate the subclass attributes
         self.options_file=options_file
 
         # init the super class
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
+        ttkSimpleDialog.Dialog.__init__(self, parent, title)
 
 
     def body(self, master):
@@ -1116,21 +1169,21 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         config=ConfigParser.ConfigParser()
         config.read(self.options_file)
 
-        Label(master, text="").grid(row=20, sticky=W)
-        Label(master, text="Pi Presents Data Home:").grid(row=21, sticky=W)
-        self.e_home = Entry(master,width=80)
+        ttk.Label(master, text="").grid(row=20, sticky=W)
+        ttk.Label(master, text="Pi Presents Data Home:").grid(row=21, sticky=W)
+        self.e_home = ttk.Entry(master,width=80)
         self.e_home.grid(row=22)
         self.e_home.insert(0,config.get('config','home',0))
 
-        Label(master, text="").grid(row=30, sticky=W)
-        Label(master, text="Inital directory for media:").grid(row=31, sticky=W)
-        self.e_media = Entry(master,width=80)
+        ttk.Label(master, text="").grid(row=30, sticky=W)
+        ttk.Label(master, text="Inital directory for media:").grid(row=31, sticky=W)
+        self.e_media = ttk.Entry(master,width=80)
         self.e_media.grid(row=32)
         self.e_media.insert(0,config.get('config','media',0))
 
-        Label(master, text="").grid(row=40, sticky=W)
-        Label(master, text="Offset for Current Profiles:").grid(row=41, sticky=W)
-        self.e_offset = Entry(master,width=80)
+        ttk.Label(master, text="").grid(row=40, sticky=W)
+        ttk.Label(master, text="Offset for Current Profiles:").grid(row=41, sticky=W)
+        self.e_offset = ttk.Entry(master,width=80)
         self.e_offset.grid(row=42)
         self.e_offset.insert(0,config.get('config','offset',0))
 
