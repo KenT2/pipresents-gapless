@@ -237,6 +237,9 @@ class PPEditor(object):
         add_button = ttkButton(updown_frame, width = 5, height = 1, text='Down',
                             fg='black', command = self.move_track_down, bg="light grey")
         add_button.pack(side=TOP)
+        add_button = ttkButton(updown_frame, width = 5, height = 1, text='Del',
+                              fg='black', command = self.remove_track, bg="light grey")
+        add_button.pack(side=TOP, pady=20)
 
 
         # define display of showlist 
@@ -272,6 +275,7 @@ class PPEditor(object):
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
         self.tracks_display.bind("<ButtonRelease-1>", self.e_select_track)
         self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
+        self.tracks_display.bind("<Delete>", self.remove_track)
 
 # define window sizer
         sz = ttk.Sizegrip(root_frame)
@@ -835,7 +839,7 @@ class PPEditor(object):
     def new_menu_track(self):
         self.new_track(PPdefinitions.new_tracks['menu'],None)
  
-    def remove_track(self):
+    def remove_track(self, *args, **kwargs):
         if  self.current_medialist is not None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
             if tkMessageBox.askokcancel("Delete Track","Delete Track"):
                 index= self.current_medialist.selected_track_index()
