@@ -20,7 +20,7 @@ import gc
 import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
-
+import pp_paths
 
 from pp_options import command_options
 from pp_showlist import ShowList
@@ -80,7 +80,7 @@ class PiPresents(object):
         # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mon.set_log_level()
         
         # make a shorter list to log/trace only some classes without using enable_in_code.
-        Monitor.classes  = ['PiPresents',
+        Monitor.classes  = ['PiPresents', 'pp_paths',
                             
                             'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
                             #'GapShow','Show','ArtShow',
@@ -119,67 +119,25 @@ class PiPresents(object):
         self.gpio_enabled=False
         self.tod_enabled=False
          
-        # get profile path from -p option
-        if self.options['profile'] != '':
-            self.pp_profile_path="/pp_profiles/"+self.options['profile']
-        else:
-            self.pp_profile_path = "/pp_profiles/pp_profile"
-        
-       # get directory containing pp_home from the command,
-        # if no home dir is given, default to /home/pi/pp_home
-        # if a home dir is given, try:
-        #   a) the given home dir
-        #   b) a 'pp_home' dir within the given home dir (original PP operation)
-        if self.options['home']  == "":
-            home    = ""
-            home_pp = os.path.expanduser('~')+ os.sep+"pp_home"
-        else:
-            home    = self.options['home']
-            home_pp = self.options['home'] + os.sep + "pp_home"
-        self.mon.log(self,"PP home directory is: " + home + "[" + os.sep + "pp_home]")
-
-        # check if pp_home exists.
-        # try for 10 seconds to allow usb stick to automount
-        # fall back to pipresents/pp_home
-        self.pp_home=pp_dir+"/pp_home"
-        found=False
-        for i in range (1, 10):
-            if os.path.exists(home_pp):
-                found=True
-                self.pp_home=home_pp
-                break
-            if os.path.exists(home):
-                if os.path.exists(home + os.sep + "pp_profiles"):
-                  found=True
-                  self.pp_home=home
-                  break
-                self.mon.log(self,"Found the home directory, but no subdirectory pp_home or pp_pprofiles at: {0}".format(home, i))
-                break  # if we found the parent dir, the media is mounted... retries are not going to fix a missing sub dir
-            self.mon.log(self,"Did not find PP home with {0}pp_home at: {1} ({2} of 10)".format(os.sep, home_pp, i))
-            self.mon.log(self,"Did not find PP home with {0}pp_profiles at: {1} ({2} of 10)".format(os.sep, home, i))
-            time.sleep (1)
-        if found==True:
-            self.mon.log(self,"Found requested home directory, using: " + self.pp_home)
-        else:
-            self.mon.err(self,"Failed to find pp_home directory at " + home)
+        # get home path from -o option
+        self.pp_home = pp_paths.get_home(self.options['home'])
+        if self.pp_home is None:
             self.end('error','Failed to find pp_home')
 
-
-        # check profile exists
-        self.pp_profile=self.pp_home+self.pp_profile_path
-        if os.path.exists(self.pp_profile):
-            self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
-        else:
-            self.mon.err(self,"Failed to find requested profile: "+ self.pp_profile)
+        # get profile path from -p option
+        # pp_profile is the full path to the directory that contains 
+        # pp_showlist.json and other files for the profile
+        self.pp_profile = pp_paths.get_profile_dir(self.pp_home, self.options['profile'])
+        if self.pp_profile is None:
             self.end('error','Failed to find profile')
-        
+
+        # check 'verify' option
         if self.options['verify'] is True:
             val =Validator()
             if  val.validate_profile(None,pp_dir,self.pp_home,self.pp_profile,self.pipresents_issue,False) is  False:
                 self.mon.err(self,"Validation Failed")
                 self.end('error','Validation Failed')
 
-         
         # initialise and read the showlist in the profile
         self.showlist=ShowList()
         self.showlist_file= self.pp_profile+ "/pp_showlist.json"
