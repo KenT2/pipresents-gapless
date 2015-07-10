@@ -1,5 +1,6 @@
 import copy
 from pp_utils import Monitor
+from pp_pluginmanager import PluginManager
 
 
 class ShowManager(object):
@@ -119,6 +120,9 @@ class ShowManager(object):
         self.pp_profile=pp_profile
         self.pp_home=pp_home
 
+        if not 'plugin' in self.show_params:
+            self.show_params['plugin'] = ''
+        self.pim=PluginManager(self.show_id,self.root,self.show_canvas,self.show_params,None,self.pp_dir,self.pp_home,self.pp_profile) 
 
         self.mon=Monitor()
 
@@ -134,6 +138,7 @@ class ShowManager(object):
     def exit_all_shows(self):
         for show in ShowManager.shows:
             self.exit_show(show[ShowManager.SHOW_REF])
+        self.pim.stop_plugin()
         return 'normal','exited all shows'
 
 
@@ -157,7 +162,7 @@ class ShowManager(object):
         reason,message,show_canvas=self.compute_show_canvas(show)
         if reason == 'error':
             return reason,message
-        # print 'STARTING TOP LEVEL SHOW',show_canvas
+        #print 'STARTING TOP LEVEL SHOW',show_canvas
         self.mon.log(self,'Starting Show: ' + show_ref  + ' from: ' + self.show_params['show-ref'])
         if self.show_running(index):
             self.mon.warn(self,"show already running so ignoring command: "+show_ref)
@@ -169,6 +174,10 @@ class ShowManager(object):
             self.set_running(index,show_obj)
             # params - end_callback, show_ready_callback, parent_kickback_signal, level
             show_obj.play(self._end_play_show,None,False,0,[])
+            if not self.pim.is_running:
+                self.pim.load_plugin(None, self.show_params['plugin'])
+                self.pim.draw_plugin()
+                self.pim.show_plugin()
             return 'normal','concurrent show started'
 
  

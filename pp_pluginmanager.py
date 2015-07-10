@@ -26,6 +26,7 @@ class PluginManager(object):
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         self.pp_profile=pp_profile
+        self.is_running=False
 
         self.plugin_timer=None
         self.plugin=None
@@ -62,14 +63,19 @@ class PluginManager(object):
                 return 'error','track type not found in '+ plugin_file,''
         else:
             liveshow=False
-            track_type=self.track_params['type']
+            if self.track_params is not None and 'type' in self.track_params:
+                track_type=self.track_params['type']
+            else:
+                track_type = 'image'
 
         # call the plugins load method
         error,message,used_track=self.plugin.load(track_file,liveshow,track_type)
-        self.canvas.update_idletasks()        
+        if not self.canvas is None:
+            self.canvas.update_idletasks()        
         if error  !=  'normal':
             return error,message,''
         else:
+            self.is_running = True
             return 'normal','',used_track
 
     def draw_plugin(self):
@@ -102,6 +108,7 @@ class PluginManager(object):
             self.canvas.after_cancel(self.plugin_timer)
             self.plugin.hide()
             self.canvas.update_idletasks()
+            self.is_running = False
 
 
 # **************************************
@@ -136,6 +143,6 @@ class PluginManager(object):
 
     def complete_path(self,track_file):
         #  complete path of the filename of the selected entry
-        if track_file[0] == "+":
+        if len(track_file) > 0 and track_file[0] == "+":
             track_file=self.pp_home+track_file[1:]
         return track_file     

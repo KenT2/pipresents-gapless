@@ -14,6 +14,7 @@ import shutil
 import json
 import copy
 import string
+import pp_paths
 
 from pp_edititem import EditItem
 from pp_medialist import MediaList
@@ -304,13 +305,31 @@ class PPEditor(object):
 
     def init(self):
         self.options.read()
-        self.pp_home_dir = self.options.pp_home_dir
+
+        # get home path from -o option (kept separate from self.options.pp_home_dir)
+        # or fall back to self.options.pp_home_dir
+        if self.command_options['home'] != '':
+            self.pp_home_dir = pp_paths.get_home(self.options['home'])
+            if self.pp_home_dir is None:
+                self.end('error','Failed to find pp_home')
+        else:
+            self.pp_home_dir = self.options.pp_home_dir
+
+        # get profile path from -p option
+        # pp_profile_dir is the full path to the directory that contains 
+        # pp_showlist.json and other files for the profile
+        if self.command_options['profile'] != '':
+            self.pp_profile_dir = pp_paths.get_profile_dir(self.pp_home_dir, self.command_options['profile'])
+            if self.pp_profile_dir is None:
+                self.end('error','Failed to find profile')
+        else:
+            self.pp_profile_dir=''
+
         self.pp_profiles_offset = self.options.pp_profiles_offset
         self.initial_media_dir = self.options.initial_media_dir
         self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
         self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
         self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
-        self.pp_profile_dir=''
         self.osc_config_file = ''
         self.current_medialist=None
         self.current_showlist=None
@@ -318,7 +337,9 @@ class PPEditor(object):
         self.shows_display.delete(0,END)
         self.medialists_display.delete(0,END)
         self.tracks_display.delete(0,END)
-
+        # if we were given a profile on the command line, open it
+        if self.command_options['profile'] != '':
+            self.open_profile(self.pp_profile_dir)
 
 
     # ***************************************
@@ -598,10 +619,13 @@ class PPEditor(object):
 
     def edit_show(self,show_types,field_specs):
         if self.current_showlist is not None and self.current_showlist.show_is_selected():
+            field_content = self.current_showlist.selected_show()
+            # auto-upgrade show to include plugin so it appears in editor box
+            if not 'plugin' in field_content and field_content['show_ref'] == 'start':
+                field_content['plugin'] = ''
             d=EditItem(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs(),
                        self.initial_media_dir,self.pp_home_dir,'show')
             if d.result  is  True:
-
                 self.save_showlist(self.pp_profile_dir)
                 self.refresh_shows_display()
 

@@ -141,7 +141,7 @@ class PPdefinitions(object):
               
             'start':[
                     'tab-show','sep',  
-                        'type','title','show-ref','start-show'
+                        'type','title','show-ref','start-show', 'plugin'
                     ]
 
              }
@@ -274,6 +274,7 @@ class PPdefinitions(object):
                     'freeze-at-end':{'shape':'option-menu','text':'Freeze at End','must':'no','read-only':'no',
                                        'values':['yes','no']},
 
+                    'plugin':{'shape':'browse','text':'Plugin Config File','must':'no','read-only':'no'},
                     'repeat':{'shape':'option-menu','text':'Repeat/Single','must':'no','read-only':'no',
                                         'values':['repeat','single-run']},
                     'sequence':{'shape':'option-menu','text':'Sequence','must':'no','read-only':'no',
