@@ -309,7 +309,7 @@ class PPEditor(object):
         # get home path from -o option (kept separate from self.options.pp_home_dir)
         # or fall back to self.options.pp_home_dir
         if self.command_options['home'] != '':
-            self.pp_home_dir = pp_paths.get_home(self.options['home'])
+            self.pp_home_dir = pp_paths.get_home(self.command_options['home'])
             if self.pp_home_dir is None:
                 self.end('error','Failed to find pp_home')
         else:
@@ -621,7 +621,7 @@ class PPEditor(object):
         if self.current_showlist is not None and self.current_showlist.show_is_selected():
             field_content = self.current_showlist.selected_show()
             # auto-upgrade show to include plugin so it appears in editor box
-            if not 'plugin' in field_content and field_content['show_ref'] == 'start':
+            if not 'plugin' in field_content and field_content['show-ref'] == 'start':
                 field_content['plugin'] = ''
             d=EditItem(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs(),
                        self.initial_media_dir,self.pp_home_dir,'show')
