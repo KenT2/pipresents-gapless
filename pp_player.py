@@ -225,13 +225,15 @@ class Player(object):
 
     def load_plugin(self):
         # load the plugin if required
+        if self.show_params['plugin'] != '':
+            reason,message,self.track = self.pim.load_plugin(self.track,self.show_params['plugin'])
         if self.track_params['plugin'] != '':
             reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'])
             return reason,message
 
     def draw_plugin(self):
         # load the plugin if required
-        if self.track_params['plugin'] != '':
+        if self.show_params['plugin'] != '' or self.track_params['plugin'] != '':
             self.pim.draw_plugin()
             return
 
