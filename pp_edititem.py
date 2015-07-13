@@ -288,27 +288,22 @@ class EditItem(ttkSimpleDialog.Dialog):
                 self.mon.log(self,"Value for field not found in opened file: " + field)
                 return None
             else:
-                if field_spec['must']=='yes':
-                    bg='pink'
-                else:
-                    bg='white'
-                    
                 # write the label
                 ttkLabel(self.current_tab,text=field_spec['text'], anchor=W).grid(row=self.tab_row,column=0,sticky=W)
                 
                 # make the editable field
                 if field_spec['shape']in ('entry','colour','browse','font'):
-                    obj=ttkEntry(self.current_tab,bg=bg,width=40,font='arial 11')
+                    obj=ttkEntry(self.current_tab,width=40,font='arial 11')
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='text':
-                    obj=ScrolledText(self.current_tab,bg=bg,height=8,width=40,font='arial 11')
+                    obj=ScrolledText(self.current_tab,height=8,width=40,font='arial 11')
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='spinbox':
                     obj=ttk.Combobox( master,  height=10, textvariable=self._family )
                     obj.grid( row=theRow, column=0, columnspan=2, sticky=N+S+E+W, padx=10 )
-                    #obj=Spinbox(self.current_tab,bg=bg,values=values,wrap=True)
+                    #obj=Spinbox(self.current_tab,values=values,wrap=True)
                     obj.insert(END,self.field_content[field])
                     
                 elif field_spec['shape']=='option-menu': 
@@ -322,10 +317,17 @@ class EditItem(ttkSimpleDialog.Dialog):
                     self.mon.log(self,"Uknown shape for: " + field)
                     return None
                 
-                #TODO: Need a style for read-only items
-                #if field_spec['read-only']=='yes':
-                #    obj.config(state="readonly",bg='dark grey')
-                    
+                # Read-only items
+                if field_spec['read-only']=='yes':
+                    obj.config(state=DISABLED)
+
+                # Required-entry items
+                if field_spec['must']=='yes':
+                    print "Found 'must' in {0}".format(field)
+                    obj.configure(background='lemon chiffon') # reserve pink for validation errors (future)?
+                else:
+                    obj.configure(background='white')
+
                 obj.grid(row=self.tab_row,column=1,sticky=W)
 
                 # display buttons where required
