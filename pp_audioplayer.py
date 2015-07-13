@@ -329,6 +329,7 @@ class AudioPlayer(Player):
 
         elif self.play_state == 'closing':
             # self.mon.log(self,"      State machine: " + self.play_state)
+            self.stop_plugin()
             # if spawned process has closed can change to closed state
             if self.mplayer.is_running()  is False:
                 self.mon.log(self,"            <mplayer process is dead")
