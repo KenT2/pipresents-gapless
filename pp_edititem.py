@@ -417,19 +417,46 @@ class EditItem(ttkSimpleDialog.Dialog):
             obj.delete(0,END)
             obj.insert(END,location)
 
+    def enter_keypressed(self, event=None):
+        ''' Check what control has focus. If it's not a text widget, close (accept) the window.
+            (Enter key is needed by text widget to enter a new line)
+            The dropdown widget handles and consumes enter key to close its dropdown (accept).
+        '''
+        ctl = self.focus_get()
+        if isinstance(ctl, Text) or isinstance(ctl, ScrolledText):
+            return
+        else:
+            #return ttkSimpleDialog.Dialog.ok(self, event)
+            return self.ok(event)
+
+    def escape_keypressed(self, event=None):
+        ''' Check what control has focus. If it's not a text widget, close (cancel) the window.
+            (Actually, I'm not sure what the issue is with the text widget with regards to the
+            Escape key, so we'll comment out the special handling for now.)
+            The dropdown widget handles and consumes escape key to close its dropdown (cancel).
+        '''
+        #ctl = self.focus_get()
+        #if isinstance(ctl, Text) or isinstance(ctl, ScrolledText):
+        #    return
+        #else:
+        #    return self.cancel()
+        return self.cancel(event)
 
     def buttonbox(self):
         '''add modified button box.
-        override standard one to get rid of key bindings which cause trouble with text widget
+        This function was originally here to 'override the standard [buttonbox] to get rid of 
+        key bindings which cause trouble with text widget'.
+        My opinion (drewkeller) is Escape-to-close and Enter-to-accept are the standard GUI 
+        expectations of a dialog like this, so they would be correct.
+        Issues with the text widget can be handled in keypress handlers.
         '''
-
         box = ttkFrame(self)
         w = ttkButton(box, text="OK", width=10, command=self.ok, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
         w = ttkButton(box, text="Cancel", width=10, command=self.cancel)
         w.pack(side=LEFT, padx=5, pady=5)
-        # self.bind("<Return>", self.ok)
-        # self.bind("<Escape>", self.cancel)
+        self.bind("<Return>", self.enter_keypressed)
+        self.bind("<Escape>", self.escape_keypressed)
         box.pack()
 
 

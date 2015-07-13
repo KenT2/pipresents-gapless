@@ -287,6 +287,8 @@ class PPEditor(object):
         # initialise editor options class and OSC config class
         self.options=Options(self.pp_dir) # creates options file in code directory if necessary
         self.osc_config=OSCConfig()
+
+        self.root.bind("<Escape>", self.escape_keypressed)
         
         # initialise variables      
         self.init()
@@ -298,6 +300,10 @@ class PPEditor(object):
     # ***************************************
     # INIT AND EXIT
     # ***************************************
+    def escape_keypressed(self, event=None):
+        # possibly with somewhat annoying prompt here... or not.
+        self.app_exit()
+
     def app_exit(self):
         self.root.destroy()
         exit()
