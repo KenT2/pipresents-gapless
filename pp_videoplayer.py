@@ -577,7 +577,7 @@ class VideoPlayer(Player):
 
         elif self.play_state=='closed':
             # needed because wait_for_end polls the state and does not use callback
-            self.stop_plugin()
+            self.hide_plugin()
             self.mon.log(self,"      State machine: " + self.play_state)    
             self.tick_timer=self.canvas.after(200, self.show_state_machine)            
 

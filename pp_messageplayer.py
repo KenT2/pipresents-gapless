@@ -130,7 +130,7 @@ class MessagePlayer(Player):
         self.mon.log(self,">close received from show Id: "+ str(self.show_id))
         if self.tick_timer!= None:
             self.canvas.after_cancel(self.tick_timer)
-        self.stop_plugin()
+        self.hide_plugin()
         self.play_state='closed'
         if self.closed_callback is not None:
             self.closed_callback('normal','Messageplayer closed')
