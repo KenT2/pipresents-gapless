@@ -1018,7 +1018,9 @@ class ResultWindow(object):
     def stats(self):
         if self.display_it is False: return
         self.textb.config(state=NORMAL)
-        self.textb.insert(END, "\nErrors: "+str(self.errors)+"\nWarnings: "+str(self.warnings)+"\n\n\n")
+        # show the summary at the top so user doesn't have to scroll all the way down to see
+        # whether there were errors
+        self.textb.insert(1.0, "\nErrors: "+str(self.errors)+"\nWarnings: "+str(self.warnings)+"\n\n\n")
         self.textb.config(state=DISABLED)
 
     def num_errors(self):
