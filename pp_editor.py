@@ -25,6 +25,7 @@ from pp_validate import Validator
 from pp_definitions import PPdefinitions
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 from tkconversions import *
+from ttkStatusBar import StatusBar
 
 # **************************
 # Pi Presents Editor Class
@@ -92,7 +93,7 @@ class PPEditor(object):
 
         profilemenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         profilemenu.add_command(label='Open', command = self.open_existing_profile)
-        profilemenu.add_command(label='Validate', command = self.validate_profile)
+        profilemenu.add_command(label='Validate', command = self.e_validate_profile)
         menubar.add_cascade(label='Profile', menu = profilemenu)
 
         ptypemenu = Menu(profilemenu, tearoff=0, bg="grey", fg="black")
@@ -278,11 +279,16 @@ class PPEditor(object):
         self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
         self.tracks_display.bind("<Delete>", self.remove_track)
 
-# define window sizer
+        # define window sizer
         sz = ttk.Sizegrip(root_frame)
         sz.pack(side=RIGHT)
         root_frame.columnconfigure(0, weight=1)
         root_frame.rowconfigure(0, weight=1)
+
+        # define status bar
+        self.status = StatusBar(root_frame)
+        self.status.pack(side=BOTTOM, fill=X)
+        self.status.bind("<Double-Button-1>", self.e_validate_profile)
 
         # initialise editor options class and OSC config class
         self.options=Options(self.pp_dir) # creates options file in code directory if necessary
@@ -368,9 +374,25 @@ class PPEditor(object):
                               +"For profile version: " + self.editor_issue + "\nAuthor: Ken Thompson"
                               +"\nWebsite: http://pipresents.wordpress.com/")
 
-    def validate_profile(self):
+    def e_validate_profile(self, event=None):
+        self.validate_profile(True)
+
+    def validate_profile(self, show_results=False):
         val =Validator()
-        val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,self.pp_profile_dir,self.editor_issue,True)
+        self.status.set("{0}", "Validating...")
+        val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,
+            self.pp_profile_dir,self.editor_issue,show_results)
+        errors, warnings = val.get_results()
+        if errors == 1: error_text = "1 error"
+        else:           error_text = "{0} errors".format(errors)
+        if warnings == 1: warn_text = "1 warning"
+        else:             warn_text = "{0} warnings".format(warnings)
+        if errors > 0:
+            self.status.set_error("{0}, {1}. Double click for details.", error_text, warn_text)
+        elif warnings > 0:
+            self.status.set_warning("{0}, {1}. Double click for details.", error_text, warn_text)
+        else:
+            self.status.set_info("{0}, {1}.", error_text, warn_text)
 
 
     # **************
@@ -589,6 +611,7 @@ class PPEditor(object):
         for index in range(self.current_showlist.length()):
             self.shows_display.insert(END, self.current_showlist.show(index)['title']+"   ["+self.current_showlist.show(index)['show-ref']+"]")        
         self.highlight_shows_display()
+        self.validate_profile()
 
     def highlight_shows_display(self):
         if self.current_showlist.show_is_selected():
@@ -797,6 +820,7 @@ class PPEditor(object):
                     track_ref_string=""
                 self.tracks_display.insert(END, self.current_medialist.track(index)['title']+track_ref_string)        
             self.highlight_tracks_display()
+        self.validate_profile()
 
     def highlight_tracks_display(self):
             if self.current_medialist.track_is_selected():
@@ -875,7 +899,7 @@ class PPEditor(object):
                 index= self.current_medialist.selected_track_index()
                 self.current_medialist.remove(index)
                 self.save_medialist()
-                ' highlight the next (or previous) item in the list
+                # highlight the next (or previous) item in the list
                 if index >= self.current_medialist.length():
                     index = self.current_medialist.length() - 1
                 self.current_medialist.select(index)

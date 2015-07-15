@@ -96,11 +96,12 @@ class Validator(object):
                         if track['location'].strip() == '':
                             self.result.display('w',"blank location")
                     
-                    # check location of relative media tracks where present                   
+                    # check location of absolute and relative media tracks where present                   
                     if track['type'] in ('video','audio','image','web'):    
                         track_file=track['location']
-                        if track_file.strip() != '' and  track_file[0] == "+":
-                            track_file=pp_home+track_file[1:]
+                        if track_file.strip() != '':
+                            if track_file[0] == "+":
+                                track_file=pp_home+track_file[1:]
                             if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " Media File not Found")
 
                     if track['type'] in ('video','audio','message','image','web','menu'):
@@ -115,7 +116,7 @@ class Validator(object):
                             track_file=track['background-image']
                             if track_file[0] == "+":
                                 track_file=pp_home+track_file[1:]
-                                if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
+                            if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
                         if track['track-text'] != "":
                             if not track['track-text-x'].isdigit(): self.result.display('f',"'Track Text x position' is not 0 or a positive integer")
                             if not track['track-text-y'].isdigit(): self.result.display('f',"'Track Text y Position' is not 0 or a positive integer")
@@ -975,6 +976,8 @@ class Validator(object):
                 self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
                 return
 
+    def get_results(self):
+        return self.result.errors, self.result.warnings
 
 
 
@@ -1000,7 +1003,11 @@ class ResultWindow(object):
         self.textb.config(state=NORMAL)
         self.textb.delete(1.0, END)
         self.textb.config(state=DISABLED)
+        top.bind("<Escape>", self.escape_keypressed)
+        self.top = top
 
+    def escape_keypressed(self, event=None):
+        self.top.destroy()
 
     def display(self,priority,text):
         if priority == 'f':   self.errors+=1
