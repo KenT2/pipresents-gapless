@@ -875,6 +875,10 @@ class PPEditor(object):
                 index= self.current_medialist.selected_track_index()
                 self.current_medialist.remove(index)
                 self.save_medialist()
+                ' highlight the next (or previous) item in the list
+                if index >= self.current_medialist.length():
+                    index = self.current_medialist.length() - 1
+                self.current_medialist.select(index)
                 self.refresh_tracks_display()
                 
     def add_track_from_file(self):
