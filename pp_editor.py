@@ -111,7 +111,8 @@ class PPEditor(object):
         profilemenu.add_cascade(label='New from Template', menu = ptypemenu)
         
         showmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        showmenu.add_command(label='Delete', command = self.remove_show)
+        showmenu.add_command(label='Delete (and medialist)', command = self.e_remove_show_and_medialist)
+        showmenu.add_command(label='Delete (leave medialist)', command = self.e_remove_show)
         showmenu.add_command(label='Edit', command = self.m_edit_show)
         showmenu.add_command(label='Copy To', command = self.copy_show)
         menubar.add_cascade(label='Show', menu = showmenu)
@@ -128,8 +129,8 @@ class PPEditor(object):
         
         medialistmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         menubar.add_cascade(label='MediaList', menu = medialistmenu)
-        medialistmenu.add_command(label='Add', command = self.add_medialist)
-        medialistmenu.add_command(label='Delete', command = self.remove_medialist)
+        medialistmenu.add_command(label='Add', command = self.e_add_medialist)
+        medialistmenu.add_command(label='Delete', command = self.e_remove_medialist)
         medialistmenu.add_command(label='Copy To', command = self.copy_medialist)
       
         trackmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
@@ -252,7 +253,7 @@ class PPEditor(object):
         scrollbar.config(command=self.shows_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
-        self.shows_display.bind("<ButtonRelease-1>", self.e_select_show)
+        self.shows_display.bind("<<TreeviewSelect>>", self.e_select_show)
         self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
 
     
@@ -264,7 +265,7 @@ class PPEditor(object):
         scrollbar.config(command=self.medialists_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
-        self.medialists_display.bind("<ButtonRelease-1>", self.select_medialist)
+        self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
 
 
         # define display of tracks
@@ -275,7 +276,7 @@ class PPEditor(object):
         scrollbar.config(command=self.tracks_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
-        self.tracks_display.bind("<ButtonRelease-1>", self.e_select_track)
+        self.tracks_display.bind("<<TreeviewSelect>>", self.e_select_track)
         self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
         self.tracks_display.bind("<Delete>", self.remove_track)
 
@@ -583,20 +584,47 @@ class PPEditor(object):
                 tkMessageBox.showwarning("Add Show","A Show with this name already exists")
                 return            
             copied_show=self.current_showlist.copy(default,name)
-            mediafile=self.add_medialist(name)
+            mediafile=self.add_medialist(name, True)
             if mediafile != '':
                 copied_show['medialist']=mediafile
             self.current_showlist.append(copied_show)
+            # select the show just added
+            index = self.current_showlist.length()-1
             self.save_showlist(self.pp_profile_dir)
+            self.current_showlist.select(index)
             self.refresh_shows_display()
 
             
-    def remove_show(self):
-        if  self.current_showlist is not None and self.current_showlist.length()>0 and self.current_showlist.show_is_selected():
-            if tkMessageBox.askokcancel("Delete Show","Delete Show"):
-                index= self.current_showlist.selected_show_index()
+    def e_remove_show_and_medialist(self, event=None):
+        if self.current_showlist is None:             return
+        if self.current_showlist.length() == 0:       return
+        if not self.current_showlist.show_is_selected(): return
+        showlist = self.current_showlist
+        show = showlist.selected_show()
+        medialist = show['medialist']
+        if medialist == '': medialist = "(none)"
+        msg = "Do you want to delete these?\n  Show: {0}\n  Medialist: {1}".format(show['title'],  medialist)
+        if tkMessageBox.askokcancel("Delete Show and Medialist", msg):
+            self.remove_medialist()
+            self.remove_show(showlist.selected_show_index())
+            
+    def e_remove_show(self, event=None):
+        if self.current_showlist is None:             return
+        if self.current_showlist.length() == 0:       return
+        if not self.current_showlist.show_is_selected(): return
+        showlist = self.current_showlist
+        show = showlist.selected_show()
+        msg = "Do you want to delete this?\n  Show: {0}".format(show['title'])
+        if tkMessageBox.askokcancel("Delete Show", msg):
+            self.remove_show(showlist.selected_show_index())
+            
+    def remove_show(self, index):
                 self.current_showlist.remove(index)
                 self.save_showlist(self.pp_profile_dir)
+                # highlight the next (or previous item on the list)
+                if index >= self.current_showlist.length(): 
+                    index = self.current_showlist.length() - 1
+                self.current_showlist.select(index)
                 self.refresh_shows_display()
 
     def show_refs(self):
@@ -615,23 +643,20 @@ class PPEditor(object):
 
     def highlight_shows_display(self):
         if self.current_showlist.show_is_selected():
-            self.shows_display.itemconfig(self.current_showlist.selected_show_index(),fg='red')            
-            self.shows_display.see(self.current_showlist.selected_show_index())
+            index = self.current_showlist.selected_show_index()
+            self.shows_display.select(index)
 
             
     def e_select_show(self,event):
         if self.current_showlist is not None and self.current_showlist.length()>0:
             mouse_item_index=int(event.widget.curselection()[0])
             self.current_showlist.select(mouse_item_index)
-            self.highlight_shows_display()
             selected = self.current_showlist.selected_show()
-            self.medialists_display.selection_clear()
             if 'medialist' in selected:
                 medialist = selected['medialist']
-                if self.medialists_display <> None:
-                        self.medialists_display.select(medialist)
-                self.select_medialist(None)
+                self.medialists_display.select(medialist)
             else:
+                self.medialists_display.selection_clear()
                 self.current_medialists_index = -1
                 self.current_medialist = None
                 self.refresh_tracks_display()
@@ -670,13 +695,28 @@ class PPEditor(object):
             if this_file.endswith(".json") and this_file not in ('pp_showlist.json','schedule.json'):
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
-        for index in range (len(self.medialists)):
-            self.medialists_display.insert(END, self.medialists[index])
+        for item in self.medialists:
+            self.medialists_display.insert(END, item, iid=item)
         self.current_medialists_index=-1
         self.current_medialist=None
 
+    def open_medialist(self, name):
+        medialist = MediaList('ordered')
+        if not medialist.open_list(self.pp_profile_dir + os.sep + name, self.current_showlist.sissue()):
+            self.mon.err(self,"The medialist and the showlist are different versions: \n  Medialist: " + name)
+            self.app_exit()        
+        return medialist
 
-    def add_medialist(self,name=None):
+    def e_add_medialist(self, event=None):
+        d = Edit1Dialog(self.root,"Add Medialist", "File", "")
+        if d.result:
+            name=str(d.result)
+            if name=="":
+                tkMessageBox.showwarning("Add Medialist", "The name cannot be blank.")
+                return ''
+            self.add_medialist(name, False)
+
+    def add_medialist(self, name, link_to_show):
         if name is None:
             d = Edit1Dialog(self.root,"Add Medialist","File", "")
             if d.result  is  None:
@@ -691,8 +731,14 @@ class PPEditor(object):
                 
         path = self.pp_profile_dir + os.sep + name
         if os.path.exists(path) is  True:
-            tkMessageBox.showwarning("Add medialist","Medialist file exists\n(%s)" % path)
-            return ''
+            msg = "The medialist file already exists:\n  {0}".format(path)
+            if link_to_show:
+                msg += "\n\nDo you want the show to use it anyway?"
+                if tkMessageBox.askyesno("Add Medialist", msg):
+                    return name
+                else: return ''
+            else:
+                tkMessageBox.showwarning("Add Medialist", msg + "\n\n  Aborting")
         nfile = open(path,'wb')
         nfile.write("{")
         nfile.write("\"issue\":  \""+self.editor_issue+"\",\n")
@@ -703,11 +749,31 @@ class PPEditor(object):
         # append it to the list
         self.medialists.append(copy.deepcopy(name))
         # add title to medialists display
-        self.medialists_display.insert(END, name)  
+        item = self.medialists_display.insert(END, name, iid=name)
         # and set it as the selected medialist
-        self.refresh_medialists_display()
+        self.medialists_display.select(name)
+        #self.refresh_medialists_display()
         return name
 
+    def e_remove_medialist(self, event=None):
+        if self.current_medialist<>None:
+            name = self.medialists[self.current_medialists_index]
+            if tkMessageBox.askokcancel("Delete Medialist","Do you want to delete this?\n  Medialist: " + name):
+                self.remove_medialist()
+
+    def remove_medialist(self):
+        name = self.medialists[self.current_medialists_index]
+        os.remove(self.pp_profile_dir+ os.sep + name)
+        self.medialists.remove(name)
+        #self.open_medialists(self.pp_profile_dir)
+        # highlight the next (or previous item on the list)
+        index = self.current_medialists_index
+        if index >= len(self.medialists): 
+            index = len(self.medialists) - 1
+        self.current_medialists_index = index
+        self.current_medialist = self.open_medialist(self.medialists[index])
+        self.refresh_medialists_display()
+        self.refresh_tracks_display()
 
     def copy_medialist(self,to_file=None):
         if self.current_medialist is not None:
@@ -764,8 +830,10 @@ class PPEditor(object):
                 self.refresh_medialists_display()
                 self.refresh_tracks_display()
 
+    def e_select_medialist(self, event=None):
+        self.select_medialist()
 
-    def select_medialist(self,event):
+    def select_medialist(self,event=None):
         """
         user clicks on a medialst in a profile so try and select it.
         """
@@ -774,22 +842,24 @@ class PPEditor(object):
         # needs forgiving int for possible tkinter upgrade
         if len(self.medialists)>0:
             if len(self.medialists_display.curselection()) > 0:
-                self.current_medialists_index=int(self.medialists_display.curselection()[0])
-                self.current_medialist=MediaList('ordered')
-                if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
-                    self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
-                    self.app_exit()        
+                index = self.medialists_display.curselection()[0]
+                #item = self.medialists_display.focus()
+                self.current_medialists_index=index
+                self.current_medialist = self.open_medialist(self.medialists[index])
                 self.refresh_tracks_display()
-                self.refresh_medialists_display()
-
+                #self.refresh_medialists_display()
 
     def refresh_medialists_display(self):
-        self.medialists_display.delete(0,len(self.medialists))
-        for index in range (len(self.medialists)):
-            self.medialists_display.insert(END, self.medialists[index])
+        self.medialists_display.delete(0,END)
+        for item in self.medialists:
+            self.medialists_display.insert(END, item, iid=item)
+        self.highlight_medialist_display()
+
+    def highlight_medialist_display(self):
         if self.current_medialist is not None:
-            self.medialists_display.itemconfig(self.current_medialists_index,fg='red')
-            self.medialists_display.see(self.current_medialists_index)
+            index = self.current_medialists_index
+            self.medialists_display.select(index)
+            
 
     def save_medialist(self):
         basefile=self.medialists[self.current_medialists_index]
@@ -823,9 +893,10 @@ class PPEditor(object):
         self.validate_profile()
 
     def highlight_tracks_display(self):
-            if self.current_medialist.track_is_selected():
-                self.tracks_display.itemconfig(self.current_medialist.selected_track_index(),fg='red')            
-                self.tracks_display.see(self.current_medialist.selected_track_index())
+        #if self.current_medialist.track_is_selected():
+        #    self.tracks_display.itemconfig(self.current_medialist.selected_track_index(),fg='red')            
+        #    self.tracks_display.see(self.current_medialist.selected_track_index())
+        pass
             
     def e_select_track(self,event):
         if self.current_medialist is not None and self.current_medialist.length()>0:

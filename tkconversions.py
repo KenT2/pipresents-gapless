@@ -46,7 +46,7 @@ class ttkListbox(ttk.Treeview):
 		children = self.get_children()
 		copy = children[:]
 		if end == END:
-			end = len(self.get_children()) - 1
+			end = len(copy)
 		for index in range(start, end):
 			item = copy[index]
 			ttk.Treeview.delete(self,item)
