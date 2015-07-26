@@ -154,7 +154,7 @@ class ttkListbox(ttk.Treeview):
         ttk.Treeview.pack(self, **kwargs)
 
     def insert(self, pos, text, **kwargs):
-        ttk.Treeview.insert(self, '', pos, text=text)
+        ttk.Treeview.insert(self, '', pos, text=text, **kwargs)
 
     def size(self):
         children = ttk.Treeview.get_children(self)

@@ -260,8 +260,13 @@ class PPEditor(object):
         scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
                                     width = 40, yscrollcommand=scrollbar.set,
-                                    on_item_popup=medialistmenu, off_item_popup=medialistmenu_add)
+                                    on_item_popup=medialistmenu, off_item_popup=medialistmenu_add,
+                                    columns=('show'))
         scrollbar.config(command=self.medialists_display.yview)
+        self.medialists_display.column('#0')
+        self.medialists_display.heading('#0', text="Filename")
+        self.medialists_display.column('show', width=75, stretch=False)
+        self.medialists_display.heading('show', text="Show")
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
@@ -344,6 +349,7 @@ class PPEditor(object):
 
     def init(self):
         self.options.read()
+        self.set_window_geometry()
 
         # get home path from -o option (kept separate from self.options.pp_home_dir)
         # or fall back to self.options.pp_home_dir
@@ -379,7 +385,6 @@ class PPEditor(object):
         # if we were given a profile on the command line, open it
         if self.command_options['profile'] != '':
             self.open_profile(self.pp_profile_dir)
-        self.set_window_geometry()
 
 
     # ***************************************
@@ -720,7 +725,8 @@ class PPEditor(object):
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
         for item in self.medialists:
-            self.medialists_display.insert(END, item, iid=item)
+            showname = self.get_showname_for_medialist(item)
+            self.medialists_display.insert(END, item, iid=item, values=(showname))
         self.current_medialists_index=-1
         self.current_medialist=None
 
@@ -773,7 +779,8 @@ class PPEditor(object):
         # append it to the list
         self.medialists.append(copy.deepcopy(name))
         # add title to medialists display
-        item = self.medialists_display.insert(END, name, iid=name)
+        showname = self.get_showname_for_medialist(item)
+        self.medialists_display.insert(END, item, iid=item, values=(showname))
         # and set it as the selected medialist
         self.medialists_display.select(name)
         #self.refresh_medialists_display()
@@ -875,8 +882,19 @@ class PPEditor(object):
     def refresh_medialists_display(self):
         self.medialists_display.delete(0,END)
         for item in self.medialists:
-            self.medialists_display.insert(END, item, iid=item)
+            showname = self.get_showname_for_medialist(item)
+            self.medialists_display.insert(END, item, iid=item, values=(showname))
         self.highlight_medialist_display()
+
+    def get_showname_for_medialist(self, medialist):
+        showname = ''
+        if self.current_showlist is not None and self.current_showlist.length() > 0:
+            for show in self.current_showlist.shows():
+                if 'medialist' in show:
+                    filename = show['medialist']
+                    if filename == medialist:
+                        showname = show['show-ref']
+        return showname
 
     def highlight_medialist_display(self):
         ctl = self.medialists_display

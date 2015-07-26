@@ -2,6 +2,7 @@ import json
 import copy
 import string
 import random
+import os
 from pp_utils import Monitor
 
 
@@ -19,6 +20,7 @@ class MediaList(object):
         self.clear()
         self.mon=Monitor()
         self.sequence=sequence
+        self.filename = None
         
  # Functions for the editor dealing with complete list
 
@@ -269,6 +271,7 @@ class MediaList(object):
         else:
             self.issue="1.0"
         if self.issue==showlist_issue:
+            self.filename = os.path.basename(filename)
             self._num_tracks=len(self._tracks)
             self._selected_track_index=-1
             return True
@@ -297,6 +300,7 @@ class MediaList(object):
                 json.dump(dic,ofile,sort_keys=True,indent=1)
                 ofile.close()
                 self.mon.log(self,"Saved medialist "+ filename)
+                self.filename = os.path.basename(filename)
                 break
             except IOError:
                 self.mon.err(self,"failed to save medialist, trying again " + str(tries))
