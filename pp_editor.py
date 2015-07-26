@@ -1285,7 +1285,8 @@ class Options(object):
         config.set('config', 'home', self.defaults['home'])
         config.set('config','offset','')
         config.set('config', 'media', self.defaults['media'])
-        config.set('config', 'autovalidate', self.defaults['autovalidate'])            config.set('config','offset','')
+        config.set('config', 'autovalidate', self.defaults['autovalidate'])
+        config.set('config','offset','')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
 
