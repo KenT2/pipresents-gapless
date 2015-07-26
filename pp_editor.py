@@ -174,7 +174,7 @@ class PPEditor(object):
          
         self.root.config(menu=menubar)
 
-# define frames
+        # define frames
 
         root_frame=ttkFrame(self.root)
         root_frame.pack(fill=BOTH, expand=True)
@@ -244,7 +244,6 @@ class PPEditor(object):
                               fg='black', command = self.remove_track, bg="light grey")
         add_button.pack(side=TOP, pady=20)
 
-
         # define display of showlist 
         scrollbar = ttk.Scrollbar(shows_frame, orient=tk.VERTICAL)
         self.shows_display = ttkListbox(shows_frame, selectmode=SINGLE, height=7,
@@ -255,7 +254,6 @@ class PPEditor(object):
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
         self.shows_display.bind("<<TreeviewSelect>>", self.e_select_show)
         self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
-
     
         # define display of medialists
         scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
@@ -266,7 +264,6 @@ class PPEditor(object):
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
-
 
         # define display of tracks
         scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
@@ -317,7 +314,6 @@ class PPEditor(object):
         self.root.destroy()
         exit()
 
-
     def init(self):
         self.options.read()
 
@@ -366,11 +362,8 @@ class PPEditor(object):
         eo = OptionsDialog(self.root, self.options.options_file, 'Edit Options')
         if eo.result is True: self.init()
 
-
-
     def show_help (self):
         tkMessageBox.showinfo("Help","Read 'manual.pdf'")
-  
 
     def about (self):
         tkMessageBox.showinfo("About","Editor for Pi Presents Profiles\n"
@@ -425,9 +418,8 @@ class PPEditor(object):
         if self.osc_config.read(self.osc_config_file) is False:
             return
         os.rename(self.osc_config_file,self.osc_config_file+'.bak')
-        
 
-    
+
     # **************
     # PROFILES
     # **************
@@ -441,7 +433,6 @@ class PPEditor(object):
         # dir_path="C:\Users\Ken\pp_home\pp_profiles\\ttt"
         if len(dir_path)>0:
             self.open_profile(dir_path)
-        
 
     def open_profile(self,dir_path):
         showlist_file = dir_path + os.sep + "pp_showlist.json"
@@ -456,7 +447,6 @@ class PPEditor(object):
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
         self.osc_config_file=self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg'
-
 
     def new_profile(self,profile):
         d = Edit1Dialog(self.root,"New Profile","Name", "")
@@ -473,8 +463,6 @@ class PPEditor(object):
         shutil.copytree(profile, to, symlinks=False, ignore=None)
         self.open_profile(to)
 
-
-        
     def new_exhibit_profile(self):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit_1p3'
         self.new_profile(profile)
@@ -519,6 +507,7 @@ class PPEditor(object):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow_1p3'
         self.new_profile(profile)
 
+
     # ***************************************
     # Shows
     # ***************************************
@@ -540,12 +529,11 @@ class PPEditor(object):
         self.refresh_shows_display()
         return True
 
-
     def save_showlist(self,showlist_dir):
         if self.current_showlist is not None:
             showlist_file = showlist_dir + os.sep + "pp_showlist.json"
             self.current_showlist.save_list(showlist_file)
-            
+
     def add_mediashow(self):
         self.add_show(PPdefinitions.new_shows['mediashow'])
 
@@ -679,7 +667,6 @@ class PPEditor(object):
             if d.result  is  True:
                 self.save_showlist(self.pp_profile_dir)
                 self.refresh_shows_display()
-
  
 
     # ***************************************
@@ -688,7 +675,7 @@ class PPEditor(object):
 
     def open_medialists(self,profile_dir):
         self.medialists = []
-        files = os.listdir(dir)
+        files = os.listdir(profile_dir)
         if files: files.sort()
         for this_file in files:
             if this_file.endswith(".json") and this_file not in ('pp_showlist.json','schedule.json'):
@@ -866,7 +853,6 @@ class PPEditor(object):
         # print type(basefile)
         medialist_file = self.pp_profile_dir+ os.sep + basefile
         self.current_medialist.save_list(medialist_file)
-
   
           
     # ***************************************
@@ -1040,7 +1026,6 @@ class PPEditor(object):
             self.mon.err(self,afile + " - cannot determine track type, use menu track>new")
 
 
-
     # *********************************************
     # UPDATE PROFILE
     # **********************************************
@@ -1075,7 +1060,6 @@ class PPEditor(object):
 
         self.update_medialists()   # medialists and their tracks
         self.update_shows()         #shows in showlist, also creates menu tracks for 1.2>1.3
-        
 
     def update_shows(self):
         # open showlist into a list of dictionaries
@@ -1133,7 +1117,6 @@ class PPEditor(object):
         json.dump(dic,ofile,sort_keys=True,indent=1)
         return True
 
-
     def transfer_show_params(self,show,tracks,track_ref,fields):
         # find the menu track in medialist
         for index,track in enumerate(tracks):
@@ -1148,12 +1131,9 @@ class PPEditor(object):
             tracks[index][field]=show[field]
             # print show[field], tracks[index][field]
             pass
-            
-        
-                                          
 
     def update_medialists(self):
-         # UPDATE MEDIALISTS AND THEIR TRACKS
+        # UPDATE MEDIALISTS AND THEIR TRACKS
         files = os.listdir(self.pp_profile_dir)
         if files: files.sort()
         for this_file in files:
@@ -1167,8 +1147,6 @@ class PPEditor(object):
                 dic={'issue':self.editor_issue,'tracks':replacement_tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + this_file, "wb")
                 json.dump(dic,ofile,sort_keys=True,indent=1)       
-
-
 
     def update_tracks(self,old_tracks):
         # get correct spec from type of field
@@ -1192,7 +1170,6 @@ class PPEditor(object):
                 replacement_tracks.append(copy.deepcopy(replacement_track))
         return replacement_tracks
 
-
     def update_shows_in_showlist(self,old_shows):
         # get correct spec from type of field
         replacement_shows=[]
@@ -1210,7 +1187,6 @@ class PPEditor(object):
             replacement_show.update(left_overs)
             replacement_shows.append(copy.deepcopy(replacement_show))
         return replacement_shows                
-            
 
  
 # *************************************
@@ -1238,9 +1214,6 @@ class Edit1Dialog(ttkSimpleDialog.Dialog):
     def apply(self):
         self.result= self.field1.get()
         return self.result
-
-
-
 
 
 # ***************************************
@@ -1289,7 +1262,6 @@ class Options(object):
         config.set('config','offset','')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
-
 
 
 # *************************************
