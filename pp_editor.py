@@ -125,7 +125,6 @@ class PPEditor(object):
         medialistmenu = menubar.add_submenu('MediaList', 0, accelerator='Alt-m')
         medialistmenu.add_command('Add',         0, self.e_add_medialist)
         medialistmenu.add_command('Delete',      0, self.e_remove_medialist)
-        medialistmenu.add_command('Copy To...',  0, self.copy_medialist)
       
         trackmenu = menubar.add_submenu('Track', 0, accelerator='Alt-t')
         trackmenu.add_command('Delete',          0, self.remove_track)
@@ -753,7 +752,7 @@ class PPEditor(object):
         self.refresh_medialists_display()
         self.refresh_tracks_display()
 
-    def copy_medialist(self,to_file=None, event=None):
+    def copy_medialist(self,to_file=None):
         if self.current_medialist is not None:
             #from_file= self.current_medialist 
             from_file= self.medialists[self.current_medialists_index]
