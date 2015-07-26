@@ -688,7 +688,9 @@ class PPEditor(object):
 
     def open_medialists(self,profile_dir):
         self.medialists = []
-        for this_file in os.listdir(profile_dir):
+        files = os.listdir(dir)
+        if files: files.sort()
+        for this_file in files:
             if this_file.endswith(".json") and this_file not in ('pp_showlist.json','schedule.json'):
                 self.medialists = self.medialists + [this_file]
         self.medialists_display.delete(0,self.medialists_display.size())
@@ -1001,7 +1003,9 @@ class PPEditor(object):
             image_list=image_spec[1:]
             for ext in image_list:
                 exts.append(copy.deepcopy(ext))
-        for this_file in os.listdir(directory):
+        files = os.listdir(directory)
+        if files: files.sort()
+        for this_file in files:
             (root_file,ext_file)= os.path.splitext(this_file)
             if ext_file.lower() in exts:
                 file_path=directory+os.sep+this_file
@@ -1010,7 +1014,6 @@ class PPEditor(object):
                 # print "file path after ", file_path
                 self.add_track(file_path)
         self.save_medialist()
-
 
     def add_track(self,afile):
         relpath = os.path.relpath(afile,self.pp_home_dir)
@@ -1044,7 +1047,9 @@ class PPEditor(object):
 
     def update_all(self):
         self.init()
-        for profile_file in os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset):
+        files = os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset)
+        if files: files.sort()
+        for profile_file in files:
             # self.mon.log (self,"Updating "+profile_file)
             self.pp_profile_dir = self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset + os.sep + profile_file
             if not os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
@@ -1149,7 +1154,9 @@ class PPEditor(object):
 
     def update_medialists(self):
          # UPDATE MEDIALISTS AND THEIR TRACKS
-        for this_file in os.listdir(self.pp_profile_dir):
+        files = os.listdir(self.pp_profile_dir)
+        if files: files.sort()
+        for this_file in files:
             if this_file.endswith(".json") and this_file not in  ('pp_showlist.json','schedule.json'):
                 self.mon.log (self,"Updating medialist " + this_file)
                 # open a medialist and update its tracks

@@ -51,7 +51,9 @@ class Validator(object):
 
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         v_media_lists = []
-        for medialist_file in os.listdir(pp_profile):
+        files = os.listdir(pp_profile)
+        if files: files.sort()
+        for medialist_file in files:
             if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
                 self.result.display('f',"Invalid medialist in profile: "+ medialist_file)
                 self.result.display('t', "Validation Aborted")
