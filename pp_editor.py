@@ -254,6 +254,8 @@ class PPEditor(object):
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
         self.shows_display.bind("<<TreeviewSelect>>", self.e_select_show)
         self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
+        self.shows_display.bind("<space>", self.m_edit_show)
+        self.shows_display.bind("<Delete>", self.e_remove_show_and_medialist)
     
         # define display of medialists
         scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
@@ -264,6 +266,7 @@ class PPEditor(object):
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
+        self.medialists_display.bind("<Delete>", self.e_remove_medialist)
 
         # define display of tracks
         scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
@@ -275,7 +278,10 @@ class PPEditor(object):
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
         self.tracks_display.bind("<<TreeviewSelect>>", self.e_select_track)
         self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
+        self.tracks_display.bind("<space>", self.m_edit_track)
         self.tracks_display.bind("<Delete>", self.remove_track)
+        self.tracks_display.bind("<Control-Up>", self.track_OnCtrlUp)
+        self.tracks_display.bind("<Control-Down>", self.track_OnCtrlDown)
 
         # define window sizer
         sz = ttk.Sizegrip(root_frame)
@@ -671,6 +677,7 @@ class PPEditor(object):
             if d.result  is  True:
                 self.save_showlist(self.pp_profile_dir)
                 self.refresh_shows_display()
+            self.shows_display.focus_set() # retain focus on the list after editing
  
 
     # ***************************************
@@ -917,14 +924,23 @@ class PPEditor(object):
             if d.result  is  True:
                 self.save_medialist()
             self.highlight_tracks_display()
+            self.tracks_display.focus_set() # retain focus on the list after editing
 
-    def move_track_up(self):
+    def track_OnCtrlUp(self, event=None):
+        self.move_track_up()
+        return "break"
+
+    def track_OnCtrlDown(self, event=None):
+        self.move_track_down()
+        return "break" # prevent widget from processing another Down event
+
+    def move_track_up(self, event=None):
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
             self.current_medialist.move_up()
             self.refresh_tracks_display()
             self.save_medialist()
 
-    def move_track_down(self):
+    def move_track_down(self, event=None):
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
             self.current_medialist.move_down()
             self.refresh_tracks_display()
