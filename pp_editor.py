@@ -74,9 +74,7 @@ class PPEditor(object):
 
         style = ttkStyle()
         style.theme_use('clam')
-        # self.root.configure(background='grey')
 
-        #self.root.resizable(False,False)
         self.root.resizable(True,True)
 
         # define response to main window closing
@@ -89,89 +87,70 @@ class PPEditor(object):
 
 
         # define menu
-        menubar = Menu(self.root)
+        menubar = ttkMenu(self.root)
+        self.root['menu'] = menubar # needed for keyboard navigation to work properly
 
-        profilemenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        profilemenu.add_command(label='Open', command = self.open_existing_profile)
-        profilemenu.add_command(label='Validate', command = self.e_validate_profile)
-        menubar.add_cascade(label='Profile', menu = profilemenu)
+        profilemenu = menubar.add_submenu('Profile', 0, accelerator='Alt-p')
+        profilemenu.add_command('Open',           0, self.open_existing_profile)
+        profilemenu.add_command('Validate',       0, self.e_validate_profile)
 
-        ptypemenu = Menu(profilemenu, tearoff=0, bg="grey", fg="black")
-        ptypemenu.add_command(label='Exhibit', command = self.new_exhibit_profile)
-        ptypemenu.add_command(label='Media Show', command = self.new_mediashow_profile)
-        ptypemenu.add_command(label='Art Media Show', command = self.new_artmediashow_profile)
-        ptypemenu.add_command(label='Menu', command = self.new_menu_profile)
-        ptypemenu.add_command(label='Presentation', command = self.new_presentation_profile)
-        ptypemenu.add_command(label='Interactive', command = self.new_interactive_profile)
-        ptypemenu.add_command(label='Live Show', command = self.new_liveshow_profile)
-        ptypemenu.add_command(label='Art Live Show', command = self.new_artliveshow_profile)
-        ptypemenu.add_command(label='RadioButton Show', command = self.new_radiobuttonshow_profile)
-        ptypemenu.add_command(label='Hyperlink Show', command = self.new_hyperlinkshow_profile)
-        ptypemenu.add_command(label='Blank', command = self.new_blank_profile)
-        profilemenu.add_cascade(label='New from Template', menu = ptypemenu)
+        ptypemenu = profilemenu.add_submenu('New from Template', 0)
+        ptypemenu.add_command('Exhibit',          0, self.new_exhibit_profile)
+        ptypemenu.add_command('Media Show',       0, self.new_mediashow_profile)
+        ptypemenu.add_command('Art Media Show',   0, self.new_artmediashow_profile)
+        ptypemenu.add_command('Menu',             1, self.new_menu_profile)
+        ptypemenu.add_command('Presentation',     0, self.new_presentation_profile)
+        ptypemenu.add_command('Interactive',      0, self.new_interactive_profile)
+        ptypemenu.add_command('Live Show',        0, self.new_liveshow_profile)
+        ptypemenu.add_command('Art Live Show',    2, self.new_artliveshow_profile)
+        ptypemenu.add_command('RadioButton Show', 0, self.new_radiobuttonshow_profile)
+        ptypemenu.add_command('Hyperlink Show',   0, self.new_hyperlinkshow_profile)
+        ptypemenu.add_command('Blank',            0, self.new_blank_profile)
         
-        showmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        showmenu.add_command(label='Delete (and medialist)', command = self.e_remove_show_and_medialist)
-        showmenu.add_command(label='Delete (leave medialist)', command = self.e_remove_show)
-        showmenu.add_command(label='Edit', command = self.m_edit_show)
-        showmenu.add_command(label='Copy To', command = self.copy_show)
-        menubar.add_cascade(label='Show', menu = showmenu)
+        showmenu = menubar.add_submenu('Show', 0, accelerator='Alt-s')
+        showmenu.add_command('Delete (and medialist)',   0, self.e_remove_show_and_medialist)
+        showmenu.add_command('Delete (leave medialist)', 2, self.e_remove_show)
+        showmenu.add_command('Edit',                     0, self.m_edit_show)
+        showmenu.add_command('Copy To',                  0, self.copy_show)
 
-        stypemenu = Menu(showmenu, tearoff=0, bg="grey", fg="black")
-        stypemenu.add_command(label='Menu', command = self.add_menushow)
-        stypemenu.add_command(label='MediaShow', command = self.add_mediashow)
-        stypemenu.add_command(label='LiveShow', command = self.add_liveshow)
-        stypemenu.add_command(label='HyperlinkShow', command = self.add_hyperlinkshow)
-        stypemenu.add_command(label='RadioButtonShow', command = self.add_radiobuttonshow)
-        stypemenu.add_command(label='ArtMediaShow', command = self.add_artmediashow)
-        stypemenu.add_command(label='ArtLiveShow', command = self.add_artliveshow)
-        showmenu.add_cascade(label='Add', menu = stypemenu)
+        stypemenu = showmenu.add_submenu('Add', 0)
+        stypemenu.add_command('Media Show',      0, self.add_mediashow)
+        stypemenu.add_command('Art Media Show',  0, self.add_artmediashow)
+        stypemenu.add_command('Menu',            1, self.add_menushow)
+        stypemenu.add_command('Live Show',       0, self.add_liveshow)
+        stypemenu.add_command('Art Live Show',   2, self.add_artliveshow)
+        stypemenu.add_command('Hyperlink Show',  0, self.add_hyperlinkshow)
+        stypemenu.add_command('RadioButton Show',0, self.add_radiobuttonshow)
         
-        medialistmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='MediaList', menu = medialistmenu)
-        medialistmenu.add_command(label='Add', command = self.e_add_medialist)
-        medialistmenu.add_command(label='Delete', command = self.e_remove_medialist)
-        medialistmenu.add_command(label='Copy To', command = self.copy_medialist)
+        medialistmenu = menubar.add_submenu('MediaList', 0, accelerator='Alt-m')
+        medialistmenu.add_command('Add',         0, self.e_add_medialist)
+        medialistmenu.add_command('Delete',      0, self.e_remove_medialist)
+        medialistmenu.add_command('Copy To...',  0, self.copy_medialist)
       
-        trackmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        trackmenu.add_command(label='Delete', command = self.remove_track)
-        trackmenu.add_command(label='Edit', command = self.m_edit_track)
-        trackmenu.add_command(label='Add from Dir', command = self.add_tracks_from_dir)
-        trackmenu.add_command(label='Add from File', command = self.add_track_from_file)
+        trackmenu = menubar.add_submenu('Track', 0, accelerator='Alt-t')
+        trackmenu.add_command('Delete',          0, self.remove_track)
+        trackmenu.add_command('Edit',            0, self.m_edit_track)
+        trackmenu.add_command('Add from Dir',    9, self.add_tracks_from_dir)
+        trackmenu.add_command('Add from File',   0, self.add_track_from_file)
 
+        typemenu = trackmenu.add_submenu('New', 0)
+        typemenu.add_command('Video',            0, self.new_video_track)
+        typemenu.add_command('Audio',            0, self.new_audio_track)
+        typemenu.add_command('Image',            0, self.new_image_track)
+        typemenu.add_command('Web',              0, self.new_web_track)
+        typemenu.add_command('Message',          0, self.new_message_track)
+        typemenu.add_command('Show',             0, self.new_show_track)
+        typemenu.add_command('Menu Background',  1, self.new_menu_track)
 
-        menubar.add_cascade(label='Track', menu = trackmenu)
-
-        typemenu = Menu(trackmenu, tearoff=0, bg="grey", fg="black")
-        typemenu.add_command(label='Video', command = self.new_video_track)
-        typemenu.add_command(label='Audio', command = self.new_audio_track)
-        typemenu.add_command(label='Image', command = self.new_image_track)
-        typemenu.add_command(label='Web', command = self.new_web_track)
-        typemenu.add_command(label='Message', command = self.new_message_track)
-        typemenu.add_command(label='Show', command = self.new_show_track)
-        typemenu.add_command(label='Menu Track', command = self.new_menu_track)
-        trackmenu.add_cascade(label='New', menu = typemenu)
-
-        oscmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='OSC', menu = oscmenu)
-        oscmenu.add_command(label='Create OSC configuration', command = self.create_osc)
-        oscmenu.add_command(label='Edit OSC Configuration', command = self.edit_osc)
-        oscmenu.add_command(label='Delete OSC Configuration', command = self.delete_osc)
-
-
-        toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='Tools', menu = toolsmenu)
-        toolsmenu.add_command(label='Update All', command = self.update_all)
+        toolsmenu = menubar.add_submenu('Tools', 3, accelerator='Alt-l')
+        toolsmenu.add_command('Update All',      0, self.update_all)
         
-        optionsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='Options', menu = optionsmenu)
-        optionsmenu.add_command(label='Edit', command = self.edit_options)
+        optionsmenu = menubar.add_submenu('Options', 0, accelerator='Alt-o')
+        optionsmenu.add_command('Edit',          0, self.edit_options)
 
-        helpmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='Help', menu = helpmenu)
-        helpmenu.add_command(label='Help', command = self.show_help)
-        helpmenu.add_command(label='About', command = self.about)
-         
+        helpmenu = menubar.add_submenu('Help', 0, accelerator='Alt-h')
+        helpmenu.add_command('Help',             0, self.show_help)
+        helpmenu.add_command('About',            0, self.about)         
         self.root.config(menu=menubar)
 
         # define frames
@@ -222,6 +201,8 @@ class PPEditor(object):
         medialists_frame=ttkFrame(medialist_tab, padding=0)
         medialists_frame.pack(side=LEFT, fill=BOTH, expand=True)
         
+        self.root.config(menu=menubar)
+
         # define buttons 
 
         add_button = ttkButton(shows_tab, width = 5, height = 2, text='Edit',
@@ -302,11 +283,11 @@ class PPEditor(object):
 
         self.root.bind("<Escape>", self.escape_keypressed)
         
-        # initialise variables      
+        # initialise variables
         self.init()
         
         # and enter Tkinter event loop
-        self.root.mainloop()        
+        self.root.mainloop()
 
 
     # ***************************************
@@ -363,15 +344,15 @@ class PPEditor(object):
     # MISCELLANEOUS
     # ***************************************
 
-    def edit_options(self):
+    def edit_options(self, event=None):
         """edit the options then read them from file"""
         eo = OptionsDialog(self.root, self.options.options_file, 'Edit Options')
         if eo.result is True: self.init()
 
-    def show_help (self):
+    def show_help (self, event=None):
         tkMessageBox.showinfo("Help","Read 'manual.pdf'")
 
-    def about (self):
+    def about (self, event=None):
         tkMessageBox.showinfo("About","Editor for Pi Presents Profiles\n"
                               +"For profile version: " + self.editor_issue + "\nAuthor: Ken Thompson"
                               +"\nWebsite: http://pipresents.wordpress.com/")
@@ -430,7 +411,7 @@ class PPEditor(object):
     # PROFILES
     # **************
 
-    def open_existing_profile(self):
+    def open_existing_profile(self, event=None):
         initial_dir=self.pp_home_dir+os.sep+"pp_profiles"+self.pp_profiles_offset
         if os.path.exists(initial_dir) is False:
             self.mon.err(self,"Profiles directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
@@ -469,47 +450,47 @@ class PPEditor(object):
         shutil.copytree(profile, to, symlinks=False, ignore=None)
         self.open_profile(to)
 
-    def new_exhibit_profile(self):
+    def new_exhibit_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_exhibit_1p3'
         self.new_profile(profile)
 
-    def new_interactive_profile(self):
+    def new_interactive_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_interactive_1p3'
         self.new_profile(profile)
 
-    def new_menu_profile(self):
+    def new_menu_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_menu_1p3'
         self.new_profile(profile)
 
-    def new_presentation_profile(self):
+    def new_presentation_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_presentation_1p3'
         self.new_profile(profile)
 
-    def new_blank_profile(self):
+    def new_blank_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep +"ppt_blank_1p3"
         self.new_profile(profile)
 
-    def new_mediashow_profile(self):
+    def new_mediashow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_mediashow_1p3'
         self.new_profile(profile)
         
-    def new_liveshow_profile(self):
+    def new_liveshow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_liveshow_1p3'
         self.new_profile(profile)
 
-    def new_artmediashow_profile(self):
+    def new_artmediashow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_artmediashow_1p3'
         self.new_profile(profile)
         
-    def new_artliveshow_profile(self):
+    def new_artliveshow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_artliveshow_1p3'
         self.new_profile(profile)
 
-    def new_radiobuttonshow_profile(self):
+    def new_radiobuttonshow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_radiobuttonshow_1p3'
         self.new_profile(profile)
 
-    def new_hyperlinkshow_profile(self):
+    def new_hyperlinkshow_profile(self, event=None):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow_1p3'
         self.new_profile(profile)
 
@@ -540,25 +521,25 @@ class PPEditor(object):
             showlist_file = showlist_dir + os.sep + "pp_showlist.json"
             self.current_showlist.save_list(showlist_file)
 
-    def add_mediashow(self):
+    def add_mediashow(self, event=None):
         self.add_show(PPdefinitions.new_shows['mediashow'])
 
-    def add_liveshow(self):
+    def add_liveshow(self, event=None):
         self.add_show(PPdefinitions.new_shows['liveshow'])
 
-    def add_radiobuttonshow(self):
+    def add_radiobuttonshow(self, event=None):
         self.add_show(PPdefinitions.new_shows['radiobuttonshow'])
 
-    def add_hyperlinkshow(self):
+    def add_hyperlinkshow(self, event=None):
         self.add_show(PPdefinitions.new_shows['hyperlinkshow'])
 
-    def add_artliveshow(self):
+    def add_artliveshow(self, event=None):
         self.add_show(PPdefinitions.new_shows['artliveshow'])
 
-    def add_artmediashow(self):
+    def add_artmediashow(self, event=None):
         self.add_show(PPdefinitions.new_shows['artmediashow'])
         
-    def add_menushow(self):
+    def add_menushow(self, event=None):
         self.add_show(PPdefinitions.new_shows['menu'])
 
     def add_start(self):  
@@ -659,7 +640,7 @@ class PPEditor(object):
                 self.current_medialist = None
                 self.refresh_tracks_display()
 
-    def copy_show(self):
+    def copy_show(self, event=None):
         if  self.current_showlist is not None and self.current_showlist.show_is_selected():
             self.add_show(self.current_showlist.selected_show())
         
@@ -772,7 +753,7 @@ class PPEditor(object):
         self.refresh_medialists_display()
         self.refresh_tracks_display()
 
-    def copy_medialist(self,to_file=None):
+    def copy_medialist(self,to_file=None, event=None):
         if self.current_medialist is not None:
             #from_file= self.current_medialist 
             from_file= self.medialists[self.current_medialists_index]
@@ -960,25 +941,25 @@ class PPEditor(object):
             self.refresh_tracks_display()
             self.save_medialist()
 
-    def new_message_track(self):
+    def new_message_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['message'],None)
             
-    def new_video_track(self):
+    def new_video_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['video'],None)
   
-    def new_audio_track(self):
+    def new_audio_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['audio'],None)
 
-    def new_web_track(self):
+    def new_web_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['web'],None)
         
-    def new_image_track(self):
+    def new_image_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['image'],None)
 
-    def new_show_track(self):
+    def new_show_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['show'],None)
 
-    def new_menu_track(self):
+    def new_menu_track(self, event=None):
         self.new_track(PPdefinitions.new_tracks['menu'],None)
  
     def remove_track(self, *args, **kwargs):
@@ -995,7 +976,7 @@ class PPEditor(object):
                 self.current_medialist.select(index)
                 self.refresh_tracks_display()
                 
-    def add_track_from_file(self):
+    def add_track_from_file(self, event=None):
         if self.current_medialist is None: return
         # print "initial directory ", self.options.initial_media_dir
         files_path=tkFileDialog.askopenfilename(initialdir=self.options.initial_media_dir, multiple=True)
@@ -1007,7 +988,7 @@ class PPEditor(object):
             self.add_track(file_path)
         self.save_medialist()
 
-    def add_tracks_from_dir(self):
+    def add_tracks_from_dir(self, event=None):
         if self.current_medialist is None: return
         image_specs =[PPdefinitions.IMAGE_FILES,PPdefinitions.VIDEO_FILES,PPdefinitions.AUDIO_FILES,
                       PPdefinitions.WEB_FILES,('All files', '*')]
@@ -1062,7 +1043,7 @@ class PPEditor(object):
     # UPDATE PROFILE
     # **********************************************
 
-    def update_all(self):
+    def update_all(self, event=None):
         self.init()
         files = os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset)
         if files: files.sort()
@@ -1310,7 +1291,6 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         # init the super class
         ttkSimpleDialog.Dialog.__init__(self, parent, title)
 
-
     def body(self, master):
         self.result=False
         config=ConfigParser.ConfigParser(self.options.defaults)
@@ -1334,7 +1314,7 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         self.e_offset.insert(0,config.get('config','offset',0))
         
         ttk.Label(master, text="").grid(row=40, sticky=W)
-        self.autovalidate = Tkinter.StringVar()
+        self.autovalidate = tk.StringVar()
         self.e_autovalidate = ttk.Checkbutton(master, text="Auto validate", variable = self.autovalidate,
             onvalue="true", offvalue="false")
         self.e_autovalidate.grid(row=41, sticky=W)

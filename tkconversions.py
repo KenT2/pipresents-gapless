@@ -1,7 +1,7 @@
 
 from Tkinter import *
 import ttk
-import Tkinter
+import Tkinter as tk
 import traceback
 import colorsys
 
@@ -34,6 +34,24 @@ class ttkStyle(ttk.Style):
 
     def rgb_to_html(self, r,g,b):
         return "#{0:02x}{1:02x}{2:02x}".format(int(r*255),int(g*255),int(b*255))
+
+class ttkMenu(tk.Menu):
+    def __init__(self, parent, *args, **kwargs):
+      kwargs.pop('tearoff', 0)
+      tk.Menu.__init__(self, parent, *args, tearoff=0, **kwargs)
+
+    def add_submenu(self, label, underline, **kwargs):
+        parent = self
+        accelerator = kwargs.pop('accelerator', None)
+        if not accelerator: accelerator = label[underline].lower()
+        menu = ttkMenu(parent)
+        parent.add_cascade(menu=menu, label=label, underline=underline, accelerator=accelerator)
+        return menu
+
+    def add_command(self, label, underline, command):
+        parent = self
+        #char = label[underline].lower()
+        tk.Menu.add_command(self, label=label, underline=underline, command=command) #, accelerator=char)
 
 class ttkCombobox(ttk.Combobox):
     def __init__(self, parent, **kwargs):
