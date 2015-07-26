@@ -753,7 +753,7 @@ class PPEditor(object):
         return name
 
     def e_remove_medialist(self, event=None):
-        if self.current_medialist<>None:
+        if self.current_medialist is not None:
             name = self.medialists[self.current_medialists_index]
             if tkMessageBox.askokcancel("Delete Medialist","Do you want to delete this?\n  Medialist: " + name):
                 self.remove_medialist()
@@ -983,7 +983,9 @@ class PPEditor(object):
  
     def remove_track(self, *args, **kwargs):
         if  self.current_medialist is not None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
-            if tkMessageBox.askokcancel("Delete Track","Delete Track"):
+            track = self.current_medialist.selected_track()
+            msg = "Do you want to delete this?\n  Track: {0}".format(track['title'])
+            if tkMessageBox.askokcancel("Delete Track", msg):
                 index= self.current_medialist.selected_track_index()
                 self.current_medialist.remove(index)
                 self.save_medialist()
