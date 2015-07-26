@@ -227,8 +227,8 @@ class PPEditor(object):
         # define display of showlist 
         scrollbar = ttk.Scrollbar(shows_frame, orient=tk.VERTICAL)
         self.shows_display = ttkListbox(shows_frame, selectmode=SINGLE, height=7,
-                                     width = 40, bg="white",activestyle=NONE,
-                                     fg="black", yscrollcommand=scrollbar.set)
+                                    width = 40, yscrollcommand=scrollbar.set,
+                                    popup=showmenu)
         scrollbar.config(command=self.shows_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
@@ -240,8 +240,8 @@ class PPEditor(object):
         # define display of medialists
         scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
-                                          width = 40, bg="white",activestyle=NONE,
-                                          fg="black",yscrollcommand=scrollbar.set)
+                                    width = 40, yscrollcommand=scrollbar.set,
+                                    popup=medialistmenu)
         scrollbar.config(command=self.medialists_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
@@ -251,8 +251,8 @@ class PPEditor(object):
         # define display of tracks
         scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
         self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
-                                      width = 40, bg="white",activestyle=NONE,
-                                      fg="black",yscrollcommand=scrollbar.set)
+                                    width = 40, yscrollcommand=scrollbar.set,
+                                    popup=trackmenu)
         scrollbar.config(command=self.tracks_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)

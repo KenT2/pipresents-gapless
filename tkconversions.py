@@ -89,7 +89,26 @@ class ttkListbox(ttk.Treeview):
         kwargs.pop('bg', None)
         kwargs.pop('fg', None)
         kwargs.pop('activestyle', None)
+        # Set a context menu and bind it to right click
+        self.popup = kwargs.pop('popup', None)
         ttk.Treeview.__init__(self, parent, **kwargs)
+        if self.popup:
+            self.bind("<ButtonPress-3><ButtonRelease-3>", self.show_popup)
+
+    def show_popup(self, event):
+        iid = self.identify_row(event.y)
+        if iid:
+            # if the mouse is over an item, select it before showing the context menu.
+            # unfortunately, the item loses focus so its highlight color is the 'not focused'
+            # color. Moving the focusing calls after the popup would fix this, but then
+            # the keyboard isn't focused to the popup menu.
+            self.selection_set(iid)
+            self.focus_set()
+            self.focus(iid)
+            self.popup.tk_popup(event.x_root, event.y_root)
+        else:
+            # if the mouse is not over an item, don't do anything
+            pass        
 
     def delete(self, start, end):
         children = self.get_children()
