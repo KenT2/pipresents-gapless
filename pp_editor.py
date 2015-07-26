@@ -630,10 +630,14 @@ class PPEditor(object):
         if self.options.autovalidate: self.validate_profile()
 
     def highlight_shows_display(self):
+        ctl = self.shows_display
         if self.current_showlist.show_is_selected():
             index = self.current_showlist.selected_show_index()
-            self.shows_display.select(index)
-            self.shows_display.see(index)
+            ctl.select(index)
+        if len(ctl.selection()) > 0:
+            iid = ctl.selection()[0]
+            ctl.focus(iid)
+            ctl.see(ctl.curselection()[0])
 
     def e_select_show(self,event):
         if self.current_showlist is not None and self.current_showlist.length()>0:
@@ -841,10 +845,15 @@ class PPEditor(object):
         self.highlight_medialist_display()
 
     def highlight_medialist_display(self):
+        ctl = self.medialists_display
         if self.current_medialist is not None:
             index = self.current_medialists_index
-            self.medialists_display.select(index)
-            self.medialists_display.see(index)
+            ctl.select(index)
+            ctl.see(index)
+        if len(ctl.selection()) > 0:
+            iid = ctl.selection()[0]
+            ctl.focus(iid)
+            ctl.see(ctl.curselection()[0])
 
     def save_medialist(self):
         basefile=self.medialists[self.current_medialists_index]
@@ -880,10 +889,15 @@ class PPEditor(object):
         if self.options.autovalidate: self.validate_profile()
 
     def highlight_tracks_display(self):
+        ctl = self.tracks_display
         if self.current_medialist.track_is_selected():
             index = self.current_medialist.selected_track_index()
-            self.tracks_display.select(index)
-            self.tracks_display.see(index)
+            ctl.select(index)
+        # ensure we have focus so we can use the keyboard to navigate
+        if len(ctl.selection()) > 0:
+            iid = ctl.selection()[0]
+            ctl.focus(iid)
+            ctl.see(ctl.curselection()[0])
             
     def e_select_track(self,event):
         if self.current_medialist is not None and self.current_medialist.length()>0:
