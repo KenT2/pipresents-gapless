@@ -90,8 +90,9 @@ class PPEditor(object):
         menubar = ttkMenu(self.root)
         self.root['menu'] = menubar # needed for keyboard navigation to work properly
 
+        # Profile menu
         profilemenu = menubar.add_submenu('Profile', 0, accelerator='Alt-p')
-        profilemenu.add_command('Open',           0, self.open_existing_profile)
+        profilemenu.add_command('Open...',        0, self.open_existing_profile)
         profilemenu.add_command('Validate',       0, self.e_validate_profile)
 
         ptypemenu = profilemenu.add_submenu('New from Template', 0)
@@ -107,40 +108,57 @@ class PPEditor(object):
         ptypemenu.add_command('Hyperlink Show',   0, self.new_hyperlinkshow_profile)
         ptypemenu.add_command('Blank',            0, self.new_blank_profile)
         
+        # Show menu
         showmenu = menubar.add_submenu('Show', 0, accelerator='Alt-s')
-        showmenu.add_command('Delete (and medialist)',   0, self.e_remove_show_and_medialist)
-        showmenu.add_command('Delete (leave medialist)', 2, self.e_remove_show)
-        showmenu.add_command('Edit',                     0, self.m_edit_show)
-        showmenu.add_command('Copy To',                  0, self.copy_show)
+        showmenu_item = ttkMenu(None)
+        showmenu_item.add_command('Delete (and medialist)',   0, self.e_remove_show_and_medialist)
+        showmenu_item.add_command('Delete (leave medialist)', 2, self.e_remove_show)
+        showmenu_item.add_command('Edit',                     0, self.m_edit_show)
+        showmenu_item.add_command('Copy To...',               0, self.copy_show)
+        showmenu.add_section(showmenu_item, "", use_sep=False)
 
-        stypemenu = showmenu.add_submenu('Add', 0)
-        stypemenu.add_command('Media Show',      0, self.add_mediashow)
-        stypemenu.add_command('Art Media Show',  0, self.add_artmediashow)
-        stypemenu.add_command('Menu',            1, self.add_menushow)
-        stypemenu.add_command('Live Show',       0, self.add_liveshow)
-        stypemenu.add_command('Art Live Show',   2, self.add_artliveshow)
-        stypemenu.add_command('Hyperlink Show',  0, self.add_hyperlinkshow)
-        stypemenu.add_command('RadioButton Show',0, self.add_radiobuttonshow)
+        showmenu_add = ttkMenu(None)
+        showmenu_add.add_command('Add...', underline=None, command=None, state=DISABLED)
+        showmenu_add.add_command('  Media Show',      2, self.add_mediashow)
+        showmenu_add.add_command('  Art Media Show',  2, self.add_artmediashow)
+        showmenu_add.add_command('  Menu',            3, self.add_menushow)
+        showmenu_add.add_command('  Live Show',       2, self.add_liveshow)
+        showmenu_add.add_command('  Art Live Show',   4, self.add_artliveshow)
+        showmenu_add.add_command('  Hyperlink Show',  2, self.add_hyperlinkshow)
+        showmenu_add.add_command('  RadioButton Show',2, self.add_radiobuttonshow)
+        showmenu.add_section(showmenu_add, "", use_sep=True)
         
+        # Medialist menu
         medialistmenu = menubar.add_submenu('MediaList', 0, accelerator='Alt-m')
-        medialistmenu.add_command('Add',         0, self.e_add_medialist)
-        medialistmenu.add_command('Delete',      0, self.e_remove_medialist)
-      
+        medialistmenu_item = ttkMenu(None)
+        medialistmenu_add  = ttkMenu(None)
+        medialistmenu_item.add_command('Delete',       0, self.e_remove_medialist)
+        medialistmenu_item.add_command('Copy To...',   0, self.copy_medialist)
+        medialistmenu_add.add_command('Add',           0, self.e_add_medialist)
+        medialistmenu.add_section(medialistmenu_item, "", use_sep=False)
+        medialistmenu.add_section(medialistmenu_add,  "", use_sep=False)
+
+        # Track menu
         trackmenu = menubar.add_submenu('Track', 0, accelerator='Alt-t')
-        trackmenu.add_command('Delete',          0, self.remove_track)
-        trackmenu.add_command('Edit',            0, self.m_edit_track)
-        trackmenu.add_command('Add from Dir',    9, self.add_tracks_from_dir)
-        trackmenu.add_command('Add from File',   0, self.add_track_from_file)
+        trackmenu_item = ttkMenu(None)
+        trackmenu_item.add_command('Delete',           0, self.remove_track)
+        trackmenu_item.add_command('Edit',             0, self.m_edit_track)
+        trackmenu.add_section(trackmenu_item, "", use_sep=False)
 
-        typemenu = trackmenu.add_submenu('New', 0)
-        typemenu.add_command('Video',            0, self.new_video_track)
-        typemenu.add_command('Audio',            0, self.new_audio_track)
-        typemenu.add_command('Image',            0, self.new_image_track)
-        typemenu.add_command('Web',              0, self.new_web_track)
-        typemenu.add_command('Message',          0, self.new_message_track)
-        typemenu.add_command('Show',             0, self.new_show_track)
-        typemenu.add_command('Menu Background',  1, self.new_menu_track)
+        trackmenu_add = ttkMenu(None)
+        trackmenu_add.add_command('Add...',         underline=None, command=None, state=DISABLED)
+        trackmenu_add.add_command('  From Dir...',     7, self.add_tracks_from_dir)
+        trackmenu_add.add_command('  From File...',    7, self.add_track_from_file)
+        trackmenu_add.add_command('  Video',           2, self.new_video_track)
+        trackmenu_add.add_command('  Audio',           2, self.new_audio_track)
+        trackmenu_add.add_command('  Image',           2, self.new_image_track)
+        trackmenu_add.add_command('  Web',             2, self.new_web_track)
+        trackmenu_add.add_command('  Message',         2, self.new_message_track)
+        trackmenu_add.add_command('  Show',            2, self.new_show_track)
+        trackmenu_add.add_command('  Menu Background', 7, self.new_menu_track)
+        trackmenu.add_section(trackmenu_add, "", use_sep=True)
 
+        # Tools and options menus
         toolsmenu = menubar.add_submenu('Tools', 3, accelerator='Alt-l')
         toolsmenu.add_command('Update All',      0, self.update_all)
         
@@ -228,7 +246,7 @@ class PPEditor(object):
         scrollbar = ttk.Scrollbar(shows_frame, orient=tk.VERTICAL)
         self.shows_display = ttkListbox(shows_frame, selectmode=SINGLE, height=7,
                                     width = 40, yscrollcommand=scrollbar.set,
-                                    popup=showmenu)
+                                    on_item_popup=showmenu, off_item_popup=showmenu_add)
         scrollbar.config(command=self.shows_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
@@ -236,23 +254,25 @@ class PPEditor(object):
         self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
         self.shows_display.bind("<space>", self.m_edit_show)
         self.shows_display.bind("<Delete>", self.e_remove_show_and_medialist)
+        self.shows_display.bind("+", lambda e: showsmenu_add.tk_popup(e.x_root, e.y_root))
     
         # define display of medialists
         scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
                                     width = 40, yscrollcommand=scrollbar.set,
-                                    popup=medialistmenu)
+                                    on_item_popup=medialistmenu, off_item_popup=medialistmenu_add)
         scrollbar.config(command=self.medialists_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
         self.medialists_display.bind("<Delete>", self.e_remove_medialist)
+        self.medialists_display.bind("+", lambda e: medialist_add.tk_popup(e.x_root, e.y_root))
 
         # define display of tracks
         scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
         self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
                                     width = 40, yscrollcommand=scrollbar.set,
-                                    popup=trackmenu)
+                                    on_item_popup=trackmenu, off_item_popup=trackmenu_add)
         scrollbar.config(command=self.tracks_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
@@ -262,6 +282,7 @@ class PPEditor(object):
         self.tracks_display.bind("<Delete>", self.remove_track)
         self.tracks_display.bind("<Control-Up>", self.track_OnCtrlUp)
         self.tracks_display.bind("<Control-Down>", self.track_OnCtrlDown)
+        self.tracks_display.bind("+", lambda e: trackmenu_add.tk_popup(e.x_root, e.y_root))
 
         # define window sizer
         sz = ttk.Sizegrip(root_frame)

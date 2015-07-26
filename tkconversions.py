@@ -4,6 +4,7 @@ import ttk
 import Tkinter as tk
 import traceback
 import colorsys
+import pprint
 
 class ttkStyle(ttk.Style):
     def theme_use(self, name, *args, **kwargs):
@@ -37,8 +38,13 @@ class ttkStyle(ttk.Style):
 
 class ttkMenu(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
-      kwargs.pop('tearoff', 0)
-      tk.Menu.__init__(self, parent, *args, tearoff=0, **kwargs)
+        kwargs.pop('tearoff', 0)
+        tk.Menu.__init__(self, parent, *args, tearoff=0, **kwargs)
+        self.bind("<Escape>", self.release)
+
+    def release(self, event=None):
+        self.unpost()
+        self.grab_release()
 
     def add_submenu(self, label, underline, **kwargs):
         parent = self
@@ -48,10 +54,26 @@ class ttkMenu(tk.Menu):
         parent.add_cascade(menu=menu, label=label, underline=underline, accelerator=accelerator)
         return menu
 
-    def add_command(self, label, underline, command):
+    def add_section(self, menu, title, use_sep):
+        ''' Add a separator, a title (disabled), and a set of commands from a menu into this menu. '''
+        if use_sep:
+            self.add_separator()
+        if title:
+            tk.Menu.add_command(self, label=title)
+            self.entryconfigure(self.index(title), state=DISABLED)
+        count = menu.index(END)+1
+        for i in range(0, count):  # i would have thought it should be count-1, but that doesn't work
+            self.add_command(
+                label     = menu.entrycget(i, 'label'), 
+                underline = menu.entrycget(i, 'underline'), 
+                command   = menu.entrycget(i, 'command'),
+                state     = menu.entrycget(i, 'state')
+                )
+
+    def add_command(self, label, underline, command, **kwargs):
         parent = self
         #char = label[underline].lower()
-        tk.Menu.add_command(self, label=label, underline=underline, command=command) #, accelerator=char)
+        tk.Menu.add_command(self, label=label, underline=underline, command=command, **kwargs)
 
 class ttkCombobox(ttk.Combobox):
     def __init__(self, parent, **kwargs):
@@ -90,25 +112,32 @@ class ttkListbox(ttk.Treeview):
         kwargs.pop('fg', None)
         kwargs.pop('activestyle', None)
         # Set a context menu and bind it to right click
-        self.popup = kwargs.pop('popup', None)
+        self.on_item_popup = kwargs.pop('on_item_popup', None)
+        self.off_item_popup = kwargs.pop('off_item_popup', None)
         ttk.Treeview.__init__(self, parent, **kwargs)
-        if self.popup:
+        if self.on_item_popup or self.off_item_popup:
             self.bind("<ButtonPress-3><ButtonRelease-3>", self.show_popup)
 
-    def show_popup(self, event):
-        iid = self.identify_row(event.y)
-        if iid:
-            # if the mouse is over an item, select it before showing the context menu.
-            # unfortunately, the item loses focus so its highlight color is the 'not focused'
-            # color. Moving the focusing calls after the popup would fix this, but then
-            # the keyboard isn't focused to the popup menu.
-            self.selection_set(iid)
-            self.focus_set()
-            self.focus(iid)
-            self.popup.tk_popup(event.x_root, event.y_root)
+    def show_popup(self, event=None, menu=None):
+        if not event: return
+        if menu:
+            menu.tk_popup(event.x_root, event.y_root)
         else:
-            # if the mouse is not over an item, don't do anything
-            pass        
+            iid = self.identify_row(event.y)
+            if iid:
+                # if the mouse is over an item, select it before showing the context menu.
+                # unfortunately, the item loses focus so its highlight color is the 'not focused'
+                # color. Moving the focusing calls after the popup would fix this, but then
+                # the keyboard isn't focused to the popup menu.
+                self.selection_set(iid)
+                self.focus_set()
+                self.focus(iid)
+                if self.on_item_popup:
+                    self.on_item_popup.tk_popup(event.x_root, event.y_root)
+            else:
+                # if the mouse is not over an item, don't do anything
+                if self.off_item_popup:
+                    self.off_item_popup.tk_popup(event.x_root, event.y_root)
 
     def delete(self, start, end):
         children = self.get_children()
