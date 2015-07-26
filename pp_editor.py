@@ -194,6 +194,7 @@ class PPEditor(object):
         notebook.add(shows_tab, text="Shows")
         notebook.add(medialist_tab, text="Medialists")
         notebook.pack(side=LEFT, fill=BOTH, expand=True)
+        self.notebook = notebook
         
         #middle_frame=ttkFrame(bottom_frame,padx=5)
         #middle_frame.pack(side=LEFT, fill=BOTH, expand=False)
@@ -307,6 +308,7 @@ class PPEditor(object):
         self.osc_config=OSCConfig()
 
         self.root.bind("<Escape>", self.escape_keypressed)
+        self.root.bind("<Control-t>", self.switch_tabs)
         
         # initialise variables
         self.init()
@@ -423,6 +425,16 @@ class PPEditor(object):
             self.status.set_warning("{0}, {1}. Double click for details.", error_text, warn_text)
         else:
             self.status.set_info("{0}, {1}.", error_text, warn_text)
+
+    def switch_tabs(self, event=None):
+        seleccted_tab = self.notebook.select()
+        index = self.notebook.tabs().index(seleccted_tab)
+        if index == 0: 
+            self.notebook.select(1)
+            self.medialists_display.focus_set()
+        else: 
+            self.notebook.select(0)
+            self.shows_display.focus_set()
 
 
     # **************
@@ -678,18 +690,31 @@ class PPEditor(object):
             ctl.see(ctl.curselection()[0])
 
     def e_select_show(self,event):
-        if self.current_showlist is not None and self.current_showlist.length()>0:
+        if len(self.shows_display.selection()) == 0:
+            self.select_show(None)
+            return
+        if self.current_showlist<>None and self.current_showlist.length()>0:
             mouse_item_index=int(event.widget.curselection()[0])
-            self.current_showlist.select(mouse_item_index)
-            selected = self.current_showlist.selected_show()
-            if 'medialist' in selected:
-                medialist = selected['medialist']
-                self.medialists_display.select(medialist)
-            else:
-                self.medialists_display.selection_clear()
-                self.current_medialists_index = -1
-                self.current_medialist = None
-                self.refresh_tracks_display()
+            self.select_show(mouse_item_index)
+
+    def select_show(self, index):
+        selected_show = self.current_showlist.selected_show_index()
+        if selected_show == index: return
+        if index is None: index = -1
+        self.current_showlist.select(index)
+        if index == -1: 
+            # a medialist has been selected that doesn't have a corresponding show
+            if len(self.shows_display.selection()) == 0: return
+            self.shows_display.selection_clear()
+            return
+        self.highlight_shows_display()
+        # select the related medialist
+        show = self.current_showlist.selected_show()
+        medialist_index = -1
+        if 'medialist' in show:
+            medialist = show['medialist']
+            medialist_index = self.medialists_display.indexof(medialist)
+        self.select_medialist(medialist_index)
 
     def copy_show(self, event=None):
         if  self.current_showlist is not None and self.current_showlist.show_is_selected():
@@ -861,23 +886,38 @@ class PPEditor(object):
                 self.refresh_tracks_display()
 
     def e_select_medialist(self, event=None):
-        self.select_medialist()
+        if len(self.medialists_display.selection()) == 0:
+            self.select_medialist(None)
+            return
+        selection = event.widget.curselection()
+        if selection:
+            mouse_item_index=int(selection[0])
+            self.select_medialist(mouse_item_index)
 
-    def select_medialist(self,event=None):
-        """
-        user clicks on a medialst in a profile so try and select it.
-        """
-        self.current_medialists_index = -1
-        self.current_medialist = None
-        # needs forgiving int for possible tkinter upgrade
-        if len(self.medialists)>0:
-            if len(self.medialists_display.curselection()) > 0:
-                index = self.medialists_display.curselection()[0]
-                #item = self.medialists_display.focus()
-                self.current_medialists_index=index
-                self.current_medialist = self.open_medialist(self.medialists[index])
-                self.refresh_tracks_display()
-                #self.refresh_medialists_display()
+    def select_medialist(self,index):
+        selected_medialist = self.current_medialists_index
+        if selected_medialist == index: return
+        if index is None: index = -1
+        self.current_medialists_index = index
+        self.current_medialist = self.open_medialist(self.medialists[index])
+        if index == -1:
+            # if a show has been selected that doesn't have corresponding medialist
+            if len(self.medialists_display.selection()) == 0: return
+            self.current_medialist = None
+            self.medialists_display.selection_clear()
+            self.refresh_tracks_display()
+            return
+        self.refresh_tracks_display()
+        self.highlight_medialist_display()
+        # select the related show
+        if self.current_medialist:
+            showname = self.get_showname_for_medialist(self.current_medialist.filename)
+            if showname:
+                index = self.show_refs().index(showname)+1
+                self.select_show(index)
+                self.shows_display.select(index)
+            else:
+                self.select_show(None)
 
     def refresh_medialists_display(self):
         self.medialists_display.delete(0,END)
