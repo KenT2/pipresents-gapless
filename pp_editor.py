@@ -570,7 +570,6 @@ class PPEditor(object):
     def add_start(self):  
         self.add_show(PPdefinitions.new_shows['start'])
 
-
     def add_show(self,default):
         # append it to the showlist and then add the medialist
         if self.current_showlist is not None:
@@ -596,7 +595,6 @@ class PPEditor(object):
             self.current_showlist.select(index)
             self.refresh_shows_display()
 
-            
     def e_remove_show_and_medialist(self, event=None):
         if self.current_showlist is None:             return
         if self.current_showlist.length() == 0:       return
@@ -647,8 +645,8 @@ class PPEditor(object):
         if self.current_showlist.show_is_selected():
             index = self.current_showlist.selected_show_index()
             self.shows_display.select(index)
+            self.shows_display.see(index)
 
-            
     def e_select_show(self,event):
         if self.current_showlist is not None and self.current_showlist.length()>0:
             mouse_item_index=int(event.widget.curselection()[0])
@@ -666,12 +664,9 @@ class PPEditor(object):
     def copy_show(self):
         if  self.current_showlist is not None and self.current_showlist.show_is_selected():
             self.add_show(self.current_showlist.selected_show())
-
         
     def m_edit_show(self, *args, **kwargs):
         self.edit_show(PPdefinitions.show_types,PPdefinitions.show_field_specs)
-        
-     
 
     def edit_show(self,show_types,field_specs):
         if self.current_showlist is not None and self.current_showlist.show_is_selected():
@@ -823,7 +818,6 @@ class PPEditor(object):
         shutil.copy(from_path,to_path)
         return to_file
 
-
     def remove_medialist(self):
         if self.current_medialist is not None:
             if tkMessageBox.askokcancel("Delete Medialist","Delete Medialist"):
@@ -861,7 +855,7 @@ class PPEditor(object):
         if self.current_medialist is not None:
             index = self.current_medialists_index
             self.medialists_display.select(index)
-            
+            self.medialists_display.see(index)
 
     def save_medialist(self):
         basefile=self.medialists[self.current_medialists_index]
@@ -877,28 +871,31 @@ class PPEditor(object):
     #   Tracks
     # ***************************************
           
-    def refresh_tracks_display(self):
-        self.tracks_display.delete(0,self.tracks_display.size())
+    def refresh_tracks_display(self, clear_tracks=True):
         if len(self.medialists) > 0 and self.current_medialists_index >= 0:
             medialist = self.medialists[self.current_medialists_index]
         else:
             medialist = "(no medialist selected)"
         self.tracks_label['text'] = "Tracks in %s" % medialist 
-        if self.current_medialist is not None:
-            for index in range(self.current_medialist.length()):
-                if self.current_medialist.track(index)['track-ref'] != '':
-                    track_ref_string="  ["+self.current_medialist.track(index)['track-ref']+"]"
-                else:
-                    track_ref_string=""
-                self.tracks_display.insert(END, self.current_medialist.track(index)['title']+track_ref_string)        
-            self.highlight_tracks_display()
+        if clear_tracks:
+            self.tracks_display.delete(0, self.tracks_display.size())
+            if self.current_medialist is not None:
+                for index in range(self.current_medialist.length()):
+                    if self.current_medialist.track(index)['track-ref'] != "":
+                        track_ref_string="  ["+self.current_medialist.track(index)['track-ref']+"]"
+                    else:
+                        track_ref_string=""
+                    self.tracks_display.insert(END, self.current_medialist.track(index)['title']+track_ref_string)        
+                if self.tracks_display.size() > 0:
+                    self.tracks_display.select(0)
+                self.highlight_tracks_display()
         if self.options.autovalidate: self.validate_profile()
 
     def highlight_tracks_display(self):
-        #if self.current_medialist.track_is_selected():
-        #    self.tracks_display.itemconfig(self.current_medialist.selected_track_index(),fg='red')            
-        #    self.tracks_display.see(self.current_medialist.selected_track_index())
-        pass
+        if self.current_medialist.track_is_selected():
+            index = self.current_medialist.selected_track_index()
+            self.tracks_display.select(index)
+            self.tracks_display.see(index)
             
     def e_select_track(self,event):
         if self.current_medialist is not None and self.current_medialist.length()>0:
@@ -906,7 +903,7 @@ class PPEditor(object):
             if len(selection) > 0:
                     mouse_item_index=int(selection[0])
                     self.current_medialist.select(mouse_item_index)
-                    self.refresh_tracks_display()
+                    self.refresh_tracks_display(clear_tracks = False)
 
     def m_edit_track(self, *args, **kwargs):
         self.edit_track(PPdefinitions.track_types,PPdefinitions.track_field_specs)
