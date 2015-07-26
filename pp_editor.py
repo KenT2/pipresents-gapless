@@ -317,7 +317,28 @@ class PPEditor(object):
         # possibly with somewhat annoying prompt here... or not.
         self.app_exit()
 
+    def set_window_geometry(self):
+        try:
+            option = self.options.geometry.replace('x', ',').replace('+', ',')
+            w,h,x,y = tuple(int(x) for x in option[:].split(','))
+            ws = self.root.winfo_screenwidth()
+            hs = self.root.winfo_screenheight()
+            w = min(ws, w)
+            h = min(hs, h)
+            # if the location goes off screen, center the window
+            if x + w > ws: x = (ws-w)/2
+            if y + w > hs: y = (hs-h)/2
+            self.root.geometry("{0}x{1}+{2}+{3}".format(w, h, x, y))
+        except:
+            pass
+
+    def save_window_geometry(self):
+        self.options.geometry = self.root.geometry()
+        self.options.save()
+        pass
+
     def app_exit(self):
+        self.save_window_geometry()
         self.root.destroy()
         exit()
 
@@ -358,6 +379,7 @@ class PPEditor(object):
         # if we were given a profile on the command line, open it
         if self.command_options['profile'] != '':
             self.open_profile(self.pp_profile_dir)
+        self.set_window_geometry()
 
 
     # ***************************************
@@ -366,7 +388,7 @@ class PPEditor(object):
 
     def edit_options(self, event=None):
         """edit the options then read them from file"""
-        eo = OptionsDialog(self.root, self.options.options_file, 'Edit Options')
+        eo = OptionsDialog(self.root, self.options, 'Edit Options')
         if eo.result is True: self.init()
 
     def show_help (self, event=None):
@@ -1270,35 +1292,52 @@ class Options(object):
         self.defaults = {
             'home': user_home_dir+os.sep+'pp_home',
             'media': user_home_dir,
-            'autovalidate': 'false'
+            'offset': '',
+            'autovalidate': 'false',
+            'geometry': 'none'
             }
+        self.pp_profiles_offset = self.defaults['offset']
+        self.autovalidate = self.defaults['autovalidate']
+        self.geometry = self.defaults['geometry']
+        self.config=ConfigParser.ConfigParser(self.defaults)
         # create an options file if necessary
         self.options_file = app_dir+os.sep+'pp_config'+ os.sep + 'pp_editor.cfg'
         if not os.path.exists(self.options_file):
             self.create()
-
-
     
     def read(self):
         """reads options from options file to interface"""
-        config=ConfigParser.ConfigParser(self.defaults)
+        config = self.config
         config.read(self.options_file)
-        
-        self.pp_home_dir =config.get('config','home',0)
-        self.pp_profiles_offset =config.get('config','offset',0)
-        self.initial_media_dir =config.get('config','media',0)
-        self.autovalidate = config.getboolean('config', 'autovalidate')
+        if config.has_section('config'):
+            self.pp_home_dir       = config.get(       'config', 'home', 0)
+            self.initial_media_dir = config.get(       'config', 'media', 0)
+            self.pp_profiles_offset= config.get(       'config', 'offset')
+            self.autovalidate      = config.getboolean('config', 'autovalidate')
+            self.geometry          = config.get(       'config', 'geometry')
+        else:
+            self.create()
 
     def create(self):
-        config=ConfigParser.ConfigParser()
+        config=self.config
         config.add_section('config')
-        config.set('config', 'home', self.defaults['home'])
-        config.set('config','offset','')
-        config.set('config', 'media', self.defaults['media'])
+        config.set('config', 'home',         self.defaults['home'])
+        config.set('config', 'offset',       self.defaults['offset'])
+        config.set('config', 'media',        self.defaults['media'])
         config.set('config', 'autovalidate', self.defaults['autovalidate'])
-        config.set('config','offset','')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
+
+    def save(self):
+        """ save the output of the options edit dialog to file"""
+        config=self.config
+        config.set('config', 'home',         self.pp_home_dir)
+        config.set('config', 'offset',       self.pp_profiles_offset)
+        config.set('config', 'media',        self.initial_media_dir)
+        config.set('config', 'autovalidate', self.autovalidate)
+        config.set('config', 'geometry',     self.geometry)
+        with open(self.options_file, 'wb') as optionsfile:
+            config.write(optionsfile)
 
 
 # *************************************
@@ -1332,16 +1371,17 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         self.e_media.grid(row=32)
         self.e_media.insert(0,config.get('config','media',0))
 
+        ttk.Label(master, text="").grid(row=40, sticky=W)
         ttk.Label(master, text="Offset for Current Profiles:").grid(row=41, sticky=W)
         self.e_offset = ttk.Entry(master,width=80)
         self.e_offset.grid(row=42)
         self.e_offset.insert(0,config.get('config','offset',0))
         
-        ttk.Label(master, text="").grid(row=40, sticky=W)
+        ttk.Label(master, text="").grid(row=50, sticky=W)
         self.autovalidate = tk.StringVar()
         self.e_autovalidate = ttk.Checkbutton(master, text="Auto validate", variable = self.autovalidate,
             onvalue="true", offvalue="false")
-        self.e_autovalidate.grid(row=41, sticky=W)
+        self.e_autovalidate.grid(row=51, sticky=W)
         self.autovalidate.set(config.get('config', 'autovalidate'))
 
         return None    # no initial focus
@@ -1363,15 +1403,12 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         self.result=True
 
     def save_options(self):
-        """ save the output of the options edit dialog to file"""
-        config=ConfigParser.ConfigParser(self.options.defaults)
-        config.add_section('config')
-        config.set('config','home',self.e_home.get())
-        config.set('config','media',self.e_media.get())
-        config.set('config','offset',self.e_offset.get())
-        config.set('config', 'autovalidate', self.autovalidate.get())
-        with open(self.options_file, 'wb') as optionsfile:
-            config.write(optionsfile)
+        self.options.pp_home_dir = self.e_home.get()
+        self.options.initial_media_dir = self.e_media.get()
+        self.options.pp_profiles_offset = self.e_offset.get()
+        self.options.autovalidate = self.autovalidate.get()
+        self.options.save()
+        self.result=True
     
 
 # ***************************************
