@@ -410,6 +410,9 @@ class PPEditor(object):
         self.validate_profile(False)
 
     def e_validate_profile_with_results(self, event=None):
+        self.validate_profile(True)
+
+    def validate_profile(self, show_results=False):
         val =Validator()
         self.status.set("{0}", "Validating...")
         val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,
