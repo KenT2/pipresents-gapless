@@ -15,6 +15,7 @@ import json
 import copy
 import string
 import pp_paths
+from subprocess import Popen
 
 from pp_edititem import EditItem
 from pp_medialist import MediaList
@@ -93,8 +94,12 @@ class PPEditor(object):
         # Profile menu
         profilemenu = menubar.add_submenu('Profile', 0, accelerator='Alt-p')
         profilemenu.add_command('Open...',        0, self.open_existing_profile)
-        profilemenu.add_command('Validate',       0, self.e_validate_profile)
+        profilemenu.add_command('Validate',       0, self.e_validate_profile_with_results)
+        profilemenu.add_separator()
+        profilemenu.add_command('Start Presentation', 0, self.start_presentation_windowed)
+        profilemenu.add_command('Start Fullscreen', 6, self.start_presentation_fullscreen)
 
+        profilemenu.add_separator()
         ptypemenu = profilemenu.add_submenu('New from Template', 0)
         ptypemenu.add_command('Exhibit',          0, self.new_exhibit_profile)
         ptypemenu.add_command('Media Show',       0, self.new_mediashow_profile)
@@ -309,6 +314,7 @@ class PPEditor(object):
 
         self.root.bind("<Escape>", self.escape_keypressed)
         self.root.bind("<Control-t>", self.switch_tabs)
+        self.root.bind("<F5>", self.start_presentation_fullscreen)
         
         # initialise variables
         self.init()
@@ -384,6 +390,7 @@ class PPEditor(object):
         self.shows_display.delete(0,END)
         self.medialists_display.delete(0,END)
         self.tracks_display.delete(0,END)
+        self.preview_proc = None
         # if we were given a profile on the command line, open it
         if self.command_options['profile'] != '':
             self.open_profile(self.pp_profile_dir)
@@ -392,6 +399,25 @@ class PPEditor(object):
     # ***************************************
     # MISCELLANEOUS
     # ***************************************
+
+    def start_presentation_windowed(self, event=None):
+        self.start_presentation(False)
+
+    def start_presentation_fullscreen(self, event=None):
+        self.start_presentation(True)
+
+    def start_presentation(self, fullscreen=False):
+        if not  os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
+            tkMessageBox.showinfo("Profile Error", "The main playlist was not found.\nDo you have a profile open?")
+            return
+        if self.preview_proc:
+            self.preview_proc.terminate()
+        home    = os.path.realpath(pp_paths.get_home()+os.sep)
+        profile = os.path.basename(self.pp_profile_dir)
+        curdir  = os.path.dirname(os.path.realpath(__file__))
+        args    = ['/usr/bin/python', curdir+'/pipresents.py', '-o'+home, '-p'+profile]
+        if fullscreen: args.append('-fb')
+        self.preview_proc = Popen(args)
 
     def edit_options(self, event=None):
         """edit the options then read them from file"""
@@ -413,6 +439,9 @@ class PPEditor(object):
         self.validate_profile(True)
 
     def validate_profile(self, show_results=False):
+        if not  os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
+            tkMessageBox.showinfo("Profile Error", "The main playlist was not found.\nDo you have a profile open?")
+            return
         val =Validator()
         self.status.set("{0}", "Validating...")
         val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,
@@ -426,6 +455,8 @@ class PPEditor(object):
             self.status.set_error("{0}, {1}. Double click for details.", error_text, warn_text)
         elif warnings > 0:
             self.status.set_warning("{0}, {1}. Double click for details.", error_text, warn_text)
+            #tkMessageBox.showwarning("Validator","Errors were found in the profile. Run the validator for details")
+            #self.status.set("! {0} errors, {1} warnings. Run validation for details.", errors, warnings, background='red')
         else:
             self.status.set_info("{0}, {1}.", error_text, warn_text)
 

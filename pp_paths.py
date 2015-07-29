@@ -12,7 +12,7 @@ mon        = Monitor()
 pp_dir     = sys.path[0]
 self       = type('pp_paths', (object,), {})() # for monitor to report what we are
 
-def get_home(home_option):
+def get_home(home=""):
     # get directory containing pp_home from the command,
     # if no home dir is given, default to /home/pi/pp_home
     # if a home dir is given, try:
@@ -20,26 +20,27 @@ def get_home(home_option):
     #   b) a 'pp_home' dir within the given home dir (original PP operation)
     global pp_home
     
-    if home_option == "":
-        home    = ""
+    if pp_home:
+        return pp_home
+    home = home.strip()
+    if home == "":
         home_pp = os.path.expanduser('~')+ os.sep+"pp_home"
     else:
-        home    = home_option
-        home_pp = home_option + os.sep + "pp_home"
+        home_pp = home + os.sep + "pp_home"
     mon.log(self,"PP home directory is: " + home + "[" + os.sep + "pp_home]")
-
+    #print "PP home directory is: {0}[{1}pp_home]".format(home, os.sep)
     # check if pp_home exists.
     # try for 10 seconds to allow usb stick to automount
     # fall back to pipresents/pp_home
     pp_home = pp_dir+"/pp_home"
     found = False
-    for i in range (1, 10):
+    for i in range (1, 2):
         if os.path.exists(home_pp):
             found = True
             pp_home = home_pp
             break
-        if os.path.exists(home):
-            if os.path.exists(home + os.sep + "pp_profiles"):
+        if os.path.isdir(home):
+            if os.path.isdir(home + os.sep + "pp_profiles"):
               found = True
               pp_home = home
               break
@@ -57,20 +58,21 @@ def get_home(home_option):
         #self.end('error','Failed to find pp_home')
         return None
     
-def get_profile_dir(home, profile_option):
+def get_profile_dir(home, profile):
     # returns the full path to the directory that contains (or will contain)
     # pp_showlist.json and other files for the profile
     # if the directory doesn't exist, returns None
-    if profile_option != '':
-        name = profile_option
+    profile = profile.strip()
+    if profile != '':
+        name = profile
     else:
         name = "pp_profile"   # the default profile
-    home += os.sep
+    home = home.strip() + os.sep
     attempts = [ 
         home + "pp_profiles" +os.sep+ name, # with magic intermediate subdir
         home + name,                        # directly under home
-        os.getcwd() + os.sep + profile_option, # try relative to current working dir
-        profile_option                      # try full path
+        os.getcwd() + os.sep + profile,     # try relative to current working dir
+        profile                             # try full path
     ]
     found = None
     for attempt in attempts:
