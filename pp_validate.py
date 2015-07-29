@@ -57,6 +57,7 @@ class Validator(object):
             if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
                 self.result.display('f',"Invalid medialist in profile: "+ medialist_file)
                 self.result.display('t', "Validation Aborted")
+                self.result.stats()
                 return False
                 
             if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
@@ -77,6 +78,7 @@ class Validator(object):
                 if medialist_issue  !=  editor_issue:
                     self.result.display('f',"Medialist version "+medialist_issue+ " is different to that editor")
                     self.result.display('t', "Validation Aborted")
+                    self.result.stats()
                     return False
 
                 # open a medialist and test its tracks
@@ -208,16 +210,19 @@ class Validator(object):
                 if '.json' not in show['medialist']:
                     self.result.display('f', show['show-ref']+ " show has invalid medialist")
                     self.result.display('t', "Validation Aborted")
+                    self.result.stats()
                     return False
 
                 if show['medialist'] not in v_media_lists:
                     self.result.display('f', "'"+show['medialist']+ "' medialist not found")
                     self.result.display('t', "Validation Aborted")
+                    self.result.stats()
                     return False
 
                 if not os.path.exists(pp_profile + os.sep + show['medialist']):
                     self.result.display('f', "'"+show['medialist']+ "' medialist file does not exist")
                     self.result.display('t', "Validation Aborted")
+                    self.result.stats()
                     return False
                     
                 v_medialist_refs.append(show['medialist'])
