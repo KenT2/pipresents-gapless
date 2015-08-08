@@ -22,7 +22,7 @@ from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_utils import Monitor
 from pp_options import ed_options
-from pp_validate import Validator
+from pp_validate import Validator, ValidationSeverity
 from pp_definitions import PPdefinitions
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 from tkconversions import *
@@ -249,43 +249,38 @@ class PPEditor(object):
         add_button.pack(side=TOP, pady=20)
 
         # define display of showlist 
-        scrollbar = ttk.Scrollbar(shows_frame, orient=tk.VERTICAL)
         self.shows_display = ttkListbox(shows_frame, selectmode=SINGLE, height=7,
-                                    width = 40, yscrollcommand=scrollbar.set,
+                                    width = 40,
                                     on_item_popup=showmenu, off_item_popup=showmenu_add)
-        scrollbar.config(command=self.shows_display.yview)
-        scrollbar.pack(side=RIGHT, fill=Y)
         self.shows_display.pack(side=LEFT, fill=BOTH, expand=1)
         self.shows_display.bind("<<TreeviewSelect>>", self.e_select_show)
         self.shows_display.bind("<Double-Button-1>", self.m_edit_show)
         self.shows_display.bind("<space>", self.m_edit_show)
         self.shows_display.bind("<Delete>", self.e_remove_show_and_medialist)
         self.shows_display.bind("+", lambda e: showsmenu_add.tk_popup(e.x_root, e.y_root))
+        self.shows_display.tag_configure('critical', foreground='white', background='red')
+        self.shows_display.tag_configure('error',    foreground='red')
     
         # define display of medialists
-        scrollbar = ttk.Scrollbar(medialists_frame, orient=tk.VERTICAL)
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
-                                    width = 40, yscrollcommand=scrollbar.set,
+                                    width = 40, 
                                     on_item_popup=medialistmenu, off_item_popup=medialistmenu_add,
                                     columns=('show'))
-        scrollbar.config(command=self.medialists_display.yview)
         self.medialists_display.column('#0')
         self.medialists_display.heading('#0', text="Filename")
         self.medialists_display.column('show', width=75, stretch=False)
         self.medialists_display.heading('show', text="Show")
-        scrollbar.pack(side=RIGHT, fill=Y)
         self.medialists_display.pack(side=LEFT,  fill=BOTH, expand=1)
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
         self.medialists_display.bind("<Delete>", self.e_remove_medialist)
         self.medialists_display.bind("+", lambda e: medialist_add.tk_popup(e.x_root, e.y_root))
+        self.medialists_display.tag_configure('critical', foreground='white', background='red')
+        self.medialists_display.tag_configure('error',    foreground='red')
 
         # define display of tracks
-        scrollbar = ttk.Scrollbar(tracks_frame, orient=tk.VERTICAL)
         self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
-                                    width = 40, yscrollcommand=scrollbar.set,
+                                    width = 40, 
                                     on_item_popup=trackmenu, off_item_popup=trackmenu_add)
-        scrollbar.config(command=self.tracks_display.yview)
-        scrollbar.pack(side=RIGHT, fill=Y)
         self.tracks_display.pack(side=LEFT,fill=BOTH, expand=1)
         self.tracks_display.bind("<<TreeviewSelect>>", self.e_select_track)
         self.tracks_display.bind("<Double-Button-1>", self.m_edit_track)
@@ -294,6 +289,8 @@ class PPEditor(object):
         self.tracks_display.bind("<Control-Up>", self.track_OnCtrlUp)
         self.tracks_display.bind("<Control-Down>", self.track_OnCtrlDown)
         self.tracks_display.bind("+", lambda e: trackmenu_add.tk_popup(e.x_root, e.y_root))
+        self.tracks_display.tag_configure('critical', foreground='white', background='red')
+        self.tracks_display.tag_configure('error',    foreground='red')
 
         # define window sizer
         sz = ttk.Sizegrip(root_frame)
@@ -445,7 +442,7 @@ class PPEditor(object):
         val =Validator()
         self.status.set("{0}", "Validating...")
         val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,
-            self.pp_profile_dir,self.editor_issue,show_results)
+            self.pp_profile_dir, self.editor_issue, show_results)
         errors, warnings = val.get_results()
         if errors == 1: error_text = "1 error"
         else:           error_text = "{0} errors".format(errors)
@@ -459,6 +456,39 @@ class PPEditor(object):
             #self.status.set("! {0} errors, {1} warnings. Run validation for details.", errors, warnings, background='red')
         else:
             self.status.set_info("{0}, {1}.", error_text, warn_text)
+        show_refs = self.show_refs(include_start=True)
+        track_refs = self.track_refs()
+        for result in val.results:
+            if result.showref:
+                index = show_refs.index(result.showref)
+                self.format_display_validation(self.shows_display, result, index)
+            if result.trackref:
+                if result.trackref in track_refs:
+                    index = track_refs.index(result.trackref)
+                    self.format_display_validation(self.tracks_display, result, index, 'track')
+            if result.listref:
+                try:
+                    index = self.medialists.index(result.listref)
+                    self.format_display_validation(self.medialists_display, result, index)
+                except:
+                    pass
+
+    def format_display_validation(self, grid, result, index, type='show'):
+        iid = grid.item_at(index)
+        if result.severity == ValidationSeverity.CRITICAL:
+            grid.add_tag(iid, 'critical')
+            grid.remove_tag(iid, 'error')
+            grid.remove_tag(iid, 'warning')
+        elif result.severity == ValidationSeverity.ERROR:
+            if not grid.has_tag(iid, 'critical'):
+                grid.add_tag(iid, 'error')
+                grid.remove_tag(iid, 'warning')
+        elif result.severity == ValidationSeverity.WARNING:
+            if not grid.has_tag(iid, 'critical') and not grid.has_tag(iid, 'error'):
+                grid.add_tag(iid, 'warning')
+        if type == 'track':
+            print 'Error in tracks {0}, row {1}'.format(result.track, iid)
+
 
     def switch_tabs(self, event=None):
         seleccted_tab = self.notebook.select()
@@ -699,13 +729,23 @@ class PPEditor(object):
                 self.current_showlist.select(index)
                 self.refresh_shows_display()
 
-    def show_refs(self):
-        _show_refs=[]
+    def show_refs(self, include_start=False):
+        refs=[]
         for index in range(self.current_showlist.length()):
-            if self.current_showlist.show(index)['show-ref'] != "start":
-                _show_refs.append(copy.deepcopy(self.current_showlist.show(index)['show-ref']))
-        return _show_refs
+            show = self.current_showlist.show(index)
+            if show['show-ref'] != "start" or include_start:
+                refs.append(show['show-ref'])
+        return refs
  
+    def track_refs(self):
+        refs=[]
+        if self.current_medialist is not None:
+            for index in range(self.current_medialist.length()):
+                trackref = self.current_medialist.track(index)['track-ref']
+                track = self.current_medialist.track(index)
+                refs.append(track['title'])
+        return refs
+
     def refresh_shows_display(self):
         self.shows_display.delete(0,self.shows_display.size())
         for index in range(self.current_showlist.length()):

@@ -105,7 +105,8 @@ class ttkSpinbox(Spinbox):
 class ttkListbox(ttk.Treeview):
 
     def __init__(self, parent, **kwargs):
-        if kwargs['selectmode'] == SINGLE: kwargs['selectmode'] = BROWSE
+        selectmode = kwargs.pop('selectmode', None)
+        if selectmode and selectmode == SINGLE: kwargs['selectmode'] = BROWSE
         # get rid of keys that Treeview doesn't understand
         kwargs.pop('width', None)
         kwargs.pop('bg', None)
@@ -114,7 +115,9 @@ class ttkListbox(ttk.Treeview):
         # Set a context menu and bind it to right click
         self.on_item_popup = kwargs.pop('on_item_popup', None)
         self.off_item_popup = kwargs.pop('off_item_popup', None)
-        ttk.Treeview.__init__(self, parent, **kwargs)
+        self.scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL)
+        ttk.Treeview.__init__(self, parent, yscrollcommand=self.scrollbar.set, **kwargs)
+        self.scrollbar.config(command=self.yview)
         if self.on_item_popup or self.off_item_popup:
             self.bind("<ButtonPress-3><ButtonRelease-3>", self.show_popup)
         self.bind("<Up>", self.up_keypressed)
@@ -164,10 +167,33 @@ class ttkListbox(ttk.Treeview):
         return
 
     def pack(self, **kwargs):
+        self.scrollbar.pack(side=RIGHT, fill=Y)
         ttk.Treeview.pack(self, **kwargs)
 
-    def insert(self, pos, text, **kwargs):
-        ttk.Treeview.insert(self, '', pos, text=text, **kwargs)
+    def insert(self, index, text, *args, **kwargs):
+        # item id of the parent item. Use '' to make a top level item.
+        parent = kwargs.pop('parent', '')
+        ttk.Treeview.insert(self, parent, index, text=text, *args, **kwargs)
+
+    def add(self, parent, index, **kwargs):
+        # set parent to '' to add to top level
+        ttk.Treeview.insert(self, parent, index, **kwargs)
+
+    def has_tag(self, item, tag):
+        tags = self.item(item, option='tags')
+        return tag in tags
+
+    def add_tag(self, item, tag):
+        tags = list(self.item(item, option='tags'))
+        if not tag in tags:
+            tags.append(tag)
+        self.item(item, tags=tuple(tags))
+
+    def remove_tag(self, item, tag):
+        tags = list(self.item(item, option='tags'))
+        if tag in tags:
+            tags.remove(tag)
+        self.item(item, tags=tuple(tags))
 
     def size(self):
         children = ttk.Treeview.get_children(self)

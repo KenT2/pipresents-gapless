@@ -10,7 +10,8 @@ pp_home    = ""
 pp_profile = ""
 mon        = Monitor()
 pp_dir     = sys.path[0]
-self       = type('pp_paths', (object,), {})() # for monitor to report what we are
+self       = type('pp_paths', (object,), {})()  # for monitor to report what we are
+
 
 def get_home(home=""):
     # get directory containing pp_home from the command,
@@ -57,7 +58,8 @@ def get_home(home=""):
         mon.err(self,"Failed to find pp_home directory at " + home)
         #self.end('error','Failed to find pp_home')
         return None
-    
+
+
 def get_profile_dir(home, profile):
     # returns the full path to the directory that contains (or will contain)
     # pp_showlist.json and other files for the profile
@@ -85,8 +87,25 @@ def get_profile_dir(home, profile):
         mon.log(self, "Found requested profile at: " + found)
     pp_profile_dir = found
     return found
-    
+
+
+def get_dir(path):
+    path = get_path(path)
+    if path is not None:
+        if os.path.isdir(path):
+            return path
+    return None
+
+
 def get_file(path):
+    path = get_path(path)
+    if path is not None:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def get_path(path):
     # find a file from a PiPresents path string 
     #   - might contain '+' to point to the PP_home dir)
     # returns None if file is not found
@@ -94,11 +113,11 @@ def get_file(path):
     if path[0] == '+':
         path = path.replace('+', home)
     home += os.sep
-    attempts = [ path, home + path ]
+    attempts = [path, home + path]
     found = None
     for attempt in attempts:
-      if os.path.isfile(attempt):
-        found = attempt
-        break
+        if os.path.exists(attempt):
+            found = attempt
+            break
     return found
-  #
+  
