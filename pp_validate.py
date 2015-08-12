@@ -10,16 +10,10 @@ from Tkinter import VERTICAL,RIGHT,LEFT,BOTH,Y,NORMAL,END,DISABLED
 import ttk
 import tkFont
 from tkconversions import *
-from pp_utils import enum
 import pp_paths
+from pp_utils import enum
 
-from pp_definitions import PPdefinitions
-
-ValidationObjTypes = enum('PROFILE', 'SHOW', 'LIST', 'TRACK')
-PROFILE  = ValidationObjTypes.PROFILE
-SHOW     = ValidationObjTypes.SHOW
-LIST     = ValidationObjTypes.LIST
-TRACK    = ValidationObjTypes.TRACK
+from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK, FIELD
 
 ValidationSeverity = enum('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
 # shorter ways to call these
@@ -118,10 +112,19 @@ class ValidationResult(object):
 
 class Validator(object):
 
-    def validate_profile(self, root, pp_dir, pp_home, pp_profile,editor_issue,display):
+    def __init__(self, editor_issue=None):
+        self.pp_home = pp_paths.pp_home
+        self.pp_profile = pp_paths.pp_profile_dir
+        self.editor_issue = editor_issue
 
-        # USES
-        # self.current_showlist
+        self.scope = None
+        self.result = None          # indicates whether the validator has been initialized
+        self.results = []           # list of ValidationResult, povides referenceable results
+        self.v_medialist_refs = []  # list of medialist file references (used for ?)
+        self.v_show_labels = []     # (same order as in editor) used for checking uniqueness
+        self.v_start_shows = []     # used for checking number of start shows
+
+    def initialize(self, scope, title="", display=False):
 
         # CREATES
         # v_media_lists    - file names of all medialists in the profile
@@ -130,36 +133,33 @@ class Validator(object):
         # v_show_labels    - list of show labels in the showlist
         # v_medialist_refs - list of references to medialist files in the showlist
 
-        # open results display
-        self.results = []
-        self.pp_home = pp_home
-        self.pp_profile = pp_profile
-        self.editor_issue = editor_issue
-        self.result = ResultWindow(root,"Validate "+self.pp_profile, display)
+        # initialize results display
+        self.result = ResultWindow(title, display)
+        self.scope = scope
+
+        # always need to these sanity checks
         self.set_current(None, None, None, checking=PROFILE)
         self.result.add_profile(self.pp_profile)
 
-        if not self.check_file_exists(PROFILE, CRITICAL, [pp_profile, "pp_showlist.json"], 
+        if not self.check_file_exists(PROFILE, CRITICAL, [self.pp_profile, "pp_showlist.json"], 
             "pp_showlist not in profile", abort=True):
             return False
-        ifile  = open(self.pp_profile+os.sep+"pp_showlist.json", 'rb')
-        sdict= json.load(ifile)
+        ifile = open(self.pp_profile+os.sep+"pp_showlist.json", 'rb')
+        sdict = json.load(ifile)
         ifile.close()
-        self.v_shows=sdict['shows']
+        self.v_shows = sdict['shows']
         if 'issue' in sdict:
-            profile_issue= sdict['issue']
+            profile_issue = sdict['issue']
         else:
-            profile_issue="1.0"
-        if not self.check_profile_compatible_with_editor(profile_issue, editor_issue):
+            profile_issue ="1.0"
+        if not self.check_profile_compatible_with_editor(profile_issue, self.editor_issue):
+            print "not compatible"
             return False
 
         # read the gpio config
         # gpio_cfg_ok=read_gpio_cfg(pp_dir,pp_home,pp_profile)
 
         # create lists for checks
-        self.v_medialist_refs=[] # list of medialist file references (used for ?)
-        self.v_show_labels=[]    # (same order as in editor) used for checking uniqueness
-        self.v_start_shows=[]    # used for checking number of start shows
         for show in self.v_shows:
             self.result.add_show(show)  # add shows here so medialists can be added
             if show['type'] == 'start': 
@@ -167,6 +167,11 @@ class Validator(object):
             else:
                 self.v_show_labels.append(show['show-ref'])
                 self.v_medialist_refs.append(show['medialist'])
+        return True
+
+    def validate_profile(self, display=False):
+        if not self.initialize(PROFILE, "Validate "+self.pp_profile, display):
+            return False
 
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         self.v_media_lists = []
@@ -179,6 +184,7 @@ class Validator(object):
         # now we can check the shows
         for show in self.v_shows:
             # critical errors on a show only abort checking for that show
+            #print "Checking show: ", show['show-ref'], ', ', show['title']
             self.check_show(show)
 
         # PROFILE
@@ -193,10 +199,18 @@ class Validator(object):
         else:
             return False
 
+    def validate_widget(self, objtype, obj, field):
+        self.scope = FIELD
+        if self.result is None:
+            raise ValueException("The validator needs to be initialized before calling this method.")
+        # 'field' is the name of the field in the specs and the rules.
+        result = self.process_ruleset(objtype, obj, field)
+        return result
+
     def check_show(self, show):
         self.result.add_show(show)
         self.set_current(show, None, None, checking=SHOW)
-        print "Checking show: ", show['show-ref'], "------------------------------"
+        #print "Checking show: ", show['show-ref'], "------------------------------"
         if show['type'] == "start":
             self.check_one_start_show(len(self.v_start_shows))
             self.check_valid_show_label(show)
@@ -226,11 +240,11 @@ class Validator(object):
             scheme = PPdefinitions.show_field_rules
             for field in show: #PPdefinitions.show_types[show['type']]:
                 #try:
-                    self.process_ruleset(SHOW, show, field, specs, scheme)
+                    self.process_ruleset(SHOW, show, field)
                 #except Exception as e:
                 #    print "An exception occurred on {0} {1}, field {2}: {3}".format('show', show['show-ref'], field, e)
 
-            return True
+        return True
 
     def ensure_ruleset_is_list(self, ruleset):
         # transform string and dist objects to list
@@ -246,15 +260,24 @@ class Validator(object):
 
     def ensure_fields_is_list(self, fields):
         if isinstance(fields, str):
-            ruleset = [fields, ]
+            fields = [fields, ]
         elif isinstance(fields, list):
             pass
         else:
             raise TypeError("Ruleset is unexpected type: {0}".format(fields.__class__.__name__))
         return fields
 
-    def process_ruleset(self, objtype, obj, field, specs, scheme, dependent_field=None):
+    def process_ruleset(self, objtype, obj, field, dependent_field=None):
         is_dependency = dependent_field is not None
+        if objtype == SHOW:
+            specs = PPdefinitions.show_field_specs
+            scheme = PPdefinitions.show_field_rules
+        elif objtype == TRACK:
+            specs = PPdefinitions.track_field_specs
+            scheme = PPdefinitions.track_field_rules
+        else:
+            # medialist is not an item that gets edited
+            raise StandardError("This type of object cannot be validated.")
         spec = specs[field]
         value = obj[field]
 
@@ -266,11 +289,12 @@ class Validator(object):
                 # it may be better for the rule for the field to determine whether the value is blank
                 msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
                 self.add_error(objtype, msg)
-            return
+            return RuleResult.true
 
         rule_field = field.replace('colour', 'color')  # 'color' is the standard python spelling
         if rule_field not in scheme:
-            return
+            #print "Scheme does not have a rule for ", rule_field
+            return RuleResult.true
 
         rulesets = scheme[rule_field]
         for ruleset in rulesets:
@@ -301,21 +325,28 @@ class Validator(object):
                 if deps is not None:
                     #deps = self.ensure_fields_is_list(deps)
                     if not is_dependency:
-                        #print "Skipping dependant rule ", field
-                        return
-                    else:
-                        #print field, " has deps"
-                        pass
-                    return
+                        # if we're validating a widget, we should call the ruleset for the other rules?
+                        # if we're validating a show or presentation, we should skip the dependent rule
+                        if self.scope == PROFILE:
+                            #print "Skipping dependent rule: ", field
+                            return RuleResult.true
+                        deps = self.ensure_fields_is_list(deps)
+                        for dep in deps:
+                            #print "Processing dependent rule: ", dep
+                            result = self.process_ruleset(objtype, obj, dep)
+                            if result.passed is False:
+                                return result
+                            if result.blank is True:
+                                return RuleResult.blank
 
                 if rule is None:
                     reqs = self.ensure_fields_is_list(reqs)
                     if reqs:
                         for req in reqs:
                             #print "Checking dependencies for rule (1) ", field
-                            self.process_ruleset(objtype, obj, req, specs, scheme, dependent_field=field)
-                            return
-                    else: return
+                            result = self.process_ruleset(objtype, obj, req, dependent_field=field)
+                            return result
+                    else: return RuleResult.true
 
                 rule_name = 'rule_' + rule.replace('-', "_")
                 rule_func = getattr(self, rule_name)
@@ -347,7 +378,7 @@ class Validator(object):
                     if reqs and rule_result.blank is not True:
                         for req in reqs:
                             print "Checking dependencies for rule (2) ", field
-                            self.process_ruleset(objtype, obj, req, specs, scheme, dependent_field=field)
+                            self.process_ruleset(objtype, obj, req, dependent_field=field)
         if rule_result is not None and rule_result.passed is False:
             print field, ": ", rule_result.message
         return rule_result
@@ -516,11 +547,9 @@ class Validator(object):
         tracktitle = get_track_title(track)
 
         # check each field for the track, as defined by the field specs
-        specs = PPdefinitions.track_field_specs
-        scheme = PPdefinitions.track_field_rules
         for field in track:
             try:
-                self.process_ruleset(TRACK, track, field, specs, scheme)
+                self.process_ruleset(TRACK, track, field)
             except Exception as e:
                 print "An exception occurred on {0} {1}, field {2}: {3}".format('track', get_trackref(track), field, e)
         return True
@@ -690,6 +719,8 @@ class Validator(object):
         return os.path.exists(path)
 
     def check_profile_compatible_with_editor(self, profile_issue, editor_issue):
+        if editor_issue == None:
+            return True
         if profile_issue != editor_issue:
             self.add_critical(PROFILE, "Profile version {0} does not match this editor (version {1})" 
                 .format(profile_issue, editor_issue), abort=True)
@@ -861,20 +892,26 @@ class Validator(object):
         return RuleResult(False, "'{0}' needs to be 'yes' or 'no'.")
 
     def rule_is_integer(self, value):
-        if isinstance(value, basestring):
-            if value == "": return RuleResult.blank
-            value = long(value)
-            #print "is_integer: ", value
-        if isinstance(value, (int, long)):
-            return RuleResult.true
+        try:
+            if isinstance(value, basestring):
+                if value == "": return RuleResult.blank
+                value = long(value)
+                #print "is_integer: ", value
+            if isinstance(value, (int, long)):
+                return RuleResult.true
+        except:
+            pass
         return RuleResult(False, "'{0}' needs to be an integer.".format(value))
 
     def rule_is_zero_or_positive_integer(self, value):
-        if isinstance(value, basestring):
-            if value == "": return RuleResult.blank
-            value = long(value)
-        if isinstance(value, (int, long)) and value >= 0:
-            return RuleResult.true
+        try:
+            if isinstance(value, basestring):
+                if value == "": return RuleResult.blank
+                value = long(value)
+            if isinstance(value, (int, long)) and value >= 0:
+                return RuleResult.true
+        except:
+            pass
         return RuleResult(False, "'{0}' needs to be zero or a positive integer.".format(value))
 
     def rule_is_x_y(self, value):
@@ -977,7 +1014,7 @@ class Validator(object):
             return RuleResult.true
         except Exception as ex:
             pass
-        return RuleResult(False, "'{0}' is not a valid color ({1}). Use a format like #rrggbb or a color name.".format(value, ex))
+        return RuleResult(False, "'{0}' is not a valid color. Use a color name or a hex format like '#rrggbb' (with '#').".format(value))
 
     def rule_is_font(self, value):
         if self.is_blank(value): return RuleResult.blank
@@ -1362,7 +1399,7 @@ class Validator(object):
         #self.add_invalid_value_error(objtype, spec['text'], value)
         if value in values:
             return RuleResult.true
-        return RuleResult(False, "'{0}' is not one of the choices.".format(value))
+        return RuleResult(False, "'{0}' is not one of the available choices.".format(value))
 
     def rule_is_one_of_spec_options(self, objtype, value, spec):
         # convenience method that isn't really a rule
@@ -1931,13 +1968,17 @@ class Validator(object):
 
 class ResultWindow(object):
 
-    def __init__(self, parent, title, display_it):
+    def __init__(self, title, display_it=False):
+        self.title = title
         self.display_it=display_it
         self.errors=0
         self.warnings=0
-        if self.display_it is False: return
+        if self.display_it:
+            self.show_window()
+
+    def show_window(self):
         top = Toplevel()
-        top.title(title)
+        top.title(self.title)
 
         notebook = ttk.Notebook(top)
         grid_tab = ttkFrame(notebook)

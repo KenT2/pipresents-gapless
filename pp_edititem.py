@@ -5,14 +5,20 @@ import ttk
 import tkFont
 import os
 import string
+import copy
+import Image as tkImage
+import ImageTk
 import ttkSimpleDialog as ttkSimpleDialog
 import tkFileDialog
 from ScrolledText import ScrolledText
 from pp_utils import Monitor
 from tkconversions import *
+from pp_validate import Validator, ValidationSeverity
+from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK
+import pp_paths
+import pp_utils
 
-
-class FontChooser( ttkSimpleDialog.Dialog ):
+class FontChooser(ttkSimpleDialog.Dialog):
     BASIC = 1
     ALL   = 2
 
@@ -185,13 +191,14 @@ class TabBar(ttk.Notebook):
     def __init__(self, master=None, init_name=None):
         ttk.Notebook.__init__(self, master)
         self.tabnames = {}
+        self.enable_traversal()
     
     def show(self):
         self.pack(side=TOP, expand=YES, fill=X)
 
-    def add(self, tab,text):
+    def add(self, tab, text, **kwargs):
         self.tabnames[tab.tab_name] = tab   # add it to the list of tabs
-        ttk.Notebook.add(self, tab, text=text)
+        ttk.Notebook.add(self, tab, text=text, **kwargs)
 
     def delete(self, tabname):
         self.forget(tabnames[tabname])
@@ -206,34 +213,54 @@ class TabBar(ttk.Notebook):
 
 class EditItem(ttkSimpleDialog.Dialog):
 
-    def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_home_dir,initial_tab):
+    def __init__(self, tkparent, title, objtype, field_content, show_refs):
         self.mon=Monitor()
+
+        if objtype == SHOW:
+            self.record_specs = PPdefinitions.show_types
+            self.field_specs = PPdefinitions.show_field_specs
+            self.initial_tab = 'show'
+        elif objtype == TRACK:
+            self.record_specs = PPdefinitions.track_types
+            self.field_specs = PPdefinitions.track_field_specs
+            self.initial_tab = 'track'
+
         # save the extra arg to instance variable
+        self.objtype = objtype
         self.field_content = field_content   # dictionary - the track parameters to be edited
-        self.record_specs= record_specs # list of field names and seps/tabs in the order that they appear
-        self.field_specs=field_specs  # dictionary of specs referenced by field name
-        
-        self.show_refs=show_refs
+        self.show_refs = show_refs
         self.show_refs.append('')
-        self.initial_media_dir=initial_media_dir
-        self.pp_home_dir=pp_home_dir
-        self.initial_tab=initial_tab
+        self.initial_media_dir = pp_paths.media_dir
+        self.pp_home_dir = pp_paths.pp_home
         
         # list of stringvars from which to get edited values (for optionmenu only??)
         self.entries=[]
 
+        self.validator = Validator()
+        self.validator.initialize("")
+        if objtype == SHOW:
+            self.validator.set_current(show=field_content)
+        elif objtype == TRACK:
+            self.validator.set_current(track=field_content)
+        self.tempobj = copy.deepcopy(self.field_content)
+
         # and call the base class _init_which calls body immeadiately and apply on OK pressed
-        ttkSimpleDialog.Dialog.__init__(self, parent, title)
+        ttkSimpleDialog.Dialog.__init__(self, tkparent, title)
 
     def body(self,root):
         self.root=root
         bar = TabBar(root, init_name=self.initial_tab)
-        self.body_fields(root,bar)
+        self.bar = bar
+
+        self.photo_warning = pp_utils.load_gif('warning')
+        self.photo_check   = pp_utils.load_gif('check')
+        self.photo_spacer  = pp_utils.load_gif('spacer')
+
+        self.body_fields(root, bar)
         # bar.config(bd=1, relief=RIDGE)   # add some border
         bar.show()
 
-        
-    def body_fields(self, master,bar):
+    def body_fields(self, master, bar):
         # get fields for this record using the record type in the loaded record
         record_fields=self.record_specs[self.field_content['type']]
         #print "Generating fields: {0} record_fields for {1}".format(len(record_fields), self.field_content['type'])
@@ -264,14 +291,12 @@ class EditItem(ttkSimpleDialog.Dialog):
                 self.fields.append(obj)
         return None # No initial focus
 
-
-
     # create an entry in a dialog box
     def make_entry(self,master,field,field_spec,values,bar):
         # print 'make entry',len(self.fields),field,field_spec
         if field_spec['shape']=='tab':
             self.current_tab = Tab(master, field_spec['name'])
-            bar.add(self.current_tab,field_spec['text'])
+            bar.add(self.current_tab,field_spec['text'], sticky='news', compound='left', image=self.photo_spacer)
             self.tab_row=1
             return None
         elif field_spec['shape']=='sep':
@@ -293,18 +318,21 @@ class EditItem(ttkSimpleDialog.Dialog):
                 
                 # make the editable field
                 if field_spec['shape']in ('entry','colour','browse','font'):
-                    obj=ttkEntry(self.current_tab,width=40,font='arial 11')
+                    obj=ttkEntry(self.current_tab, width=40, font='arial 11')
                     obj.insert(END,self.field_content[field])
+                    self.add_validation(obj, field)
                     
                 elif field_spec['shape']=='text':
-                    obj=ScrolledText(self.current_tab,height=8,width=40,font='arial 11')
+                    obj=ScrolledText(self.current_tab, height=8, width=40, font='arial 11')
                     obj.insert(END,self.field_content[field])
+                    self.add_validation(obj, field)
                     
                 elif field_spec['shape']=='spinbox':
-                    obj=ttk.Combobox( master,  height=10, textvariable=self._family )
-                    obj.grid( row=theRow, column=0, columnspan=2, sticky=N+S+E+W, padx=10 )
+                    obj=ttk.Combobox(master, height=10, textvariable=self._family)
+                    obj.grid(row=theRow, column=0, columnspan=2, sticky=N+S+E+W, padx=10)
                     #obj=Spinbox(self.current_tab,values=values,wrap=True)
                     obj.insert(END,self.field_content[field])
+                    self.add_validation(obj, field)
                     
                 elif field_spec['shape']=='option-menu': 
                     self.option_val = StringVar(self.current_tab)    
@@ -312,6 +340,7 @@ class EditItem(ttkSimpleDialog.Dialog):
                     obj = ttkCombobox(self.current_tab, textvariable=self.option_val)
                     obj['values'] = values
                     self.entries.append(self.option_val)
+                    self.add_validation(obj, field)
                     
                 else:
                     self.mon.log(self,"Uknown shape for: " + field)
@@ -320,32 +349,87 @@ class EditItem(ttkSimpleDialog.Dialog):
                 # Read-only items
                 if field_spec['read-only']=='yes':
                     obj.config(state=DISABLED)
-
                 # Required-entry items
-                if field_spec['must']=='yes':
+                elif field_spec['must']=='yes':
                     print "Found 'must' in {0}".format(field)
-                    obj.configure(background='lemon chiffon') # reserve pink for validation errors (future)?
-                else:
-                    obj.configure(background='white')
+                    #obj.configure(background='lemon chiffon') # reserve pink for validation errors (future)?
+                    obj.configure(style="required.T"+obj.winfo_name().replace("ttk", "T"))
+                elif field_spec['shape'] == 'text':
+                    s = ttk.Style()
+                    bg = s.lookup("TEntry", option='fieldbackground')
+                    obj.config(background=bg)
 
-                obj.grid(row=self.tab_row,column=1,sticky=W)
+                obj.grid(row=self.tab_row,column=2,sticky=W)
 
                 # display buttons where required
                 if field_spec['shape']=='browse':
                     but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.browse(o)))
-                    but.grid(row=self.tab_row,column=2,sticky=W)
+                    but.grid(row=self.tab_row,column=3,sticky=W)
                     
                 elif field_spec['shape']=='colour':
                     but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_colour(o)))
-                    but.grid(row=self.tab_row,column=2,sticky=W)
+                    but.grid(row=self.tab_row,column=3,sticky=W)
                     
                 elif field_spec['shape']=='font':
                     but=ttkButton(self.current_tab,width=1,height=1,bg='dark grey',command=(lambda o=obj: self.pick_font(o)))
-                    but.grid(row=self.tab_row,column=2,sticky=W)
+                    but.grid(row=self.tab_row,column=3,sticky=W)
 
-                self.tab_row+=1    
+                self.tab_row+=1
                 return obj
 
+    def add_validation(self, widget, field):
+        widget.bind("<FocusOut>", self.validate_field_focusout)
+        # use key validation to get the new value after a keypress (KeyPress/Release events give the 'before' value)
+        if isinstance(widget, tk.Entry):
+            cmd = (self.register(self.validate_field_keypress), '%P', '%W')
+            widget['validate'] = 'key'
+            widget['validatecommand'] = cmd
+        icon = ttkLabel(self.current_tab, text='', anchor=W, padding=[10, 0, 0, 0])
+        icon.grid(row=self.tab_row, column=1, sticky=W)
+        ttkToolTip.createtip(icon, "")
+        widget.field = field
+        widget.icon = icon
+        widget.tab = self.current_tab
+        self.validate_field(widget, self.field_content[field])
+
+    def validate_field_keypress(self, p, w):
+        widget = self.root.nametowidget(w)
+        self.validate_field(widget, p)
+        return True
+
+    def validate_field_focusout(self, event):
+        self.validate_field(event.widget, event.widget.get())
+
+    def validate_field(self, widget, value):
+        w = widget
+        field = w.field
+        self.tempobj[field] = value
+        icon = w.icon
+        #tab = self.bar.tab(w.tab)
+        result = self.validator.validate_widget(self.objtype, self.tempobj, field)
+        s = ttk.Style()
+        name = w.__class__.__name__.replace("ttk", "")
+        name = "T" + name
+        if result.passed is False:
+            if name in ('TScrolledText'):
+                w.configure(background=ttkStyle.ERROR_COLOR)
+            else:
+                w.configure(style="error."+name)
+            self.bar.tab(w.tab, image=self.photo_warning)
+            icon['image'] = self.photo_warning
+            icon.tip.settip(result.message)
+            icon.grid()  # redisplay
+        else:
+            #print "Result for '", field, "': passed=", result.passed, ", blank=", result.blank
+            if name in ('TScrolledText'):
+                w.configure(background=s.lookup("TEntry", option='background'))
+            else:
+                w.configure(style=name)
+            # TODO: tab needs to check its child fields before removing its icon
+            icon['image'] = self.photo_spacer
+            icon.grid()
+            #icon.grid_remove()  # hide image
+            icon.tip.cleartip()
 
     def apply(self):
         # get list of fields in the record in the same order as the form was generated
@@ -381,8 +465,6 @@ class EditItem(ttkSimpleDialog.Dialog):
                 
         self.result=True
         return self.result
-        
-
 
     def pick_colour(self,obj):
         rgb,colour=askcolor()

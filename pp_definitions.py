@@ -1,3 +1,13 @@
+from pp_utils import enum
+
+PPObjTypes = enum('PROFILE', 'SHOW', 'LIST', 'TRACK', 'FIELD')
+PROFILE  = PPObjTypes.PROFILE
+SHOW     = PPObjTypes.SHOW
+LIST     = PPObjTypes.LIST
+TRACK    = PPObjTypes.TRACK
+FIELD    = PPObjTypes.FIELD
+
+
 class PPdefinitions(object):
 
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')

@@ -2,6 +2,23 @@ import time
 import sys
 import os
 import tkMessageBox
+import Tkinter as tk
+import pp_paths
+
+#class Enum(object):
+# see http://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
+#    Numbers = enum('ZERO', ONE', 'TWO', 'THREE')
+#    Numbers.names[THREE] = 3
+def enum(*sequential, **named):
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    reverse = dict((value, key) for key, value in enums.iteritems())
+    enums['names'] = reverse
+    return type('Enum', (), enums)
+
+def load_gif(name):
+    name += '.gif'
+    icon = os.path.join(pp_paths.pp_resource_dir, name)
+    return tk.PhotoImage(file=icon)
 
 class StopWatch(object):
     

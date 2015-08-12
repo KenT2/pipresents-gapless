@@ -23,7 +23,7 @@ from pp_showlist import ShowList
 from pp_utils import Monitor
 from pp_options import ed_options
 from pp_validate import Validator, ValidationSeverity
-from pp_definitions import PPdefinitions
+from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 from tkconversions import *
 from ttkStatusBar import StatusBar
@@ -37,6 +37,10 @@ class PPEditor(object):
     # ***************************************
     # INIT
     # ***************************************
+
+    def load_icon(self, name):
+        icon = os.path.join(self.pp_dir, 'pp_resources', name)
+        return tk.PhotoImage(file=icon)
 
     def __init__(self):
     
@@ -75,6 +79,11 @@ class PPEditor(object):
 
         style = ttkStyle()
         style.theme_use('clam')
+        self.photo_app = self.load_icon('pipresents_16.gif')
+        self.photo_spacer = self.load_icon('spacer.gif')
+        self.photo_warning = self.load_icon('warning.gif')
+        self.photo_critical = self.load_icon('critical.gif')
+        self.root.tk.call('wm', 'iconphoto', self.root._w, self.photo_app)
 
         self.root.resizable(True,True)
 
@@ -258,8 +267,9 @@ class PPEditor(object):
         self.shows_display.bind("<space>", self.m_edit_show)
         self.shows_display.bind("<Delete>", self.e_remove_show_and_medialist)
         self.shows_display.bind("+", lambda e: showsmenu_add.tk_popup(e.x_root, e.y_root))
-        self.shows_display.tag_configure('critical', foreground='white', background='red')
-        self.shows_display.tag_configure('error',    foreground='red')
+        self.shows_display.tag_configure('show', image=self.photo_spacer)
+        self.shows_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
+        self.shows_display.tag_configure('error',    foreground='red', image=self.photo_warning)
     
         # define display of medialists
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
@@ -274,8 +284,9 @@ class PPEditor(object):
         self.medialists_display.bind("<<TreeviewSelect>>", self.e_select_medialist)
         self.medialists_display.bind("<Delete>", self.e_remove_medialist)
         self.medialists_display.bind("+", lambda e: medialist_add.tk_popup(e.x_root, e.y_root))
-        self.medialists_display.tag_configure('critical', foreground='white', background='red')
-        self.medialists_display.tag_configure('error',    foreground='red')
+        self.medialists_display.tag_configure('list', image=self.photo_spacer)
+        self.medialists_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
+        self.medialists_display.tag_configure('error',    foreground='red', image=self.photo_warning)
 
         # define display of tracks
         self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
@@ -289,8 +300,9 @@ class PPEditor(object):
         self.tracks_display.bind("<Control-Up>", self.track_OnCtrlUp)
         self.tracks_display.bind("<Control-Down>", self.track_OnCtrlDown)
         self.tracks_display.bind("+", lambda e: trackmenu_add.tk_popup(e.x_root, e.y_root))
-        self.tracks_display.tag_configure('critical', foreground='white', background='red')
-        self.tracks_display.tag_configure('error',    foreground='red')
+        self.tracks_display.tag_configure('track', image=self.photo_spacer)
+        self.tracks_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
+        self.tracks_display.tag_configure('error',    foreground='red', image=self.photo_warning)
 
         # define window sizer
         sz = ttk.Sizegrip(root_frame)
@@ -310,7 +322,7 @@ class PPEditor(object):
         self.osc_config=OSCConfig()
 
         self.root.bind("<Escape>", self.escape_keypressed)
-        self.root.bind("<Control-t>", self.switch_tabs)
+        notebook.enable_traversal()  # keybinding for tab switching
         self.root.bind("<F5>", self.start_presentation_fullscreen)
         
         # initialise variables
@@ -374,6 +386,8 @@ class PPEditor(object):
                 self.end('error','Failed to find profile')
         else:
             self.pp_profile_dir=''
+
+        pp_paths.media_dir = self.options.initial_media_dir
 
         self.pp_profiles_offset = self.options.pp_profiles_offset
         self.initial_media_dir = self.options.initial_media_dir
@@ -439,10 +453,9 @@ class PPEditor(object):
         if not  os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
             tkMessageBox.showinfo("Profile Error", "The main playlist was not found.\nDo you have a profile open?")
             return
-        val =Validator()
+        val =Validator(self.editor_issue)
         self.status.set("{0}", "Validating...")
-        val.validate_profile(self.root,self.pp_dir,self.pp_home_dir,
-            self.pp_profile_dir, self.editor_issue, show_results)
+        val.validate_profile(show_results)
         errors, warnings = val.get_results()
         if errors == 1: error_text = "1 error"
         else:           error_text = "{0} errors".format(errors)
@@ -479,13 +492,23 @@ class PPEditor(object):
             grid.add_tag(iid, 'critical')
             grid.remove_tag(iid, 'error')
             grid.remove_tag(iid, 'warning')
+            grid.remove_tag(iid, 'show')
+            grid.remove_tag(iid, 'list')
+            grid.remove_tag(iid, 'track')
         elif result.severity == ValidationSeverity.ERROR:
             if not grid.has_tag(iid, 'critical'):
                 grid.add_tag(iid, 'error')
                 grid.remove_tag(iid, 'warning')
+                grid.remove_tag(iid, 'show')
+                grid.remove_tag(iid, 'list')
+                grid.remove_tag(iid, 'track')
         elif result.severity == ValidationSeverity.WARNING:
             if not grid.has_tag(iid, 'critical') and not grid.has_tag(iid, 'error'):
                 grid.add_tag(iid, 'warning')
+                grid.remove_tag(iid, 'show')
+                grid.remove_tag(iid, 'list')
+                grid.remove_tag(iid, 'track')
+        #else:
         if type == 'track':
             print 'Error in tracks {0}, row {1}'.format(result.track, iid)
 
@@ -749,7 +772,9 @@ class PPEditor(object):
     def refresh_shows_display(self):
         self.shows_display.delete(0,self.shows_display.size())
         for index in range(self.current_showlist.length()):
-            self.shows_display.insert(END, self.current_showlist.show(index)['title']+"   ["+self.current_showlist.show(index)['show-ref']+"]")        
+            show = self.current_showlist.show(index)
+            display_name = "{0}  [{1}]".format(show['title'], show['show-ref'])
+            self.shows_display.insert(END, display_name, tags=('show',))
         self.highlight_shows_display()
         if self.options.autovalidate: self.validate_profile()
 
@@ -791,24 +816,27 @@ class PPEditor(object):
         self.select_medialist(medialist_index)
 
     def copy_show(self, event=None):
-        if  self.current_showlist is not None and self.current_showlist.show_is_selected():
+        if self.current_showlist is not None and self.current_showlist.show_is_selected():
             self.add_show(self.current_showlist.selected_show())
         
     def m_edit_show(self, *args, **kwargs):
-        self.edit_show(PPdefinitions.show_types,PPdefinitions.show_field_specs)
+        self.edit_show()
 
-    def edit_show(self,show_types,field_specs):
+    def edit_show(self):
         if self.current_showlist is not None and self.current_showlist.show_is_selected():
             field_content = self.current_showlist.selected_show()
             # auto-upgrade show to include plugin so it appears in editor box
             if not 'plugin' in field_content and field_content['show-ref'] == 'start':
                 field_content['plugin'] = ''
-            d=EditItem(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs(),
-                       self.initial_media_dir,self.pp_home_dir,'show')
+            d=EditItem(self.root, "Edit Show", SHOW, field_content, self.show_refs())
             if d.result  is  True:
                 self.save_showlist(self.pp_profile_dir)
                 self.refresh_shows_display()
-            self.shows_display.focus_set() # retain focus on the list after editing
+            try:
+                self.shows_display.focus_set() # retain focus on the list after editing
+            except TclError:
+                # prevent "can't invoke command: application has been destroyed"
+                pass
  
 
     # ***************************************
@@ -951,14 +979,6 @@ class PPEditor(object):
         shutil.copy(from_path,to_path)
         return to_file
 
-    def remove_medialist(self):
-        if self.current_medialist is not None:
-            if tkMessageBox.askokcancel("Delete Medialist","Delete Medialist"):
-                os.remove(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
-                self.open_medialists(self.pp_profile_dir)
-                self.refresh_medialists_display()
-                self.refresh_tracks_display()
-
     def e_select_medialist(self, event=None):
         if len(self.medialists_display.selection()) == 0:
             self.select_medialist(None)
@@ -997,7 +1017,7 @@ class PPEditor(object):
         self.medialists_display.delete(0,END)
         for item in self.medialists:
             showname = self.get_showname_for_medialist(item)
-            self.medialists_display.insert(END, item, iid=item, values=(showname))
+            self.medialists_display.insert(END, item, iid=item, values=(showname), tags=('list',))
         self.highlight_medialist_display()
 
     def get_showname_for_medialist(self, medialist):
@@ -1043,12 +1063,13 @@ class PPEditor(object):
         if clear_tracks:
             self.tracks_display.delete(0, self.tracks_display.size())
             if self.current_medialist is not None:
+                list = self.current_medialist
                 for index in range(self.current_medialist.length()):
-                    if self.current_medialist.track(index)['track-ref'] != "":
-                        track_ref_string="  ["+self.current_medialist.track(index)['track-ref']+"]"
+                    if list.track(index)['track-ref'] != "":
+                        track_ref_string="  ["+list.track(index)['track-ref']+"]"
                     else:
                         track_ref_string=""
-                    self.tracks_display.insert(END, self.current_medialist.track(index)['title']+track_ref_string)        
+                    self.tracks_display.insert(END, list.track(index)['title']+track_ref_string, tags=('track',))        
                 if self.tracks_display.size() > 0:
                     self.tracks_display.select(0)
                 self.highlight_tracks_display()
@@ -1078,8 +1099,7 @@ class PPEditor(object):
 
     def edit_track(self,track_types,field_specs):      
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
-            d=EditItem(self.root,"Edit Track",self.current_medialist.selected_track(),track_types,field_specs,
-                       self.show_refs(),self.initial_media_dir,self.pp_home_dir,'track')
+            d=EditItem(self.root, "Edit Track", self.current_medialist.selected_track(), self.show_refs())
             if d.result  is  True:
                 self.save_medialist()
             self.highlight_tracks_display()

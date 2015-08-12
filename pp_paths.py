@@ -6,10 +6,12 @@ import os
 import time
 from pp_utils import Monitor
 
+pp_dir     = sys.path[0]
+pp_resource_dir = os.path.join(pp_dir, 'pp_resources')
 pp_home    = ""
 pp_profile = ""
+media_dir  = ""
 mon        = Monitor()
-pp_dir     = sys.path[0]
 self       = type('pp_paths', (object,), {})()  # for monitor to report what we are
 
 
@@ -64,6 +66,8 @@ def get_profile_dir(home, profile):
     # returns the full path to the directory that contains (or will contain)
     # pp_showlist.json and other files for the profile
     # if the directory doesn't exist, returns None
+    global pp_profile
+    global pp_profile_dir
     profile = profile.strip()
     if profile != '':
         name = profile
@@ -78,14 +82,15 @@ def get_profile_dir(home, profile):
     ]
     found = None
     for attempt in attempts:
-      if os.path.exists(attempt):
-          found = attempt
-          break
+        if os.path.exists(attempt):
+            found = attempt
+            break
     if found is None:
         mon.err(self,"Failed to find requested profile: \n" + "\n".join(attempts))
     else:
         mon.log(self, "Found requested profile at: " + found)
     pp_profile_dir = found
+    pp_profile = name
     return found
 
 

@@ -6,9 +6,13 @@ import traceback
 import colorsys
 import pprint
 
+ERROR_COLOR = 'light pink'
+
 class ttkStyle(ttk.Style):
+
     def theme_use(self, name, *args, **kwargs):
         ttk.Style.theme_use(self, *args, **kwargs)
+
         # fix weird frame colors
         #bg = self.lookup('.', 'background') # background, selectbackground
         #self.map('TFrame', background=[('disabled', bg), ('active', bg)])
@@ -19,6 +23,16 @@ class ttkStyle(ttk.Style):
             background = [
               ('selected','focus', bg),
               ('selected','!focus', halfbg)])
+        # create themes
+        # Treeview errors are styled using tags
+        s = ttk.Style()
+        for w in ('Entry', 'Combobox', 'Spinbox'):
+            if w == 'Entry':
+                s.configure("error.T"+w, background=ERROR_COLOR, fieldbackground=ERROR_COLOR)
+                s.configure("required.T"+w, background='lemon chiffon', fieldbackground='lemon chiffon')
+            else:
+                s.configure("error.T"+w, background=ERROR_COLOR)
+                s.configure("required.T"+w, background='lemon chiffon')
 
     def adjust_saturation(self, color, amount):
         r,g,b = self.html_to_rgb(color)
@@ -85,7 +99,7 @@ class ttkCombobox(ttk.Combobox):
 
 class ttkLabel(ttk.Label):
     def __init__(self, parent, **kwargs):
-       ttk.Label.__init__(self, parent, **kwargs)
+        ttk.Label.__init__(self, parent, **kwargs)
 
 class ttkCheckbutton(ttk.Checkbutton):
     def __init__(self, parent, **kwargs):
@@ -277,3 +291,64 @@ class ttkFrame(ttk.Frame):
         kwargs.pop('pady', None)
         ttk.Frame.__init__(self, parent, **kwargs)
     
+class ttkToolTip(object):
+    """
+    Based on http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
+    Usage:
+       ttkToolTip.createtip(myButton, "some text to show in popup")
+    """
+
+    def __init__(self, widget, text, **kwargs):
+        self.widget = widget
+        self.label = None
+        self.text = text
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+        self.kwargs = kwargs
+
+    def showtip(self, text=None):
+        if text is not None:
+            self.text = text
+        if self.tipwindow or not self.text:
+            return
+        if self.widget['state'] == 'hidden':
+            return
+        x, y, cx, cy = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 27
+        y = y + cy + self.widget.winfo_rooty() + 27
+        self.tipwindow = tw = Toplevel(self.widget)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry("+{x}+{y}".format(x=x,y=y))
+        kwargs = self.kwargs
+        label = tk.Label(tw, text=self.text, **self.kwargs)
+        label.configure(background="#ffffe0", relief=SOLID, borderwidth=1)
+        label.pack(ipadx=1)
+        self.label = label
+
+    def settip(self, text):
+        self.text = text
+        #if self.label:
+        #    self.label['text'] = text
+
+    def cleartip(self):
+        self.settip(None)
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
+    @staticmethod
+    def createtip(widget, text, **kwargs):
+        tip = ttkToolTip(widget, text, **kwargs)
+        widget.tip = tip
+        def enter(event):
+            tip.showtip()
+        def leave(event):
+            tip.hidetip()
+        widget.bind("<Enter>", enter)
+        widget.bind("<Leave>", leave)
+        return tip
+
