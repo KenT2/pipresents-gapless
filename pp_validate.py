@@ -13,6 +13,7 @@ from tkconversions import *
 import pp_paths
 from pp_utils import enum
 
+import pp_definitions
 from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK, FIELD
 
 ValidationSeverity = enum('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
@@ -26,21 +27,6 @@ SAME = ''  # for setting a current item without changing other current items
 
 ValidationRuleTypes = enum('INVALID_VALUE', 'MISSING_FILE')
 
-def get_showref(show):
-    if show:
-        return show['show-ref']
-    else:
-        return ''
-def get_trackref(track):
-    trackref = track['track-ref']
-    if not trackref: trackref = track['title']
-    if not trackref: trackref = track['locatoin']
-    return trackref
-def get_track_title(track):
-    title = track['title']
-    if not title: title = track['track-ref']
-    if not title: title = track['location']
-    return title
 
 class RuleResult(object):
     true = None
@@ -56,13 +42,14 @@ class RuleResult(object):
             RuleResult.true = RuleResult(True)  # set the actual item
             RuleResult.blank = RuleResult(True, blank=True)
 
-dummy = RuleResult(True).passed # force instantiation of RuleResult.true by creating an instance
+dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
+
 
 class ValidationResult(object):
 
     def __init__(self, validator, objtype, severity, **kwargs):
         self.objtype   = objtype                     # PROFILE, SHOW, LIST, TRACK
-    	self.severity  = severity                    # CRITICAL, ERROR, WARNING, (INFO?), (OK?)
+        self.severity  = severity                    # CRITICAL, ERROR, WARNING, (INFO?), (OK?)
         self.text      = kwargs.pop('text', '')      # title for collapsible items, message for errors, etc.
         self.show      = validator.current_show
         self.list      = validator.current_list
@@ -74,7 +61,7 @@ class ValidationResult(object):
         self.trackref = ''
         if self.show:  self.showref  = self.show['show-ref']
         if self.list:  self.listref  = self.list
-        if self.track: self.trackref = get_trackref(self.track)
+        if self.track: self.trackref = Validator.get_trackref(self.track)
 
         if self.objtype == PROFILE:
             pass
@@ -102,20 +89,46 @@ class ValidationResult(object):
 
     def is_profile(self):
         return self.objtype == PROFILE
+
     def is_show(self):
         return self.objtype == SHOW
+
     def is_list(self):
         return self.objtype == LIST
+
     def is_track(self):
         return self.objtype == TRACK
 
 
 class Validator(object):
 
-    def __init__(self, editor_issue=None):
+    # Static methods
+
+    @staticmethod
+    def get_showref(show):
+        if show:
+            return show['show-ref']
+        else:
+            return ''
+
+    @staticmethod
+    def get_trackref(track):
+        trackref = track['track-ref']
+        if not trackref: trackref = track['title']
+        if not trackref: trackref = track['locatoin']
+        return trackref
+
+    @staticmethod
+    def get_track_title(track):
+        title = track['title']
+        if not title: title = track['track-ref']
+        if not title: title = track['location']
+        return title
+
+
+    def __init__(self):
         self.pp_home = pp_paths.pp_home
         self.pp_profile = pp_paths.pp_profile_dir
-        self.editor_issue = editor_issue
 
         self.scope = None
         self.result = None          # indicates whether the validator has been initialized
@@ -123,6 +136,7 @@ class Validator(object):
         self.v_medialist_refs = []  # list of medialist file references (used for ?)
         self.v_show_labels = []     # (same order as in editor) used for checking uniqueness
         self.v_start_shows = []     # used for checking number of start shows
+        self.anonymous = 0          # provides a pseudo-trackref for tracks that don't have one
 
     def initialize(self, scope, title="", display=False):
 
@@ -152,7 +166,7 @@ class Validator(object):
             profile_issue = sdict['issue']
         else:
             profile_issue ="1.0"
-        if not self.check_profile_compatible_with_editor(profile_issue, self.editor_issue):
+        if not self.check_profile_compatible_with_editor(profile_issue):
             print "not compatible"
             return False
 
@@ -199,6 +213,12 @@ class Validator(object):
         else:
             return False
 
+    def validate_show(self, objtype, show):
+        self.scope = SHOW
+        if self.result is None:
+            raise ValueException("The validator needs to be initialized before calling this method.")
+        self.check_show(show)
+
     def validate_widget(self, objtype, obj, field):
         self.scope = FIELD
         if self.result is None:
@@ -233,7 +253,6 @@ class Validator(object):
                 self.result.add_track(show['show-ref'], show['medialist'], track)
                 if track['track-ref'] !='':
                     v_track_labels.append(track['track-ref'])
-                #self.check_track_options(show['show-ref'], show['medialist'], track)
                        
             # check each field for the show, as defined by the show field specs
             specs = PPdefinitions.show_field_specs
@@ -246,26 +265,228 @@ class Validator(object):
 
         return True
 
-    def ensure_ruleset_is_list(self, ruleset):
-        # transform string and dist objects to list
-        if isinstance(ruleset, dict):
-            ruleset = [ruleset, ]
-        elif isinstance(ruleset, str):
-            ruleset = [ruleset, ]
-        elif isinstance(ruleset, list):
-            pass
+    def check_medialist(self, medialist_file):
+        # find the associated show
+        show = None
+        for eshow in self.v_shows:
+            if 'medialist' in eshow:
+                if eshow['medialist'] == medialist_file:
+                    show = eshow
+                    break
+        showref = ""
+        if show: showref=show['show-ref']
+        if medialist_file == 'pp_showlist.json':
+            self.result.add_list('.', medialist_file) # make child item of profile
         else:
-            raise TypeError("Ruleset is unexpected type: {0}".format(ruleset.__class__.__name__))
-        return ruleset
+            self.result.add_list(showref, medialist_file)
+        self.set_current(show, medialist_file, None)
 
-    def ensure_fields_is_list(self, fields):
-        if isinstance(fields, str):
-            fields = [fields, ]
-        elif isinstance(fields, list):
-            pass
-        else:
-            raise TypeError("Ruleset is unexpected type: {0}".format(fields.__class__.__name__))
-        return fields
+        if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
+            return self.add_critical(LIST, "Invalid medialist in profile: {0}".format(medialist_file), abort=False)
+            
+        if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
+            self.set_current(show, medialist_file, None, checking=LIST)
+            self.v_media_lists.append(medialist_file)
+
+            # open a medialist and test its tracks
+            ifile = open(self.pp_profile + os.sep + medialist_file, 'rb')
+            sdict = json.load(ifile)
+            ifile.close()                          
+            tracks = sdict['tracks']
+            if 'issue' in sdict:
+                medialist_issue= sdict['issue']
+            else:
+                medialist_issue="1.0"
+                  
+            # check issue of medialist
+            myversion = pp_definitions.__version__
+            if medialist_issue  !=  myversion:
+                return self.add_critical(LIST, "Medialist version {0} does not match this editor (version {1})" \
+                    .format(medialist_issue, myversion), abort=False)
+
+            # open a medialist and test its tracks
+            self.v_track_labels=[]
+            self.anonymous=0
+            for track in tracks:
+                self.check_track(track, anonymous)
+
+    def check_track(self, track, anonymous):
+        self.set_current(track=track, checking=TRACK)
+        showref = self.get_showref(self.current_show)
+        listref = self.current_list
+        self.result.add_track(showref, listref, track)
+        if track['track-ref'] == '':
+            self.anonymous+=1        
+        trackref = self.get_trackref(track)
+        tracktitle = self.get_track_title(track)
+
+        # check each field for the track, as defined by the field specs
+        for field in track:
+            try:
+                self.process_ruleset(TRACK, track, field)
+            except Exception as e:
+                print "An exception occurred on {0} {1}, field {2}: {3}".format('track', self.get_trackref(track), field, e)
+        return True
+
+# ValidationResult handling methods: do the actual adding to both the result list and the result text
+
+    def add_result(self, objtype, severity, msg, **kwargs):
+        if severity == CRITICAL: return self.add_critical(objtype, msg, **kwargs)
+        if severity == ERROR   : return self.add_error   (objtype, msg, **kwargs)
+        if severity == WARNING : return self.add_warning (objtype, msg, **kwargs)
+
+    def add_critical(self, objtype, msg, **kwargs):
+        abort = kwargs.pop('abort', True)
+        result = ValidationResult(self, objtype, CRITICAL, text=msg, **kwargs)
+        self.results.append(result)
+        if msg == '': raise ValueError("The error message was empty.")
+        self.result.display('c', msg)
+        if abort:
+            self.result.display('t', "\nValidation Aborted")
+            self.result.stats()
+        self.result.add_result(result)
+        return abort
+
+    def add_error(self, objtype, msg, **kwargs):
+        # possible kwargs: show, medialist, track, text
+        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
+        self.results.append(result)
+        if msg == '': raise ValueError("The error message was empty.")
+        self.result.display('f', msg)
+        self.result.add_result(result)
+
+    def add_warning(self, objtype, msg, **kwargs):
+        # possible kwargs: show, medialist, track, text
+        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
+        self.results.append(result)
+        if msg == '': raise ValueError("The warning message was empty.")
+        self.result.display('f', msg)
+        self.result.add_result(result)
+
+# 'check' methods: add ValidationResults as needed
+
+    def check_file_exists(self, objtype, severity, path, format='', **kwargs):
+        arg = kwargs.pop('arg', 'path')
+        if not format: format = "File not found: '{" + arg + "}'"
+        return self.check_path_exists(objtype, severity, path, format, **kwargs)
+
+    def check_dir_exists(self, objtype, severity, path, format='', **kwargs):
+        arg = kwargs.pop('arg', 'path')
+        if not format: format = "Directory not found: '{" + arg + "}'"
+        return self.check_path_exists(objtype, severity, path, format, **kwargs)
+
+    def check_path_exists(self, objtype, severity, path, format='', **kwargs):
+        # Arguments
+        # path     :  Can be a string or a list to join with os.path.join()
+        # format   :  Formatter string on which to apply format().
+        # arg      :  If 'format' is not supplied, 'arg' can be used to select
+        #             the named path argument that gets used in the default format.
+        #
+        # Named Arguments in the formatter
+        # The following named arguments can be used in the formatter : 
+        #    {path}                : path as provided
+        #    {filename}            : alias for basename
+        #    {abspath}, {relpath}  : as in os.path.xxxxx
+        #    {dirname}, {basename} : as in os.path.xxxxx
+        #
+        if isinstance(path, basestring): path = path.strip()
+        else                           : path = os.path.join(*[x.strip() for x in path])
+        success = os.path.exists(path)
+        if not success:
+            arg = kwargs.pop('arg', 'path')
+            if not format: 
+                format = "Path not found: '{" + arg + "}'"
+            format = format.replace("{filename}", "{basename}").replace("{0}", "{path}")
+            #print "format '{0}', path='{1}'".format(format, path)
+            message = format.format(
+                path=path, 
+                abspath=os.path.abspath(path), relpath=os.path.relpath(path),
+                dirname=os.path.dirname(path), basename=os.path.basename(path))
+            self.add_result(objtype, severity, message, **kwargs)
+        return success
+
+    def check_profile_compatible_with_editor(self, profile_issue):
+        myversion = pp_definitions.__version__
+        if profile_issue != myversion:
+            self.add_critical(PROFILE, "Profile version {0} does not match this editor (version {1})" 
+                .format(profile_issue, myversion), abort=True)
+            return False
+        return True
+
+    def check_valid_show_label(self, show):
+        result = self.rule_is_showref(show['show-ref'], show['type'])
+        if result.passed is False:
+            self.add_error(SHOW, result.message)
+        return result.passed
+
+    def check_unique_show_label(self, show, labels):
+        showref = show['show-ref']
+        if labels.count(showref) > 1:
+            self.add_error(SHOW, "Show labels must be unique. '{0}' is not unique.".format(showref))
+            return False
+        return True
+
+    def check_start_show_calls_valid_show(self, show, labels):
+        passed = True
+        text=show['start-show']
+        show_count=0
+        fields = text.split()
+        for field in fields:
+            show_count+=1
+            if field not in labels:
+                self.add_error(SHOW, "Start show calls label '{0}', which was not found".format(field))
+                passed = False
+        if show_count == 0:
+            self.add_error(SHOW, "Start show needs to call a show".format(field))
+            passed = False
+        return passed
+
+    def check_one_start_show(self, count):
+        if count > 1 : self.add_error(SHOW, "Only one start show is allowed")
+        return count > 1
+
+    def check_start_show_is_required(self, count):
+        if count != 1: self.add_error(SHOW, "A start show is required")
+        return count == 1
+
+    def check_show_has_valid_medialist(self, show):
+        passed = True
+        list = show['medialist']
+        if list == '':
+            self.add_error(SHOW, "Medialist cannot be blank")
+            passed = False
+        if '.json' not in list:
+            self.add_error(SHOW, "Medialist '{0}' needs to be a .json file".format(list))
+            passed = False
+        if list not in self.v_media_lists:
+            self.add_error(SHOW, "Medialist '{0}' was not found.".format(list))
+            passed = False
+        exists = self.check_file_exists(SHOW, CRITICAL, [self.pp_profile, list], 
+            format="Medialist file '{0}' does not exist", abort=False)
+        return (passed and exists)
+
+# ValidationResult helpers
+
+    def set_current(self, show=SAME, list=SAME, track=SAME, msg='', **kwargs):
+        # Retaining the current show, list, and track allow ValidationResults to remember
+        # the hierarchicalitem they apply to.
+        # set show, list or track to empty string to ignore them, which is useful
+        # for updating only one of the parameters.
+        # Setting to None will update the parameter.
+        if show  != SAME: self.current_show = show
+        if list  != SAME: self.current_list = list
+        if track != SAME: self.current_track = track
+        if not msg:
+            checking = kwargs.pop('checking', '')
+            if checking == PROFILE: msg = "\nVALIDATING PROFILE '{0}'".format(self.pp_profile)
+            if checking == SHOW   : msg = "\nChecking show '{0}'".format(show['title'])
+            if checking == LIST   : msg = "\nChecking medialist '{0}'".format(list)
+            if checking == TRACK  : msg = "    Checking track '{0}'".format(track['title'])
+        if msg: 
+            append_msg = kwargs.pop('append_msg', '')
+            self.result.display('t', msg + append_msg)
+
+# Rule processing and helpers
 
     def process_ruleset(self, objtype, obj, field, dependent_field=None):
         is_dependency = dependent_field is not None
@@ -284,7 +505,7 @@ class Validator(object):
         # check if blank and whether a value is required
         if value is None or value == '':
             if spec['must'] != 'no':
-                self.add_value_required_error(objtype, spec['text'])
+                self.add_error(objtype, "A value is required for {0}".format(field), **kwargs)
             if is_dependency:
                 # it may be better for the rule for the field to determine whether the value is blank
                 msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
@@ -373,7 +594,6 @@ class Validator(object):
                     else:
                         msg = "{0}: {1} is an invalid value".format(spec['text'], value)
                         self.add_error(SHOW, msg)
-                    #self.add_invalid_value_result(SHOW, severity, spec['text'], value)
                 elif rule_result.passed is True:
                     if reqs and rule_result.blank is not True:
                         for req in reqs:
@@ -383,432 +603,26 @@ class Validator(object):
             print field, ": ", rule_result.message
         return rule_result
 
-    def dummy(self):
-            #show background and text
-            if show['show-text'] != "":
-                if not show['show-text-x'].isdigit(): self.result.display('f',"'Show Text x Position' is not 0 or a positive integer")
-                if not show['show-text-y'].isdigit(): self.result.display('f',"'Show Text y Position' is not 0 or a positive integer")
-                if show['show-text-colour']=='': self.result.display('f',"'Show Text Colour' is blank")
-                if show['show-text-font']=='': self.result.display('f',"'Show Text Font' is blank")
-            background_image_file=show['background-image']
-            if background_image_file.strip() != '' and  background_image_file[0] == "+":
-                track_file=pp_home+background_image_file[1:]
-                if not os.path.exists(track_file): self.result.display('f',"Background Image "+show['background-image']+ " background image file not found")
-
-            #track defaults
-            if not show['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
-            if not show['image-rotate'].isdigit(): self.result.display('f',"'Image Rotation' is not 0 or a positive integer")
-            self.check_volume('show','Video Player Volume',show['omx-volume'])
-            self.check_volume('show','Audio Volume',show['mplayer-volume'])
-            self.check_omx_window('show','Video Window',show['omx-window'])
-            self.check_image_window('show','Image Window',show['image-window'])
-
-            #eggtimer
-            if show['eggtimer-text'] != "":
-                if show['eggtimer-colour']=='': self.result.display('f',"'Eggtimer Colour' is blank")
-                if show['eggtimer-font']=='': self.result.display('f',"'Eggtimer Font' is blank")                
-                if not show['eggtimer-x'].isdigit(): self.result.display('f',"'Eggtimer x Position' is not 0 or a positive integer")
-                if not show['eggtimer-y'].isdigit(): self.result.display('f',"'Eggtimer y Position' is not 0 or a positive integer")
-
-
-            # Validate simple fields of each show type
-            if show['type'] in ("mediashow",'liveshow'):
-                if show['child-track-ref'] != '':
-                    if show['child-track-ref'] not in v_track_labels:
-                        self.result.display('f',"'Child Track ' " + show['child-track-ref'] + ' is not in medialist' )             
-                    if not show['hint-y'].isdigit(): self.result.display('f',"'Hint y Position' is not 0 or a positive integer")
-                    if not show['hint-x'].isdigit(): self.result.display('f',"'Hint x Position' is not 0 or a positive integer")
-                    if show['hint-colour']=='': self.result.display('f',"'Hint Colour' is blank")
-                    if show['hint-font']=='': self.result.display('f',"'Hint Font' is blank")
-
-                    
-                self.check_hh_mm_ss('Show Timeout',show['show-timeout'])
-                
-                self.check_hh_mm_ss('Repeat Interval',show['interval'])
-                
-                if not show['track-count-limit'].isdigit(): self.result.display('f',"'Track Count Limit' is not 0 or a positive integer")
-
-                if show['trigger-start-type']in('input','input-persist'):
-                    self.check_triggers('Trigger for Start',show['trigger-start-param'])
-
-                if show['trigger-next-type'] == 'input':
-                    self.check_triggers('Trigger for Next',show['trigger-next-param'])
-
-                if show['trigger-end-type'] == 'input':
-                    self.check_triggers('Trigger for End',show['trigger-end-param']) 
-                    
-                self.check_web_window('show','web-window',show['web-window'])
-                
-                self.check_controls('controls',show['controls'])
-
-                #notices
-                if show['trigger-wait-text'] != "" or show['empty-text'] != "":
-                    if show['admin-colour']=='': self.result.display('f',"' Notice Text Colour' is blank")
-                    if show['admin-font']=='': self.result.display('f',"'Notice Text Font' is blank")                
-                    if not show['admin-x'].isdigit(): self.result.display('f',"'Notice Text x Position' is not 0 or a positive integer")
-                    if not show['admin-y'].isdigit(): self.result.display('f',"'Notice Text y Position' is not 0 or a positive integer")
-
-
-            if show['type'] in ("artmediashow",'artliveshow'):
-                
-                #notices
-                if show['empty-text'] != "":
-                    if show['admin-colour']=='': self.result.display('f',"' Notice Text Colour' is blank")
-                    if show['admin-font']=='': self.result.display('f',"'Notice Text Font' is blank")                
-                    if not show['admin-x'].isdigit(): self.result.display('f',"'Notice Text x Position' is not 0 or a positive integer")
-                    if not show['admin-y'].isdigit(): self.result.display('f',"'Notice Text y Position' is not 0 or a positive integer")
-
-                self.check_controls('controls',show['controls'])
-                
-                        
-            if show['type'] == "menu":
-                self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
-                self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
-                
-                if show['menu-track-ref'] not in v_track_labels:
-                    self.result.display('f',"'menu track ' is not in medialist: " + show['menu-track-ref'])     
-                self.check_web_window('show','web-window',show['web-window'])
-                self.check_controls('controls',show['controls'])
-
-
-            if show['type'] == 'hyperlinkshow':
-                if show['first-track-ref'] not in v_track_labels:
-                    self.result.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])             
-                if show['home-track-ref'] not in v_track_labels:
-                    self.result.display('f',"'home track ' is not in medialist: " + show['home-track-ref'])              
-                if show['timeout-track-ref'] not in v_track_labels:
-                    self.result.display('f',"'timeout track ' is not in medialist: " + show['timeout-track-ref'])            
-                self.check_hyperlinks('links',show['links'],v_track_labels)
-                self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
-                self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
-                self.check_web_window('show','web-window',show['web-window'])
-
-            if show['type'] == 'radiobuttonshow':
-                if show['first-track-ref'] not in v_track_labels:
-                    self.result.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])
-                    
-                self.check_radiobutton_links('links',show['links'],v_track_labels)
-                self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
-                self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
-                self.check_web_window('show','web-window',show['web-window'])
-            return True
-
-    def check_medialist(self, medialist_file):
-        # find the associated show
-        show = None
-        for eshow in self.v_shows:
-            if 'medialist' in eshow:
-                if eshow['medialist'] == medialist_file:
-                    show = eshow
-                    break
-        showref = ""
-        if show: showref=show['show-ref']
-        if medialist_file == 'pp_showlist.json':
-            self.result.add_list('.', medialist_file) # make child item of profile
+    def ensure_ruleset_is_list(self, ruleset):
+        # transform string and dist objects to list
+        if isinstance(ruleset, dict):
+            ruleset = [ruleset, ]
+        elif isinstance(ruleset, str):
+            ruleset = [ruleset, ]
+        elif isinstance(ruleset, list):
+            pass
         else:
-            self.result.add_list(showref, medialist_file)
-        self.set_current(show, medialist_file, None)
+            raise TypeError("Ruleset is unexpected type: {0}".format(ruleset.__class__.__name__))
+        return ruleset
 
-        if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
-            return self.add_critical(LIST, "Invalid medialist in profile: {0}".format(medialist_file), abort=False)
-            
-        if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
-            self.set_current(show, medialist_file, None, checking=LIST)
-            self.v_media_lists.append(medialist_file)
-
-            # open a medialist and test its tracks
-            ifile = open(self.pp_profile + os.sep + medialist_file, 'rb')
-            sdict = json.load(ifile)
-            ifile.close()                          
-            tracks = sdict['tracks']
-            if 'issue' in sdict:
-                medialist_issue= sdict['issue']
-            else:
-                medialist_issue="1.0"
-                  
-            # check issue of medialist
-            if medialist_issue  !=  self.editor_issue:
-                return self.add_critical(LIST, "Medialist version {0} does not match this editor (version {1})" \
-                    .format(medialist_issue, editor_issue), abort=False)
-
-            # open a medialist and test its tracks
-            self.v_track_labels=[]
-            anonymous=0
-            for track in tracks:
-                self.check_track(track, anonymous)
-
-
-    def check_track(self, track, anonymous):
-        self.set_current(track=track, checking=TRACK)
-        showref = get_showref(self.current_show)
-        listref = self.current_list
-        self.result.add_track(showref, listref, track)
-        trackref = get_trackref(track)
-        tracktitle = get_track_title(track)
-
-        # check each field for the track, as defined by the field specs
-        for field in track:
-            try:
-                self.process_ruleset(TRACK, track, field)
-            except Exception as e:
-                print "An exception occurred on {0} {1}, field {2}: {3}".format('track', get_trackref(track), field, e)
-        return True
-
-    def dummy_track(self):
-        # check track-ref
-        if track['track-ref'] == '':
-            anonymous+=1
+    def ensure_fields_is_list(self, fields):
+        if isinstance(fields, str):
+            fields = [fields, ]
+        elif isinstance(fields, list):
+            pass
         else:
-            if track['track-ref'] in self.v_track_labels:
-                self.result.display('f',"'duplicate track reference: "+ track['track-ref'])
-            self.v_track_labels.append(track['track-ref'])
-
-        # warn if media tracks blank where optional
-        if track['type'] in ('audio','image','web','video'):
-            if track['location'].strip() == '':
-                self.result.display('w',"blank location")
-        
-        # check location of absolute and relative media tracks where present                   
-        if track['type'] in ('video','audio','image','web'):    
-            track_file=track['location']
-            if track_file.strip() != '':
-                if track_file[0] == "+":
-                    track_file=pp_home+track_file[1:]
-                self.check_file_exists(TRACK, ERROR, track_file)
-
-        if track['type'] in ('video','audio','message','image','web','menu'):
-            
-            # check common fields
-            self.check_animate('animate-begin',track['animate-begin'])
-            self.check_animate('animate-end',track['animate-end'])
-            self.check_plugin(track['plugin'],self.pp_home)
-            self.check_show_control(track['show-control-begin'],self.v_show_labels)
-            self.check_show_control(track['show-control-end'],self.v_show_labels)
-            if track['background-image'] != '':
-                track_file=track['background-image']
-                if track_file[0] == "+":
-                    track_file=pp_home+track_file[1:]
-                if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
-            if track['track-text'] != "":
-                if not track['track-text-x'].isdigit(): self.result.display('f',"'Track Text x position' is not 0 or a positive integer")
-                if not track['track-text-y'].isdigit(): self.result.display('f',"'Track Text y Position' is not 0 or a positive integer")
-                if track['track-text-colour']=='': self.result.display('f',"'Track Text Colour' is blank")
-                if track['track-text-font']=='': self.result.display('f',"'Track Text Font' is blank")                        
-
-
-        if track['type']=='menu':
-            self.check_menu(track)
-
-        
-        if track['type'] == "image":
-            if track['duration'] != "" and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not blank, 0 or a positive integer")
-            if track['image-rotate'] != "" and not track['image-rotate'].isdigit(): self.result.display('f',"'Image Rotation' is not blank, 0 or a positive integer")
-            self.check_image_window('track','image-window',track['image-window'])
-
-        if track['type'] == "video":
-            self.check_omx_window('track','omx-window',track['omx-window'])
-            self.check_volume('track','omxplayer-volume',track['omx-volume'])
-                
-        if track['type'] == "audio":
-            if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
-            if track['duration'] == '0' : self.result.display('w',"'Duration' of an audio track is zero")
-            self.check_volume('track','mplayer-volume',track['mplayer-volume'])
-            
-        if track['type'] == "message":
-            if track['duration'] != '' and not track['duration'].isdigit(): self.result.display('f',"'Duration' is not 0 or a positive integer")
-            if track['text'] != "":
-                if track['message-x'] != '' and not track['message-x'].isdigit(): self.result.display('f',"'Message x Position' is not blank, 0 or a positive integer")
-                if track['message-y'] != '' and not track['message-y'].isdigit(): self.result.display('f',"'Message y Position' is not blank, 0 or a positive integer")
-                if track['message-colour']=='': self.result.display('f',"'Message Text Colour' is blank")
-                if track['message-font']=='': self.result.display('f',"Message Text Font' is blank")                        
-                
-        if track['type'] == 'web':
-            self.check_browser_commands(track['browser-commands'])
-            self.check_web_window('track','web-window',track['web-window'])
-
-      
-        # CHECK CROSS REF TRACK TO SHOW
-        if track['type'] == 'show':
-            if track['sub-show'] == "":
-                self.result.display('f',"No 'Sub-show to Run'")
-            else:
-                if track['sub-show'] not in self.v_show_labels: self.result.display('f',"Sub-show "+track['sub-show'] + " does not exist")
-                
-    # if anonymous == 0 :self.result.display('w',"zero anonymous tracks in medialist " + file)
-
-    # check for duplicate track-labels
-    # !!!!!!!!!!!!!!!!!! add check for all labels
-
-
-    def add_result(self, objtype, severity, msg, **kwargs):
-        if severity == CRITICAL: return self.add_critical(objtype, msg, **kwargs)
-        if severity == ERROR   : return self.add_error   (objtype, msg, **kwargs)
-        if severity == WARNING : return self.add_warning (objtype, msg, **kwargs)
-
-    def add_critical(self, objtype, msg, **kwargs):
-        abort = kwargs.pop('abort', True)
-        result = ValidationResult(self, objtype, CRITICAL, text=msg, **kwargs)
-        self.results.append(result)
-        if msg == '': raise ValueError("The error message was empty.")
-        self.result.display('c', msg)
-        if abort:
-            self.result.display('t', "\nValidation Aborted")
-            self.result.stats()
-        self.result.add_result(result)
-        return abort
-
-    def add_error(self, objtype, msg, **kwargs):
-        # possible kwargs: show, medialist, track, text
-        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
-        self.results.append(result)
-        if msg == '': raise ValueError("The error message was empty.")
-        self.result.display('f', msg)
-        self.result.add_result(result)
-
-    def add_warning(self, objtype, msg, **kwargs):
-        # possible kwargs: show, medialist, track, text
-        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
-        self.results.append(result)
-        if msg == '': raise ValueError("The warning message was empty.")
-        self.result.display('f', msg)
-        self.result.add_result(result)
-
-    def check_file_exists(self, objtype, severity, path, format='', **kwargs):
-        arg = kwargs.pop('arg', 'path')
-        if not format: format = "File not found: '{" + arg + "}'"
-        return self.check_path_exists(objtype, severity, path, format, **kwargs)
-
-    def check_dir_exists(self, objtype, severity, path, format='', **kwargs):
-        arg = kwargs.pop('arg', 'path')
-        if not format: format = "Directory not found: '{" + arg + "}'"
-        return self.check_path_exists(objtype, severity, path, format, **kwargs)
-
-    def check_path_exists(self, objtype, severity, path, format='', **kwargs):
-        if isinstance(path, basestring): path = path.strip()
-        else                           : path = os.path.join(*[x.strip() for x in path])
-        success = os.path.exists(path)
-        if not success:
-            arg = kwargs.pop('arg', 'path')
-            if not format: 
-                format = "Path not found: '{" + arg + "}'"
-            format = format.replace("{filename}", "{basename}").replace("{0}", "{path}")
-            #print "format '{0}', path='{1}'".format(format, path)
-            message = format.format(
-                path=path, 
-                abspath=os.path.abspath(path), relpath=os.path.relpath(path),
-                dirname=os.path.dirname(path), basename=os.path.basename(path))
-            self.add_result(objtype, severity, message, **kwargs)
-        return success
-
-    def path_exists(self, path):
-        # Arguments
-        # path     :  Can be a string or a list to join with os.path.join()
-        # format   :  Formatter string on which to apply format().
-        # arg      :  If 'format' is not supplied, 'arg' can be used to select
-        #             the named path argument that gets used in the default format.
-        #
-        # Named Arguments in the formatter
-        # The following named arguments can be used in the formatter : 
-        #    {path}                : path as provided
-        #    {filename}            : alias for basename
-        #    {abspath}, {relpath}  : as in os.path.xxxxx
-        #    {dirname}, {basename} : as in os.path.xxxxx
-        #
-        if isinstance(path, basestring): path = path.strip()
-        else                           : path = os.path.join(*[x.strip() for x in path])
-        return os.path.exists(path)
-
-    def check_profile_compatible_with_editor(self, profile_issue, editor_issue):
-        if editor_issue == None:
-            return True
-        if profile_issue != editor_issue:
-            self.add_critical(PROFILE, "Profile version {0} does not match this editor (version {1})" 
-                .format(profile_issue, editor_issue), abort=True)
-            return False
-        return True
-
-    def check_valid_show_label(self, show):
-        result = self.rule_is_showref(show['show-ref'], show['type'])
-        if result.passed is False:
-            self.add_error(SHOW, result.message)
-        return result.passed
-
-    def check_unique_show_label(self, show, labels):
-        showref = show['show-ref']
-        if labels.count(showref) > 1:
-            self.add_error(SHOW, "Show labels must be unique. '{0}' is not unique.".format(showref))
-            return False
-        return True
-
-    def check_start_show_calls_valid_show(self, show, labels):
-        passed = True
-        text=show['start-show']
-        show_count=0
-        fields = text.split()
-        for field in fields:
-            show_count+=1
-            if field not in labels:
-                self.add_error(SHOW, "Start show calls label '{0}', which was not found".format(field))
-                passed = False
-        if show_count == 0:
-            self.add_error(SHOW, "Start show needs to call a show".format(field))
-            passed = False
-        return passed
-
-    def check_one_start_show(self, count):
-        if count > 1 : self.add_error(SHOW, "Only one start show is allowed")
-        return count > 1
-
-    def check_start_show_is_required(self, count):
-        if count != 1: self.add_error(SHOW, "A start show is required")
-        return count == 1
-
-    def check_show_has_valid_medialist(self, show):
-        passed = True
-        list = show['medialist']
-        if list == '':
-            self.add_error(SHOW, "Medialist cannot be blank")
-            passed = False
-        if '.json' not in list:
-            self.add_error(SHOW, "Medialist '{0}' needs to be a .json file".format(list))
-            passed = False
-        if list not in self.v_media_lists:
-            self.add_error(SHOW, "Medialist '{0}' was not found.".format(list))
-            passed = False
-        exists = self.check_file_exists(SHOW, CRITICAL, [self.pp_profile, list], 
-            format="Medialist file '{0}' does not exist", abort=False)
-        return (passed and exists)
-
-# ValidationResult helpers
-
-    def set_current(self, show=SAME, list=SAME, track=SAME, msg='', **kwargs):
-        # set show, list or track to empty string to ignore them, which is useful
-        # for updating only one of the parameters.
-        # Setting to None will update the parameter.
-        if show  != SAME: self.current_show = show
-        if list  != SAME: self.current_list = list
-        if track != SAME: self.current_track = track
-        if not msg:
-            checking = kwargs.pop('checking', '')
-            if checking == PROFILE: msg = "\nVALIDATING PROFILE '{0}'".format(self.pp_profile)
-            if checking == SHOW   : msg = "\nChecking show '{0}'".format(show['title'])
-            if checking == LIST   : msg = "\nChecking medialist '{0}'".format(list)
-            if checking == TRACK  : msg = "    Checking track '{0}'".format(track['title'])
-        if msg: 
-            append_msg = kwargs.pop('append_msg', '')
-            self.result.display('t', msg + append_msg)
-
-    def add_invalid_value_result(self, objtype, severity, value, **kwargs):
-        self.add_result(objtype, severity, "Invalid value for {0}: '{1}".format(field, value), **kwargs)
-
-    def add_invalid_value_error(self, objtype, field, value, **kwargs):
-        self.add_error(objtype, self.get_invalid_value_message(field, value), **kwargs)
-
-    def get_invalid_value_message(self, field, value):
-        return "Invalid value for {0}: '{1}'".format(field, value)
-
-    def add_value_required_error(self, objtype, field, **kwargs):
-        self.add_error(objtype, "A value is required for {0}".format(field), **kwargs)
+            raise TypeError("Ruleset is unexpected type: {0}".format(fields.__class__.__name__))
+        return fields
 
     def is_blank(self, value):
         # rules should validate if the value is blank, except for the rule that requires a non-blank value.
@@ -816,6 +630,37 @@ class Validator(object):
         # (which would fail for blank values) in addition to any other rule(s) needed to 
         # validate non-blank values (which would pass for blank values)
         return value is None or value == ''
+
+    def is_int(self, value):
+        try:
+            value = long(value)
+            if isinstance(value, long):
+                return True
+        except:
+            pass
+        return False
+
+    def is_zero_or_positive_integer(self, value):
+        return self.is_integer(value) and long(value) >= 0
+
+    def is_zero_or_positive_number(self, value):
+        return self.is_number(value) and long(value) >= 0
+
+    def is_x_y(self, value):
+        if isinstance(value, basestring):
+            fields = value.split()
+        else:
+            fields = list(value)
+        x = fields[0]
+        y = fields[1]
+        return self.is_integer(x) and self.is_integer(y)
+
+# Rules: return a RuleResult object
+
+    def rule_is_not_blank(self, value):
+        if not self.is_blank(value):
+            return RuleResult.true
+        return RuleResult(False, "Cannot be blank.")
 
     def rule_is_filetype(self, value, extension_spec):
         # extension spec: first element describes the type, e.g. 'Image Files'
@@ -845,35 +690,6 @@ class Validator(object):
             return RuleResult.true
         return self.rule_file_exists(value)
 
-    def is_int(self, value):
-        try:
-            value = long(value)
-            if isinstance(value, long):
-                return True
-        except:
-            pass
-        return False
-
-    def is_zero_or_positive_integer(self, value):
-        return self.is_integer(value) and long(value) >= 0
-
-    def is_zero_or_positive_number(self, value):
-        return self.is_number(value) and long(value) >= 0
-
-    def is_x_y(self, value):
-        if isinstance(value, basestring):
-            fields = value.split()
-        else:
-            fields = list(value)
-        x = fields[0]
-        y = fields[1]
-        return self.is_integer(x) and self.is_integer(y)
-
-    def rule_is_not_blank(self, value):
-        if not self.is_blank(value):
-            return RuleResult.true
-        return RuleResult(False, "Cannot be blank.")
-
     def rule_is_boolish(self, value):
         if isinstance(value, basestring):
             if value == "": return RuleResult.blank
@@ -890,6 +706,12 @@ class Validator(object):
             value = value.lower()
             if value in ("yes", "no"): return RuleResult.true
         return RuleResult(False, "'{0}' needs to be 'yes' or 'no'.")
+
+    def rule_is_in_list(self, value, values):
+        # ?  if self.is_blank(value): return RuleResult.true
+        if value in values:
+            return RuleResult.true
+        return RuleResult(False, "'{0}' is not one of the available choices.".format(value))
 
     def rule_is_integer(self, value):
         try:
@@ -1258,10 +1080,10 @@ class Validator(object):
         fields = line.split()
         if len(fields) != 2:
             return RuleResult(False, "A control command needs the command and a parameter{1}".format(line_num))
-        command = fields[0]
+        # command = fields[0]
         op = fields[1]
         if (op in ('up', 'down', 'play', 'stop', 'exit', 'pause', 'no-command', 'null') or
-            op.starts('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
+                op.starts('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
             return RuleResult.true
         return RuleResult(False, "'{0} is not a recognized command{1}.".format(op, line_str))
 
@@ -1274,12 +1096,12 @@ class Validator(object):
         fields = line.split()
         if len(fields) not in (2, 3):
             return RuleResult(False, "The command needs one or two parameters{0}.".format(line_str))
-        symbol = fields[0]
+        # symbol = fields[0]
         op = fields[1]
         trackref = None
         if len(fields) == 3: trackref = fields[2]
         if (op in ('return', 'stop', 'exit', 'pause', 'no-command') or
-            op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
+                op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
             return RuleResult.true
         elif op == 'play':
             if len(fields) != 3:
@@ -1300,13 +1122,13 @@ class Validator(object):
         fields = line.split()
         if len(fields) not in (2, 3):
             return RuleResult(False, "The command needs one or two parameters{0}.".format(line_str))
-        symbol = fields[0]
+        # symbol = fields[0]
         op = fields[1]
         trackref = None
         if len(fields) == 3: trackref = fields[2]
         if (op in ('home', 'null', 'stop', 'exit', 'repeat', 'pause', 'no-command') or
-            op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
-                return RuleResult.true
+                op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
+            return RuleResult.true
         if op in ('call', 'goto', 'jump'):
             if trackref is None:
                 return RuleResult(False, "'{0}' needs to know the track label{1}.".format(op, line_str))
@@ -1343,450 +1165,6 @@ class Validator(object):
                 return RuleResult(False, "'{0}' was not found in the show list{1}.".format(showref, line_str))
         return RuleResult.true
 
-# ***********************************
-# triggers
-# ************************************ 
-
-    def check_triggers(self,field,line):
-        words=line.split()
-        if len(words)!=1: self.result.display('f','Wrong number of fields in: ' + field + ", " + line)
-
-# ***********************************
-# volume
-# ************************************ 
-
-    def check_volume(self,track_type,field,line):
-        if track_type == 'show' and line.strip() == '':
-            self.result.display('f','Wrong number of fields: ' + field + ", " + line)
-            return
-        if track_type == 'track' and line.strip() == '':
-            return
-        if line[0] not in ('0','-'):
-            self.result.display('f','Invalid value: ' + field + ", " + line)
-            return
-        if line[0] ==  '0':
-            if not line.isdigit():
-                self.result.display('f','Invalid value: ' + field + ", " + line)
-                return
-            if int(line) != 0:
-                self.result.display('f','out of range -60 > 0: ' + field + ", " + line)
-                return
-            return
-            
-        elif line[0] == '-':
-            if not line[1:].isdigit():
-                self.result.display('f','Invalid value: ' + field + ", " + line)
-                return
-            if int(line)<-60 or int(line)>0:
-                self.result.display('f','out of range -60 > 0: ' + field + ", " + line)
-                return
-            return
-        
-        else:
-            self.result.display('f','help, do not understaand!: ' + field + ", " + line)
-            return        
-        
-# ***********************************
-# options
-# ************************************
-
-    def rule_is_in_list(self, value, values):
-        #?  if self.is_blank(value): return RuleResult.true
-        #if spec['shape'] != 'option-menu' or \
-        #    not 'values' in spec or \
-        #    value in spec['values']:
-        #        return RuleResult.true
-        #self.add_invalid_value_error(objtype, spec['text'], value)
-        if value in values:
-            return RuleResult.true
-        return RuleResult(False, "'{0}' is not one of the available choices.".format(value))
-
-    def rule_is_one_of_spec_options(self, objtype, value, spec):
-        # convenience method that isn't really a rule
-        if self.is_blank(value): return
-        if spec['shape'] != 'option-menu' or \
-            not 'values' in spec or \
-            value in spec['values']:
-                return True
-        self.add_invalid_value_error(objtype, spec['text'], value)
-
-    def check_show_options(self, show):
-        for field in PPdefinitions.show_types[show['type']]:
-            spec = PPdefinitions.show_field_specs[field]
-            if spec['shape'] != 'option-menu':
-               continue
-            if not 'values' in spec:
-                continue
-            self.rule_is_one_of_spec_options(SHOW, value=show[field], spec=spec)
-
-
-    def check_track_options(self, show, list, track):
-        for field in PPdefinitions.track_types[track['type']]:
-            spec = PPdefinitions.track_field_specs[field]
-            if spec['shape'] != 'option-menu':
-                continue
-            if not 'values' in spec:
-                continue
-            self.rule_is_one_of_spec_options(TRACK, value=track[field], spec=spec)
-
-# ***********************************
-# time of day inputs
-# ************************************ 
-
-    def check_times(self,text):
-        lines = text.split("\n")
-        for line in lines:
-            self.check_times_line(line)
-            
-    def check_times_line(self,line):
-        items = line.split()
-        if len(items) == 0: self.result.display('w','No time values when using time of day trigger: ')
-        for item in items:
-            self.check_times_item(item)
-
-    def check_times_item(self,item):
-        if item[0] == '+':
-            if not item.lstrip('+').isdigit():
-                self.result.display('f','Value of relative time is not positive integer: ' + item)
-                return
-        else:
-            # hh:mm;ss
-            fields=item.split(':')
-            if len(fields) == 0:
-                return
-            if len(fields) == 1:
-                self.result.display('f','Too few fields in time: ' + item)
-                return
-            if len(fields)>3:
-                self.result.display('f','Too many fields in time: ' + item)
-                return
-            if len(fields) != 3:
-                seconds='0'
-            else:
-                seconds=fields[2]
-            if not fields[0].isdigit() or not  fields[1].isdigit() or  not seconds.isdigit():
-                self.result.display('f','Fields of time are not positive integers: ' + item)
-                return        
-            if int(fields[0])>23 or int(fields[1])>59 or int(seconds)>59:
-                self.result.display('f','Fields of time are out of range: ' + item)
-                return
-             
-    def check_duration(self,field,line):          
-        fields=line.split(':')
-        if len(fields) == 0:
-            self.result.display('f','End Trigger, ' + field +' Field is empty: ' + line)
-            return
-        if len(fields)>3:
-            self.result.display('f','End Trigger, ' + field + ' More then 3 fields: ' + line)
-            return
-        if len(fields) == 1:
-            secs=fields[0]
-            minutes='0'
-            hours='0'
-        if len(fields) == 2:
-            secs=fields[1]
-            minutes=fields[0]
-            hours='0'
-        if len(fields) == 3:
-            secs=fields[2]
-            minutes=fields[1]
-            hours=fields[0]
-        if not hours.isdigit() or not  minutes.isdigit() or  not secs.isdigit():
-            self.result.display('f','End Trigger, ' + field + ' Fields are not positive integers: ' + line)
-            return
-        
-        if int(hours)>23 or int(minutes)>59 or int(secs)>59:
-            self.result.display('f','End Trigger, ' + field + ' Fields are out of range: ' + line)
-            return
-
-# *******************   
-# Check menu
-# ***********************               
-# window
-# consistencty of modes
-        
-    def check_menu(self,track):
-
-        if not track['menu-rows'].isdigit(): self.result.display('f'," Menu Rows is not 0 or a positive integer")
-        if not track['menu-columns'].isdigit(): self.result.display('f'," Menu Columns is not 0 or a positive integer")     
-        if not track['menu-icon-width'].isdigit(): self.result.display('f'," Icon Width is not 0 or a positive integer") 
-        if not track['menu-icon-height'].isdigit(): self.result.display('f'," Icon Height is not 0 or a positive integer")
-        if not track['menu-horizontal-padding'].isdigit(): self.result.display('f'," Horizontal Padding is not 0 or a positive integer")
-        if not track['menu-vertical-padding'].isdigit(): self.result.display('f'," Vertical padding is not 0 or a positive integer") 
-        if not track['menu-text-width'].isdigit(): self.result.display('f'," Text Width is not 0 or a positive integer") 
-        if not track['menu-text-height'].isdigit(): self.result.display('f'," Text Height is not 0 or a positive integer")
-        if not track['menu-horizontal-separation'].isdigit(): self.result.display('f'," Horizontal Separation is not 0 or a positive integer") 
-        if not track['menu-vertical-separation'].isdigit(): self.result.display('f'," Vertical Separation is not 0 or a positive integer")
-        if not track['menu-strip-padding'].isdigit(): self.result.display('f'," Stipple padding is not 0 or a positive integer")    
-
-        if not track['hint-x'].isdigit(): self.result.display('f',"'Hint x Position' is not 0 or a positive integer")
-        if not track['hint-y'].isdigit(): self.result.display('f',"'Hint y Position' is not 0 or a positive integer")
-
-        if not track['track-text-x'].isdigit(): self.result.display('f'," Menu Text x Position is not 0 or a positive integer") 
-        if not track['track-text-y'].isdigit(): self.result.display('f'," Menu Text y Position is not 0 or a positive integer")
-
-        if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'none':
-            self.result.display('f'," Icon and Text are both None") 
-
-        if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'overlay':
-            self.result.display('f'," cannot overlay none icon") 
-            
-        self.check_menu_window(track['menu-window'])
-
-    def check_menu_window(self,line):
-        if line  == '':
-            self.result.display('f'," menu Window: may not be blank")
-            return
-        
-        if line != '':
-            fields = line.split()
-            if len(fields) not in  (1, 2,4):
-                self.result.display('f'," menu Window: wrong number of fields") 
-                return
-            if len(fields) == 1:
-                if fields[0] != 'fullscreen':
-                    self.result.display('f'," menu Window: single argument must be fullscreen")
-                    return
-            if len(fields) == 2:                    
-                if not (fields[0].isdigit() and fields[1].isdigit()):
-                    self.result.display('f'," menu Window: coordinates must be positive integers")
-                    return
-                    
-            if len(fields) == 4:                    
-                if not(fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                    self.result.display('f'," menu Window: coordinates must be positive integers")
-                    return
-
-             
-             
-# *******************   
-# Check plugin
-# ***********************
-             
-    def check_plugin(self,plugin_cfg,pp_home):
-        if plugin_cfg.strip() != '' and  plugin_cfg[0] == "+":
-            plugin_cfg=pp_home+plugin_cfg[1:]
-            if not os.path.exists(plugin_cfg):
-                self.result.display('f','plugin configuration file not found: '+ plugin_cfg)
-
-
-# *******************   
-# Check browser commands
-# ***********************             
-             
-    def check_browser_commands(self,command_text):
-        lines = command_text.split('\n')
-        for line in lines:
-            if line.strip() == "":
-                continue
-            self.check_browser_command(line)
-
-
-    def check_browser_command(self,line):
-        fields = line.split()
-        if fields[0] == 'uzbl':
-            return
-        
-        if len(fields) not in (1,2):
-            self.result.display('f','incorrect number of fields in browser command: '+ line)
-            return
-            
-        command = fields[0]
-        if command not in ('load','refresh','wait','exit','loop'):
-            self.result.display('f','unknown command in browser commands: '+ line)
-            return
-           
-        if command in ('refresh','exit','loop') and len(fields) != 1:
-            self.result.display('f','incorrect number of fields for '+ command + 'in: '+ line)
-            return
-            
-        if command == 'load':
-            if len(fields) != 2:
-                self.result.display('f','incorrect number of fields for '+ command + 'in: '+ line)
-                return
-
-        if command == 'wait':
-            if len(fields) != 2:
-                self.result.display('f','incorrect number of fields for '+ command + 'in: '+ line)
-                return          
-            arg = fields[1]
-            if not arg.isdigit():
-                self.result.display('f','Argument for Wait is not 0 or positive number in: '+ line)
-                return
-      
-
-# *******************   
-# Check controls
-# *******************
-
-    def check_controls(self,name,controls_text):
-        lines = controls_text.split('\n')
-        for line in lines:
-            if line.strip() == "":
-                continue
-            self.check_control(line)
-
-
-    def check_control(self,line):
-        fields = line.split()
-        if len(fields) != 2 :
-            self.result.display('f',"incorrect number of fields in Control: " + line)
-            return
-        operation=fields[1]
-        if operation in ('up','down','play','stop','exit','pause','no-command','null') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
-            return
-        else:
-            self.result.display('f',"unknown Command in Control: " + line)
-
-
-# *******************   
-# Check hyperlinkshow links
-# ***********************
-
-    def check_hyperlinks(self,name,links_text,v_track_labels):
-        lines = links_text.split('\n')
-        for line in lines:
-            if line.strip() == "":
-                continue
-            self.check_hyperlink(line,v_track_labels)
-
-
-    def check_hyperlink(self,line,v_track_labels):
-        fields = line.split()
-        if len(fields) not in (2,3):
-            self.result.display('f',"Incorrect number of fields in Control: " + line)
-            return
-        symbol=fields[0]
-        operation=fields[1]
-        if operation in ('home','null','stop','exit','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
-            return
-
-        elif operation in ('call','goto','jump'):
-            if len(fields)!=3:
-                self.result.display('f','Incorrect number of fields in Control: ' + line)
-                return
-            else:
-                operand=fields[2]
-                if operand not in v_track_labels:
-                    self.result.display('f',operand + " Command argument is not in medialist: " + line)
-                    return
-
-        elif operation == 'return':
-            if len(fields)==2:
-                return
-            else:
-                operand=fields[2]
-                if operand.isdigit() is True:
-                    return
-                else:
-                    if operand not in v_track_labels:
-                        self.result.display('f',operand + " Command argument is not in medialist: " + line)
-                        return
-        else:
-            self.result.display('f',"unknown Command in Control: " + line)
-
-
-# *******************   
-# Check radiobuttonshow  links
-# ***********************
-
-    def check_radiobutton_links(self,name,links_text,v_track_labels):
-        lines = links_text.split('\n')
-        for line in lines:
-            if line.strip() == "":
-                continue
-            self.check_radiobutton_link(line,v_track_labels)
-
-    def check_radiobutton_link(self,line,v_track_labels):
-        fields = line.split()
-        if len(fields) not in (2,3):
-            self.result.display('f',"Incorrect number of fields in Control: " + line)
-            return
-        symbol=fields[0]
-        operation=fields[1]
-        if operation in ('return','stop','exit','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
-            return
-        
-        elif operation == 'play':
-            if len(fields)!=3:
-                self.result.display('f','Incorrect number of fields in Control: ' + line)
-                return
-            else:
-                operand=fields[2]
-                if operand not in v_track_labels:
-                    self.result.display('f',operand + " Command argument is not in medialist: " + line)
-                    return
-        else:
-            self.result.display('f',"unknown Command in Control: " + line)
-
-
-# ***********************************
-# checking show controls
-# ************************************
-
-    def check_show_control(self,text,v_show_labels):
-        lines = text.split("\n")
-        for line in lines:
-            self.check_show_control_fields(line,v_show_labels)
-
-    def check_show_control_fields(self,line,v_show_labels):
-        fields = line.split()
-        if len(fields) == 0:
-            return
-        # OSC command
-        elif len(fields)>0 and fields[0][0] =='/':
-                return
-        elif len(fields)==1:
-            if fields[0] not in ('exitpipresents','shutdownnow'):
-                self.result.display('f','Show control - Unknown command in: ' + line)
-                return
-        elif len(fields) == 2:
-            if fields[0] not in ('open','close'):
-                self.result.display('f','Show Control - Unknown command in: ' + line)
-            if fields[1] not in v_show_labels:
-                self.result.display('f',"Show Control - cannot find Show Reference: "+ line)
-                return
-        else:
-            self.result.display('f','Show Control - Incorrect number of fields in: ' + line)
-            return
-
-
-# ***********************************
-# checking animation
-# ************************************
-
-    def check_animate_fields(self,field,line):
-        fields= line.split()
-        if len(fields) == 0: return
-            
-        if len(fields)>4: self.result.display('f','Too many fields in: ' + field + ", " + line)
-
-        if len(fields)<4:
-            self.result.display('f','Too few fields in: ' + field + ", " + line)
-            return
-
-        delay_text=fields[0]
-        if  not delay_text.isdigit(): self.result.display('f','Delay is not 0 or a positive integer in:' + field + ", " + line)
-
-        name = fields[1]
-        # name not checked - done at runtime
-
-        out_type = fields[2]
-        if out_type != 'state': self.result.display('f','Unknownl type in: ' + field + ", " + line)
-        
-        to_state_text=fields[3]
-        if not (to_state_text  in ('on','off')): self.result.display('f','Unknown parameter in: ' + field + ", " + line)
-        
-        return
-    
-
-    
-    def check_animate(self,field,text):
-        lines = text.split("\n")
-        for line in lines:
-            self.check_animate_fields(field,line)
-
-
 # *************************************
 # GPIO CONFIG - NOT USED
 # ************************************
@@ -1806,7 +1184,6 @@ class Validator(object):
         self.config = ConfigParser.ConfigParser()
         self.config.read(filename)
         return True
-
         
     def get(self,section,item):
         if self.config.has_option(section,item) is False:
@@ -1815,156 +1192,9 @@ class Validator(object):
             return self.config.get(section,item)
 
 
-
-# *************************************
-# WEB WINDOW
-# ************************************
-                 
-    def check_web_window(self,track_type,field,line):
-
-        # check warp _ or xy2
-        fields = line.split()
-        
-        if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','Show must specify Web Window: ' + field + ", " + line)
-            return
-            
-        if len(fields) == 0:
-            return        
-
-        # deal with warp which has 1 or 5  arguments
-        if  fields[0]  != 'warp':
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-        if len(fields) not in (1,5):
-            self.result.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-            return
-
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                return
-
-                
-# *************************************
-# SHOW CANVAS
-# ************************************
-                           
-    def check_show_canvas(self,track_type,name,line):
-        fields=line.split()
-        if len(fields)== 0:
-            return
-        if len(fields) !=4:
-            self.result.display('f','wrong number of fields for ' + name + ", " + line)
-            return
-        else:
-            # show canvas is specified
-            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + name + ", " + line)
-                return
-       
-    
-
-# *************************************
-# IMAGE WINDOW
-# ************************************
-
-    def check_image_window(self,track_type,field,line):
-    
-        fields = line.split()
-        
-        if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','Show must specify Image Window: ' + field + ", " + line)
-            return
-            
-        if len(fields) == 0:
-            return
-
-        # deal with original whch has 0 or 2 arguments
-        if fields[0] == 'original':
-            if len(fields) not in (1,3):
-                self.result.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return      
-            # deal with window coordinates    
-            if len(fields) == 3:
-                # window is specified
-                if not (fields[1].isdigit() and fields[2].isdigit()):
-                    self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                    return
-                return
-            else:
-                return
-
-        # deal with remainder which has 1, 2, 5 or  6arguments
-        # check basic syntax
-        if  fields[0] not in ('shrink','fit','warp'):
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,2,5,6):
-            self.result.display('f','Wrong number of fields: ' + field + ", " + line)
-            return
-        if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.result.display('f','Illegal Filter: ' + field + ", " + line)
-            return
-        if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.result.display('f','Illegal Filter: ' + field + ", " + line)
-        
-        # deal with window coordinates    
-        if len(fields) in (5,6):
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                return
-
-
-
-# *************************************
-# VIDEO WINDOW
-# ************************************
-                    
-    def check_omx_window(self,track_type,field,line):
-
-        fields = line.split()
-        if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','show must have video window: ' + field + ", " + line)
-            return
-            
-        if len(fields) == 0:
-            return
-            
-        # deal with original which has 1
-        if fields[0] == 'original':
-            if len(fields)  !=  1:
-                self.result.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return 
-            return
-
-
-        # deal with warp which has 1 or 5  arguments
-        # check basic syntax
-        if  fields[0]  != 'warp':
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,5):
-            self.result.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                return
-
-    def get_results(self):
-        return self.result.errors, self.result.warnings
-
-
-
 # *************************************
 # RESULT WINDOW CLASS
 # ************************************
-
 
 class ResultWindow(object):
 
@@ -2041,12 +1271,12 @@ class ResultWindow(object):
     def add_list(self, showref, list):
         if not self.display_it: return
         if not showref: 
-            self.add_show(None);
+            self.add_show(None)
             parent = ".."
         elif showref == ".":
             parent = "."
         elif showref == "..":
-            self.add_show("..");
+            self.add_show("..")
             parent = ".."
         else:
             parent = ".{0}".format(showref)
@@ -2057,8 +1287,8 @@ class ResultWindow(object):
 
     def add_track(self, showref, listref, track):
         if not self.display_it: return
-        trackref = get_trackref(track)
-        text   = 'TRACK: ' + get_track_title(track)
+        trackref = self.get_trackref(track)
+        text   = 'TRACK: ' + self.get_track_title(track)
         parent = ".{0}.{1}".format(showref, listref)
         id     = ".{0}.{1}.{2}".format(showref, listref, trackref)
         if self.grid.exists(id): return
