@@ -2,6 +2,7 @@
 from Tkinter import *
 import ttk
 import Tkinter
+from tkconversions import CRITICAL_COLOR, ERROR_COLOR, WARNING_COLOR
 
 class StatusBar(ttk.Frame):
 
@@ -22,14 +23,18 @@ class StatusBar(ttk.Frame):
         self.label.config(kwargs, background=self.defaultbackground, text=format.format(*args))
         self.label.update_idletasks()
         
-    def set_warning(self, format, *args, **kwargs):
-        self.label.config(kwargs, background='yellow', text=format.format(*args))
+    def set_critical(self, format, *args, **kwargs):
+        self.label.config(kwargs, background=CRITICAL_COLOR, text=format.format(*args))
         self.label.update_idletasks()
     
     def set_error(self, format, *args, **kwargs):
-        self.label.config(kwargs, background='red', text=format.format(*args))
+        self.label.config(kwargs, background=ERROR_COLOR, text=format.format(*args))
         self.label.update_idletasks()
 
+    def set_warning(self, format, *args, **kwargs):
+        self.label.config(kwargs, background=WARNING_COLOR, text=format.format(*args))
+        self.label.update_idletasks()
+    
     def clear(self):
         self.label.config(text="")
         self.label.update_idletasks()

@@ -1,11 +1,21 @@
 from pp_utils import enum
 
+# must be a string that can be cast to float
+__version__ = "1.3"
+
+
 PPObjTypes = enum('PROFILE', 'SHOW', 'LIST', 'TRACK', 'FIELD')
 PROFILE  = PPObjTypes.PROFILE
 SHOW     = PPObjTypes.SHOW
 LIST     = PPObjTypes.LIST
 TRACK    = PPObjTypes.TRACK
 FIELD    = PPObjTypes.FIELD
+
+ValidationSeverity = enum('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
+CRITICAL = ValidationSeverity.CRITICAL
+ERROR    = ValidationSeverity.ERROR
+WARNING  = ValidationSeverity.WARNING
+INFO     = ValidationSeverity.INFO
 
 
 class PPdefinitions(object):
@@ -14,7 +24,6 @@ class PPdefinitions(object):
     VIDEO_FILES= ('Video Files','.asf','.avi','.mpg','.mp4','.mpeg','.m2v','.m1v','.vob','.divx','.xvid','.mov','.m4v','.m2p','.mkv','.m2ts','.ts','.mts','.wmv','.webm')
     AUDIO_FILES=('Audio files','.mp3','.wav','.ogg','.ogm','.wma','.asf','.mp2')
     WEB_FILES=('Web files','.htm','.html')
-
 
     # order of fields for editor display and which tab they are in.
     show_types = {
@@ -308,19 +317,19 @@ class PPdefinitions(object):
 
             'eggtimer-text'    : [{'required-fields' : ['eggtimer-colour', 'eggtimer-font', 'eggtimer-x', 'eggtimer-y']}, ],
             'eggtimer-color'   : [{'rule': 'is-color',   'depends-on': 'eggtimer-text'}, ],
-            'eggtimer-font'    : [{'rule': 'is-font',    'depends-on': 'eggtimer-text'}, ],
+            'eggtimer-font'    : [{'rule': 'is-font',    'severity': WARNING}, ],
             'eggtimer-x'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
             'eggtimer-y'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
             'hint-color'       : [{'rule': 'is-color',   'depends-on': 'hint-text'}, ],
-            'hint-font'        : [{'rule': 'is-font',    'depends-on': 'hint-text'}, ],
+            'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
             'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
             'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
 
             'show-text'        : [{'required-fields' : ['show-text-colour', 'show-text-font', 'show-text-x', 'show-text-y']}],
             'show-text-color'  : [{'rule': 'is-color',   'depends-on': 'show-text'}, ],
-            'show-text-font'   : [{'rule': 'is-font',    'depends-on': 'show-text'}, ],
+            'show-text-font'   : [{'rule': 'is-font',    'severity': WARNING}, ],
             'show-text-x'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
             'show-text-y'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
 
@@ -331,7 +340,7 @@ class PPdefinitions(object):
             'empty-text'       : [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
             'trigger-wait-text': [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
             'admin-color'      : [{'rule': 'is-color',   'depends-on': ['trigger-wait-text', 'empty-text']}, ],
-            'admin-font'       : [{'rule': 'is-font',    'depends-on': ['trigger-wait-text', 'empty-text']}, ],
+            'admin-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
             'admin-x'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
             'admin-y'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
     }
@@ -639,24 +648,24 @@ class PPdefinitions(object):
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
             'hint-color'       : [{'rule': 'is-color',   'depends-on': 'hint-text'}, ],
-            'hint-font'        : [{'rule': 'is-font',    'depends-on': 'hint-text'}, ],
+            'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
             'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
             'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
 
             'text'             : [{'required-fields' : ['message-colour', 'message-font'], }],
-            'message-font'     : [{'rule': 'is-font',    'depends-on': 'text'}, ],
+            'message-font'     : [{'rule': 'is-font',    'severity': WARNING}, ],
             'message-color'    : [{'rule': 'is-color',   'depends-on': 'text'}, ],
             'message-justify'  : [{'rule': 'is-text-justify', 'depends-on': 'text'}],
 
             'pause-text'       : [{'required-fields' : ['pause-text-colour', 'pause-text-font', 'pause-text-x', 'pause-text-y']}, ],
             'pause-color'      : [{'rule': 'is-color',   'depends-on': 'pause-text'}, ],
-            'pause-font'       : [{'rule': 'is-font',    'depends-on': 'pause-text'}, ],
+            'pause-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
             'pause-x'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
             'pause-y'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
 
             'track-text'       : [{'required-fields' : ['track-text-colour', 'track-text-font', 'track-text-x', 'track-text-y']}, ],
             'track-text-color' : [{'rule': 'is-color',   'depends-on': 'track-text'}, ],
-            'track-text-font'  : [{'rule': 'is-font',    'depends-on': 'track-text'}, ],
+            'track-text-font'  : [{'rule': 'is-font',    'severity': WARNING}, ],
             'track-text-x'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],
             'track-text-y'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],
     }

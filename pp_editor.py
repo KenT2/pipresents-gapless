@@ -15,6 +15,7 @@ import json
 import copy
 import string
 import pp_paths
+import pp_definitions
 from subprocess import Popen
 
 from pp_edititem import EditItem
@@ -22,15 +23,21 @@ from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_utils import Monitor
 from pp_options import ed_options
-from pp_validate import Validator, ValidationSeverity
+from pp_validate import Validator
 from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK
+from pp_definitions import ValidationSeverity, CRITICAL, ERROR, WARNING, INFO
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 from tkconversions import *
 from ttkStatusBar import StatusBar
 
+
 # **************************
 # Pi Presents Editor Class
 # *************************
+
+
+__version__ = pp_definitions.__version__
+
 
 class PPEditor(object):
 
@@ -44,8 +51,6 @@ class PPEditor(object):
 
     def __init__(self):
     
-        self.editor_issue="1.3"
-
         # get command options
         self.command_options=ed_options()
 
@@ -79,9 +84,10 @@ class PPEditor(object):
 
         style = ttkStyle()
         style.theme_use('clam')
-        self.photo_app = self.load_icon('pipresents_16.gif')
-        self.photo_spacer = self.load_icon('spacer.gif')
-        self.photo_warning = self.load_icon('warning.gif')
+        self.photo_app      = self.load_icon('pipresents_16.gif')
+        self.photo_spacer   = self.load_icon('spacer.gif')
+        self.photo_warning  = self.load_icon('warning.gif')
+        self.photo_error    = self.load_icon('error.gif')
         self.photo_critical = self.load_icon('critical.gif')
         self.root.tk.call('wm', 'iconphoto', self.root._w, self.photo_app)
 
@@ -104,6 +110,7 @@ class PPEditor(object):
         profilemenu = menubar.add_submenu('Profile', 0, accelerator='Alt-p')
         profilemenu.add_command('Open...',        0, self.open_existing_profile)
         profilemenu.add_command('Validate',       0, self.e_validate_profile_with_results)
+        profilemenu.add_command('Close',          0, self.close_profile)
         profilemenu.add_separator()
         profilemenu.add_command('Start Presentation', 0, self.start_presentation_windowed)
         profilemenu.add_command('Start Fullscreen', 6, self.start_presentation_fullscreen)
@@ -174,7 +181,7 @@ class PPEditor(object):
 
         # Tools and options menus
         toolsmenu = menubar.add_submenu('Tools', 3, accelerator='Alt-l')
-        toolsmenu.add_command('Update All',      0, self.update_all)
+        toolsmenu.add_command('Update All Profiles',      0, self.update_all)
         
         optionsmenu = menubar.add_submenu('Options', 0, accelerator='Alt-o')
         optionsmenu.add_command('Edit',          0, self.edit_options)
@@ -269,7 +276,8 @@ class PPEditor(object):
         self.shows_display.bind("+", lambda e: showsmenu_add.tk_popup(e.x_root, e.y_root))
         self.shows_display.tag_configure('show', image=self.photo_spacer)
         self.shows_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
-        self.shows_display.tag_configure('error',    foreground='red', image=self.photo_warning)
+        self.shows_display.tag_configure('error',    foreground='red',         image=self.photo_error)
+        self.shows_display.tag_configure('warning',  foreground='dark orange', image=self.photo_warning)
     
         # define display of medialists
         self.medialists_display = ttkListbox(medialists_frame, selectmode=SINGLE, height=7,
@@ -286,7 +294,8 @@ class PPEditor(object):
         self.medialists_display.bind("+", lambda e: medialist_add.tk_popup(e.x_root, e.y_root))
         self.medialists_display.tag_configure('list', image=self.photo_spacer)
         self.medialists_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
-        self.medialists_display.tag_configure('error',    foreground='red', image=self.photo_warning)
+        self.medialists_display.tag_configure('error',    foreground='red',         image=self.photo_error)
+        self.medialists_display.tag_configure('warning',  foreground='dark orange', image=self.photo_warning)
 
         # define display of tracks
         self.tracks_display = ttkListbox(tracks_frame, selectmode=SINGLE, height=15,
@@ -302,7 +311,8 @@ class PPEditor(object):
         self.tracks_display.bind("+", lambda e: trackmenu_add.tk_popup(e.x_root, e.y_root))
         self.tracks_display.tag_configure('track', image=self.photo_spacer)
         self.tracks_display.tag_configure('critical', foreground='white', background='red', image=self.photo_critical)
-        self.tracks_display.tag_configure('error',    foreground='red', image=self.photo_warning)
+        self.tracks_display.tag_configure('error',    foreground='red',         image=self.photo_error)
+        self.tracks_display.tag_configure('warning',  foreground='dark orange', image=self.photo_warning)
 
         # define window sizer
         sz = ttk.Sizegrip(root_frame)
@@ -364,9 +374,10 @@ class PPEditor(object):
         self.root.destroy()
         exit()
 
-    def init(self):
-        self.options.read()
-        self.set_window_geometry()
+    def init(self, closing_profile=False):
+        if not closing_profile:
+            self.options.read()
+            self.set_window_geometry()
 
         # get home path from -o option (kept separate from self.options.pp_home_dir)
         # or fall back to self.options.pp_home_dir
@@ -377,23 +388,27 @@ class PPEditor(object):
         else:
             self.pp_home_dir = self.options.pp_home_dir
 
-        # get profile path from -p option
-        # pp_profile_dir is the full path to the directory that contains 
-        # pp_showlist.json and other files for the profile
-        if self.command_options['profile'] != '':
-            self.pp_profile_dir = pp_paths.get_profile_dir(self.pp_home_dir, self.command_options['profile'])
-            if self.pp_profile_dir is None:
-                self.end('error','Failed to find profile')
+        if closing_profile:
+            self.pp_profile_dir = ""
         else:
-            self.pp_profile_dir=''
+            # get profile path from -p option
+            # pp_profile_dir is the full path to the directory that contains 
+            # pp_showlist.json and other files for the profile
+            if self.command_options['profile'] != '':
+                self.pp_profile_dir = pp_paths.get_profile_dir(self.pp_home_dir, self.command_options['profile'])
+                if self.pp_profile_dir is None:
+                    self.end('error','Failed to find profile')
+            else:
+                self.pp_profile_dir=''
 
-        pp_paths.media_dir = self.options.initial_media_dir
+        if not closing_profile:
+            pp_paths.media_dir = self.options.initial_media_dir
+            self.pp_profiles_offset = self.options.pp_profiles_offset
+            self.initial_media_dir = self.options.initial_media_dir
+            self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
+            self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
+            self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
 
-        self.pp_profiles_offset = self.options.pp_profiles_offset
-        self.initial_media_dir = self.options.initial_media_dir
-        self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
-        self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
-        self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
         self.osc_config_file = ''
         self.current_medialist=None
         self.current_showlist=None
@@ -402,9 +417,11 @@ class PPEditor(object):
         self.medialists_display.delete(0,END)
         self.tracks_display.delete(0,END)
         self.preview_proc = None
-        # if we were given a profile on the command line, open it
-        if self.command_options['profile'] != '':
+        if not closing_profile and self.command_options['profile'] != '':
+            # if we were given a profile on the command line, open it
             self.open_profile(self.pp_profile_dir)
+        if closing_profile:
+            self.status.set_info("", "", "")
 
 
     # ***************************************
@@ -435,12 +452,14 @@ class PPEditor(object):
         eo = OptionsDialog(self.root, self.options, 'Edit Options')
         if eo.result is True: self.init()
 
-    def show_help (self, event=None):
-        tkMessageBox.showinfo("Help","Read 'manual.pdf'")
+    def show_help(self, event=None):
+        if tkMessageBox.askyesno("Help","Do you want to open the manual in a PDF viewer?"):
+            path = os.path.join(self.pp_dir, "manual.pdf")
+            os.system("xdg-open '{0}'".format(path))
 
-    def about (self, event=None):
+    def about(self, event=None):
         tkMessageBox.showinfo("About","Editor for Pi Presents Profiles\n"
-                              +"For profile version: " + self.editor_issue + "\nAuthor: Ken Thompson"
+                              +"For profile version: " + pp_definitions.__version__ + "\nAuthor: Ken Thompson"
                               +"\nWebsite: http://pipresents.wordpress.com/")
 
     def e_validate_profile(self, event=None):
@@ -453,18 +472,23 @@ class PPEditor(object):
         if not  os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
             tkMessageBox.showinfo("Profile Error", "The main playlist was not found.\nDo you have a profile open?")
             return
-        val =Validator(self.editor_issue)
+        val = Validator()
         self.status.set("{0}", "Validating...")
         val.validate_profile(show_results)
-        errors, warnings = val.get_results()
+        criticals, errors, warnings = val.get_results()
+        if criticals == 1: critical_text = "1 critical"
+        else:              critical_text = "{0} criticals".format(criticals)
         if errors == 1: error_text = "1 error"
         else:           error_text = "{0} errors".format(errors)
         if warnings == 1: warn_text = "1 warning"
         else:             warn_text = "{0} warnings".format(warnings)
-        if errors > 0:
-            self.status.set_error("{0}, {1}. Double click for details.", error_text, warn_text)
+        msg = "{0}, {1}, {2}. Double click for details".format(critical_text, error_text, warn_text)
+        if criticals > 0:
+            self.status.set_critical(msg)
+        elif errors > 0:
+            self.status.set_error(msg)
         elif warnings > 0:
-            self.status.set_warning("{0}, {1}. Double click for details.", error_text, warn_text)
+            self.status.set_warning(msg)
             #tkMessageBox.showwarning("Validator","Errors were found in the profile. Run the validator for details")
             #self.status.set("! {0} errors, {1} warnings. Run validation for details.", errors, warnings, background='red')
         else:
@@ -509,9 +533,8 @@ class PPEditor(object):
                 grid.remove_tag(iid, 'list')
                 grid.remove_tag(iid, 'track')
         #else:
-        if type == 'track':
-            print 'Error in tracks {0}, row {1}'.format(result.track, iid)
-
+        #if type == 'track':
+        #    print 'Error in tracks {0}, row {1}'.format(result.track, iid)
 
     def switch_tabs(self, event=None):
         seleccted_tab = self.notebook.select()
@@ -522,7 +545,6 @@ class PPEditor(object):
         else: 
             self.notebook.select(0)
             self.shows_display.focus_set()
-
 
     # **************
     # OSC CONFIGURATION
@@ -552,7 +574,6 @@ class PPEditor(object):
             return
         os.rename(self.osc_config_file,self.osc_config_file+'.bak')
 
-
     # **************
     # PROFILES
     # **************
@@ -572,10 +593,11 @@ class PPEditor(object):
         if os.path.exists(showlist_file) is False:
             self.mon.err(self,"Not a Profile: " + dir_path + "\n\nHint: Have you opened the profile directory?")
             return
+        pp_paths.pp_profile_dir = dir_path
         self.pp_profile_dir = dir_path
         self.root.title("Editor for Pi Presents - "+ self.pp_profile_dir)
         if self.open_showlist(self.pp_profile_dir) is False:
-            self.init()
+            self.init(True)
             return
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
@@ -644,7 +666,6 @@ class PPEditor(object):
         profile = self.pp_dir+os.sep+'pp_resources'+os.sep+'pp_templates'+os.sep + 'ppt_hyperlinkshow_1p3'
         self.new_profile(profile)
 
-
     # ***************************************
     # Shows
     # ***************************************
@@ -656,15 +677,33 @@ class PPEditor(object):
             self.app_exit()
         self.current_showlist=ShowList()
         self.current_showlist.open_json(showlist_file)
-        if float(self.current_showlist.sissue())<float(self.editor_issue) or  (self.command_options['forceupdate']  is  True and float(self.current_showlist.sissue()) == float(self.editor_issue)):
+        myversion = float(pp_definitions.__version__)
+        showversion = float(self.current_showlist.sissue())
+        do_update = False
+        if showversion < myversion:
+            profile = os.path.basename(profile_dir)
+            msg = ("Do you want to update this?\n" +
+                "Profile: '{0}'\nfrom version {1} to {2}"
+                .format(profile, showversion, myversion))
+            if tkMessageBox.askokcancel("Update Profiles", msg):
+                do_update = True
+            else:
+                return False
+        if do_update or (self.command_options['forceupdate'] is True and showversion == myversion):
             self.update_profile()
-            self.mon.err(self,"Version of profile has been updated to "+self.editor_issue+", please re-open")
+            self.mon.warn(self,"The profile has been updated from version {0} to {1}.".format(showversion, myversion))
+            self.close_profile()
+            self.open_profile(profile_dir)
+            return True
+        if showversion > myversion:
+            self.mon.err(self,"This version of PiPresents ({0}) is too old to " +
+                "open the profile (version {1}).".format(myversion, showversion))
             return False
-        if float(self.current_showlist.sissue())>float(self.editor_issue):
-            self.mon.err(self,"Version of profile is greater than editor, must exit")
-            self.app_exit()
         self.refresh_shows_display()
         return True
+
+    def close_profile(self, event=None):
+        self.init(True)
 
     def save_showlist(self,showlist_dir):
         if self.current_showlist is not None:
@@ -770,7 +809,7 @@ class PPEditor(object):
         return refs
 
     def refresh_shows_display(self):
-        self.shows_display.delete(0,self.shows_display.size())
+        self.shows_display.delete(0,self.shows_display.length())
         for index in range(self.current_showlist.length()):
             show = self.current_showlist.show(index)
             display_name = "{0}  [{1}]".format(show['title'], show['show-ref'])
@@ -828,11 +867,13 @@ class PPEditor(object):
             # auto-upgrade show to include plugin so it appears in editor box
             if not 'plugin' in field_content and field_content['show-ref'] == 'start':
                 field_content['plugin'] = ''
-            d=EditItem(self.root, "Edit Show", SHOW, field_content, self.show_refs())
-            if d.result  is  True:
-                self.save_showlist(self.pp_profile_dir)
-                self.refresh_shows_display()
             try:
+                title = field_content['title']
+                d=EditItem(self.root, "Edit Show: " + title, SHOW, field_content, self.show_refs())
+                if d.result  is  True:
+                    self.save_showlist(self.pp_profile_dir)
+                    self.refresh_shows_display()
+                    self.validate_profile(False)
                 self.shows_display.focus_set() # retain focus on the list after editing
             except TclError:
                 # prevent "can't invoke command: application has been destroyed"
@@ -850,10 +891,10 @@ class PPEditor(object):
         for this_file in files:
             if this_file.endswith(".json") and this_file not in ('pp_showlist.json','schedule.json'):
                 self.medialists = self.medialists + [this_file]
-        self.medialists_display.delete(0,self.medialists_display.size())
+        self.medialists_display.delete(0,self.medialists_display.length())
         for item in self.medialists:
             showname = self.get_showname_for_medialist(item)
-            self.medialists_display.insert(END, item, iid=item, values=(showname))
+            self.medialists_display.insert(END, item, iid=item, values=(showname,), tags=('list',))
         self.current_medialists_index=-1
         self.current_medialist=None
 
@@ -898,7 +939,7 @@ class PPEditor(object):
                 tkMessageBox.showwarning("Add Medialist", msg + "\n\n  Aborting")
         nfile = open(path,'wb')
         nfile.write("{")
-        nfile.write("\"issue\":  \""+self.editor_issue+"\",\n")
+        nfile.write("\"issue\":  \""+__version__+"\",\n")
         nfile.write("\"tracks\": [")
         nfile.write("]")
         nfile.write("}")
@@ -907,7 +948,7 @@ class PPEditor(object):
         self.medialists.append(copy.deepcopy(name))
         # add title to medialists display
         showname = self.get_showname_for_medialist(item)
-        self.medialists_display.insert(END, item, iid=item, values=(showname))
+        self.medialists_display.insert(END, item, iid=item, values=(showname,), tags=('list',))
         # and set it as the selected medialist
         self.medialists_display.select(name)
         #self.refresh_medialists_display()
@@ -946,14 +987,15 @@ class PPEditor(object):
                     tkMessageBox.showwarning("Copy medialist","Name is blank")
                     return ''
                 
-            success_file = self.copy_medialist_file(from_file,to_file)
+            item = self.copy_medialist_file(from_file,to_file)
             if success_file =='':
                 return ''
 
             # append it to the list
-            self.medialists.append(copy.deepcopy(success_file))
+            self.medialists.append(copy.deepcopy(item))
             # add title to medialists display
-            self.medialists_display.insert(END, success_file)
+            showname = self.get_showname_for_medialist(item)
+            self.medialists_display.insert(END, item, iid=item, values=(showname,), tags=('list',))
             # and reset  selected medialist
             self.current_medialist=None
             self.refresh_medialists_display()
@@ -1061,7 +1103,7 @@ class PPEditor(object):
             medialist = "(no medialist selected)"
         self.tracks_label['text'] = "Tracks in %s" % medialist 
         if clear_tracks:
-            self.tracks_display.delete(0, self.tracks_display.size())
+            self.tracks_display.delete(0, self.tracks_display.length())
             if self.current_medialist is not None:
                 list = self.current_medialist
                 for index in range(self.current_medialist.length()):
@@ -1070,7 +1112,7 @@ class PPEditor(object):
                     else:
                         track_ref_string=""
                     self.tracks_display.insert(END, list.track(index)['title']+track_ref_string, tags=('track',))        
-                if self.tracks_display.size() > 0:
+                if self.tracks_display.length() > 0:
                     self.tracks_display.select(0)
                 self.highlight_tracks_display()
         if self.options.autovalidate: self.validate_profile()
@@ -1097,13 +1139,22 @@ class PPEditor(object):
     def m_edit_track(self, *args, **kwargs):
         self.edit_track(PPdefinitions.track_types,PPdefinitions.track_field_specs)
 
-    def edit_track(self,track_types,field_specs):      
-        if self.current_medialist is not None and self.current_medialist.track_is_selected():
-            d=EditItem(self.root, "Edit Track", self.current_medialist.selected_track(), self.show_refs())
-            if d.result  is  True:
-                self.save_medialist()
-            self.highlight_tracks_display()
-            self.tracks_display.focus_set() # retain focus on the list after editing
+    def edit_track(self,track_types,field_specs):
+        try:
+            if self.current_medialist is not None and self.current_medialist.track_is_selected():
+                track = self.current_medialist.selected_track()
+                title = track['title']
+                if title == '': title = track['track-ref']
+                d=EditItem(self.root, "Edit Track: " + title, TRACK, track, self.show_refs())
+                if d.result is True:
+                    self.save_medialist()
+                    self.validate_profile(False)
+                    self.refresh_tracks_display(False)
+                self.highlight_tracks_display()
+                self.tracks_display.focus_set()  # retain focus on the list after editing
+        except TclError:
+            # prevent "can't invoke command: application has been destroyed"
+            pass
 
     def track_OnCtrlUp(self, event=None):
         self.move_track_up()
@@ -1242,28 +1293,40 @@ class PPEditor(object):
     # **********************************************
 
     def update_all(self, event=None):
+        folder = os.path.join(self.pp_home_dir, 'pp_profiles', self.pp_profiles_offset)
+        files = os.listdir(folder)
+        if not files: 
+            tkMessageBox.showwarning("Pi Presents", "No profiles were found in the directory.")
+            return
+        files.sort()
+        msg = ("Do you want to update all of the profiles in this directory?\n" +
+            "   {folder}\n   to version: {version}\n   {count} directories found (possible profiles)"
+            .format(folder=folder, version=myversion, count=len(files)))
+        if not tkMessageBox.askokcancel("Update Profiles", msg):
+            return
         self.init()
-        files = os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset)
-        if files: files.sort()
         for profile_file in files:
             # self.mon.log (self,"Updating "+profile_file)
             self.pp_profile_dir = self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset + os.sep + profile_file
             if not os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
-                tkMessageBox.showwarning("Pi Presents","Not a profile, skipping "+self.pp_profile_dir)
+                tkMessageBox.showwarning("Pi Presents","'{0}' is not a profile, skipping.".format(self.pp_profile_dir))
             else:
                 self.current_showlist=ShowList()
                 self.current_showlist.open_json(self.pp_profile_dir+os.sep+"pp_showlist.json")
-                self.mon.log (self,"Version of profile "+ profile_file + ' is ' + self.current_showlist.sissue())
-                if float(self.current_showlist.sissue())<float(self.editor_issue):
-                    self.mon.log(self,"Version of profile "+profile_file+ "  is being updated to "+self.editor_issue)
+                profile_version = float(self.current_showlist.sissue())
+                myversion = float(__version__)
+                self.mon.log (self,"Profile '{0}' is version {1}.".format(profile_file, profile_version))
+                if profile_version < myversion:
+                    self.mon.log(self,"Profile '{0}' is being updated to version {1}.".format(profile_file, myversion))
                     self.update_profile()
-                elif (self.command_options['forceupdate']  is  True and float(self.current_showlist.sissue()) == float(self.editor_issue)):
-                    self.mon.log(self, "Forced updating of " + profile_file + ' to '+self.editor_issue)
+                elif (self.command_options['forceupdate']  is  True and profile_version == myversion):
+                    self.mon.log(self, "Forced updating of profile '{0}' to version {1}.".format(profile_file, myversion))
                     self.update_profile()
-                elif float(self.current_showlist.sissue())>float(self.editor_issue):
-                    tkMessageBox.showwarning("Pi Presents", "Version of profile " +profile_file+ " is greater than editor, skipping")
+                elif profile_version > myversion:
+                    tkMessageBox.showwarning("Pi Presents", "Profile '{0}' is version {1} and cannot " +
+                        "be updated by this version of PiPresents.".format(profile_file, profile_version))
                 else:
-                    self.mon.log(self," Skipping Profile " + profile_file + " It is already up to date ")
+                    self.mon.log(self," Skipping profile '{0}'. It is already up to date.".foramt(profile_file))
         self.init()
         tkMessageBox.showwarning("Pi Presents","All profiles updated")
             
@@ -1283,7 +1346,7 @@ class PPEditor(object):
         #go through shows - if type = menu and version is greater copy its medialist to a new medialist with  name = <show-ref>-menu1p3.json
         for show in shows:
             #create a new medialist medialist != show-ref as menus can't now share medialists
-            if show['type']=='menu' and float(self.current_showlist.sissue())<float(self.editor_issue):
+            if show['type']=='menu' and float(self.current_showlist.sissue())<float(__version__):
                 to_file=show['show-ref']+'-menu1p3.json'
                 from_file = show['medialist']
                 if to_file != from_file:
@@ -1316,14 +1379,14 @@ class PPEditor(object):
                                                                     "menu-window"))
                                           
                 # and save the medialist
-                dic={'issue':self.editor_issue,'tracks':tracks}
+                dic={'issue':__version__,'tracks':tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + to_file, "wb")
                 json.dump(dic,ofile,sort_keys=True,indent=1)
                 # end for show in shows
 
         #update the fields in  all shows
         replacement_shows=self.update_shows_in_showlist(shows)
-        dic={'issue':self.editor_issue,'shows':replacement_shows}
+        dic={'issue':__version__,'shows':replacement_shows}
         ofile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
         return True
@@ -1355,7 +1418,7 @@ class PPEditor(object):
                 tracks = json.load(ifile)['tracks']
                 ifile.close()
                 replacement_tracks=self.update_tracks(tracks)
-                dic={'issue':self.editor_issue,'tracks':replacement_tracks}
+                dic={'issue':__version__,'tracks':replacement_tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + this_file, "wb")
                 json.dump(dic,ofile,sort_keys=True,indent=1)       
 

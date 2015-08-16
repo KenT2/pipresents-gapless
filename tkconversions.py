@@ -5,13 +5,18 @@ import Tkinter as tk
 import traceback
 import colorsys
 import pprint
+from ScrolledText import ScrolledText
 
-ERROR_COLOR = 'light pink'
+REQUIRED_COLOR = 'lemon chiffon'
+CRITICAL_COLOR = 'red'
+ERROR_COLOR    = 'light pink'
+WARNING_COLOR  = 'dark orange'
 
 class ttkStyle(ttk.Style):
 
-    def theme_use(self, name, *args, **kwargs):
-        ttk.Style.theme_use(self, *args, **kwargs)
+    def theme_use(self, *args, **kwargs):
+        if args is None and kwargs is None:
+            return ttk.Style.theme_use(self, *args, **kwargs)
 
         # fix weird frame colors
         #bg = self.lookup('.', 'background') # background, selectbackground
@@ -23,16 +28,21 @@ class ttkStyle(ttk.Style):
             background = [
               ('selected','focus', bg),
               ('selected','!focus', halfbg)])
+        self.init_extra_styles()
+
+    def init_extra_styles(self):
         # create themes
         # Treeview errors are styled using tags
         s = ttk.Style()
-        for w in ('Entry', 'Combobox', 'Spinbox'):
-            if w == 'Entry':
-                s.configure("error.T"+w, background=ERROR_COLOR, fieldbackground=ERROR_COLOR)
-                s.configure("required.T"+w, background='lemon chiffon', fieldbackground='lemon chiffon')
+        for w in ('Entry', 'Combobox', 'Spinbox', 'ScrolledText'):
+            if w in ('Entry', 'Combobox'):
+                s.configure("error.T"+w,    background=ERROR_COLOR,    fieldbackground=ERROR_COLOR)
+                s.configure("warning.T"+w,  background=WARNING_COLOR,  fieldbackground=WARNING_COLOR)
+                s.configure("required.T"+w, background=REQUIRED_COLOR, fieldbackground=REQUIRED_COLOR)
             else:
-                s.configure("error.T"+w, background=ERROR_COLOR)
-                s.configure("required.T"+w, background='lemon chiffon')
+                s.configure("error.T"+w,    background=ERROR_COLOR)
+                s.configure("warning.T"+w,  background=WARNING_COLOR)
+                s.configure("required.T"+w, background=REQUIRED_COLOR)
 
     def adjust_saturation(self, color, amount):
         r,g,b = self.html_to_rgb(color)
@@ -49,6 +59,61 @@ class ttkStyle(ttk.Style):
 
     def rgb_to_html(self, r,g,b):
         return "#{0:02x}{1:02x}{2:02x}".format(int(r*255),int(g*255),int(b*255))
+
+
+class AutoScroll(object):
+    """Configure the scrollbars for a widget.
+    From https://code.google.com/p/python-ttk/source/browse/trunk/pyttk-samples/theming.py
+    By Guilherme Polo, 2008.
+    """
+
+    def __init__(self, master):
+        vsb = ttk.Scrollbar(master, orient='vertical', command=self.yview)
+        hsb = ttk.Scrollbar(master, orient='horizontal', command=self.xview)
+
+        self.configure(yscrollcommand=self._autoscroll(vsb),
+            xscrollcommand=self._autoscroll(hsb))
+        self.grid(column=0, row=0, sticky='nsew')
+        vsb.grid(column=1, row=0, sticky='ns')
+        hsb.grid(column=0, row=1, sticky='ew')
+
+        master.grid_columnconfigure(0, weight=1)
+        master.grid_rowconfigure(0, weight=1)
+
+        # Copy geometry methods of master -- hack! (took from ScrolledText.py)
+        methods = tk.Pack.__dict__.keys() + tk.Grid.__dict__.keys()
+
+        for meth in methods:
+            if meth[0] != '_' and meth not in ('config', 'configure'):
+                setattr(self, meth, getattr(master, meth))
+
+    @staticmethod
+    def _autoscroll(sbar):
+        """Hide and show scrollbar as needed."""
+        def wrapped(first, last):
+            first, last = float(first), float(last)
+
+            if first <= 0 and last >= 1:
+                sbar.grid_remove()
+            else:
+                sbar.grid()
+        
+            sbar.set(first, last)
+
+        return wrapped
+
+    def __str__(self):
+        return str(self.master)
+
+
+def _create_container(func):
+    """Creates a ttk Frame with a given master, and use this new frame to
+    place the scrollbars and the widget."""
+    def wrapped(cls, master, **kw):
+        container = ttk.Frame(master)
+        return func(cls, container, **kw)
+    return wrapped
+
 
 class ttkMenu(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
@@ -89,6 +154,7 @@ class ttkMenu(tk.Menu):
         #char = label[underline].lower()
         tk.Menu.add_command(self, label=label, underline=underline, command=command, **kwargs)
 
+
 class ttkCombobox(ttk.Combobox):
     def __init__(self, parent, **kwargs):
        ttk.Combobox.__init__(self, parent, **kwargs)
@@ -97,13 +163,16 @@ class ttkCombobox(ttk.Combobox):
     def __call__(self, *args):
        self['values'] = args
 
+
 class ttkLabel(ttk.Label):
     def __init__(self, parent, **kwargs):
         ttk.Label.__init__(self, parent, **kwargs)
 
+
 class ttkCheckbutton(ttk.Checkbutton):
     def __init__(self, parent, **kwargs):
        ttk.Checkbutton.__init__(self, parent, **kwargs)
+
 
 class ttkEntry(ttk.Entry):
 
@@ -111,13 +180,16 @@ class ttkEntry(ttk.Entry):
        kwargs.pop('bg', None)
        ttk.Entry.__init__(self, parent, **kwargs)
 
+
 class ttkSpinbox(Spinbox):
     def __init__(self, parent, **kwargs):
         kwargs.pop('height', None)
         Spinbox.__init__(self, parent, **kwargs)
 
-class ttkListbox(ttk.Treeview):
 
+class ttkTreeview(AutoScroll, ttk.Treeview):
+
+    @_create_container
     def __init__(self, parent, **kwargs):
         selectmode = kwargs.pop('selectmode', None)
         if selectmode and selectmode == SINGLE: kwargs['selectmode'] = BROWSE
@@ -129,9 +201,11 @@ class ttkListbox(ttk.Treeview):
         # Set a context menu and bind it to right click
         self.on_item_popup = kwargs.pop('on_item_popup', None)
         self.off_item_popup = kwargs.pop('off_item_popup', None)
-        self.scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL)
-        ttk.Treeview.__init__(self, parent, yscrollcommand=self.scrollbar.set, **kwargs)
-        self.scrollbar.config(command=self.yview)
+        #self.scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL)
+        #ttk.Treeview.__init__(self, parent, yscrollcommand=self.scrollbar.set, **kwargs)
+        #self.scrollbar.config(command=self.yview)
+        ttk.Treeview.__init__(self, parent, **kwargs)
+        AutoScroll.__init__(self, parent)
         if self.on_item_popup or self.off_item_popup:
             self.bind("<ButtonPress-3><ButtonRelease-3>", self.show_popup)
         self.bind("<Up>", self.up_keypressed)
@@ -209,7 +283,7 @@ class ttkListbox(ttk.Treeview):
             tags.remove(tag)
         self.item(item, tags=tuple(tags))
 
-    def size(self):
+    def length(self):
         children = ttk.Treeview.get_children(self)
         return len(children)
 
@@ -266,10 +340,15 @@ class ttkListbox(ttk.Treeview):
     # Helpers
 
     def item_at(self, index):
-        return self.get_children()[index]
+        children = self.get_children()
+        if children is not None:
+            return children[index]
+        return None
 
     def clear(self):
         self.delete(0, END)
+
+ttkListbox = ttkTreeview  # naming compatibility
 
 
 class ttkButton(ttk.Button):
@@ -284,13 +363,24 @@ class ttkButton(ttk.Button):
         kwargs.pop('relief', None)
         ttk.Button.__init__(self, parent, **kwargs)
 
+
 class ttkFrame(ttk.Frame):
 
     def __init__(self, parent, **kwargs):
         kwargs.pop('padx', None)
         kwargs.pop('pady', None)
         ttk.Frame.__init__(self, parent, **kwargs)
-    
+
+
+class ttkScrolledText(tk.Text, AutoScroll):
+    # This is not a full ttk widget, but only makes it ttk-like for the features we are using
+
+    @_create_container
+    def __init__(self, parent, **kwargs):
+        tk.Text.__init__(self, parent, **kwargs)
+        AutoScroll.__init__(self, parent)
+
+
 class ttkToolTip(object):
     """
     Based on http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml

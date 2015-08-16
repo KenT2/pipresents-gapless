@@ -2,26 +2,21 @@ import os
 import json
 import ConfigParser
 import re
-#import Image
 import PIL.Image
-from PIL import ImageDraw, ImageFont, ImageMode, ImageTk # color names
-from Tkinter import Tk, Toplevel, Scrollbar,Text
+from PIL import ImageDraw  # color names
+from Tkinter import Toplevel
 from Tkinter import VERTICAL,RIGHT,LEFT,BOTH,Y,NORMAL,END,DISABLED
+from ttkStatusBar import StatusBar
 import ttk
 import tkFont
 from tkconversions import *
 import pp_paths
 from pp_utils import enum
-
 import pp_definitions
 from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK, FIELD
+from pp_definitions import ValidationSeverity, CRITICAL, ERROR, WARNING, INFO
 
-ValidationSeverity = enum('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
 # shorter ways to call these
-CRITICAL = ValidationSeverity.CRITICAL
-ERROR    = ValidationSeverity.ERROR
-WARNING  = ValidationSeverity.WARNING
-INFO     = ValidationSeverity.INFO
 
 SAME = ''  # for setting a current item without changing other current items
 
@@ -32,22 +27,23 @@ class RuleResult(object):
     true = None
     blank = None
 
-    def __init__(self, passed=None, message=None, blank=None):
-        self.passed  = passed
-        self.message = message
-        self.blank   = blank  # hmm, not to be confused with RuleResult.blank
+    def __init__(self, passed=None, message=None, blank=None, severity=None):
+        self.passed   = passed
+        self.message  = message
+        self.blank    = blank  # hmm, not to be confused with RuleResult.blank
+        self.severity = severity
         if RuleResult.__dict__.get('true') == None:
             setattr(RuleResult, 'true', '')     # prevent recursion
             setattr(RuleResult, 'blank', '')
             RuleResult.true = RuleResult(True)  # set the actual item
             RuleResult.blank = RuleResult(True, blank=True)
 
-dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
-
 
 class ValidationResult(object):
 
     def __init__(self, validator, objtype, severity, **kwargs):
+        dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
+
         self.objtype   = objtype                     # PROFILE, SHOW, LIST, TRACK
         self.severity  = severity                    # CRITICAL, ERROR, WARNING, (INFO?), (OK?)
         self.text      = kwargs.pop('text', '')      # title for collapsible items, message for errors, etc.
@@ -71,9 +67,9 @@ class ValidationResult(object):
             self.id = ".{0}.{1}".format(self.showref, self.listref)
         elif self.show:
             self.id = ".{0}".format(self.showref)
-        else:
-            print "Something wrong... show:{0}, list:{1}, track{2}" \
-                .format(self.showref, self.listref, self.trackref)
+        #else:
+        #    print "Something wrong... show:{0}, list:{1}, track{2}" \
+        #        .format(self.showref, self.listref, self.trackref)
         #print "id: " + self.id
 
     def __cmp__(self, other):
@@ -125,7 +121,6 @@ class Validator(object):
         if not title: title = track['location']
         return title
 
-
     def __init__(self):
         self.pp_home = pp_paths.pp_home
         self.pp_profile = pp_paths.pp_profile_dir
@@ -159,16 +154,11 @@ class Validator(object):
             "pp_showlist not in profile", abort=True):
             return False
         ifile = open(self.pp_profile+os.sep+"pp_showlist.json", 'rb')
-        sdict = json.load(ifile)
+        showlist = json.load(ifile)
         ifile.close()
-        self.v_shows = sdict['shows']
-        if 'issue' in sdict:
-            profile_issue = sdict['issue']
-        else:
-            profile_issue ="1.0"
-        if not self.check_profile_compatible_with_editor(profile_issue):
-            print "not compatible"
-            return False
+        self.v_shows = showlist['shows']
+        #if not self.check_profile_compatibility(showlist):
+        #    return False
 
         # read the gpio config
         # gpio_cfg_ok=read_gpio_cfg(pp_dir,pp_home,pp_profile)
@@ -244,12 +234,14 @@ class Validator(object):
 
             # open medialist and produce a dictionary of its contents for use later
             ifile  = open(self.pp_profile + os.sep + show['medialist'], 'rb')
-            tracks = json.load(ifile)['tracks']
+            list = json.load(ifile)
+            tracks = list['tracks']
             ifile.close()
 
             # make a list of the track labels
             v_track_labels=[]
             for track in tracks:
+                self.set_current(list=list, track=track)
                 self.result.add_track(show['show-ref'], show['medialist'], track)
                 if track['track-ref'] !='':
                     v_track_labels.append(track['track-ref'])
@@ -258,8 +250,9 @@ class Validator(object):
             specs = PPdefinitions.show_field_specs
             scheme = PPdefinitions.show_field_rules
             for field in show: #PPdefinitions.show_types[show['type']]:
+                self.set_current(show=show, track=None)
                 #try:
-                    self.process_ruleset(SHOW, show, field)
+                self.process_ruleset(SHOW, show, field)
                 #except Exception as e:
                 #    print "An exception occurred on {0} {1}, field {2}: {3}".format('show', show['show-ref'], field, e)
 
@@ -308,7 +301,7 @@ class Validator(object):
             self.v_track_labels=[]
             self.anonymous=0
             for track in tracks:
-                self.check_track(track, anonymous)
+                self.check_track(track, self.anonymous)
 
     def check_track(self, track, anonymous):
         self.set_current(track=track, checking=TRACK)
@@ -322,11 +315,14 @@ class Validator(object):
 
         # check each field for the track, as defined by the field specs
         for field in track:
-            try:
+            #try:
                 self.process_ruleset(TRACK, track, field)
-            except Exception as e:
-                print "An exception occurred on {0} {1}, field {2}: {3}".format('track', self.get_trackref(track), field, e)
+            #except Exception as e:
+            #    print "An exception occurred on {0} {1}, field {2}: {3}".format('track', self.get_trackref(track), field, e)
         return True
+
+    def get_results(self):
+        return self.result.criticals, self.result.errors, self.result.warnings
 
 # ValidationResult handling methods: do the actual adding to both the result list and the result text
 
@@ -334,6 +330,7 @@ class Validator(object):
         if severity == CRITICAL: return self.add_critical(objtype, msg, **kwargs)
         if severity == ERROR   : return self.add_error   (objtype, msg, **kwargs)
         if severity == WARNING : return self.add_warning (objtype, msg, **kwargs)
+        #if severity == INFO    : return self.add_info    (objtype, msg, **kwargs)
 
     def add_critical(self, objtype, msg, **kwargs):
         abort = kwargs.pop('abort', True)
@@ -357,10 +354,10 @@ class Validator(object):
 
     def add_warning(self, objtype, msg, **kwargs):
         # possible kwargs: show, medialist, track, text
-        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
+        result = ValidationResult(self, objtype, WARNING, text=msg, **kwargs)
         self.results.append(result)
         if msg == '': raise ValueError("The warning message was empty.")
-        self.result.display('f', msg)
+        self.result.display('w', msg)
         self.result.add_result(result)
 
 # 'check' methods: add ValidationResults as needed
@@ -405,9 +402,32 @@ class Validator(object):
             self.add_result(objtype, severity, message, **kwargs)
         return success
 
-    def check_profile_compatible_with_editor(self, profile_issue):
+    def check_profile_compatibility(self, showlist):
         myversion = pp_definitions.__version__
-        if profile_issue != myversion:
+        if 'issue' in showlist:
+            profile_issue = showlist['issue']
+        else:
+            profile_issue ="1.0"
+        if profile_issue == myversion:
+            return True
+        matches = 0
+        extra = 0
+        missing = 0
+        for show in showlist['shows']:
+            self.set_current(show, checking=SHOW)
+            schema = PPdefinitions.new_shows
+            if show['type'] in PPdefinitions.new_shows:
+                schema = PPdefinitions.new_shows[show['type']]
+                for field in schema:
+                    if field in show:
+                        matches += 1
+                    else:
+                        add_critical(SHOW, "Schema is missing field '{0}'.".format(field))
+                for field in show:
+                    if field not in schema:
+                        extra += 1
+                        add_error(SHOW, "Schema has extra field '{0}'.".format(field))
+        if missing > 0:
             self.add_critical(PROFILE, "Profile version {0} does not match this editor (version {1})" 
                 .format(profile_issue, myversion), abort=True)
             return False
@@ -527,6 +547,7 @@ class Validator(object):
                 reqs = None
                 deps = None
                 farg = None
+                severity = ERROR
                 if isinstance(rulespec, str):
                     rule = rulespec
                 elif isinstance(rulespec, dict):
@@ -535,6 +556,7 @@ class Validator(object):
                     if 'required-fields' in rulespec: reqs = rulespec['required-fields']
                     if 'depends-on'      in rulespec: deps = rulespec['depends-on']
                     if 'field-arg'       in rulespec: farg = rulespec['field-arg']
+                    if 'severity'        in rulespec: severity = rulespec['severity']
                 else:
                     print "Rule: ", rule, " (", rule.__class__.__name__, ")"
                 if args == 'show-labels':
@@ -581,26 +603,34 @@ class Validator(object):
                 else:
                     rule_result = rule_func(value)
 
+                if rule_result is None:
+                    msg = "The rule '{0}' is not present."
+                    self.add_critical(objtype, msg)
+                    return RuleResult(False, msg, severity=CRITICAL)
+
                 if is_dependency and rule_result.blank is True:
                     # the rule validated, but it's blank and it's required for a dependent rule
                     msg = "{0} is blank, but is required for {1}".format()
                     rule_result.passed = False
 
                 if rule_result.passed is False:
+                    rule_result.severity = severity
                     if rule_result.message:
                         # the rule method doesn't know the field name, so we add it here
                         msg = "{0}: {1}".format(spec['text'], rule_result.message)
-                        self.add_error(SHOW, msg)
+                        self.add_result(SHOW, severity, msg)
                     else:
                         msg = "{0}: {1} is an invalid value".format(spec['text'], value)
-                        self.add_error(SHOW, msg)
+                        self.add_result(SHOW, severity, msg)
+                        #self.add_error(SHOW, msg)
                 elif rule_result.passed is True:
                     if reqs and rule_result.blank is not True:
                         for req in reqs:
-                            print "Checking dependencies for rule (2) ", field
+                            #print "Checking dependencies for rule (2) ", field
                             self.process_ruleset(objtype, obj, req, dependent_field=field)
         if rule_result is not None and rule_result.passed is False:
-            print field, ": ", rule_result.message
+            #print "[{0}] {1}: {2}".format(severity, field, rule_result.message)
+            pass
         return rule_result
 
     def ensure_ruleset_is_list(self, ruleset):
@@ -1010,30 +1040,30 @@ class Validator(object):
         return result
 
     def rule_is_animation_script(self, value):
-        return rule_is_script(value, 'animation', None)
+        return self.rule_is_script(value, 'animation', None)
 
     def rule_is_browser_script(self, value):
-        return rule_is_script(value, 'browser', None)
+        return self.rule_is_script(value, 'browser', None)
 
     def rule_is_control_script(self, value):
-        return rule_is_script(value, 'control', None)
+        return self.rule_is_script(value, 'control', None)
 
     def rule_is_radiobutton_script(self, value, track_labels):
-        return rule_is_script(value, 'radiobutton', track_labels, None)
+        return self.rule_is_script(value, 'radiobutton', track_labels, None)
 
     def rule_is_hyperlink_script(self, value, track_labels):
-        return rule_is_script(value, 'hyoerlink', track_labels)
+        return self.rule_is_script(value, 'hyoerlink', track_labels)
 
     def rule_is_showcontrol_script(self, value, show_labels):
-        return rule_is_script(value, 'showcontrol', show_labels)
+        return self.rule_is_script(value, 'showcontrol', show_labels)
 
     def rule_is_animation_command(self, value, line_num=None):
-        if line.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         if len(fields) != 4: 
             return RuleResult(False, "An animation command needs 4 parameters{0}.".format(line_num))
         delay = fields[0]
@@ -1049,12 +1079,12 @@ class Validator(object):
         return RuleResult.true
 
     def rule_is_browser_command(self, value, line_num=None):
-        if line.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         command = fields[0]
         if len(fields) not in (1, 2):
             return RuleResult(False, "Browser commands have one parameter or none{0}.".format(line_str))
@@ -1072,12 +1102,12 @@ class Validator(object):
         return RuleResult.true
 
     def rule_is_control_command(self, value, line_num=None):
-        if line.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         if len(fields) != 2:
             return RuleResult(False, "A control command needs the command and a parameter{1}".format(line_num))
         # command = fields[0]
@@ -1088,12 +1118,12 @@ class Validator(object):
         return RuleResult(False, "'{0} is not a recognized command{1}.".format(op, line_str))
 
     def rule_is_radiobutton_command(self, value, track_labels, line_num=None):
-        if line.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         if len(fields) not in (2, 3):
             return RuleResult(False, "The command needs one or two parameters{0}.".format(line_str))
         # symbol = fields[0]
@@ -1114,12 +1144,12 @@ class Validator(object):
         return RuleResult.true
 
     def rule_is_hyperlink_command(self, value, track_labels, line_num=None):
-        if line.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         if len(fields) not in (2, 3):
             return RuleResult(False, "The command needs one or two parameters{0}.".format(line_str))
         # symbol = fields[0]
@@ -1145,25 +1175,54 @@ class Validator(object):
         return RuleResult.true
 
     def rule_is_showcontrol_command(self, value, show_labels, line_num):
-        if line.strip() == '': return RuleResult.blank
+        # value is the line
+        if value.strip() == '': return RuleResult.blank
         if line_num is None:
             line_str = ""
         else:
             line_str = " (line {0})".format(line_num)
-        fields = line.split()
+        fields = value.split()
         command = fields[0]
         showref = None
         if len(fields) >= 2: showref = fields[1]
         if command.startswith('/'):  # osc command... followed by any number of params?
             return RuleResult.true
         elif len(fields) == 1 and command not in ('exitpipresents', 'shutdownnow'):
-            return RuleResult(False, "'{0}' is not a recognized command or is missing paramters{1}.".format(command, line_str))
-        elif len(fields == 2):
+            return RuleResult(False, "'{0}' is not a recognized command or is missing parameters{1}.".format(command, line_str))
+        elif len(fields) == 2:
             if command not in ('open', 'close'):
-                return RuleResult(False, "'{0}' is not a recognized command or has incorrect paramters{1}.".format(command, line_str))
+                return RuleResult(False, "'{0}' is not a recognized command or has incorrect parameters{1}.".format(command, line_str))
             if showref not in show_labels:
                 return RuleResult(False, "'{0}' was not found in the show list{1}.".format(showref, line_str))
         return RuleResult.true
+
+    def rule_is_schema_valid(self, this, that):
+        # checks the fields in the first level of the schema
+        # counts fields that match, are extraneous, or are missing
+        matches = {}
+        extra   = {}
+        missing = {}
+        for field in this:
+            if field in that:
+                match.append(field)
+            else:
+                missing.append(field)
+        for field in that:
+            if field not in this:
+                extra.append(field)
+        if len(extra) > 0 or len(missing) > 0:
+            msg = "{0} fields matched, {1} missing, {2} extraneous".format(
+                len(matches), len(missing), len(extra))
+            result = RuleResult(False, msg)
+            result.matches = matches
+            result.extra   = extra
+            result.missing = missing
+            return result
+        else:
+            result.matches = matches
+            result.extra   = extra
+            result.missing = missing
+            return RuleResults(True)
 
 # *************************************
 # GPIO CONFIG - NOT USED
@@ -1200,9 +1259,10 @@ class ResultWindow(object):
 
     def __init__(self, title, display_it=False):
         self.title = title
-        self.display_it=display_it
-        self.errors=0
-        self.warnings=0
+        self.display_it = display_it
+        self.criticals = 0
+        self.errors    = 0
+        self.warnings  = 0
         if self.display_it:
             self.show_window()
 
@@ -1211,40 +1271,47 @@ class ResultWindow(object):
         top.title(self.title)
 
         notebook = ttk.Notebook(top)
-        grid_tab = ttkFrame(notebook)
+        tree_tab = ttkFrame(notebook)
         text_tab = ttkFrame(notebook)
-        notebook.add(grid_tab, text="Grid")
+        notebook.add(tree_tab, text="Tree")
         notebook.add(text_tab, text="Text")
-        notebook.pack(side=LEFT, fill=BOTH, expand=True)
+        notebook.pack(side=TOP, fill=BOTH, expand=True)
 
-        grid = ttkListbox(grid_tab) #, columns=('Message'))
-        #grid.column('#0', width=0, stretch=False)
-        #grid.column('Message',  width=50)
-        #grid.heading('Message', text='Message')
-        grid.tag_configure('critical', foreground='white', background='red')
-        grid.tag_configure('error',    foreground='red')
-        grid.pack(side=LEFT, fill=BOTH, expand=True)
-        self.grid = grid
+        tree = ttkTreeview(tree_tab) #, columns=('Message'))
+        #tree.column('#0', width=0, stretch=False)
+        #tree.column('Message',  width=50)
+        #tree.heading('Message', text='Message')
+        tree.tag_configure('critical', foreground='white', background='red')
+        tree.tag_configure('error',    foreground='red')
+        tree.tag_configure('warning',  foreground='dark orange')
+        tree.pack(side=TOP, fill=BOTH, expand=True)
+        self.tree = tree
 
-        scrollbar = Scrollbar(text_tab, orient=VERTICAL)
-        self.textb = Text(text_tab,width=80,height=40, wrap='word', font="arial 11",padx=5,yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.textb.yview)
-        scrollbar.pack(side=RIGHT, fill=Y)
-        self.textb.pack(side=LEFT, fill=BOTH, expand=1)
+        #scrollbar = Scrollbar(text_tab, orient=VERTICAL)
+        #self.textb = Text(text_tab,width=80,height=40, wrap='word', font="arial 11",padx=5,yscrollcommand=scrollbar.set)
+        #scrollbar.config(command=self.textb.yview)
+        #scrollbar.pack(side=RIGHT, fill=Y)
+        self.textb = ttkScrolledText(text_tab, wrap='word')
+        self.textb.pack(side=TOP, fill=BOTH, expand=1)
         self.textb.config(state=NORMAL)
         self.textb.delete(1.0, END)
         self.textb.config(state=DISABLED)
 
+        # define status bar
+        self.status = StatusBar(top)
+        self.status.set("")
+        self.status.pack(side=BOTTOM, fill=X, expand=1, anchor=S)
+
         top.bind("<Escape>", self.escape_keypressed)
+        notebook.enable_traversal()  # keybinding for tab switching
         self.top = top
-        top.update()
 
     def add_profile(self, title):
         if not self.display_it: return
         text = 'PROFILE: ' + title
         id   = '.'
-        if self.grid.exists(id): return
-        self.grid.insert(END, text, iid=id, tags=('profile',))
+        if self.tree.exists(id): return
+        self.tree.insert(END, text, iid=id, tags=('profile',))
 
     def add_show(self, show):
         if not self.display_it: return
@@ -1256,17 +1323,17 @@ class ResultWindow(object):
             if show == '..':  # orphaned items
                 text = '(orphaned medialists)'
                 id = ".."
-                if self.grid.exists(id): 
+                if self.tree.exists(id): 
                     return
                 # insert below profile
-                self.grid.insert(1, text, iid=id, tags=('show',))
+                self.tree.insert(1, text, iid=id, tags=('show',))
         else:
             showref = show['show-ref']
             text = 'SHOW: ' + show['title']
             id   = ".{0}".format(showref)
-            if self.grid.exists(id): 
+            if self.tree.exists(id): 
                 return
-            self.grid.insert(END, text, iid=id, tags=('show',))
+            self.tree.insert(END, text, iid=id, tags=('show',))
 
     def add_list(self, showref, list):
         if not self.display_it: return
@@ -1282,17 +1349,17 @@ class ResultWindow(object):
             parent = ".{0}".format(showref)
         id     = ".{0}.{1}".format(showref, list)
         text   = 'LIST: ' + list
-        if self.grid.exists(id): return
-        self.grid.insert(END, text, iid=id, tags=('list',), parent=parent)
+        if self.tree.exists(id): return
+        self.tree.insert(END, text, iid=id, tags=('list',), parent=parent)
 
     def add_track(self, showref, listref, track):
         if not self.display_it: return
-        trackref = self.get_trackref(track)
-        text   = 'TRACK: ' + self.get_track_title(track)
+        trackref = Validator.get_trackref(track)
+        text   = 'TRACK: ' + Validator.get_track_title(track)
         parent = ".{0}.{1}".format(showref, listref)
         id     = ".{0}.{1}.{2}".format(showref, listref, trackref)
-        if self.grid.exists(id): return
-        self.grid.insert(END, text, iid=id, tags=('track',), parent=parent)
+        if self.tree.exists(id): return
+        self.tree.insert(END, text, iid=id, tags=('track',), parent=parent)
 
     def get_parentid(self, result):
         if result.is_profile(): return '.'
@@ -1307,42 +1374,42 @@ class ResultWindow(object):
         msg = "{0}: {1}".format(sev, result.text)
         parentid = self.get_parentid(result)
         # insert before the list item, if there is one
-        children = self.grid.get_children(parentid)
+        children = self.tree.get_children(parentid)
         index = -1
         for childid in children:
-            child = self.grid.item(childid, option='text')
+            child = self.tree.item(childid, option='text')
             if 'LIST' in child:
                 index = children.index(childid)
         if index == -1:
             index = END
-        iid = self.grid.insert(index, msg, parent=parentid, open=True,
+        iid = self.tree.insert(index, msg, parent=parentid, open=True,
             tags=(sev.lower(),)
             #values=()
             )
         # bubble up the error tag to all parents and open them
-        grid = self.grid
+        tree = self.tree
         while parentid != '':
             if result.severity == CRITICAL:
-                grid.add_tag(parentid, 'critical')
-                grid.remove_tag(parentid, 'error')
+                tree.add_tag(parentid, 'critical')
+                tree.remove_tag(parentid, 'error')
             elif result.severity == ERROR:
-                if not grid.has_tag(parentid, 'critical'):
-                    grid.add_tag   (parentid, 'error')
-                    grid.remove_tag(parentid, 'warning')
+                if not tree.has_tag(parentid, 'critical'):
+                    tree.add_tag   (parentid, 'error')
+                    tree.remove_tag(parentid, 'warning')
             elif result.severity == WARNING:
-                if not (grid.has_tag(parentid, 'critical') or grid.has_tag(parentid, 'error')):
-                    grid.add_tag (parentid, 'warning')
-            grid.remove_tag(parentid, 'info')
-            grid.item(parentid, open=True)
-            parentid = self.grid.parent(parentid)
+                if not (tree.has_tag(parentid, 'critical') or tree.has_tag(parentid, 'error')):
+                    tree.add_tag (parentid, 'warning')
+            tree.remove_tag(parentid, 'info')
+            tree.item(parentid, open=True)
+            parentid = self.tree.parent(parentid)
 
     def escape_keypressed(self, event=None):
         self.top.destroy()
 
     def display(self,priority,text):
-        if priority == 'c': self.errors += 1
-        if priority == 'f': self.errors += 1
-        if priority == 'w': self.warnings += 1       
+        if priority == 'c': self.criticals += 1
+        if priority == 'f': self.errors    += 1
+        if priority == 'w': self.warnings  += 1       
         if self.display_it is False: return
         self.textb.config(state=NORMAL)
         if priority == 't': 
@@ -1357,11 +1424,20 @@ class ResultWindow(object):
 
     def stats(self):
         if self.display_it is False: return
+        msg = "Criticals: {0}\nErrors: {0}\nWarnings: {1}".format(self.criticals, self.errors, self.warnings)
         self.textb.config(state=NORMAL)
-        # show the summary at the top so user doesn't have to scroll all the way down to see
-        # whether there were errors
-        self.textb.insert(1.0, "\nErrors: "+str(self.errors)+"\nWarnings: "+str(self.warnings)+"\n\n")
+        self.textb.insert(1.0, msg + "\n\n")  # at beginning
+        self.textb.insert(END, "\n\n" + msg)  # at end
         self.textb.config(state=DISABLED)
 
+        # update status bar
+        if self.criticals == 1: critcal_text = "1 critical"
+        else:                   critical_text = "{0} criticals".format(self.criticals)
+        if self.errors == 1: error_text = "1 error"
+        else:                error_text = "{0} errors".format(self.errors)
+        if self.warnings == 1: warn_text = "1 warning"
+        else:                  warn_text = "{0} warnings".format(self.warnings)
+        self.status.set_info("{0}, {1}, {2}.", critical_text, error_text, warn_text)
+
     def num_errors(self):
-        return self.errors
+        return self.criticals + self.errors
