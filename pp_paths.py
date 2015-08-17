@@ -54,7 +54,7 @@ def get_home(home=""):
         time.sleep (1)
     if found==True:
         mon.log(self,"Found requested home directory, using: " + pp_home)
-        print "Found pp_home: " + pp_home
+        #print "Found pp_home: " + pp_home
         return pp_home
     else:
         mon.err(self,"Failed to find pp_home directory at " + home)
@@ -117,8 +117,7 @@ def get_path(path):
     home = os.path.abspath(pp_home)
     if path[0] == '+':
         path = path.replace('+', home)
-    home += os.sep
-    attempts = [path, home + path]
+    attempts = [path, os.path.join(home, path)]
     found = None
     for attempt in attempts:
         if os.path.exists(attempt):

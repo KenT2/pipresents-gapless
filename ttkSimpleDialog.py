@@ -128,7 +128,10 @@ class Dialog(Toplevel):
     def ok(self, event=None):
 
         if not self.validate():
-            self.initial_focus.focus_set() # put focus back
+            try:
+                self.initial_focus.focus_set() # put focus back
+            except:
+                pass
             return
 
         self.withdraw()

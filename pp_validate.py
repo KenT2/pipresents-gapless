@@ -3,7 +3,7 @@ import json
 import ConfigParser
 import re
 import PIL.Image
-from PIL import ImageDraw  # color names
+import urlparse
 from Tkinter import Toplevel
 from Tkinter import VERTICAL,RIGHT,LEFT,BOTH,Y,NORMAL,END,DISABLED
 from ttkStatusBar import StatusBar
@@ -41,11 +41,12 @@ class RuleResult(object):
 
 class ValidationResult(object):
 
-    def __init__(self, validator, objtype, severity, **kwargs):
+    def __init__(self, validator, objtype, severity, msg, **kwargs):
         dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
 
         self.objtype   = objtype                     # PROFILE, SHOW, LIST, TRACK
         self.severity  = severity                    # CRITICAL, ERROR, WARNING, (INFO?), (OK?)
+        self.message   = msg
         self.text      = kwargs.pop('text', '')      # title for collapsible items, message for errors, etc.
         self.show      = validator.current_show
         self.list      = validator.current_list
@@ -74,6 +75,8 @@ class ValidationResult(object):
 
     def __cmp__(self, other):
         if self.severity  == other.severity: return 0
+        if self.severity  == NONE: return -1
+        if other.severity == NONE: return  1
         if self.severity  == INFO: return -1
         if other.severity == INFO: return  1
         if self.severity  == WARNING: return -1
@@ -111,7 +114,7 @@ class Validator(object):
     def get_trackref(track):
         trackref = track['track-ref']
         if not trackref: trackref = track['title']
-        if not trackref: trackref = track['locatoin']
+        if not trackref: trackref = track['location']
         return trackref
 
     @staticmethod
@@ -122,6 +125,7 @@ class Validator(object):
         return title
 
     def __init__(self):
+        dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
         self.pp_home = pp_paths.pp_home
         self.pp_profile = pp_paths.pp_profile_dir
 
@@ -246,19 +250,22 @@ class Validator(object):
                 if track['track-ref'] !='':
                     v_track_labels.append(track['track-ref'])
                        
-            # check each field for the show, as defined by the show field specs
-            specs = PPdefinitions.show_field_specs
-            scheme = PPdefinitions.show_field_rules
-            for field in show: #PPdefinitions.show_types[show['type']]:
-                self.set_current(show=show, track=None)
-                #try:
-                self.process_ruleset(SHOW, show, field)
-                #except Exception as e:
-                #    print "An exception occurred on {0} {1}, field {2}: {3}".format('show', show['show-ref'], field, e)
+        # check each field for the show, as defined by the show field specs
+        specs = PPdefinitions.show_field_specs
+        scheme = PPdefinitions.show_field_rules
+        for field in show: #PPdefinitions.show_types[show['type']]:
+            self.set_current(show=show, track=None)
+            #try:
+            self.process_ruleset(SHOW, show, field)
+            #except Exception as e:
+            #    print "An exception occurred on {0} {1}, field {2}: {3}".format('show', show['show-ref'], field, e)
 
         return True
 
     def check_medialist(self, medialist_file):
+        # we don't do anything with these (yet)
+        if medialist_file in ('pp_io_config.json'):
+            return
         # find the associated show
         show = None
         for eshow in self.v_shows:
@@ -334,7 +341,7 @@ class Validator(object):
 
     def add_critical(self, objtype, msg, **kwargs):
         abort = kwargs.pop('abort', True)
-        result = ValidationResult(self, objtype, CRITICAL, text=msg, **kwargs)
+        result = ValidationResult(self, objtype, CRITICAL, msg, **kwargs)
         self.results.append(result)
         if msg == '': raise ValueError("The error message was empty.")
         self.result.display('c', msg)
@@ -346,7 +353,7 @@ class Validator(object):
 
     def add_error(self, objtype, msg, **kwargs):
         # possible kwargs: show, medialist, track, text
-        result = ValidationResult(self, objtype, ERROR, text=msg, **kwargs)
+        result = ValidationResult(self, objtype, ERROR, msg, **kwargs)
         self.results.append(result)
         if msg == '': raise ValueError("The error message was empty.")
         self.result.display('f', msg)
@@ -354,7 +361,7 @@ class Validator(object):
 
     def add_warning(self, objtype, msg, **kwargs):
         # possible kwargs: show, medialist, track, text
-        result = ValidationResult(self, objtype, WARNING, text=msg, **kwargs)
+        result = ValidationResult(self, objtype, WARNING, msg, **kwargs)
         self.results.append(result)
         if msg == '': raise ValueError("The warning message was empty.")
         self.result.display('w', msg)
@@ -448,16 +455,16 @@ class Validator(object):
 
     def check_start_show_calls_valid_show(self, show, labels):
         passed = True
-        text=show['start-show']
-        show_count=0
+        text = show['start-show']
+        show_count = 0
         fields = text.split()
         for field in fields:
-            show_count+=1
+            show_count += 1
             if field not in labels:
-                self.add_error(SHOW, "Start show calls label '{0}', which was not found".format(field))
+                self.add_error(SHOW, "The start show calls '{0}', which was not found in the show labels.".format(field))
                 passed = False
         if show_count == 0:
-            self.add_error(SHOW, "Start show needs to call a show".format(field))
+            self.add_warning(SHOW, "The start show doesn't call any shows.")
             passed = False
         return passed
 
@@ -523,14 +530,16 @@ class Validator(object):
         value = obj[field]
 
         # check if blank and whether a value is required
-        if value is None or value == '':
+        if self.is_blank(value):
             if spec['must'] != 'no':
                 self.add_error(objtype, "A value is required for {0}".format(field), **kwargs)
+                return RuleResult.true
             if is_dependency:
-                # it may be better for the rule for the field to determine whether the value is blank
-                msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
-                self.add_error(objtype, msg)
-            return RuleResult.true
+                if not self.is_blank(obj[dependent_field]):
+                    # it may be better for the rule for the field to determine whether the value is blank
+                    msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
+                    self.add_error(objtype, msg)
+            return RuleResult.true            
 
         rule_field = field.replace('colour', 'color')  # 'color' is the standard python spelling
         if rule_field not in scheme:
@@ -592,25 +601,39 @@ class Validator(object):
                     else: return RuleResult.true
 
                 rule_name = 'rule_' + rule.replace('-', "_")
-                rule_func = getattr(self, rule_name)
+                try:
+                    rule_func = getattr(self, rule_name)
+                except:
+                    rule_func = None
                 #print "Checking: {0}({1})".format(rule_name, value)
-                if args and farg:
-                    rule_result = rule_func(value, args, obj[farg])
-                elif args:
-                    rule_result = rule_func(value, args)
-                elif farg:
-                    rule_result = rule_func(value, obj[farg])
-                else:
-                    rule_result = rule_func(value)
+                if field == 'start-show':
+                    print "Checking '{0}': '{1}' with rule {2}".format(field, obj[field], self.current_show)
+                if rule_func is None or not hasattr(rule_func, '__call__'):
+                    msg = "The processor function for rule '{0}', field '{1}' is not present.".format(rule, field)
+                    self.add_critical(objtype, msg)
+                    return RuleResult(False, msg, severity=CRITICAL)
 
-                if rule_result is None:
-                    msg = "The rule '{0}' is not present."
+                try:
+                    if args and farg:
+                        rule_result = rule_func(value, args, obj[farg])
+                    elif args:
+                        rule_result = rule_func(value, args)
+                    elif farg:
+                        rule_result = rule_func(value, obj[farg])
+                    else:
+                        rule_result = rule_func(value)
+                except Exception as e:
+                    msg = "Failed to check validation for '{0}' ({1}): {2}".format(field, rule_func, e)
+                    return RuleResult(False, msg, severity=CRITICAL)
+
+                if not isinstance(rule_result, RuleResult):
+                    msg = "The processor function '{0}' returned an invalid result.".format(rule_name)
                     self.add_critical(objtype, msg)
                     return RuleResult(False, msg, severity=CRITICAL)
 
                 if is_dependency and rule_result.blank is True:
                     # the rule validated, but it's blank and it's required for a dependent rule
-                    msg = "{0} is blank, but is required for {1}".format()
+                    msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
                     rule_result.passed = False
 
                 if rule_result.passed is False:
@@ -629,7 +652,7 @@ class Validator(object):
                             #print "Checking dependencies for rule (2) ", field
                             self.process_ruleset(objtype, obj, req, dependent_field=field)
         if rule_result is not None and rule_result.passed is False:
-            #print "[{0}] {1}: {2}".format(severity, field, rule_result.message)
+            print "[{0}] {1}: {2}".format(severity, field, rule_result.message)
             pass
         return rule_result
 
@@ -661,7 +684,7 @@ class Validator(object):
         # validate non-blank values (which would pass for blank values)
         return value is None or value == ''
 
-    def is_int(self, value):
+    def is_integer(self, value):
         try:
             value = long(value)
             if isinstance(value, long):
@@ -713,12 +736,27 @@ class Validator(object):
             return RuleResult(False, "'{0}' does not exist.".format(value))
         return RuleResult.true
 
-    def rule_is_location(self, value):
-        if self.is_blank(value): return RuleResult.true
-        if value.startswith("http://"):
-            # assume URL is good ... ?
-            return RuleResult.true
-        return self.rule_file_exists(value)
+    def rule_is_location(self, value, track_type):
+        if self.is_blank(value): return RuleResult.blank
+        if track_type == 'web':
+            return self.rule_is_web_location(value)
+        result = self.rule_file_exists(value)
+        #if result.passed is False:
+        #    print "Home: ", pp_paths.pp_home
+        return result
+
+    def rule_is_web_location(self, value):
+        if self.is_blank(value): return RuleResult.blank
+        # a valid url is almost anything
+        return RuleResult.true
+        # you could try the following, but the example shows that use web addresses
+        # ('pipresents.wordpress.com') fail this validation.
+        #loc = os.path.basename(track['location'])
+        #url = urlparse.urlparse(value)
+        #if url.scheme != '' and url.netloc != '':
+        #    return RuleResult.true
+        #return RuleResult(False, "'{0}' does not appear to be a valid web location. scheme: {1}, loc: {2}.".
+        #    format(value, url.scheme, url.netloc))
 
     def rule_is_boolish(self, value):
         if isinstance(value, basestring):
@@ -738,10 +776,49 @@ class Validator(object):
         return RuleResult(False, "'{0}' needs to be 'yes' or 'no'.")
 
     def rule_is_in_list(self, value, values):
-        # ?  if self.is_blank(value): return RuleResult.true
+        # ?  if self.is_blank(value): return RuleResult.blank
         if value in values:
             return RuleResult.true
         return RuleResult(False, "'{0}' is not one of the available choices.".format(value))
+
+    def rule_is_all_in_list(self, value, values):
+        # check if all values in the value are in the list
+        missing = []
+        for val in value:
+            if val not in values:
+                missing.append(val)
+        count = len(missing)
+        if count > 0:
+            if count == 1:
+                msg = "{0} is not in the list.".format(missing[0])
+            elif count <= 3:
+                msg = "{0} are not in the list.".format(missing)
+            else:
+                msg = "{0} items are not in the list.".format(count)
+            result = RuleResult(False, msg)
+            result.arg = missing
+            return result
+        return RuleResult.true
+
+    def rule_is_startshow(self, value, show_labels):
+        if self.is_blank(value): return RuleResult(False, "The start show does not call any shows.", severity=WARNING)
+        shows = value.split()
+        missing = []
+        for show in shows:
+            if show not in show_labels:
+                missing.append(val)
+        count = len(missing)
+        if count > 0:
+            if count == 1:
+                msg = "{0} is not in the show list.".format(missing[0])
+            elif count <= 3:
+                msg = "{0} are not in the show list.".format(missing)
+            else:
+                msg = "{0} items are not in the show list.".format(count)
+            result = RuleResult(False, msg)
+            result.arg = missing
+            return result
+        return RuleResult.true
 
     def rule_is_integer(self, value):
         try:
@@ -783,10 +860,16 @@ class Validator(object):
         if not self.is_integer(tx) or not self.is_integer(ty) \
         or not self.is_integer(bx) or not self.is_integer(by):
             return RuleResult(False, "The top-left and bottom-right coordinates need to be integers.")
+        tx = int(tx)
+        ty = int(ty)
+        bx = int(bx)
+        by = int(by)
         if not tx < bx:
-            return RuleResult(False, "The left x coordinate needs to be a lower value than the right x coordinate.")
+            return RuleResult(False, "The left x coordinate ({0}) needs to be a lower value than the right x coordinate ({1}."
+                .format(tx, bx))
         if not ty < by:
-            return RuleResult(False, "The top y coordinate needs to be a lower value than the bottom y coordinate.")
+            return RuleResult(False, "The top y coordinate ({0}) needs to be a lower value than the bottom y coordinate ({1})."
+                .format(ty, by))
         return RuleResult.true
 
     def rule_is_in_range(self, value, range):
@@ -826,6 +909,12 @@ class Validator(object):
             result.message = "'{0}' is not a valid time. Valid formats are hh:mm:ss, mm:ss or ss.".format(value)
         return result
 
+    def rule_is_hh_mm_ss_or_seconds(self, value):
+        result = self.rule_is_zero_or_positive_integer(value)
+        if result.passed is True or result.blank is True:
+            return result
+        return self.rule_is_hh_mm_ss(value)
+
     def rule_is_regex_match(self, value, regex):
         if self.is_blank(value): return RuleResult.blank
         if re.match(regex, value) is None:
@@ -845,10 +934,13 @@ class Validator(object):
     def rule_is_image_file(self, value):
         if self.is_blank(value): return RuleResult.blank
         try:
-            img = Image.open(value)
+            file = pp_paths.get_file(value)
+            if file is None:
+                return RuleResult(False, "'{0}' does not exist.".format(value))
+            img = PIL.Image.open(file)
             return RuleResult.true
         except Exception as ex:
-            print "is_image_file: " + str(ex)
+            return RuleResult(False, "The image file check failed for '{0}': {1}".format(value, ex))
         return RuleResult(False, "'{0}' is not a valid image file.".format(value))
 
     def rule_is_color(self, value):
@@ -873,8 +965,8 @@ class Validator(object):
         ex = None
         try:
             family = value
-            family = re.sub(r"\{(.*)\}.*", r"\1", family) # using the font picker adds the brackets
-            family = re.sub(r"\s\d+\s.*", "", family)     # brackets are not required
+            family = re.sub(r"\{(.*)\}.*", r"\1", family)  # using the font picker adds the brackets
+            family = re.sub(r"\s\d+\s.*", "", family)      # brackets are not required
             if family in tkFont.families():
                 size = re.sub(r".*\s([\d]+).*", r"\1", value)
                 size = int(size)
@@ -886,7 +978,7 @@ class Validator(object):
                 if style != value:  # match found
                     styles = style.split(' ')
                     for style in styles:
-                        if not styles in ("bold", "normal", "italic", "roman", "underline", "overstrike"):
+                        if style not in ("bold", "normal", "italic", "roman", "underline", "overstrike"):
                             return RuleResult(False, "'{0}'' is not a valid font style.".format(style))
                 return RuleResult.true
             else:
@@ -1003,7 +1095,8 @@ class Validator(object):
             return RuleResult.true
         return RuleResult(False, "'{0}' is not a valid track type.".format(value))
 
-    def rule_is_script(self, value, scripttype, labels=None):
+    def rule_is_script(self, value, labels=None, scripttype=None):
+        # labels is first to meet calling order in process_rule()
         # Handles overall processing for multi-line scripts of the following types:
         #   control                    ... no labels
         #   animation, browser,        ... no labels
@@ -1029,6 +1122,12 @@ class Validator(object):
                 line_result = self.rule_is_radiobutton_command(line, labels, line_num)
             elif scripttype.startswith('show'):  # showcontrol
                 line_result = self.rule_is_showcontrol_command(line, labels, line_num)
+            elif scripttype in ('video', 'message', 'show', 'image', 'audio', 'web', 'menu'):
+                # this is a track... we don't have a good way of knowing what type of show it is
+                # (hyperlink or radiobutton) so we'll use the generic processor function
+                line_result = rule_is_link_command(line, labels, line_num)
+            else:
+                return RuleResult(False, "Unknown sript type '{0}'.".format(scripttype), severity=CRITICAL)
             # Append any messages and make the result False if any line fails
             if line_result.message is not None:
                 if result.message is None:
@@ -1040,22 +1139,25 @@ class Validator(object):
         return result
 
     def rule_is_animation_script(self, value):
-        return self.rule_is_script(value, 'animation', None)
+        return self.rule_is_script(value, None, 'animation')
 
     def rule_is_browser_script(self, value):
-        return self.rule_is_script(value, 'browser', None)
+        return self.rule_is_script(value, None, 'browser')
 
     def rule_is_control_script(self, value):
-        return self.rule_is_script(value, 'control', None)
+        return self.rule_is_script(value, None, 'control')
 
     def rule_is_radiobutton_script(self, value, track_labels):
-        return self.rule_is_script(value, 'radiobutton', track_labels, None)
+        return self.rule_is_script(value, track_labels, 'radiobutton')
 
     def rule_is_hyperlink_script(self, value, track_labels):
-        return self.rule_is_script(value, 'hyoerlink', track_labels)
+        return self.rule_is_script(value, track_labels, 'hyperlink')
 
     def rule_is_showcontrol_script(self, value, show_labels):
-        return self.rule_is_script(value, 'showcontrol', show_labels)
+        return self.rule_is_script(value, show_labels, 'showcontrol')
+
+    def rule_is_trigger_script(self, value):
+        return self.rule_is_script(value, None, 'trigger')
 
     def rule_is_animation_command(self, value, line_num=None):
         if value.strip() == '': return RuleResult.blank
@@ -1097,7 +1199,7 @@ class Validator(object):
         if command == 'wait':
             if len(fields) != 2:
                 return RuleResult(False, "'{0}' needs a parameter{1}.".format(command, line_str))
-            if self.is_zero_or_positive_integer(fields[1]):
+            if not self.is_zero_or_positive_integer(fields[1]):
                 return RuleResult(False, "'{0}' needs to be zero or a positive integer{1}.".format(fields[1], line_str))
         return RuleResult.true
 
@@ -1113,7 +1215,7 @@ class Validator(object):
         # command = fields[0]
         op = fields[1]
         if (op in ('up', 'down', 'play', 'stop', 'exit', 'pause', 'no-command', 'null') or
-                op.starts('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
+                op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
             return RuleResult.true
         return RuleResult(False, "'{0} is not a recognized command{1}.".format(op, line_str))
 
@@ -1139,6 +1241,43 @@ class Validator(object):
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
             return RuleResult.true
+        else:
+            return RuleResult(False, "'{0}' is not a recognized command{1}.".format(op, line_str))
+        return RuleResult.true
+
+    def rule_is_link_command(self, value, track_labels, line_num=None):
+        # a generic rule that checks both radiobutton and hyperlink commands
+        if value.strip() == '': return RuleResult.blank
+        if line_num is None:
+            line_str = ""
+        else:
+            line_str = " (line {0})".format(line_num)
+        fields = value.split()
+        if len(fields) not in (2, 3):
+            return RuleResult(False, "The command needs one or two parameters{0}.".format(line_str))
+        # symbol = fields[0]
+        op = fields[1]
+        trackref = None
+        if len(fields) == 3: trackref = fields[2]
+        # check radiobutton commands
+        if (op in ('return') or                                 # radiobutton-only commands
+            op in ('home', 'null', 'repeat') or                 # hyperlink-only commands
+            op in ('stop', 'exit', 'pause', 'no-command') or    # common to both
+                op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
+            return RuleResult.true
+        # 'play' is a radiobutton command, the others are hyperlink commands
+        elif op == 'play' or op in ('call', 'goto', 'jump'):
+            if len(fields) != 3:
+                return RuleResult(False, "'play' needs to know the track label{0}.".format(line_str))
+            if trackref not in track_labels:
+                return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
+            return RuleResult.true
+        # 'return' is a hyperlink command
+        elif op in ('return', ):
+            if trackref is None:
+                return RuleResult.true
+            if trackref not in track_labels:
+                return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
         else:
             return RuleResult(False, "'{0}' is not a recognized command{1}.".format(op, line_str))
         return RuleResult.true
@@ -1194,6 +1333,18 @@ class Validator(object):
                 return RuleResult(False, "'{0}' is not a recognized command or has incorrect parameters{1}.".format(command, line_str))
             if showref not in show_labels:
                 return RuleResult(False, "'{0}' was not found in the show list{1}.".format(showref, line_str))
+        return RuleResult.true
+
+    def rule_is_trigger_param(self, value, triggertype):
+        # For mediashow and liveshow
+        # Possible trigger types
+        # start trigger:  start,    input, input-persist
+        #   end trigger:  none,     input, duration
+        #  next trigger:  continue, input
+        if self.is_blank(): return RuleResult.blank
+        fields = value.split()
+        if len(fields) != 1:
+            return RuleResult(False, "The trigger parameter can be one word, a number, or hh:mm:ss, mm:ss, or ss.")
         return RuleResult.true
 
     def rule_is_schema_valid(self, this, that):
@@ -1275,7 +1426,7 @@ class ResultWindow(object):
         text_tab = ttkFrame(notebook)
         notebook.add(tree_tab, text="Tree")
         notebook.add(text_tab, text="Text")
-        notebook.pack(side=TOP, fill=BOTH, expand=True)
+        notebook.pack(side=TOP, fill=BOTH, expand=True, anchor=S)
 
         tree = ttkTreeview(tree_tab) #, columns=('Message'))
         #tree.column('#0', width=0, stretch=False)
@@ -1284,7 +1435,7 @@ class ResultWindow(object):
         tree.tag_configure('critical', foreground='white', background='red')
         tree.tag_configure('error',    foreground='red')
         tree.tag_configure('warning',  foreground='dark orange')
-        tree.pack(side=TOP, fill=BOTH, expand=True)
+        tree.pack(side=LEFT, fill=BOTH, expand=True)
         self.tree = tree
 
         #scrollbar = Scrollbar(text_tab, orient=VERTICAL)
@@ -1292,7 +1443,7 @@ class ResultWindow(object):
         #scrollbar.config(command=self.textb.yview)
         #scrollbar.pack(side=RIGHT, fill=Y)
         self.textb = ttkScrolledText(text_tab, wrap='word')
-        self.textb.pack(side=TOP, fill=BOTH, expand=1)
+        self.textb.pack(side=LEFT, fill=BOTH, expand=1)
         self.textb.config(state=NORMAL)
         self.textb.delete(1.0, END)
         self.textb.config(state=DISABLED)
@@ -1300,7 +1451,7 @@ class ResultWindow(object):
         # define status bar
         self.status = StatusBar(top)
         self.status.set("")
-        self.status.pack(side=BOTTOM, fill=X, expand=1, anchor=S)
+        self.status.pack(side=BOTTOM, fill=X, expand=False, anchor=S)
 
         top.bind("<Escape>", self.escape_keypressed)
         notebook.enable_traversal()  # keybinding for tab switching
@@ -1321,7 +1472,7 @@ class ResultWindow(object):
             if show == '.':   # profile item, don't do anything
                 return
             if show == '..':  # orphaned items
-                text = '(orphaned medialists)'
+                text = '(orphaned medialists or other lists)'
                 id = ".."
                 if self.tree.exists(id): 
                     return
@@ -1371,7 +1522,7 @@ class ResultWindow(object):
         if not self.display_it: return
         # add result item
         sev = ValidationSeverity.names[result.severity]
-        msg = "{0}: {1}".format(sev, result.text)
+        msg = "{0}: {1}".format(sev, result.message)
         parentid = self.get_parentid(result)
         # insert before the list item, if there is one
         children = self.tree.get_children(parentid)
@@ -1431,7 +1582,7 @@ class ResultWindow(object):
         self.textb.config(state=DISABLED)
 
         # update status bar
-        if self.criticals == 1: critcal_text = "1 critical"
+        if self.criticals == 1: critical_text = "1 critical"
         else:                   critical_text = "{0} criticals".format(self.criticals)
         if self.errors == 1: error_text = "1 error"
         else:                error_text = "{0} errors".format(self.errors)

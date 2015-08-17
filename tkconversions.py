@@ -342,7 +342,8 @@ class ttkTreeview(AutoScroll, ttk.Treeview):
     def item_at(self, index):
         children = self.get_children()
         if children is not None:
-            return children[index]
+            if index >= 0 and index < len(children):
+                return children[index]
         return None
 
     def clear(self):

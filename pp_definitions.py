@@ -11,7 +11,7 @@ LIST     = PPObjTypes.LIST
 TRACK    = PPObjTypes.TRACK
 FIELD    = PPObjTypes.FIELD
 
-ValidationSeverity = enum('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
+ValidationSeverity = enum('NONE', 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'OK')
 CRITICAL = ValidationSeverity.CRITICAL
 ERROR    = ValidationSeverity.ERROR
 WARNING  = ValidationSeverity.WARNING
@@ -43,7 +43,7 @@ class PPdefinitions(object):
                 'omx-audio','omx-volume','omx-window','freeze-at-end','omx-other-options',
             'tab-controls','sep',  
                 'disable-controls','controls'
-        ],
+            ],
 
         'artmediashow':[
             'tab-show','sep',  
@@ -60,7 +60,7 @@ class PPdefinitions(object):
                 'omx-audio','omx-volume','omx-window','freeze-at-end','omx-other-options',
             'tab-controls','sep',  
                 'disable-controls','controls'
-        ],
+            ],
     
         'mediashow':[
             'tab-show','sep',  
@@ -82,7 +82,7 @@ class PPdefinitions(object):
                 'web-window',
             'tab-controls','sep',  
                 'disable-controls', 'controls'
-        ],
+            ],
                  
         'menu':[
             'tab-show','sep',
@@ -98,7 +98,7 @@ class PPdefinitions(object):
                 'web-window',
             'tab-controls','sep',  
                 'disable-controls','controls'
-        ],
+            ],
         
         'liveshow':[
             'tab-show','sep',  
@@ -106,15 +106,15 @@ class PPdefinitions(object):
             'trigger-start-type','trigger-start-param','trigger-next-type','trigger-next-param','sequence','track-count-limit','repeat','interval','trigger-end-type','trigger-end-param',
             'sep','show-canvas',
             'tab-child','sep',  
-                    'child-track-ref', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
+                'child-track-ref', 'hint-text', 'hint-x','hint-y','hint-font','hint-colour',
             'tab-eggtimer','sep',  
-                 'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
+                'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-notices','sep',              
                 'trigger-wait-text','empty-text','admin-x','admin-y','admin-font','admin-colour',
             'tab-show-text','sep',
-                   'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',
-                 'duration','image-window','image-rotate','transition','sep',
+                'duration','image-window','image-rotate','transition','sep',
                 'audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options','sep',
                 'omx-audio','omx-volume','omx-window','freeze-at-end','omx-other-options','sep',
                 'web-window',
@@ -126,11 +126,11 @@ class PPdefinitions(object):
             'tab-show','sep',  
                 'type','title','show-ref','medialist','first-track-ref','home-track-ref','show-timeout','track-timeout','timeout-track-ref','show-canvas', 'debug-path',         
             'tab-eggtimer','sep',  
-                 'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
+                'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
                 'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep', 
-                 'duration','image-window','image-rotate','transition','sep',
+                'duration','image-window','image-rotate','transition','sep',
                 'audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options','sep',
                 'omx-audio','omx-volume','omx-window','freeze-at-end','omx-other-options','sep',
                 'web-window',
@@ -142,96 +142,99 @@ class PPdefinitions(object):
             'tab-show','sep',  
                 'type','title','show-ref','medialist','first-track-ref','show-timeout','track-timeout','show-canvas',
             'tab-eggtimer','sep',  
-                 'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
+                'eggtimer-text','eggtimer-x','eggtimer-y','eggtimer-font','eggtimer-colour',
             'tab-show-text','sep',
-                    'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                'background-image','background-colour','show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
             'tab-tracks','sep',  
-                 'duration','image-window','image-rotate','transition','sep',
+                'duration','image-window','image-rotate','transition','sep',
                 'audio-speaker','mplayer-audio','mplayer-volume','mplayer-other-options','sep',
                 'omx-audio','omx-volume','omx-window','freeze-at-end','omx-other-options','sep',
                 'web-window',
             'tab-links','sep',
                 'disable-controls','links'
-                    ],
-              
-            'start':[
-                    'tab-show','sep',  
-                        'type','title','show-ref','start-show', 'plugin'
-                    ]
+            ],
 
-             }
+        'start':[
+            'tab-show','sep',  
+                'type','title','show-ref','start-show', 'plugin'
+        ]
+    }
 
 
     # field details for creating new shows and for update of profile    
     new_shows={
+        'artliveshow':{
+                'title': 'New ArtLiveshow','show-ref':'','show-canvas':'',  'type': 'artliveshow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....', 'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
+                'live-tracks-dir1':'','live-tracks-dir2':'',
+                'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
 
-                'artliveshow':{'title': 'New ArtLiveshow','show-ref':'','show-canvas':'',  'type': 'artliveshow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                            'eggtimer-text':'Loading....', 'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                            'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                         'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':'','live-tracks-dir1':'','live-tracks-dir2':'',
-                               'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
+        'artmediashow':{
+                'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
+                'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
 
-                'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                        'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                        'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                         'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
+       'hyperlinkshow':{
+                'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'','debug-path':'no',
+                'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
+                'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
+                },
 
-               'hyperlinkshow':{ 'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'','debug-path':'no',
-                    'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
-                             'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                             'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                            'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
-                             'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
-                            },
+       'radiobuttonshow':{
+                'type':'radiobuttonshow','title':'New Radio Button Show','show-ref':'', 'show-canvas':'', 'medialist':'',
+                'links':'','first-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
+                'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
+                },
 
-    
-               'radiobuttonshow':{ 'type':'radiobuttonshow','title':'New Radio Button Show','show-ref':'', 'show-canvas':'', 'medialist':'',
-                    'links':'','first-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
-                             'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                             'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                            'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
-                             'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                                   'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
-                                   },
-    
-                'mediashow':{'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '','show-timeout': '0','interval':'0','track-count-limit':'0',
-                          'disable-controls':'no','trigger-start-type': 'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':'none', 'trigger-end-param':'',
-                            'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                             'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                             'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                            'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                            'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
-                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
-                                     
-                'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow','show-timeout': '0','interval':'0','track-count-limit':'0',
-                            'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
-                        'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                        'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                        'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                        'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
-                            'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
-                            'live-tracks-dir1':'','live-tracks-dir2':'',
-                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
-                
-       
-              'menu':{'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
-                        'show-timeout': '0','track-timeout':'0','menu-track-ref':'menu-track',
-                         'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',                       
-                        'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
+        'mediashow':{
+                'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '','show-timeout': '0','interval':'0','track-count-limit':'0',
+                'disable-controls':'no','trigger-start-type': 'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':'none', 'trigger-end-param':'',
+                'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
+                'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
+                             
+        'liveshow':{
+                'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow','show-timeout': '0','interval':'0','track-count-limit':'0',
+                'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
+                'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
+                'live-tracks-dir1':'','live-tracks-dir2':'',
+                'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
+
+        'menu':{
+                'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
+                'show-timeout': '0','track-timeout':'0','menu-track-ref':'menu-track',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',                       
+                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
-                        'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
-                        'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},    
-            
-                'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':''}
+                'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
+                'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},    
+    
+        'start':{'title': 'Start','show-ref':'start', 'type': 'start','start-show':'', 'plugin':''}
     }
     
     values_yes_no           = ['yes', 'no']
@@ -242,7 +245,7 @@ class PPdefinitions(object):
     values_repeat           = ['repeat', 'single-run']
     values_sequence         = ['ordered', 'shuffle']
     values_trigger_start    = ['start', 'input', 'input-persist']
-    values_trigger_end      = ['none', 'input']
+    values_trigger_end      = ['none', 'input', 'duration']
     values_trigger_next     = ['continue', 'input']
     values_volume_range     = [-60, 0]
 
@@ -278,14 +281,14 @@ class PPdefinitions(object):
         'home-track-ref'   : [{'rule': 'is-in-list', 'args': 'track-labels'}],
         'image-rotate'     : ['is-zero-or-positive-integer'],
         'image-window'     : ['is-image-window', 'is-not-blank'],
-        'interval'         : ['is-hh-mm-ss'],
-        'links'            : [{'rule': 'is-link-script', 'args': 'track-labels', 'field-args': 'type'}],
+        'interval'         : ['is-hh-mm-ss-or-seconds'],
+        'links'            : [{'rule': 'is-script', 'args': 'track-labels', 'field-arg': 'type'}],
         'live-tracks-dir1' : ['dir-exists'],
         'live-tracks-dir2' : ['dir-exists'],
         'medialist'        : ['is-medialist-file'],
         'menu-track-ref'   : [{'rule': 'is-in-list', 'args': 'track-labels'}],
         'mplayer-audio'    : [{'rule': 'is-in-list',   'args': values_mplayer_audio}],
-        'mplayer-other-options': [''],
+        #'mplayer-other-options': [''],
         'mplayer-volume'   : [{'rule': 'is-in-range', 'args': values_volume_range}],
         'omx-audio'        : [{'rule': 'is-in-list',   'args': values_omxplayer_audio}],
         #'omx-other-options': [ '' ],  # validating the command line options for omx would be cumbersome
@@ -293,16 +296,16 @@ class PPdefinitions(object):
         'omx-window'       : ['is-video-window', 'is-not-blank'],
         'freeze-at-end'    : ['is-yes-no'],
 
-        'plugin'           : ['is-plugin-file', 'file-exists'],
+        'plugin'           : ['file-exists'],
         'repeat'           : [{'rule': 'is-in-list', 'args': values_repeat}],
         'sequence'         : [{'rule': 'is-in-list', 'args': values_sequence}],
         'show-canvas'      : ['is-rectangle' ],
         'show-ref'         : [{'rule': 'is-showref', 'field-arg': 'type'}],
-        'start-show'       : [{'rule': 'is-in-list', 'args': 'track-labels'}],
-        'show-timeout'     : ['is-hh-mm-ss'],
+        'start-show'       : [{'rule': 'is-startshow', 'args': 'show-labels'}], # is-not-blank is checked separately
+        'show-timeout'     : ['is-hh-mm-ss-or-seconds'],
         'timeout-track-ref': [{'rule': 'is-in-list', 'args': 'track-labels'}],
         #'title'            : [ '' ],  # no validation... can be anything, even blank
-        'track-timeout'    : ['is-hh-mm-ss'],
+        'track-timeout'    : ['is-hh-mm-ss-or-seconds'],
         'transition'       : [{'rule': 'is-in-list', 'args': values_transition}],
         'trigger-start-type' : [{'rule': 'is-in-list', 'args': values_trigger_start}],
         'trigger-end-type'   : [{'rule': 'is-in-list', 'args': values_trigger_end}],
@@ -316,30 +319,30 @@ class PPdefinitions(object):
         # Text items
 
             'eggtimer-text'    : [{'required-fields' : ['eggtimer-colour', 'eggtimer-font', 'eggtimer-x', 'eggtimer-y']}, ],
-            'eggtimer-color'   : [{'rule': 'is-color',   'depends-on': 'eggtimer-text'}, ],
+            'eggtimer-color'   : [{'rule': 'is-color',   'severity': WARNING}, ],
             'eggtimer-font'    : [{'rule': 'is-font',    'severity': WARNING}, ],
             'eggtimer-x'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
             'eggtimer-y'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
-            'hint-color'       : [{'rule': 'is-color',   'depends-on': 'hint-text'}, ],
+            'hint-color'       : [{'rule': 'is-color',   'severity': WARNING}, ],
             'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
             'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
             'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
 
             'show-text'        : [{'required-fields' : ['show-text-colour', 'show-text-font', 'show-text-x', 'show-text-y']}],
-            'show-text-color'  : [{'rule': 'is-color',   'depends-on': 'show-text'}, ],
+            'show-text-color'  : [{'rule': 'is-color',   'severity': WARNING}, ],
             'show-text-font'   : [{'rule': 'is-font',    'severity': WARNING}, ],
             'show-text-x'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
             'show-text-y'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
 
             'text'             : [{'required-fields' : ['message-colour', 'message-font'], }],
             'message-font'     : [{'rule': 'is-font',    'depends-on': 'text'}, 'is-not-blank'],  # this is the only field with must = yes... why?
-            'message-color'    : [{'rule': 'is-color',   'depends-on': 'text'}, ],
+            'message-color'    : [{'rule': 'is-color',   'severity': WARNING}, ],
 
             'empty-text'       : [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
             'trigger-wait-text': [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
-            'admin-color'      : [{'rule': 'is-color',   'depends-on': ['trigger-wait-text', 'empty-text']}, ],
+            'admin-color'      : [{'rule': 'is-color',   'severity': WARNING}, ],
             'admin-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
             'admin-x'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
             'admin-y'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
@@ -596,16 +599,16 @@ class PPdefinitions(object):
         'display-show-background': ['is-yes-no'],
         'display-show-text'      : ['is-yes-no'],
         'duration'         : ['is-hh-mm-ss'],
-        'entry-font'       : ['is-font'],
-        'entry-color'      : ['is-color'],
+        'entry-font'       : [{'rule': 'is-font',  'severity': WARNING}, ],
+        'entry-color'      : [{'rule': 'is-color', 'severity': WARNING}, ],
         'entry-select-color' : ['is-color'],
         'image-rotate'     : ['is-zero-or-positive-integer'],
         'image-window'     : ['is-image-window', 'is-not-blank'],
-        'location'         : ['is-location'],   # file or URL
-        'links'            : [{'rule': 'is-script', 'args': 'show-labels', 'field-args': 'type'}],  # hyperlink or radiobutton?
+        'location'         : [{'rule': 'is-location', 'field-arg': 'type'}],   # file or URL
+        'links'            : [{'rule': 'is-script', 'args': 'track-labels', 'field-arg': 'show-type'}],  # hyperlink or radiobutton?
 
         'mplayer-audio'    : [{'rule': 'is-in-list', 'args': values_mplayer_audio}],
-        'mplayer-other-options': [''],
+        #'mplayer-other-options': [''],
         'mplayer-volume'   : [{'rule': 'is-in-range', 'args': values_volume_range}],
         'omx-audio'        : [{'rule': 'is-in-list', 'args': values_omxplayer_audio}],
         #'omx-other-options': [ '' ],  # validating the command line options for omx would be cumbersome
@@ -614,7 +617,7 @@ class PPdefinitions(object):
 
         'freeze-at-end'    : ['is-yes-no'],
 
-        'plugin'           : ['is-plugin-file', 'file-exists'],
+        'plugin'           : ['file-exists'],
         'seamless-loop'    : ['is-yes-no'],
         'show-ref'          : [{'rule': 'is-in-list', 'args': 'show-labels'}],
         'show-control-begin': [{'rule': 'is-showcontrol-script', 'args': 'show-labels'}],
@@ -630,8 +633,8 @@ class PPdefinitions(object):
 
         # menu items
             'menu-window'      : ['is-menu-window'],
-            'menu-icon-mode'   : [{'rule': 'is-icon-mode', 'field-args': 'menu-text-mode'}],
-            'menu-text-mode'   : [{'rule': 'is-text-mode', 'field-args': 'menu-icon-mode'}],
+            'menu-icon-mode'   : [{'rule': 'is-icon-mode', 'field-arg': 'menu-text-mode'}],
+            'menu-text-mode'   : [{'rule': 'is-text-mode', 'field-arg': 'menu-icon-mode'}],
             'menu-rows'        : ['is-zero-or-positive-integer'],
             'menu-columns'     : ['is-zero-or-positive-integer'],
             'menu-icon-width'  : ['is-zero-or-positive-integer'],
@@ -647,24 +650,24 @@ class PPdefinitions(object):
         # Text items    
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
-            'hint-color'       : [{'rule': 'is-color',   'depends-on': 'hint-text'}, ],
+            'hint-color'       : [{'rule': 'is-color',   'severity': WARNING}, ],
             'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
             'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
             'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
 
             'text'             : [{'required-fields' : ['message-colour', 'message-font'], }],
             'message-font'     : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'message-color'    : [{'rule': 'is-color',   'depends-on': 'text'}, ],
+            'message-color'    : [{'rule': 'is-color',   'severity': WARNING}, ],
             'message-justify'  : [{'rule': 'is-text-justify', 'depends-on': 'text'}],
 
             'pause-text'       : [{'required-fields' : ['pause-text-colour', 'pause-text-font', 'pause-text-x', 'pause-text-y']}, ],
-            'pause-color'      : [{'rule': 'is-color',   'depends-on': 'pause-text'}, ],
+            'pause-color'      : [{'rule': 'is-color',   'severity': WARNING}, ],
             'pause-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
             'pause-x'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
             'pause-y'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
 
             'track-text'       : [{'required-fields' : ['track-text-colour', 'track-text-font', 'track-text-x', 'track-text-y']}, ],
-            'track-text-color' : [{'rule': 'is-color',   'depends-on': 'track-text'}, ],
+            'track-text-color' : [{'rule': 'is-color',   'severity': WARNING}, ],
             'track-text-font'  : [{'rule': 'is-font',    'severity': WARNING}, ],
             'track-text-x'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],
             'track-text-y'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],

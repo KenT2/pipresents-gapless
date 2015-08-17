@@ -112,7 +112,7 @@ class PPEditor(object):
         profilemenu.add_command('Validate',       0, self.e_validate_profile_with_results)
         profilemenu.add_command('Close',          0, self.close_profile)
         profilemenu.add_separator()
-        profilemenu.add_command('Start Presentation', 0, self.start_presentation_windowed)
+        profilemenu.add_command('Start Presentation', 0, self.start_presentation_windowed, accelerator='F5')
         profilemenu.add_command('Start Fullscreen', 6, self.start_presentation_fullscreen)
 
         profilemenu.add_separator()
@@ -333,7 +333,7 @@ class PPEditor(object):
 
         self.root.bind("<Escape>", self.escape_keypressed)
         notebook.enable_traversal()  # keybinding for tab switching
-        self.root.bind("<F5>", self.start_presentation_fullscreen)
+        self.root.bind("<F5>", self.start_presentation_windowed)
         
         # initialise variables
         self.init()
@@ -387,6 +387,7 @@ class PPEditor(object):
                 self.end('error','Failed to find pp_home')
         else:
             self.pp_home_dir = self.options.pp_home_dir
+            pp_paths.get_home(self.options.pp_home_dir)
 
         if closing_profile:
             self.pp_profile_dir = ""
@@ -410,9 +411,10 @@ class PPEditor(object):
             self.mon.log(self,"Initial Media from options is "+self.initial_media_dir)
 
         self.osc_config_file = ''
-        self.current_medialist=None
-        self.current_showlist=None
-        self.current_show=None
+        self.current_medialist = None
+        self.current_showlist = None
+        self.current_show = None
+        self.current_medialists_index = -1
         self.shows_display.delete(0,END)
         self.medialists_display.delete(0,END)
         self.tracks_display.delete(0,END)
@@ -492,7 +494,7 @@ class PPEditor(object):
             #tkMessageBox.showwarning("Validator","Errors were found in the profile. Run the validator for details")
             #self.status.set("! {0} errors, {1} warnings. Run validation for details.", errors, warnings, background='red')
         else:
-            self.status.set_info("{0}, {1}.", error_text, warn_text)
+            self.status.set_info("{0}, {1}, {2}.", criticals_text, error_text, warn_text)
         show_refs = self.show_refs(include_start=True)
         track_refs = self.track_refs()
         for result in val.results:
@@ -503,6 +505,7 @@ class PPEditor(object):
                 if result.trackref in track_refs:
                     index = track_refs.index(result.trackref)
                     self.format_display_validation(self.tracks_display, result, index, 'track')
+                else: continue
             if result.listref:
                 try:
                     index = self.medialists.index(result.listref)
@@ -512,7 +515,9 @@ class PPEditor(object):
 
     def format_display_validation(self, grid, result, index, type='show'):
         iid = grid.item_at(index)
+        if iid is None: return
         if result.severity == ValidationSeverity.CRITICAL:
+            #print "Critical item: {0},\n {1},\n {2}, {3}\n{4}".format(result.show['show-ref'], result.list, result.track['title'], index, result.message)
             grid.add_tag(iid, 'critical')
             grid.remove_tag(iid, 'error')
             grid.remove_tag(iid, 'warning')
@@ -869,7 +874,7 @@ class PPEditor(object):
                 field_content['plugin'] = ''
             try:
                 title = field_content['title']
-                d=EditItem(self.root, "Edit Show: " + title, SHOW, field_content, self.show_refs())
+                d=EditItem(self.root, "Edit Show: " + title, SHOW, field_content, self.show_refs(True))
                 if d.result  is  True:
                     self.save_showlist(self.pp_profile_dir)
                     self.refresh_shows_display()
@@ -1594,7 +1599,7 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         
         ttk.Label(master, text="").grid(row=50, sticky=W)
         self.autovalidate = tk.StringVar()
-        self.e_autovalidate = ttk.Checkbutton(master, text="Auto validate", variable = self.autovalidate,
+        self.e_autovalidate = ttk.Checkbutton(master, text="Auto validate", variable=self.autovalidate,
             onvalue="true", offvalue="false")
         self.e_autovalidate.grid(row=51, sticky=W)
         self.autovalidate.set(config.get('config', 'autovalidate'))
@@ -1602,18 +1607,23 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         return None    # no initial focus
 
     def validate(self):
-        if os.path.exists(self.e_home.get()) is  False:
-            tkMessageBox.showwarning("Pi Presents Editor","Data Home not found")
+        home = self.e_home.get()
+        if os.path.exists(home) is False:
+            tkMessageBox.showwarning("Pi Presents Editor","Data Home not found", parent=self)
             return 0
-        if os.path.exists(self.e_media.get()) is  False:
-            tkMessageBox.showwarning("Pi Presents Editor","Media Directory not found")
+        if os.path.exists(self.e_media.get()) is False:
+            tkMessageBox.showwarning("Pi Presents Editor","Media Directory not found", parent=self)
             return 0
-        if os.path.exists(self.e_home.get()+os.sep+'pp_profiles'+self.e_offset.get()) is  False:
-            tkMessageBox.showwarning("Pi Presents Editor","Current Profles directory not found")
+        offset = self.e_offset.get()
+        home_offset = os.path.join(home, 'pp_profiles', offset)
+        if offset != '' and os.path.exists(home_offset) is False:
+            tkMessageBox.showwarning("Pi Presents Editor","Current Profles directory not found", parent=self)
             return 0
         return 1
 
     def apply(self):
+        if self.validate() == 0:
+            return
         self.save_options()
         self.result=True
 
