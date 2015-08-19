@@ -429,13 +429,13 @@ class Validator(object):
                     if field in show:
                         matches += 1
                     else:
-                        add_critical(SHOW, "Schema is missing field '{0}'.".format(field))
+                        self.add_critical(SHOW, "Schema is missing field '{0}'.".format(field))
                 for field in show:
                     if field not in schema:
                         extra += 1
-                        add_error(SHOW, "Schema has extra field '{0}'.".format(field))
+                        self.add_error(SHOW, "Schema has extra field '{0}'.".format(field))
         if missing > 0:
-            self.add_critical(PROFILE, "Profile version {0} does not match this editor (version {1})" 
+            self.add_critical(PROFILE, "Profile version {0} is not compatible with this version of PiPresents ({1})" 
                 .format(profile_issue, myversion), abort=True)
             return False
         return True

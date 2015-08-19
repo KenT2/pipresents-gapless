@@ -3,6 +3,8 @@ import sys
 import os
 import tkMessageBox
 import Tkinter as tk
+import PIL.Image
+import PIL.ImageTk
 import pp_paths
 
 #class Enum(object):
@@ -15,10 +17,19 @@ def enum(*sequential, **named):
     enums['names'] = reverse
     return type('Enum', (), enums)
 
+
 def load_gif(name):
     name += '.gif'
     icon = os.path.join(pp_paths.pp_resource_dir, name)
     return tk.PhotoImage(file=icon)
+
+
+def load_png(name):
+    name += '.png'
+    path = os.path.join(pp_paths.pp_resource_dir, name)
+    img = PIL.Image.open(path)
+    return PIL.ImageTk.PhotoImage(img)
+
 
 class StopWatch(object):
     

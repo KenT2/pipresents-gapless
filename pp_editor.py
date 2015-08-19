@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry
 from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
@@ -29,6 +29,7 @@ from pp_definitions import ValidationSeverity, CRITICAL, ERROR, WARNING, INFO
 from pp_oscconfig import OSCConfig,OSCEditor, OSCUnitType
 from tkconversions import *
 from ttkStatusBar import StatusBar
+import pp_utils
 
 
 # **************************
@@ -44,10 +45,6 @@ class PPEditor(object):
     # ***************************************
     # INIT
     # ***************************************
-
-    def load_icon(self, name):
-        icon = os.path.join(self.pp_dir, 'pp_resources', name)
-        return tk.PhotoImage(file=icon)
 
     def __init__(self):
     
@@ -71,8 +68,8 @@ class PPEditor(object):
 
         Monitor.log_level = int(self.command_options['debug'])
 
-        self.mon.log (self, "Pi Presents Editor is starting")
-        self.mon.log (self," OS and separator " + os.name +'  ' + os.sep)
+        self.mon.log(self, "Pi Presents Editor is starting")
+        self.mon.log(self," OS and separator " + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: code "+sys.path[0])
 
 
@@ -84,17 +81,21 @@ class PPEditor(object):
 
         style = ttkStyle()
         style.theme_use('clam')
-        self.photo_app      = self.load_icon('pipresents_16.gif')
-        self.photo_spacer   = self.load_icon('spacer.gif')
-        self.photo_warning  = self.load_icon('warning.gif')
-        self.photo_error    = self.load_icon('error.gif')
-        self.photo_critical = self.load_icon('critical.gif')
+        self.photo_spacer   = pp_utils.load_gif('spacer')
+        self.photo_warning  = pp_utils.load_png('warning')
+        self.photo_error    = pp_utils.load_png('error')
+        self.photo_critical = pp_utils.load_png('critical')
+
+        # This icon is used for both taskbar and task switcher - ugly
+        # Is there a way to use system theme icons instead (auto-select the correct size?)...
+        # If so, I haven't figured it out for a python app.
+        self.photo_app = pp_utils.load_png('pipresents_32')
         self.root.tk.call('wm', 'iconphoto', self.root._w, self.photo_app)
 
         self.root.resizable(True,True)
 
         # define response to main window closing
-        self.root.protocol ("WM_DELETE_WINDOW", self.app_exit)
+        self.root.protocol("WM_DELETE_WINDOW", self.app_exit)
 
         # bind some display fields
         self.filename = tk.StringVar()
@@ -701,8 +702,8 @@ class PPEditor(object):
             self.open_profile(profile_dir)
             return True
         if showversion > myversion:
-            self.mon.err(self,"This version of PiPresents ({0}) is too old to " +
-                "open the profile (version {1}).".format(myversion, showversion))
+            self.mon.err(self,("This version of PiPresents ({0}) is too old to " +
+                "open the profile (version {1}).").format(myversion, showversion))
             return False
         self.refresh_shows_display()
         return True

@@ -255,10 +255,10 @@ class EditItem(ttkSimpleDialog.Dialog):
         self.bar = bar
         bar.bind("<<NotebookTabChanged>>", self.tab_changed)
 
-        self.photo_critical= pp_utils.load_gif('critical')
-        self.photo_error   = pp_utils.load_gif('error')
-        self.photo_warning = pp_utils.load_gif('warning')
-        self.photo_check   = pp_utils.load_gif('check')
+        self.photo_critical= pp_utils.load_png('critical')
+        self.photo_error   = pp_utils.load_png('error')
+        self.photo_warning = pp_utils.load_png('warning')
+        self.photo_check   = pp_utils.load_png('check')
         self.photo_spacer  = pp_utils.load_gif('spacer')
 
         self.body_fields(root, bar)
