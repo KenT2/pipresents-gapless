@@ -11,7 +11,7 @@ import ttk
 import tkFont
 from tkconversions import *
 import pp_paths
-from pp_utils import enum
+from pp_utils import enum, Monitor
 import pp_definitions
 from pp_definitions import PPdefinitions, PROFILE, SHOW, LIST, TRACK, FIELD
 from pp_definitions import ValidationSeverity, CRITICAL, ERROR, WARNING, INFO
@@ -24,25 +24,19 @@ ValidationRuleTypes = enum('INVALID_VALUE', 'MISSING_FILE')
 
 
 class RuleResult(object):
-    true = None
-    blank = None
 
     def __init__(self, passed=None, message=None, blank=None, severity=None):
         self.passed   = passed
         self.message  = message
-        self.blank    = blank  # hmm, not to be confused with RuleResult.blank
+        self.blank    = blank  # hmm, not to be confused with RuleResult(blank=True)
         self.severity = severity
-        if RuleResult.__dict__.get('true') == None:
-            setattr(RuleResult, 'true', '')     # prevent recursion
-            setattr(RuleResult, 'blank', '')
-            RuleResult.true = RuleResult(True)  # set the actual item
-            RuleResult.blank = RuleResult(True, blank=True)
+        self.dependents = None
 
 
 class ValidationResult(object):
 
     def __init__(self, validator, objtype, severity, msg, **kwargs):
-        dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
+        self.mon=Monitor()
 
         self.objtype   = objtype                     # PROFILE, SHOW, LIST, TRACK
         self.severity  = severity                    # CRITICAL, ERROR, WARNING, (INFO?), (OK?)
@@ -124,8 +118,16 @@ class Validator(object):
         if not title: title = track['location']
         return title
 
+    @staticmethod
+    def get_specs(objtype):
+        if objtype == SHOW:
+            return PPdefinitions.show_field_specs
+        if objtype == TRACK:
+            return PPdefinitions.track_field_specs
+        return None
+
     def __init__(self):
-        dummy = RuleResult(True).passed  # force instantiation of RuleResult.true by creating an instance
+        self.mon = Monitor()
         self.pp_home = pp_paths.pp_home
         self.pp_profile = pp_paths.pp_profile_dir
 
@@ -161,6 +163,7 @@ class Validator(object):
         showlist = json.load(ifile)
         ifile.close()
         self.v_shows = showlist['shows']
+        self.v_media_lists = []
         #if not self.check_profile_compatibility(showlist):
         #    return False
 
@@ -175,6 +178,8 @@ class Validator(object):
             else:
                 self.v_show_labels.append(show['show-ref'])
                 self.v_medialist_refs.append(show['medialist'])
+                if self.scope == TRACK: 
+                    self.check_medialist(show['medialist'], check_tracks=False)
         return True
 
     def validate_profile(self, display=False):
@@ -192,7 +197,7 @@ class Validator(object):
         # now we can check the shows
         for show in self.v_shows:
             # critical errors on a show only abort checking for that show
-            #print "Checking show: ", show['show-ref'], ', ', show['title']
+            #self.mon.log(self, "Checking show: ", show['show-ref'], ', ', show['title'])
             self.check_show(show)
 
         # PROFILE
@@ -200,7 +205,7 @@ class Validator(object):
         self.check_start_show_is_required(len(self.v_start_shows))
 
         # ALL DONE
-        self.result.display('t', "\nValidation Complete")
+        self.result.display('t', "\n\nVALIDATION COMPLETE")
         self.result.stats()
         if self.result.num_errors() == 0:
             return True
@@ -224,7 +229,7 @@ class Validator(object):
     def check_show(self, show):
         self.result.add_show(show)
         self.set_current(show, None, None, checking=SHOW)
-        #print "Checking show: ", show['show-ref'], "------------------------------"
+        self.mon.log(self, "Checking show: ", show['show-ref'], "------------------------------")
         if show['type'] == "start":
             self.check_one_start_show(len(self.v_start_shows))
             self.check_valid_show_label(show)
@@ -243,12 +248,13 @@ class Validator(object):
             ifile.close()
 
             # make a list of the track labels
-            v_track_labels=[]
+            self.v_track_labels=[]
             for track in tracks:
                 self.set_current(list=list, track=track)
                 self.result.add_track(show['show-ref'], show['medialist'], track)
-                if track['track-ref'] !='':
-                    v_track_labels.append(track['track-ref'])
+                trackref = Validator.get_trackref(track)
+                if self.scope == TRACK: self.mon.log(self, "Adding track ", track['track-ref'])
+                self.v_track_labels.append(trackref)
                        
         # check each field for the show, as defined by the show field specs
         specs = PPdefinitions.show_field_specs
@@ -262,11 +268,12 @@ class Validator(object):
 
         return True
 
-    def check_medialist(self, medialist_file):
+    def check_medialist(self, medialist_file, check_tracks=True):
         # we don't do anything with these (yet)
         if medialist_file in ('pp_io_config.json'):
             return
-        # find the associated show
+        # find the associated show (it's possible for more than one show to have the 
+        # same medialist, but we only check/report it once, for the first occurrance)
         show = None
         for eshow in self.v_shows:
             if 'medialist' in eshow:
@@ -276,7 +283,7 @@ class Validator(object):
         showref = ""
         if show: showref=show['show-ref']
         if medialist_file == 'pp_showlist.json':
-            self.result.add_list('.', medialist_file) # make child item of profile
+            self.result.add_list('.', medialist_file)  # make child item of profile
         else:
             self.result.add_list(showref, medialist_file)
         self.set_current(show, medialist_file, None)
@@ -284,31 +291,28 @@ class Validator(object):
         if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
             return self.add_critical(LIST, "Invalid medialist in profile: {0}".format(medialist_file), abort=False)
             
-        if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
+        if medialist_file.endswith(".json") and medialist_file not in ('pp_showlist.json','schedule.json'):
             self.set_current(show, medialist_file, None, checking=LIST)
             self.v_media_lists.append(medialist_file)
 
             # open a medialist and test its tracks
             ifile = open(self.pp_profile + os.sep + medialist_file, 'rb')
-            sdict = json.load(ifile)
+            medialist = json.load(ifile)
             ifile.close()                          
-            tracks = sdict['tracks']
-            if 'issue' in sdict:
-                medialist_issue= sdict['issue']
-            else:
-                medialist_issue="1.0"
+            tracks = medialist['tracks']
                   
             # check issue of medialist
-            myversion = pp_definitions.__version__
-            if medialist_issue  !=  myversion:
-                return self.add_critical(LIST, "Medialist version {0} does not match this editor (version {1})" \
-                    .format(medialist_issue, myversion), abort=False)
+            if not self.check_medialist_compatibility(medialist):
+                return False
 
             # open a medialist and test its tracks
             self.v_track_labels=[]
             self.anonymous=0
             for track in tracks:
-                self.check_track(track, self.anonymous)
+                trackref = Validator.get_trackref(track)
+                self.v_track_labels.append(trackref)
+                if check_tracks:
+                    self.check_track(track, self.anonymous)
 
     def check_track(self, track, anonymous):
         self.set_current(track=track, checking=TRACK)
@@ -440,6 +444,28 @@ class Validator(object):
             return False
         return True
 
+    def check_medialist_compatibility(self, medialist):
+        myversion = pp_definitions.__version__
+        if 'issue' in medialist:
+            profile_issue = medialist['issue']
+        else:
+            profile_issue ="1.0"
+        if profile_issue == myversion:
+            return True
+        for track in medialist['tracks']:
+            result = self.rule_is_schema_valid(track, PPdefinitions.new_tracks[track['type']])
+            if result.missing > 0:
+                msg = "Medialist file version {0} is not compatible: {1}".format(medialist['issue'], result.message)
+                self.add_critical(LIST, msg)
+                return False
+            if result.extra > 0:
+                # not compatible here just because pipresents player won't let it play
+                msg = "Medialist file version {0} is not compatible: {1}".format(medialist['issue'], result.message)
+                self.add_critical(LIST, msg)
+                return False
+        # we're here because the file version didn't match, which the pipresents player will consider a fatal error.
+        return False
+
     def check_valid_show_label(self, show):
         result = self.rule_is_showref(show['show-ref'], show['type'])
         if result.passed is False:
@@ -515,7 +541,7 @@ class Validator(object):
 
 # Rule processing and helpers
 
-    def process_ruleset(self, objtype, obj, field, dependent_field=None):
+    def process_ruleset(self, objtype, obj, field, dependent_field=None, required_fields=None):
         is_dependency = dependent_field is not None
         if objtype == SHOW:
             specs = PPdefinitions.show_field_specs
@@ -533,18 +559,18 @@ class Validator(object):
         if self.is_blank(value):
             if spec['must'] != 'no':
                 self.add_error(objtype, "A value is required for {0}".format(field), **kwargs)
-                return RuleResult.true
+                return RuleResult(True)
             if is_dependency:
                 if not self.is_blank(obj[dependent_field]):
                     # it may be better for the rule for the field to determine whether the value is blank
                     msg = "{0} is blank, but is required for {1}".format(field, dependent_field)
                     self.add_error(objtype, msg)
-            return RuleResult.true            
+            return RuleResult(True)            
 
         rule_field = field.replace('colour', 'color')  # 'color' is the standard python spelling
         if rule_field not in scheme:
             #print "Scheme does not have a rule for ", rule_field
-            return RuleResult.true
+            return RuleResult(True)
 
         rulesets = scheme[rule_field]
         for ruleset in rulesets:
@@ -563,7 +589,7 @@ class Validator(object):
                     if 'rule'            in rulespec: rule = rulespec['rule']
                     if 'args'            in rulespec: args = rulespec['args']
                     if 'required-fields' in rulespec: reqs = rulespec['required-fields']
-                    if 'depends-on'      in rulespec: deps = rulespec['depends-on']
+                    if 'dependents'      in rulespec: deps = rulespec['dependents']
                     if 'field-arg'       in rulespec: farg = rulespec['field-arg']
                     if 'severity'        in rulespec: severity = rulespec['severity']
                 else:
@@ -573,41 +599,50 @@ class Validator(object):
                 elif args == 'track-labels':
                     args = self.v_track_labels
 
-                # skip the rule if it depends on a different field (checking is done by the other field)
-                if deps is not None:
+                # if the rule has other fields that depend on it, process their rules
+                if self.scope == FIELD and deps is not None:
                     #deps = self.ensure_fields_is_list(deps)
                     if not is_dependency:
                         # if we're validating a widget, we should call the ruleset for the other rules?
-                        # if we're validating a show or presentation, we should skip the dependent rule
+                        # if we're validating a show or presentation, we should skip the dependent rule (already covered)
                         if self.scope == PROFILE:
-                            #print "Skipping dependent rule: ", field
-                            return RuleResult.true
+                            #self.mon.log(self, "Skipping dependent rule: ", field)
+                            return RuleResult(True)
                         deps = self.ensure_fields_is_list(deps)
                         for dep in deps:
-                            #print "Processing dependent rule: ", dep
-                            result = self.process_ruleset(objtype, obj, dep)
+                            if dependent_field == dep: break
+                            self.mon.log(self, "{0:20} Processing dependent '{1}.".format(field, dep))
+                            result = self.process_ruleset(objtype, obj, dep, dependent_field=dep, required_fields=required_fields)
                             if result.passed is False:
+                                #result.message = "Field {0} depends on this one.".format(dep)
                                 return result
                             if result.blank is True:
-                                return RuleResult.blank
+                                return RuleResult(blank=True)
 
                 if rule is None:
+                    if field == dependent_field: return RuleResult(True)
+                    if self.scope != FIELD: return RuleResult(True)
                     reqs = self.ensure_fields_is_list(reqs)
                     if reqs:
                         for req in reqs:
-                            #print "Checking dependencies for rule (1) ", field
-                            result = self.process_ruleset(objtype, obj, req, dependent_field=field)
-                            return result
-                    else: return RuleResult.true
+                            if required_fields is not None and req in required_fields: break
+                            self.mon.log(self, "{0:20} Processing required '{1}'.".format(field, req))
+                            result = self.process_ruleset(objtype, obj, req, dependent_field=dependent_field, required_fields=reqs)
+                            result.dependents = None
+                            if result.passed is False:
+                                result.message = "This field depends on {0}.".format(specs[req]['text'])
+                                return result
+                    return RuleResult(True)
 
                 rule_name = 'rule_' + rule.replace('-', "_")
                 try:
                     rule_func = getattr(self, rule_name)
                 except:
                     rule_func = None
-                #print "Checking: {0}({1})".format(rule_name, value)
+                #self.mon.log(self, "Checking: {0}(value={1})".format(rule_name, value.replace('\n', '')))
                 if field == 'start-show':
-                    print "Checking '{0}': '{1}' with rule {2}".format(field, obj[field], self.current_show)
+                    self.mon.log(self, "Checking start show: '{0}' with rule {1}".format(obj[field], rule_name))
+                    pass
                 if rule_func is None or not hasattr(rule_func, '__call__'):
                     msg = "The processor function for rule '{0}', field '{1}' is not present.".format(rule, field)
                     self.add_critical(objtype, msg)
@@ -622,6 +657,8 @@ class Validator(object):
                         rule_result = rule_func(value, obj[farg])
                     else:
                         rule_result = rule_func(value)
+                    if not is_dependency:
+                        rule_result.dependents = deps  # in case the caller needs to recheck dependent fields
                 except Exception as e:
                     msg = "Failed to check validation for '{0}' ({1}): {2}".format(field, rule_func, e)
                     return RuleResult(False, msg, severity=CRITICAL)
@@ -647,12 +684,15 @@ class Validator(object):
                         self.add_result(SHOW, severity, msg)
                         #self.add_error(SHOW, msg)
                 elif rule_result.passed is True:
-                    if reqs and rule_result.blank is not True:
+                    if reqs and rule_result.blank is not True and self.scope != PROFILE:
                         for req in reqs:
                             #print "Checking dependencies for rule (2) ", field
-                            self.process_ruleset(objtype, obj, req, dependent_field=field)
+                            if req in required_fields: continue
+                            if required_fields is None: required_fields = []
+                            required_fields.append(req)
+                            self.process_ruleset(objtype, obj, req, dependent_field=field, required_fields=required_fields)
         if rule_result is not None and rule_result.passed is False:
-            print "[{0}] {1}: {2}".format(severity, field, rule_result.message)
+            #print "[{0}] {1}: {2}".format(severity, field, rule_result.message)
             pass
         return rule_result
 
@@ -712,32 +752,32 @@ class Validator(object):
 
     def rule_is_not_blank(self, value):
         if not self.is_blank(value):
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "Cannot be blank.")
 
     def rule_is_filetype(self, value, extension_spec):
         # extension spec: first element describes the type, e.g. 'Image Files'
         # elements after that describe the extensions
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         ftype = extension_spec.pop(0).lower()
         ext = os.path.splitext(value)
         if ext in extensions:
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "'{0}' is not the correct extension for {1}".format(ext, ftype))
 
     def rule_dir_exists(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         if pp_paths.get_dir(value) is None:
             return RuleResult(False, "'{0}' does not exist.")
 
     def rule_file_exists(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         if pp_paths.get_file(value) is None:
             return RuleResult(False, "'{0}' does not exist.".format(value))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_location(self, value, track_type):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         if track_type == 'web':
             return self.rule_is_web_location(value)
         result = self.rule_file_exists(value)
@@ -746,39 +786,39 @@ class Validator(object):
         return result
 
     def rule_is_web_location(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         # a valid url is almost anything
-        return RuleResult.true
+        return RuleResult(True)
         # you could try the following, but the example shows that use web addresses
         # ('pipresents.wordpress.com') fail this validation.
         #loc = os.path.basename(track['location'])
         #url = urlparse.urlparse(value)
         #if url.scheme != '' and url.netloc != '':
-        #    return RuleResult.true
+        #    return RuleResult(True)
         #return RuleResult(False, "'{0}' does not appear to be a valid web location. scheme: {1}, loc: {2}.".
         #    format(value, url.scheme, url.netloc))
 
     def rule_is_boolish(self, value):
         if isinstance(value, basestring):
-            if value == "": return RuleResult.blank
+            if value == "": return RuleResult(blank=True)
             value = value.lower()
-            if value in ("yes",  "no"   ): return RuleResult.true
-            if value in ("true", "false"): return RuleResult.true
-            if value in ("0",    "1"    ): return RuleResult.true
+            if value in ("yes",  "no"   ): return RuleResult(True)
+            if value in ("true", "false"): return RuleResult(True)
+            if value in ("0",    "1"    ): return RuleResult(True)
         if isinstance(value, (int,long)):
-            if value in (0, 1): return RuleResult.true
+            if value in (0, 1): return RuleResult(True)
         return RuleResult(False, "'{0}' needs to evaluate to true/false, yes/no, etc.")
 
     def rule_is_yes_no(self, value):
         if isinstance(value, basestring):
             value = value.lower()
-            if value in ("yes", "no"): return RuleResult.true
+            if value in ("yes", "no"): return RuleResult(True)
         return RuleResult(False, "'{0}' needs to be 'yes' or 'no'.")
 
     def rule_is_in_list(self, value, values):
-        # ?  if self.is_blank(value): return RuleResult.blank
+        # ?  if self.is_blank(value): return RuleResult(blank=True)
         if value in values:
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "'{0}' is not one of the available choices.".format(value))
 
     def rule_is_all_in_list(self, value, values):
@@ -798,7 +838,7 @@ class Validator(object):
             result = RuleResult(False, msg)
             result.arg = missing
             return result
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_startshow(self, value, show_labels):
         if self.is_blank(value): return RuleResult(False, "The start show does not call any shows.", severity=WARNING)
@@ -818,16 +858,16 @@ class Validator(object):
             result = RuleResult(False, msg)
             result.arg = missing
             return result
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_integer(self, value):
         try:
             if isinstance(value, basestring):
-                if value == "": return RuleResult.blank
+                if value == "": return RuleResult(blank=True)
                 value = long(value)
                 #print "is_integer: ", value
             if isinstance(value, (int, long)):
-                return RuleResult.true
+                return RuleResult(True)
         except:
             pass
         return RuleResult(False, "'{0}' needs to be an integer.".format(value))
@@ -835,10 +875,10 @@ class Validator(object):
     def rule_is_zero_or_positive_integer(self, value):
         try:
             if isinstance(value, basestring):
-                if value == "": return RuleResult.blank
+                if value == "": return RuleResult(blank=True)
                 value = long(value)
             if isinstance(value, (int, long)) and value >= 0:
-                return RuleResult.true
+                return RuleResult(True)
         except:
             pass
         return RuleResult(False, "'{0}' needs to be zero or a positive integer.".format(value))
@@ -846,7 +886,7 @@ class Validator(object):
     def rule_is_x_y(self, value):
         if not self.is_x_y(value):
             return RuleResult(False, "x and y coordinates need to be integers.")
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_rectangle(self, value):
         if isinstance(value, basestring):
@@ -870,14 +910,14 @@ class Validator(object):
         if not ty < by:
             return RuleResult(False, "The top y coordinate ({0}) needs to be a lower value than the bottom y coordinate ({1})."
                 .format(ty, by))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_in_range(self, value, range):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         try:
             val = long(value)
             if val >= range[0] and val <= range[1]:
-                return RuleResult.true
+                return RuleResult(True)
         except:
             pass
         return RuleResult(False, "'{0}' is not in range ({1} to {2})".format(value, range[0], range[1]))
@@ -892,8 +932,8 @@ class Validator(object):
                 return result # RuleResult(False, "Valid formats are hh:mm:ss, mm:ss or ss.")
             if int(secs) > 59:
                 return RuleResult(False, "For times longer than 59 seconds, use hh:mm:ss or mm:ss.")
-            return RuleResult.true
-        if self.is_blank(value): return RuleResult.blank
+            return RuleResult(True)
+        if self.is_blank(value): return RuleResult(blank=True)
         pattern = r"""^                 # Start of string
                     (?:                 # Try to match...
                      (?:                #  Try to match...
@@ -916,10 +956,10 @@ class Validator(object):
         return self.rule_is_hh_mm_ss(value)
 
     def rule_is_regex_match(self, value, regex):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         if re.match(regex, value) is None:
             return RuleResult(False, "The value did not pass validation.")
-        else: return RuleResult.true
+        else: return RuleResult(True)
 
     def rule_is_medialist_file(self, value):
         if self.is_blank(value):
@@ -929,23 +969,23 @@ class Validator(object):
         if os.path.exists(os.path.join(self.pp_profile, value)) is None:
             #return RuleResult(False, "'{0}' does not exist.")
             return RuleResult(False, "Medialist file '{0}' was not found.".format(value))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_image_file(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         try:
             file = pp_paths.get_file(value)
             if file is None:
                 return RuleResult(False, "'{0}' does not exist.".format(value))
             img = PIL.Image.open(file)
-            return RuleResult.true
+            return RuleResult(True)
         except Exception as ex:
             return RuleResult(False, "The image file check failed for '{0}': {1}".format(value, ex))
         return RuleResult(False, "'{0}' is not a valid image file.".format(value))
 
     def rule_is_color(self, value):
         val = value.lower().strip()
-        if self.is_blank(val): return RuleResult.blank
+        if self.is_blank(val): return RuleResult(blank=True)
         # try drawing something with the color to see if it works
         ex = None
         try:
@@ -955,33 +995,37 @@ class Validator(object):
             #img = PIL.Image.new("RGB", (0,0))
             #draw = ImageDraw.Draw(img)
             #draw.point((0,0), fill=value)
-            return RuleResult.true
+            return RuleResult(True)
         except Exception as ex:
             pass
         return RuleResult(False, "'{0}' is not a valid color. Use a color name or a hex format like '#rrggbb' (with '#').".format(value))
 
     def rule_is_font(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         ex = None
         try:
-            family = value
-            family = re.sub(r"\{(.*)\}.*", r"\1", family)  # using the font picker adds the brackets
-            family = re.sub(r"\s\d+\s.*", "", family)      # brackets are not required
+            family = re.sub(r"\{(.*)\}.*", r"\1", value)  # using the font picker adds the brackets
+            if family == value:  # if we don't have brackets
+                family = value.split()[0]
+            if family not in tkFont.families():
+                family = re.sub(r"(.*?)(\s\d+.*)?", r"\1", value)      # brackets are not required
             if family in tkFont.families():
                 size = re.sub(r".*\s([\d]+).*", r"\1", value)
                 size = int(size)
                 # we have the size, now what? 
                 # font can be negative to specify pixel units
                 # non-zero? integer? absolute max?
-                style = value.lower()
-                style = re.sub(r".*\d+\s([a-z\s])", r"\1", style)
-                if style != value:  # match found
-                    styles = style.split(' ')
+                style1 = value.replace(family, "").lower()
+                style2 = re.sub(r".*\d+\s([a-z\s])", r"\1", style1)
+                if style1 != style2:  # match found
+                    styles = style2.strip().split(' ')
                     for style in styles:
                         if style not in ("bold", "normal", "italic", "roman", "underline", "overstrike"):
                             return RuleResult(False, "'{0}'' is not a valid font style.".format(style))
-                return RuleResult.true
+                return RuleResult(True)
             else:
+                self.mon.log(self, "Font missing: {0} (show={1}, track={2})".format(
+                    family, Validator.get_showref(self.current_show), Validator.get_trackref(self.current_track)))
                 return RuleResult(False, "'{0}' was not found in the system's font list.".format(family))
             #root = None
             #w = Canvas(root, width=0, height=0)
@@ -992,13 +1036,13 @@ class Validator(object):
         return RuleResult(False, "'{0} (family={1})' is not a valid font ({2}).".format(value, family, ex))
 
     def rule_is_text_justify(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         if value not in ('center', 'left', 'right'):
             return RuleResult(False, "'{0}' needs to be 'left', 'center', or 'right'.")
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_image_window(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         fields = value.lower().split()
         if fields[0] not in ('original', 'fit', 'shrink', 'warp'):
             return RuleResult(False, "'{0}' needs to be 'original', 'fit', 'shrink', or 'warp'.".format(fields[0]))
@@ -1018,10 +1062,10 @@ class Validator(object):
             if len(fields) in (2,6):
                 if fields[len(fields)-1] not in ('nearest', 'bilinear', 'bicubic', 'antialias'):
                     return RuleResult(False, "The filter needs to be 'nearest', 'bilinear', 'bicubic', or 'antialias'.")
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_video_window(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         fields = value.lower().split()
         if fields[0] not in ('original', 'warp'):
             return RuleResult(False, "'{0}' needs to be 'original' or 'warp'.".format(fields[0]))
@@ -1034,10 +1078,10 @@ class Validator(object):
                 result = self.rule_is_rectangle([fields[1], fields[2], fields[3], fields[4]])
                 if not result.passed:
                     return result
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_web_window(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         fields = value.lower().split()
         if fields[0] not in ('warp', ):
             return RuleResult(False, "'{0}' needs to be 'warp'.".format(fields[0]))
@@ -1047,10 +1091,10 @@ class Validator(object):
             result = self.rule_is_rectangle([fields[1], fields[2], fields[3], fields[4]])
             if not result.passed:
                 return result
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_menu_window(self, value):
-        if self.is_blank(value): return RuleResult.blank
+        if self.is_blank(value): return RuleResult(blank=True)
         fields = value.lower().split()
         if len(fields) not in (1, 2, 4):
             return RuleResult(False, "The menu window needs to be 'fullscreen' or 1 or 2 pairs of space-separated coordinates.")
@@ -1062,7 +1106,7 @@ class Validator(object):
                 return RuleResult(False, "The x y coordinates need to be integers.")
         else:  # len(fields) == 4
             return self.rule_is_rectangle(value)
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_icon_mode(self, icon_mode, text_mode):
         icon_mode = icon_mode.lower()
@@ -1071,7 +1115,7 @@ class Validator(object):
             return RuleResult(False, "icon mode and text mode cannot both be 'none'.")
         if icon_mode == 'none' and text_mode == 'overlay':
             return RuleResult(False, "icon mode cannot be 'none' with 'overlay' text mode.")
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_text_mode(self, text_mode, icon_mode):
         return self.rule_is_icon_mode(icon_mode, text_mode)
@@ -1083,16 +1127,16 @@ class Validator(object):
             return RuleResult(False, "The show label cannot contain spaces.")
         if showtype == 'start' and value != 'start':
             return RuleResult(False, "The label for the start show must be 'start'.")
-        return RuleResult.true
+        return RuleResult(True)
     
     def rule_is_show_type(self, value):
         if value in list(PPdefinitions.show_types.keys()):
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "'{0}' is not a valid show type.".format(value))
 
     def rule_is_track_type(self, value):
         if value in list(PPdefinitions.track_types.keys()):
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "'{0}' is not a valid track type.".format(value))
 
     def rule_is_script(self, value, labels=None, scripttype=None):
@@ -1102,7 +1146,7 @@ class Validator(object):
         #   animation, browser,        ... no labels
         #   hyperlink, radiobutton     ... track labels
         #   showcontrol                ... show labels
-        if self.is_blank(value.strip()): return RuleResult.blank
+        if self.is_blank(value.strip()): return RuleResult(blank=True)
         lines = value.split('\n')
         result = RuleResult()
         for line in lines:
@@ -1160,7 +1204,7 @@ class Validator(object):
         return self.rule_is_script(value, None, 'trigger')
 
     def rule_is_animation_command(self, value, line_num=None):
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1178,10 +1222,10 @@ class Validator(object):
             return RuleResult(False, "'{0}' needs to be 'state'{1}.".format(out_type, line_str))
         if to_state not in ('on', 'off'):
             return RuleResult(False, "'{0}' needs to be 'on' or 'off'{1}.".format(to_state, line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_browser_command(self, value, line_num=None):
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1191,7 +1235,7 @@ class Validator(object):
         if len(fields) not in (1, 2):
             return RuleResult(False, "Browser commands have one parameter or none{0}.".format(line_str))
         if command == 'uzbl':  # may have zero or one param
-            return RuleResult.true
+            return RuleResult(True)
         if command not in ('load', 'refresh', 'wait', 'exit', 'loop'):
             return RuleResult(False, "'{0}' is not a recognized browser command{1}.".format(command, line_str))
         if command == 'load' and len(fields) != 2:
@@ -1201,10 +1245,10 @@ class Validator(object):
                 return RuleResult(False, "'{0}' needs a parameter{1}.".format(command, line_str))
             if not self.is_zero_or_positive_integer(fields[1]):
                 return RuleResult(False, "'{0}' needs to be zero or a positive integer{1}.".format(fields[1], line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_control_command(self, value, line_num=None):
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1216,11 +1260,11 @@ class Validator(object):
         op = fields[1]
         if (op in ('up', 'down', 'play', 'stop', 'exit', 'pause', 'no-command', 'null') or
                 op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
-            return RuleResult.true
+            return RuleResult(True)
         return RuleResult(False, "'{0} is not a recognized command{1}.".format(op, line_str))
 
     def rule_is_radiobutton_command(self, value, track_labels, line_num=None):
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1234,20 +1278,20 @@ class Validator(object):
         if len(fields) == 3: trackref = fields[2]
         if (op in ('return', 'stop', 'exit', 'pause', 'no-command') or
                 op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
-            return RuleResult.true
+            return RuleResult(True)
         elif op == 'play':
             if len(fields) != 3:
                 return RuleResult(False, "'play' needs to know the track label{0}.".format(line_str))
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
-            return RuleResult.true
+            return RuleResult(True)
         else:
             return RuleResult(False, "'{0}' is not a recognized command{1}.".format(op, line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_link_command(self, value, track_labels, line_num=None):
         # a generic rule that checks both radiobutton and hyperlink commands
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1264,26 +1308,26 @@ class Validator(object):
             op in ('home', 'null', 'repeat') or                 # hyperlink-only commands
             op in ('stop', 'exit', 'pause', 'no-command') or    # common to both
                 op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
-            return RuleResult.true
+            return RuleResult(True)
         # 'play' is a radiobutton command, the others are hyperlink commands
         elif op == 'play' or op in ('call', 'goto', 'jump'):
             if len(fields) != 3:
                 return RuleResult(False, "'play' needs to know the track label{0}.".format(line_str))
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
-            return RuleResult.true
+            return RuleResult(True)
         # 'return' is a hyperlink command
         elif op in ('return', ):
             if trackref is None:
-                return RuleResult.true
+                return RuleResult(True)
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
         else:
             return RuleResult(False, "'{0}' is not a recognized command{1}.".format(op, line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_hyperlink_command(self, value, track_labels, line_num=None):
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1297,25 +1341,25 @@ class Validator(object):
         if len(fields) == 3: trackref = fields[2]
         if (op in ('home', 'null', 'stop', 'exit', 'repeat', 'pause', 'no-command') or
                 op.startswith('mplay-') or op.startswith('omx-') or op.startswith('uzbl-')):
-            return RuleResult.true
+            return RuleResult(True)
         if op in ('call', 'goto', 'jump'):
             if trackref is None:
                 return RuleResult(False, "'{0}' needs to know the track label{1}.".format(op, line_str))
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
-            return RuleResult.true
+            return RuleResult(True)
         elif op in ('return', ):
             if trackref is None:
-                return RuleResult.true
+                return RuleResult(True)
             if trackref not in track_labels:
                 return RuleResult(False, "'{0}' was not found in the medialist{1}.".format(trackref, line_str))
         else:
             return RuleResult(False, "'{0}' is not a recognized command{1}.".format(op, line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_showcontrol_command(self, value, show_labels, line_num):
         # value is the line
-        if value.strip() == '': return RuleResult.blank
+        if value.strip() == '': return RuleResult(blank=True)
         if line_num is None:
             line_str = ""
         else:
@@ -1325,7 +1369,7 @@ class Validator(object):
         showref = None
         if len(fields) >= 2: showref = fields[1]
         if command.startswith('/'):  # osc command... followed by any number of params?
-            return RuleResult.true
+            return RuleResult(True)
         elif len(fields) == 1 and command not in ('exitpipresents', 'shutdownnow'):
             return RuleResult(False, "'{0}' is not a recognized command or is missing parameters{1}.".format(command, line_str))
         elif len(fields) == 2:
@@ -1333,7 +1377,7 @@ class Validator(object):
                 return RuleResult(False, "'{0}' is not a recognized command or has incorrect parameters{1}.".format(command, line_str))
             if showref not in show_labels:
                 return RuleResult(False, "'{0}' was not found in the show list{1}.".format(showref, line_str))
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_trigger_param(self, value, triggertype):
         # For mediashow and liveshow
@@ -1341,18 +1385,18 @@ class Validator(object):
         # start trigger:  start,    input, input-persist
         #   end trigger:  none,     input, duration
         #  next trigger:  continue, input
-        if self.is_blank(): return RuleResult.blank
+        if self.is_blank(): return RuleResult(blank=True)
         fields = value.split()
         if len(fields) != 1:
             return RuleResult(False, "The trigger parameter can be one word, a number, or hh:mm:ss, mm:ss, or ss.")
-        return RuleResult.true
+        return RuleResult(True)
 
     def rule_is_schema_valid(self, this, that):
         # checks the fields in the first level of the schema
         # counts fields that match, are extraneous, or are missing
-        matches = {}
-        extra   = {}
-        missing = {}
+        match   = []
+        extra   = []
+        missing = []
         for field in this:
             if field in that:
                 match.append(field)
@@ -1361,19 +1405,36 @@ class Validator(object):
         for field in that:
             if field not in this:
                 extra.append(field)
+
+        if   len(match)   == 1: match_str   = "matched field '{0}'".format(match[0])
+        else                  : match_str   = "matched {0} fields".format(len(match))
+        if   len(extra)   == 0: extra_str   = ""
+        elif len(extra)   == 1: extra_str   = "extra field '{0}'"
+        elif len(extra)   <  3: extra_str   = "extra {0} fields ({1})".format(len(extra), ",".join(extra[:3]))
+        else                  : extra_str   = "extra {0} fields ({1}, ...)".format(len(extra), ",".join(extra[:3]))
+        if   len(missing) == 0: missing_str = ""
+        elif len(missing) == 1: missing_str = "missing field '{0}'"
+        elif len(missing) <  3: missing_str = "missing {0} fields ({1})".format(len(missing), ",".join(missing[:3]))
+        else                  : missing_str = "missing {0} fields ({1}, ...)".format(len(missing), ",".join(missing[:3]))
+
         if len(extra) > 0 or len(missing) > 0:
-            msg = "{0} fields matched, {1} missing, {2} extraneous".format(
-                len(matches), len(missing), len(extra))
+            s = []
+            s.append(match_str)
+            s.append(extra_str)
+            s.append(missing_str)
+            msg = ", ".join(s)
             result = RuleResult(False, msg)
-            result.matches = matches
+            result.match   = match
             result.extra   = extra
             result.missing = missing
             return result
         else:
-            result.matches = matches
+            result = RuleResult(True) # don't use the global RuleResult(True)
+            result.match   = match
             result.extra   = extra
             result.missing = missing
-            return RuleResults(True)
+            result.message = "Schema appears compatible ({0} fields match)".format(len(match))
+            return result
 
 # *************************************
 # GPIO CONFIG - NOT USED
@@ -1575,19 +1636,20 @@ class ResultWindow(object):
 
     def stats(self):
         if self.display_it is False: return
-        msg = "Criticals: {0}\nErrors: {0}\nWarnings: {1}".format(self.criticals, self.errors, self.warnings)
+        msg = ("Criticals: {0}\n" +
+               "Errors   : {1}\n" +
+               "Warnings : {2}").format(self.criticals, self.errors, self.warnings)
         self.textb.config(state=NORMAL)
-        self.textb.insert(1.0, msg + "\n\n")  # at beginning
-        self.textb.insert(END, "\n\n" + msg)  # at end
+        self.textb.insert(END, "\n" + msg)  # at end
         self.textb.config(state=DISABLED)
 
         # update status bar
         if self.criticals == 1: critical_text = "1 critical"
         else:                   critical_text = "{0} criticals".format(self.criticals)
-        if self.errors == 1: error_text = "1 error"
-        else:                error_text = "{0} errors".format(self.errors)
-        if self.warnings == 1: warn_text = "1 warning"
-        else:                  warn_text = "{0} warnings".format(self.warnings)
+        if self.errors == 1:    error_text = "1 error"
+        else:                   error_text = "{0} errors".format(self.errors)
+        if self.warnings == 1:  warn_text = "1 warning"
+        else:                   warn_text = "{0} warnings".format(self.warnings)
         self.status.set_info("{0}, {1}, {2}.", critical_text, error_text, warn_text)
 
     def num_errors(self):

@@ -216,7 +216,7 @@ class TabBar(ttk.Notebook):
 class EditItem(ttkSimpleDialog.Dialog):
 
     def __init__(self, tkparent, title, objtype, field_content, show_refs):
-        self.mon=Monitor()
+        self.mon = Monitor()
 
         if objtype == SHOW:
             self.record_specs = PPdefinitions.show_types
@@ -238,11 +238,16 @@ class EditItem(ttkSimpleDialog.Dialog):
         # list of stringvars from which to get edited values (for optionmenu only??)
         self.entries=[]
 
+        # lookup for widget when all we have is the field
+        self.widgets = {}
+
         self.validator = Validator()
-        self.validator.initialize("")
+        self.validator.initialize(scope=objtype)
         if objtype == SHOW:
+            self.mon.log(self, "Editing show '{0} -------------------".format(Validator.get_showref))
             self.validator.set_current(show=field_content)
         elif objtype == TRACK:
+            self.mon.log(self, "Editing track '{0} -------------------".format(Validator.get_trackref))
             self.validator.set_current(track=field_content)
         self.tempcontent = copy.deepcopy(self.field_content)
 
@@ -300,7 +305,7 @@ class EditItem(ttkSimpleDialog.Dialog):
         # print 'make entry',len(self.fields),field,field_spec
         if field_spec['shape']=='tab':
             self.current_tab = Tab(master, field_spec['name'])
-            bar.add(self.current_tab,field_spec['text'], sticky='news', compound='left', image=self.photo_spacer)
+            bar.add(self.current_tab,field_spec['text'], sticky='news', compound='left')
             self.tab_row=1
             self.current_tab.errors = []
             self.current_tab.warnings = []
@@ -400,6 +405,7 @@ class EditItem(ttkSimpleDialog.Dialog):
         widget.icon = icon
         widget.tab = self.current_tab
         self.tempcontent[field] = self.field_content[field]
+        self.widgets[field] = widget
         self.validate_widget(widget)
 
     def validate_field_keypress(self, p, w):
@@ -433,6 +439,7 @@ class EditItem(ttkSimpleDialog.Dialog):
             print "This widget doesn't have validation set up: ", w.__class__.__name__
             return
         try:
+            #self.mon.log(self, "Validation set up: ", w.__class__.__name__, w.field)
             if value is None:
                 if isinstance(w, (tk.Text, ScrolledText)):
                     value = w.get(1.0, END)
@@ -444,7 +451,7 @@ class EditItem(ttkSimpleDialog.Dialog):
             result = self.validator.validate_widget(self.objtype, self.tempcontent, w.field)
             self.style_widget_background(w, result)
             if result.passed is False:
-                #print "Error found: ", result.message
+                #self.mon.log(self, "Error found: ", result.message)
                 if result.severity == ERROR: 
                     icon['image'] = self.photo_error
                     if w not in tab.errors:
@@ -464,6 +471,13 @@ class EditItem(ttkSimpleDialog.Dialog):
                 #icon.grid_remove()  # hide image
                 icon.tip.cleartip()
             self.style_tab(tab)
+            if result.dependents is not None:
+                #self.mon.log(self, "result has dependents")
+                for dep in result.dependents:
+                    if dep in self.widgets:
+                        self.mon.log(self, "Processing dependent: ", dep, "--------------")
+                        if self.validate_widget(self.widgets[dep]) is False:
+                            return False
             return result.passed
         except Exception as e:
             print "Validation failed for ", w.field, ": ", e
@@ -475,7 +489,7 @@ class EditItem(ttkSimpleDialog.Dialog):
         elif len(tab.warnings) > 0:
             self.bar.tab(tab, image=self.photo_warning, compound='left')
         else:
-            self.bar.tab(tab, image=self.photo_spacer, compound='text')
+            self.bar.tab(tab, compound='text')
 
     def style_widget_background(self, widget, result):
         s = ttk.Style()
@@ -488,7 +502,7 @@ class EditItem(ttkSimpleDialog.Dialog):
                 if result.severity == ERROR:
                     bg = tkconversions.ERROR_COLOR
                 else:
-                    bg = tkconversion.WARNING_COLOR
+                    bg = tkconversions.WARNING_COLOR
                 w.configure(background=bg)
             else:
                 # use the style that has the background defined
@@ -533,7 +547,7 @@ class EditItem(ttkSimpleDialog.Dialog):
         
         field_index=0 # index to self.fields - not incremented for tab and sep
         entry_index=0  # index of stringvars for option_menu
-        print "-------------------------------------"
+        #print "-------------------------------------"
 
         for field in record_fields:
             # print field
@@ -546,8 +560,8 @@ class EditItem(ttkSimpleDialog.Dialog):
                 #print "Applying row {0} '{1}' ({2}, {3}). {4} entries".format(field_index, field, self.field_content[field], 
                 #    field_spec['shape'], len(self.entries))
 
-                
                 if field_spec['shape']=='text':
+                    #print "Applying ", field
                     self.field_content[field]=self.fields[field_index].get(1.0,END).rstrip('\n')
                     
                 elif field_spec['shape']=='option-menu':

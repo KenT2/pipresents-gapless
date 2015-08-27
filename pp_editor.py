@@ -52,10 +52,11 @@ class PPEditor(object):
         self.command_options=ed_options()
 
         # get directory holding the code
-        self.pp_dir=sys.path[0]
-            
-        if not os.path.exists(self.pp_dir+os.sep+"pp_editor.py"):
-            tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+        self.pp_dir = sys.path[0]
+        if self.pp_dir == "" or not os.path.isfile(os.path.join(self.pp_dir, "pp_editor.py")):
+            self.pp_dir = os.getcwd()  # might need this if debugging
+        if not os.path.isfile(os.path.join(self.pp_dir, "pp_editor.py")):
+            tkMessageBox.showwarning("Pi Presents","Bad Application Directory:\n".format(self.pp_dir))
             exit()
             
           
@@ -64,13 +65,14 @@ class PPEditor(object):
         self.mon=Monitor()
         self.mon.init()
         
+        # perhaps this should be read out of a non-version-controlled file
         Monitor.classes  = ['PPEditor','EditItem','Validator']
 
         Monitor.log_level = int(self.command_options['debug'])
 
         self.mon.log(self, "Pi Presents Editor is starting")
-        self.mon.log(self," OS and separator " + os.name +'  ' + os.sep)
-        self.mon.log(self,"sys.path[0] -  location of code: code "+sys.path[0])
+        self.mon.log(self, "OS and separator " + os.name +'  ' + os.sep)
+        self.mon.log(self, "sys.path[0] -  location of code: code "+sys.path[0])
 
 
         # set up the gui
@@ -215,7 +217,7 @@ class PPEditor(object):
         medialist_tab = ttkFrame(notebook)
         notebook.add(shows_tab, text="Shows")
         notebook.add(medialist_tab, text="Medialists")
-        notebook.pack(side=LEFT, fill=BOTH, expand=True)
+        notebook.pack(side=LEFT, fill=BOTH, expand=True, pady=2)
         self.notebook = notebook
         
         #middle_frame=ttkFrame(bottom_frame,padx=5)
@@ -420,6 +422,7 @@ class PPEditor(object):
         self.medialists_display.delete(0,END)
         self.tracks_display.delete(0,END)
         self.preview_proc = None
+        self.validation_results = None
         if not closing_profile and self.command_options['profile'] != '':
             # if we were given a profile on the command line, open it
             self.open_profile(self.pp_profile_dir)
@@ -485,7 +488,10 @@ class PPEditor(object):
         else:           error_text = "{0} errors".format(errors)
         if warnings == 1: warn_text = "1 warning"
         else:             warn_text = "{0} warnings".format(warnings)
-        msg = "{0}, {1}, {2}. Double click for details".format(critical_text, error_text, warn_text)
+        if self.options.autovalidate:
+            msg_refresh = ""
+        else: msg_refresh = "Click to refresh. "
+        msg = "{0}, {1}, {2}. {3}Double click for details.".format(critical_text, error_text, warn_text, msg_refresh)
         if criticals > 0:
             self.status.set_critical(msg)
         elif errors > 0:
@@ -495,24 +501,16 @@ class PPEditor(object):
             #tkMessageBox.showwarning("Validator","Errors were found in the profile. Run the validator for details")
             #self.status.set("! {0} errors, {1} warnings. Run validation for details.", errors, warnings, background='red')
         else:
-            self.status.set_info("{0}, {1}, {2}.", criticals_text, error_text, warn_text)
-        show_refs = self.show_refs(include_start=True)
-        track_refs = self.track_refs()
-        for result in val.results:
-            if result.showref:
-                index = show_refs.index(result.showref)
-                self.format_display_validation(self.shows_display, result, index)
-            if result.trackref:
-                if result.trackref in track_refs:
-                    index = track_refs.index(result.trackref)
-                    self.format_display_validation(self.tracks_display, result, index, 'track')
-                else: continue
-            if result.listref:
-                try:
-                    index = self.medialists.index(result.listref)
-                    self.format_display_validation(self.medialists_display, result, index)
-                except:
-                    pass
+            self.status.set_info("{0}, {1}, {2}. {3}", critical_text, error_text, warn_text, msg_refresh)
+        self.validation_results = val.results
+        self.refresh_validation_display()
+
+    def clear_validation_tags(self, grid, tag):
+        for iid in grid.get_children():
+            grid.remove_tag(iid, 'error')
+            grid.remove_tag(iid, 'warning')
+            grid.remove_tag(iid, 'critical')
+            grid.add_tag(iid, tag)  # keeps spacer in place
 
     def format_display_validation(self, grid, result, index, type='show'):
         iid = grid.item_at(index)
@@ -541,6 +539,23 @@ class PPEditor(object):
         #else:
         #if type == 'track':
         #    print 'Error in tracks {0}, row {1}'.format(result.track, iid)
+
+    def refresh_validation_display(self):
+        if self.validation_results is None: return
+        show_refs = self.show_refs(include_start=True)
+        track_refs = self.track_refs()
+        self.clear_validation_tags(self.shows_display, 'show')
+        self.clear_validation_tags(self.medialists_display, 'list')
+        self.clear_validation_tags(self.tracks_display, 'track')
+        for result in self.validation_results:
+            if result.showref:
+                index = show_refs.index(result.showref)
+                self.format_display_validation(self.shows_display, result, index)
+            if result.trackref:
+                if result.trackref in track_refs:
+                    index = track_refs.index(result.trackref)
+                    self.format_display_validation(self.tracks_display, result, index, 'track')
+                else: continue        
 
     def switch_tabs(self, event=None):
         seleccted_tab = self.notebook.select()
@@ -822,6 +837,8 @@ class PPEditor(object):
             self.shows_display.insert(END, display_name, tags=('show',))
         self.highlight_shows_display()
         if self.options.autovalidate: self.validate_profile()
+        else: self.refresh_validation_display()
+
 
     def highlight_shows_display(self):
         ctl = self.shows_display
@@ -879,7 +896,7 @@ class PPEditor(object):
                 if d.result  is  True:
                     self.save_showlist(self.pp_profile_dir)
                     self.refresh_shows_display()
-                    self.validate_profile(False)
+                    if self.options.autovalidate: self.validate_profile(False)
                 self.shows_display.focus_set() # retain focus on the list after editing
             except TclError:
                 # prevent "can't invoke command: application has been destroyed"
@@ -1067,6 +1084,7 @@ class PPEditor(object):
             showname = self.get_showname_for_medialist(item)
             self.medialists_display.insert(END, item, iid=item, values=(showname), tags=('list',))
         self.highlight_medialist_display()
+        self.refresh_validation_display()
 
     def get_showname_for_medialist(self, medialist):
         showname = ''
@@ -1122,6 +1140,7 @@ class PPEditor(object):
                     self.tracks_display.select(0)
                 self.highlight_tracks_display()
         if self.options.autovalidate: self.validate_profile()
+        else: self.refresh_validation_display()
 
     def highlight_tracks_display(self):
         ctl = self.tracks_display
@@ -1154,7 +1173,7 @@ class PPEditor(object):
                 d=EditItem(self.root, "Edit Track: " + title, TRACK, track, self.show_refs())
                 if d.result is True:
                     self.save_medialist()
-                    self.validate_profile(False)
+                    if self.options.autovalidate: self.validate_profile(False)
                     self.refresh_tracks_display(False)
                 self.highlight_tracks_display()
                 self.tracks_display.focus_set()  # retain focus on the list after editing
@@ -1601,7 +1620,7 @@ class OptionsDialog(ttkSimpleDialog.Dialog):
         ttk.Label(master, text="").grid(row=50, sticky=W)
         self.autovalidate = tk.StringVar()
         self.e_autovalidate = ttk.Checkbutton(master, text="Auto validate", variable=self.autovalidate,
-            onvalue="true", offvalue="false")
+            onvalue="True", offvalue="False")
         self.e_autovalidate.grid(row=51, sticky=W)
         self.autovalidate.set(config.get('config', 'autovalidate'))
 

@@ -319,33 +319,33 @@ class PPdefinitions(object):
         # Text items
 
             'eggtimer-text'    : [{'required-fields' : ['eggtimer-colour', 'eggtimer-font', 'eggtimer-x', 'eggtimer-y']}, ],
-            'eggtimer-color'   : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'eggtimer-font'    : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'eggtimer-x'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
-            'eggtimer-y'       : [{'rule': 'is-integer', 'depends-on': 'eggtimer-text'}, ],
+            'eggtimer-color'   : [{'rule': 'is-color',   'dependents': 'eggtimer-text', 'severity': WARNING}, ],
+            'eggtimer-font'    : [{'rule': 'is-font',    'dependents': 'eggtimer-text', 'severity': WARNING}, ],
+            'eggtimer-x'       : [{'rule': 'is-integer', 'dependents': 'eggtimer-text'}, ],
+            'eggtimer-y'       : [{'rule': 'is-integer', 'dependents': 'eggtimer-text'}, ],
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
-            'hint-color'       : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
-            'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
+            'hint-color'       : [{'rule': 'is-color',   'dependents': 'hint-text', 'severity': WARNING}, ],
+            'hint-font'        : [{'rule': 'is-font',    'dependents': 'hint-text', 'severity': WARNING}, ],
+            'hint-x'           : [{'rule': 'is-integer', 'dependents': 'hint-text'}, ],
+            'hint-y'           : [{'rule': 'is-integer', 'dependents': 'hint-text'}, ],
 
             'show-text'        : [{'required-fields' : ['show-text-colour', 'show-text-font', 'show-text-x', 'show-text-y']}],
-            'show-text-color'  : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'show-text-font'   : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'show-text-x'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
-            'show-text-y'      : [{'rule': 'is-integer', 'depends-on': 'show-text'}, ],
+            'show-text-color'  : [{'rule': 'is-color',   'dependents': 'show-text', 'severity': WARNING}, ],
+            'show-text-font'   : [{'rule': 'is-font',    'dependents': 'show-text', 'severity': WARNING}, ],
+            'show-text-x'      : [{'rule': 'is-integer', 'dependents': 'show-text'}, ],
+            'show-text-y'      : [{'rule': 'is-integer', 'dependents': 'show-text'}, ],
 
             'text'             : [{'required-fields' : ['message-colour', 'message-font'], }],
-            'message-font'     : [{'rule': 'is-font',    'depends-on': 'text'}, 'is-not-blank'],  # this is the only field with must = yes... why?
-            'message-color'    : [{'rule': 'is-color',   'severity': WARNING}, ],
+            'message-font'     : [{'rule': 'is-font',    'dependents': 'text'}, 'is-not-blank'],  # this is the only field with must = yes... why?
+            'message-color'    : [{'rule': 'is-color',   'dependents': 'text', 'severity': WARNING}, ],
 
             'empty-text'       : [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
             'trigger-wait-text': [{'required-fields': ['admin-colour', 'admin-font', 'admin-x', 'admin-y']}, ],
-            'admin-color'      : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'admin-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'admin-x'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
-            'admin-y'          : [{'rule': 'is-integer', 'depends-on': ['trigger-wait-text', 'empty-text']}, ],
+            'admin-color'      : [{'rule': 'is-color',   'dependents': ['trigger-wait-text', 'empty-text'], 'severity': WARNING}, ],
+            'admin-font'       : [{'rule': 'is-font',    'dependents': ['trigger-wait-text', 'empty-text'], 'severity': WARNING}, ],
+            'admin-x'          : [{'rule': 'is-integer', 'dependents': ['trigger-wait-text', 'empty-text']}, ],
+            'admin-y'          : [{'rule': 'is-integer', 'dependents': ['trigger-wait-text', 'empty-text']}, ],
     }
 
     show_field_specs={
@@ -605,7 +605,7 @@ class PPdefinitions(object):
         'image-rotate'     : ['is-zero-or-positive-integer'],
         'image-window'     : ['is-image-window', 'is-not-blank'],
         'location'         : [{'rule': 'is-location', 'field-arg': 'type'}],   # file or URL
-        'links'            : [{'rule': 'is-script', 'args': 'track-labels', 'field-arg': 'show-type'}],  # hyperlink or radiobutton?
+        'links'            : [{'rule': 'is-script', 'args': 'track-labels', 'field-arg': 'type'}],  # hyperlink or radiobutton?
 
         'mplayer-audio'    : [{'rule': 'is-in-list', 'args': values_mplayer_audio}],
         #'mplayer-other-options': [''],
@@ -650,27 +650,27 @@ class PPdefinitions(object):
         # Text items    
 
             'hint-text'        : [{'required-fields' : ['hint-colour', 'hint-font', 'hint-x', 'hint-y']}, ],
-            'hint-color'       : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'hint-font'        : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'hint-x'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
-            'hint-y'           : [{'rule': 'is-integer', 'depends-on': 'hint-text'}, ],
+            'hint-color'       : [{'rule': 'is-color',   'dependents': 'hint-text', 'severity': WARNING}, ],
+            'hint-font'        : [{'rule': 'is-font',    'dependents': 'hint-text', 'severity': WARNING}, ],
+            'hint-x'           : [{'rule': 'is-integer', 'dependents': 'hint-text'}, ],
+            'hint-y'           : [{'rule': 'is-integer', 'dependents': 'hint-text'}, ],
 
             'text'             : [{'required-fields' : ['message-colour', 'message-font'], }],
-            'message-font'     : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'message-color'    : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'message-justify'  : [{'rule': 'is-text-justify', 'depends-on': 'text'}],
+            'message-font'     : [{'rule': 'is-font',    'dependents': 'text', 'severity': WARNING}, ],
+            'message-color'    : [{'rule': 'is-color',   'dependents': 'text', 'severity': WARNING}, ],
+            'message-justify'  : [{'rule': 'is-text-justify', 'dependents': 'text'}],
 
             'pause-text'       : [{'required-fields' : ['pause-text-colour', 'pause-text-font', 'pause-text-x', 'pause-text-y']}, ],
-            'pause-color'      : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'pause-font'       : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'pause-x'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
-            'pause-y'          : [{'rule': 'is-integer', 'depends-on': 'pause-text'}, ],
+            'pause-text-color' : [{'rule': 'is-color',   'dependents': 'pause-text', 'severity': WARNING}, ],
+            'pause-text-font'  : [{'rule': 'is-font',    'dependents': 'pause-text', 'severity': WARNING}, ],
+            'pause-text-x'     : [{'rule': 'is-integer', 'dependents': 'pause-text'}, ],
+            'pause-text-y'     : [{'rule': 'is-integer', 'dependents': 'pause-text'}, ],
 
             'track-text'       : [{'required-fields' : ['track-text-colour', 'track-text-font', 'track-text-x', 'track-text-y']}, ],
-            'track-text-color' : [{'rule': 'is-color',   'severity': WARNING}, ],
-            'track-text-font'  : [{'rule': 'is-font',    'severity': WARNING}, ],
-            'track-text-x'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],
-            'track-text-y'     : [{'rule': 'is-integer', 'depends-on': 'track-text'}, ],
+            'track-text-color' : [{'rule': 'is-color',   'dependents': 'track-text', 'severity': WARNING}, ],
+            'track-text-font'  : [{'rule': 'is-font',    'dependents': 'track-text', 'severity': WARNING}, ],
+            'track-text-x'     : [{'rule': 'is-integer', 'dependents': 'track-text'}, ],
+            'track-text-y'     : [{'rule': 'is-integer', 'dependents': 'track-text'}, ],
     }
     
     track_field_specs={'sep':{'shape':'sep'},
