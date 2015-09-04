@@ -110,7 +110,7 @@ class Monitor(object):
         r_class=caller.__class__.__name__
         r_func = sys._getframe(1).f_code.co_name
         r_line =  str(sys._getframe(1).f_lineno)
-        if self.enabled(r_class,Monitor.m_fatal) is True: 
+        if self.enabled(r_class,Monitor.m_fatal) is True:
             print "[fatal] %.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
             Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
         text = " ".join([str(e) for e in text])
@@ -118,10 +118,10 @@ class Monitor(object):
 
     def err(self, caller, *text):
         r_class=caller.__class__.__name__
-        if self.enabled(r_class,Monitor.m_err) is True:        
+        text = " ".join([str(e) for e in text])
+        if self.enabled(r_class,Monitor.m_err) is True:
             print "[err]   %.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
             Monitor.ofile.write (" ERROR: " + self.pretty_inst(caller)+ ":  " + text + "\n")
-        text = " ".join([str(e) for e in text])
         tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self, caller, *text):

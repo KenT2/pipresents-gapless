@@ -598,11 +598,11 @@ class PPdefinitions(object):
         'browser-commands' : ['is-browser-script'],
         'display-show-background': ['is-yes-no'],
         'display-show-text'      : ['is-yes-no'],
-        'duration'         : ['is-hh-mm-ss'],
+        'duration'         : ['is-zero-or-positive-integer'],
         'entry-font'       : [{'rule': 'is-font',  'severity': WARNING}, ],
         'entry-color'      : [{'rule': 'is-color', 'severity': WARNING}, ],
         'entry-select-color' : ['is-color'],
-        'image-rotate'     : ['is-zero-or-positive-integer'],
+        'image-rotate'     : ['is-zero-or-positive-integer'],  # does this really need to be an integer? maybe negative allowed?
         'image-window'     : ['is-image-window', 'is-not-blank'],
         'location'         : [{'rule': 'is-location', 'field-arg': 'type'}],   # file or URL
         'links'            : [{'rule': 'is-script', 'args': 'track-labels', 'field-arg': 'type'}],  # hyperlink or radiobutton?

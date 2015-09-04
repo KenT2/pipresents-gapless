@@ -270,8 +270,8 @@ class MediaList(object):
             self.issue= mdict['issue']
         else:
             self.issue="1.0"
+        self.filename = os.path.basename(filename)
         if self.issue==showlist_issue:
-            self.filename = os.path.basename(filename)
             self._num_tracks=len(self._tracks)
             self._selected_track_index=-1
             return True

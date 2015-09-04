@@ -438,49 +438,49 @@ class EditItem(ttkSimpleDialog.Dialog):
         except AttributeError:
             print "This widget doesn't have validation set up: ", w.__class__.__name__
             return
-        try:
-            #self.mon.log(self, "Validation set up: ", w.__class__.__name__, w.field)
-            if value is None:
-                if isinstance(w, (tk.Text, ScrolledText)):
-                    value = w.get(1.0, END)
-                else:
-                    value = w.get()
-            self.tempcontent[w.field] = value
-            #tab = self.bar.tab(w.tab)
-            tab = w.tab
-            result = self.validator.validate_widget(self.objtype, self.tempcontent, w.field)
-            self.style_widget_background(w, result)
-            if result.passed is False:
-                #self.mon.log(self, "Error found: ", result.message)
-                if result.severity == ERROR: 
-                    icon['image'] = self.photo_error
-                    if w not in tab.errors:
-                        tab.errors.append(w)
-                elif result.severity == WARNING: 
-                    icon['image'] = self.photo_warning
-                    if w not in tab.warnings:
-                        tab.warnings.append(w)
-                icon.tip.settip(result.message)
-                icon.grid()  # redisplay
+        #try:
+        #self.mon.log(self, "Validation set up: ", w.__class__.__name__, w.field)
+        if value is None:
+            if isinstance(w, (tk.Text, ScrolledText)):
+                value = w.get(1.0, END)
             else:
-                #print "Result for '", w.field, "': passed=", result.passed, ", blank=", result.blank
-                if w in tab.errors: tab.errors.remove(w)
-                if w in tab.warnings: tab.warnings.remove(w)
-                icon['image'] = self.photo_spacer
-                icon.grid()
-                #icon.grid_remove()  # hide image
-                icon.tip.cleartip()
-            self.style_tab(tab)
-            if result.dependents is not None:
-                #self.mon.log(self, "result has dependents")
-                for dep in result.dependents:
-                    if dep in self.widgets:
-                        self.mon.log(self, "Processing dependent: ", dep, "--------------")
-                        if self.validate_widget(self.widgets[dep]) is False:
-                            return False
-            return result.passed
-        except Exception as e:
-            print "Validation failed for ", w.field, ": ", e
+                value = w.get()
+        self.tempcontent[w.field] = value
+        #tab = self.bar.tab(w.tab)
+        tab = w.tab
+        result = self.validator.validate_widget(self.objtype, self.tempcontent, w.field)
+        self.style_widget_background(w, result)
+        if result.passed is False:
+            #self.mon.log(self, "Error found: ", result.message)
+            if result.severity == ERROR: 
+                icon['image'] = self.photo_error
+                if w not in tab.errors:
+                    tab.errors.append(w)
+            elif result.severity == WARNING: 
+                icon['image'] = self.photo_warning
+                if w not in tab.warnings:
+                    tab.warnings.append(w)
+            icon.tip.settip(result.message)
+            icon.grid()  # redisplay
+        else:
+            #print "Result for '", w.field, "': passed=", result.passed, ", blank=", result.blank
+            if w in tab.errors: tab.errors.remove(w)
+            if w in tab.warnings: tab.warnings.remove(w)
+            icon['image'] = self.photo_spacer
+            icon.grid()
+            #icon.grid_remove()  # hide image
+            icon.tip.cleartip()
+        self.style_tab(tab)
+        if result.dependents is not None:
+            #self.mon.log(self, "result has dependents")
+            for dep in result.dependents:
+                if dep in self.widgets:
+                    self.mon.log(self, "Processing dependent: ", dep, "--------------")
+                    if self.validate_widget(self.widgets[dep]) is False:
+                        return False
+        return result.passed
+        #except Exception as e:
+        #    print "Validation failed for ", w.field, ": ", e
         return False
 
     def style_tab(self, tab):

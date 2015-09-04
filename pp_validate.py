@@ -106,6 +106,7 @@ class Validator(object):
 
     @staticmethod
     def get_trackref(track):
+        if track is None: return None
         trackref = track['track-ref']
         if not trackref: trackref = track['title']
         if not trackref: trackref = track['location']
@@ -172,6 +173,7 @@ class Validator(object):
 
         # create lists for checks
         for show in self.v_shows:
+            self.set_current(show=show)
             self.result.add_show(show)  # add shows here so medialists can be added
             if show['type'] == 'start': 
                 self.v_start_shows.append(show)
@@ -296,7 +298,12 @@ class Validator(object):
             self.v_media_lists.append(medialist_file)
 
             # open a medialist and test its tracks
-            ifile = open(self.pp_profile + os.sep + medialist_file, 'rb')
+            filename = os.path.join(self.pp_profile, medialist_file)
+            if not os.path.isfile(filename):
+                self.add_critical(LIST, "Medialist file '{0}' was not found.".format(medialist_file))
+                return
+
+            ifile = open(filename, 'rb')
             medialist = json.load(ifile)
             ifile.close()                          
             tracks = medialist['tracks']
