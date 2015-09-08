@@ -165,9 +165,9 @@ class PPdefinitions(object):
     new_shows={
         'artliveshow':{
                 'title': 'New ArtLiveshow','show-ref':'','show-canvas':'',  'type': 'artliveshow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                'eggtimer-text':'Loading....', 'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....', 'eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
+                'empty-text':'Nothing to show','admin-font':'{Liberation Sans} 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
                 'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
                 'live-tracks-dir1':'','live-tracks-dir2':'',
@@ -175,9 +175,9 @@ class PPdefinitions(object):
 
         'artmediashow':{
                 'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
+                'empty-text':'Nothing to show','admin-font':'{Liberation Sans} 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
                 'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
                 'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
@@ -185,8 +185,8 @@ class PPdefinitions(object):
        'hyperlinkshow':{
                 'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'','debug-path':'no',
                 'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
                 'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
                 'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
@@ -195,8 +195,8 @@ class PPdefinitions(object):
        'radiobuttonshow':{
                 'type':'radiobuttonshow','title':'New Radio Button Show','show-ref':'', 'show-canvas':'', 'medialist':'',
                 'links':'','first-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
                 'transition': 'cut', 'duration': '0','image-window':'original','image-rotate':'0',
                 'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes'
@@ -205,10 +205,10 @@ class PPdefinitions(object):
         'mediashow':{
                 'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '','show-timeout': '0','interval':'0','track-count-limit':'0',
                 'disable-controls':'no','trigger-start-type': 'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':'none', 'trigger-end-param':'',
-                'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
-                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'child-track-ref': '', 'hint-text': '', 'hint-x':'200','hint-y': '750','hint-font': '{Liberation Sans} 30 bold','hint-colour': 'white',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
+                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'{Liberation Sans} 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
                 'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
                 'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},
@@ -216,10 +216,10 @@ class PPdefinitions(object):
         'liveshow':{
                 'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow','show-timeout': '0','interval':'0','track-count-limit':'0',
                 'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
-                'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '750','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',
+                'child-track-ref': '', 'hint-text': '','hint-x':'200', 'hint-y': '750','hint-font': '{Liberation Sans} 30 bold','hint-colour': 'white',
+                'trigger-wait-text':'Waiting for Trigger....','empty-text':'Nothing to show','admin-font':'{Liberation Sans} 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',
                 'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
                 'live-tracks-dir1':'','live-tracks-dir2':'',
@@ -228,8 +228,8 @@ class PPdefinitions(object):
         'menu':{
                 'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
                 'show-timeout': '0','track-timeout':'0','menu-track-ref':'menu-track',
-                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'Helvetica 10 bold','eggtimer-colour':'white',                       
-                'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
+                'eggtimer-text':'Loading....','eggtimer-x':'100','eggtimer-y':'100','eggtimer-font':'{Liberation Sans} 10 bold','eggtimer-colour':'white',                       
+                'show-text':'','show-text-font':'{Liberation Sans} 20 bold','show-text-colour':'white','show-text-x':'100','show-text-y':'50','background-image':'','background-colour':'',
                 'transition': 'cut',  'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
                 'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-end':'yes',
                 'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n'},    
@@ -548,39 +548,39 @@ class PPdefinitions(object):
     new_tracks={
         'video':{'title':'New Video','track-ref':'','type':'video','location':'','thumbnail':'','freeze-at-end':'yes','seamless-loop':'no',
                  'omx-audio':'','omx-volume':'','omx-window':'','omx-other-options': '','background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes',
-                 'track-text':'','track-text-font':'Helvetica 20 bold',
+                 'track-text':'','track-text-font':'{Liberation Sans} 20 bold',
                  'track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
                
-        'message':{'title':'New Message','track-ref':'','type':'message','text':'','thumbnail':'','duration':'','message-font':'Helvetica 30 bold','message-colour':'white','message-justify':'left','message-x':'','message-y':'',
-                   'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40',
+        'message':{'title':'New Message','track-ref':'','type':'message','text':'','thumbnail':'','duration':'','message-font':'{Liberation Sans} 30 bold','message-colour':'white','message-justify':'left','message-x':'','message-y':'',
+                   'track-text':'','track-text-font':'{Liberation Sans} 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40',
                    'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
         
         'show':{'title':'New Show','track-ref':'','type':'show','sub-show':'','thumbnail':''},   
         
         'image':{'title':'New Image','track-ref':'','type':'image','location':'','thumbnail':'','duration':'','transition':'','image-window':'','image-rotate':'',
-                 'pause-text':'Paused......','pause-text-font':'Helvetica 20 bold','pause-text-colour':'white','pause-text-x':'10','pause-text-y':'40',
-                 'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','track-text':'','track-text-font':'Helvetica 20 bold',
+                 'pause-text':'Paused......','pause-text-font':'{Liberation Sans} 20 bold','pause-text-colour':'white','pause-text-x':'10','pause-text-y':'40',
+                 'background-colour':'','background-image':'','display-show-background':'yes','display-show-text':'yes','track-text':'','track-text-font':'{Liberation Sans} 20 bold',
                  'track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
                
         'audio':{'title':'New Audio','track-ref':'','type':'audio','location':'', 'thumbnail':'','duration':'','audio-speaker':'','mplayer-audio':'','mplayer-volume':'','display-show-text':'yes',
                  'mplayer-other-options':'',
                  'background-colour':'','background-image':'','display-show-background':'yes',
-                 'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
+                 'track-text':'','track-text-font':'{Liberation Sans} 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'','show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','plugin':''},
 
         'web':{'title':'New Web','track-ref':'','type':'web','location':'', 'thumbnail':'','duration':'','web-window':'','display-show-text':'yes',
                'background-colour':'','background-image':'','display-show-background':'yes',
-               'track-text':'','track-text-font':'Helvetica 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'',
+               'track-text':'','track-text-font':'{Liberation Sans} 20 bold','track-text-colour':'white','track-text-x':'0','track-text-y':'40','links':'',
                'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'','browser-commands':'','plugin':''},
 
         'menu':{'type':'menu','title':'Menu Track','track-ref':'menu-track','background-colour':'','background-image':'','display-show-background':'yes','plugin':'',
-                'entry-font': 'Helvetica 30 bold','entry-colour': 'white', 'entry-select-colour': 'red',
+                'entry-font': '{Liberation Sans} 30 bold','entry-colour': 'white', 'entry-select-colour': 'red',
                 'menu-window':'300 250','menu-direction':'vertical','menu-rows':'10','menu-columns':'1','menu-icon-mode':'bullet','menu-text-mode':'right',
                 'menu-bullet':'/home/pi/pipresents/pp_resources/bullet.png',
                 'menu-icon-width':'80','menu-icon-height':'80',
                 'menu-horizontal-padding':'10','menu-vertical-padding':'10','menu-text-width':'800','menu-text-height':'50',
                 'menu-horizontal-separation':'20','menu-vertical-separation':'20','menu-strip':'no','menu-strip-padding':'5','menu-guidelines':'never',
-                'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
-                'display-show-text':'yes','track-text': '', 'track-text-x':'200','track-text-y': '20', 'track-text-font': 'Helvetica 30 bold', 'track-text-colour': 'white',
+                'hint-text': 'Up, down to Select, Return to Play', 'hint-x':'200','hint-y': '980', 'hint-font': '{Liberation Sans} 30 bold', 'hint-colour': 'white',
+                'display-show-text':'yes','track-text': '', 'track-text-x':'200','track-text-y': '20', 'track-text-font': '{Liberation Sans} 30 bold', 'track-text-colour': 'white',
                 'show-control-begin':'','show-control-end':'','animate-begin':'','animate-clear':'no','animate-end':'',
                 'links':'pp-down down\npp-up up\npp-play play\npp-stop stop\n'}
     }
