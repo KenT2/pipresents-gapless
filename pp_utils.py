@@ -1,4 +1,8 @@
+# dec 2015 - hide terminal output if --manager option.
+# 28/1/2016  - additional filter and log output for statistics
+
 import time
+import datetime
 import sys
 import os
 import tkMessageBox
@@ -9,7 +13,6 @@ class StopWatch(object):
 
     def __init__(self):
         self.enable=False
-
 
     def on(self):
         self.enable=True
@@ -35,6 +38,8 @@ class StopWatch(object):
 
 class Monitor(object):
 
+    delimiter=';'
+
     m_fatal =1    # fatal erros caused by PiPresents, could be a consequence of an 'error'
     m_err = 2  # PP cannot continue because of an error caused by user in profile or command
     m_warn =4  # warning that something is not quite right but PP recovers gracefully
@@ -42,12 +47,14 @@ class Monitor(object):
     m_trace =16 # trace for software development
     m_trace_instance =32 # trace with id of instances of player and showers
     m_leak = 64 # memory leak monitoring
+    m_stats = 128  #statistics
 
     classes  = []
     
-    log_level=0
+    log_level=0              
     log_path=""            # set in pipresents
     ofile=None
+    stats_file=None
     start_time= time.time()
 
 
@@ -56,10 +63,20 @@ class Monitor(object):
         if Monitor.ofile is None:
             bufsize=0
             Monitor.ofile=open(Monitor.log_path+ os.sep+'pp_logs' + os.sep + 'pp_log.txt','w',bufsize)
-        Monitor.log_level=0
+        Monitor.log_level=0     # set in pipresents
+        Monitor.manager=False  #set in pipresents
         Monitor.classes  = []
         Monitor.enable_in_code = False  # enables use of self.mon.set_log_level(nn) in classes
+        
+        # statistics file, open for appending so its not deleted
+        if Monitor.stats_file is None:
+            Monitor.stats_file=open(Monitor.log_path+ os.sep+'pp_logs' + os.sep + 'pp_stats.txt','a',bufsize)
+            sep='"'+Monitor.delimiter+'"'
+            if Monitor.stats_file.tell()==0:
+                Monitor.stats_file.write('"'+'Date'+sep+'Time'+sep+'Show Type'+sep+'Show Ref'+ sep +'Show Title'+sep
+                                     +'Command'+sep+'Track Type'+sep+'Track Ref'+sep+'Track Title'+sep+'Location"\n')
 
+ 
 
     # CONTROL
 
@@ -74,9 +91,10 @@ class Monitor(object):
     # PRINTING
   
     def newline(self,num):
-        if Monitor.log_level & ~ (Monitor.m_warn|Monitor.m_err|Monitor.m_fatal) != 0:
-            for i in range(0,num):
-                print
+        if Monitor.manager is False:
+            if Monitor.log_level & ~ (Monitor.m_warn|Monitor.m_err|Monitor.m_fatal) != 0:
+                for i in range(0,num):
+                    print
 
     def fatal(self,caller,text):
         r_class=caller.__class__.__name__
@@ -85,14 +103,16 @@ class Monitor(object):
         if self.enabled(r_class,Monitor.m_fatal) is True: 
             print "%.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text
             Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
-        tkMessageBox.showwarning(r_class ,'System Error:\n'+text)
+        if Monitor.manager is False:
+            tkMessageBox.showwarning(r_class ,'System Error:\n'+text)
 
     def err(self,caller,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_err) is True:        
             print "%.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text
             Monitor.ofile.write (" ERROR: " + self.pretty_inst(caller)+ ":  " + text + "\n")
-        tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
+        if Monitor.manager is False:
+            tkMessageBox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self,caller,text):
         r_class=caller.__class__.__name__
@@ -107,6 +127,19 @@ class Monitor(object):
             # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.pretty_inst(caller)+": " + text
             Monitor.ofile.write (str(time.time()-Monitor.start_time) + " " + self.pretty_inst(caller)+": " + text+"\n")
 
+    def start_stats(self,profile):
+            self.stats((""),(""),(""),("start"),(""),(""),(""),(profile))
+            
+    def stats(self,*args):
+        if (Monitor.m_stats & Monitor.log_level) != 0:
+            # this ref, this name, action, type, ref, name, location
+            arg_string=''
+            for arg in args:
+                arg_string+= Monitor.delimiter+'"'+arg + '"'
+            current_datetime = datetime.datetime.now()
+            Monitor.stats_file.write ('"'+current_datetime.strftime('%Y-%m-%d')+ '"'+Monitor.delimiter+'"'+ current_datetime.strftime('%H:%M:%S') + '"'+ arg_string+"\n")  
+
+            
     def trace(self,caller,text):
         r_class=caller.__class__.__name__
         r_class = type(caller).__name__
@@ -144,6 +177,7 @@ class Monitor(object):
   
     def finish(self):
         Monitor.ofile.close()
+        Monitor.stats_file.close()
 
 ##    def id(self,caller):
 ##        return self.pretty_inst(caller)

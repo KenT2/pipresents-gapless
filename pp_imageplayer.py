@@ -1,3 +1,6 @@
+# dec 2015 - !!!!!! bug in pause half corrected 
+# feb 2016 fix bug in pause properly
+
 import os
 from Tkinter import CENTER,NW
 from PIL import Image
@@ -72,6 +75,9 @@ class ImagePlayer(Player):
 
         self.track_image_obj=None
         self.tk_img=None
+        # krt 28/1/2016
+        self.paused=False
+        self.pause_text_obj=None
 
         # initialise the state machine
         self.play_state='initialised'    
@@ -344,6 +350,10 @@ class ImagePlayer(Player):
         self.canvas.itemconfig(self.track_image_obj,state='normal')
 
     def hide_track_content(self):
+        if self.pause_text_obj is not None:
+            self.canvas.delete(self.pause_text_obj)
+            self.pause_text_obj=None
+            # self.canvas.update_idletasks( )
         self.canvas.itemconfig(self.track_image_obj,state='hidden')
         self.canvas.delete(self.track_image_obj)
         self.tk_img=None

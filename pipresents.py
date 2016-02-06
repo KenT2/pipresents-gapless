@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# Dec 2015  - added return codes for manager and remove non mon error message when manager
+# feb 2016 added statistics logging
+# 6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in a show which opened another
+#          show at its end.
 
 """
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
@@ -7,7 +11,7 @@ It is aimed at primarily at  musems, exhibitions and galleries
 but has many other applications including digital signage
 
 Version 1.3 [pipresents-gapless]
-Copyright 2012/2013/2014, Ken Thompson
+Copyright 2012/2013/2014/2015/2016, Ken Thompson
 See github for licence conditions
 See manual.pdf for instructions.
 """
@@ -41,7 +45,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1d'
+        self.pipresents_minorissue = '1.3.1e'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -66,8 +70,9 @@ class PiPresents(object):
         self.pp_dir=pp_dir
         
         if not os.path.exists(pp_dir+"/pipresents.py"):
-            tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
-            exit()
+            if self.options['manager']  is False:
+                tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+            exit(103)
 
         
         # Initialise logging and tracing
@@ -95,7 +100,8 @@ class PiPresents(object):
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])
-        
+        Monitor.manager = self.options['manager']
+        # print self.options['manager']
         self.mon.newline(3)    
         self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue)
         # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
@@ -158,6 +164,8 @@ class PiPresents(object):
         else:
             self.mon.err(self,"Failed to find requested profile: "+ self.pp_profile)
             self.end('error','Failed to find profile')
+
+        self.mon.start_stats(self.options['profile'])
         
         if self.options['verify'] is True:
             val =Validator()
@@ -408,8 +416,10 @@ class PiPresents(object):
             show_ref=''
             
         if show_command in ('open','close'):
-            reason,message=self.show_manager.control_a_show(show_ref,show_command)
-            
+            if self.shutdown_required is False:
+                reason,message=self.show_manager.control_a_show(show_ref,show_command)
+            else:
+                return
         elif show_command == 'exitpipresents':
             self.exitpipresents_required=True
             if self.show_manager.all_shows_exited() is True:
@@ -561,12 +571,12 @@ class PiPresents(object):
             self.mon.log(self, "Pi Presents Aborted, au revoir")
             # close logging files 
             self.mon.finish()
-            sys.exit()     
+            sys.exit(101)     
         elif reason == 'error':
             self.mon.log(self, "Pi Presents closing because of error, sorry")
             # close logging files 
             self.mon.finish()
-            sys.exit()            
+            sys.exit(102)            
         else:
             self.mon.log(self,"Pi Presents  exiting normally, bye")
             # close logging files 
@@ -574,9 +584,9 @@ class PiPresents(object):
             if self.shutdown_required is True:
                 # print 'SHUTDOWN'
                 call(['sudo', 'shutdown', '-h', '-t 5','now'])
-                sys.exit()
+                sys.exit(100)
             else:
-                sys.exit()
+                sys.exit(100)
 
 
     

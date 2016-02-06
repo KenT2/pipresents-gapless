@@ -1,3 +1,5 @@
+# 1/2/2016 - add write stats
+
 import copy
 from pp_medialist import MediaList
 from pp_show import Show
@@ -358,6 +360,8 @@ class MenuShow(Show):
             # start timeout for the track if required           
             if self.track_timeout != 0:
                 self.track_timeout_timer=self.canvas.after(self.track_timeout*1000,self.track_timeout_callback)
+
+            Show.write_stats(self,'play',self.show_params,self.next_track)
             self.start_load_show_loop(self.next_track)
             
         else:
