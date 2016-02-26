@@ -4,10 +4,8 @@ import os
 import sys
 import ConfigParser
 import shutil
-import json
 import copy
 import string
-import imp
 import remi.gui as gui
 from remi import start, App
 
@@ -339,7 +337,7 @@ class PPWebEditor(App):
 
   
     def show_about (self):
-       OKDialog("About","Web Editor for Pi Presents Profiles<br>"
+        OKDialog("About","Web Editor for Pi Presents Profiles<br>"
                               +"For profiles of version: " + self.editor_issue + "<br>Author: Ken Thompson"
                               +"<br>Website: http://pipresents.wordpress.com/<br>",width=400,height=200).show(self)
 
@@ -457,7 +455,7 @@ class PPWebEditor(App):
 
     def new_profile_confirm(self,name):
         if name == "":
-            OKDialog("New Profile","Name is blank"),show(self)
+            OKDialog("New Profile","Name is blank").show(self)
             return
         to = self.pp_home_dir + os.sep + "pp_profiles"+ self.pp_profiles_offset + os.sep + name
         if os.path.exists(to) is  True:
@@ -600,10 +598,10 @@ class PPWebEditor(App):
 
     def remove_show_confirm(self,result):
         if result is True:
-                index= self.current_showlist.selected_show_index()
-                self.current_showlist.remove(index)
-                self.save_showlist(self.pp_profile_dir)
-                self.refresh_shows_display()
+            index= self.current_showlist.selected_show_index()
+            self.current_showlist.remove(index)
+            self.save_showlist(self.pp_profile_dir)
+            self.refresh_shows_display()
 
 
     def show_refs(self):
@@ -649,8 +647,8 @@ class PPWebEditor(App):
             self.edit_show_dialog.show_tab('show')
 
     def finished_edit_show(self):
-            self.save_showlist(self.pp_profile_dir)
-            self.refresh_shows_display()
+        self.save_showlist(self.pp_profile_dir)
+        self.refresh_shows_display()
 
 
 
@@ -860,8 +858,8 @@ class PPWebEditor(App):
             self.edit_track_dialog.show_tab('track')
 
     def finished_edit_track(self):
-            self.refresh_tracks_display()
-            self.save_medialist()        
+        self.refresh_tracks_display()
+        self.save_medialist()        
             
     def move_track_up(self):
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
@@ -918,11 +916,11 @@ class PPWebEditor(App):
     def remove_track_confirm(self,result):
         # print 'confirm',result
         if result is True:
-                index= self.current_medialist.selected_track_index()
-                self.current_medialist.remove(index)
-                self.save_medialist()
-                self.refresh_tracks_display()
-                
+            index= self.current_medialist.selected_track_index()
+            self.current_medialist.remove(index)
+            self.save_medialist()
+            self.refresh_tracks_display()
+            
     def add_track_from_file(self):
         if self.current_medialist is None:
             return
