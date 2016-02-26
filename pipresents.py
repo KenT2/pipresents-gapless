@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 # Dec 2015  - added return codes for manager and remove non mon error message when manager
 # feb 2016 added statistics logging
-# 6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in a show which opened another
-#          show at its end.
+# 6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in # a show which opened another show at its end.
+# 26 Feb 2016 - version 1.3.1f
 
 """
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
@@ -45,7 +45,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1e'
+        self.pipresents_minorissue = '1.3.1f'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
