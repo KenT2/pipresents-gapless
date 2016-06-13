@@ -408,7 +408,7 @@ class VideoPlayer(Player):
                             self.loaded_callback('normal','video loaded')
                 else:
                     # start play signal false - continue to wait
-                    if self.loading_count>200:  #40 seconds
+                    if self.loading_count>400:  #40 seconds
                         # deal with omxplayer crashing while  loading and hence not receive start_play_signal
                         self.mon.warn(self,self.track)
                         self.mon.warn(self,"loading - videoplayer counted out: " + self.omx.end_play_reason + ' at ' + str(self.omx.video_position))
@@ -420,7 +420,7 @@ class VideoPlayer(Player):
                         if self.loaded_callback is not None:
                             self.loaded_callback('error','omxplayer counted out when loading track')
                     else:
-                        self.tick_timer=self.canvas.after(200, self.load_state_machine)
+                        self.tick_timer=self.canvas.after(100, self.load_state_machine) #200
 
 
         elif self.play_state == 'start_unload':

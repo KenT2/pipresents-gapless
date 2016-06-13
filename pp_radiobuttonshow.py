@@ -1,9 +1,13 @@
-#2/1/2016 add call to write_stats
+"""
+2/1/2016 add call to write_stats
+12/6/2016 - correct passing of events to subshows
+"""
 
 from pp_medialist import MediaList
 from pp_show import Show
 from pp_pathmanager import PathManager
 from pp_screendriver import ScreenDriver
+
 
 class RadioButtonShow(Show):
     """
@@ -130,8 +134,8 @@ class RadioButtonShow(Show):
 
    # respond to inputs
     def handle_input_event(self,symbol):
-        # Show.base_handle_input_event(self,symbol)
-        self.handle_input_event_this_show(symbol)
+        Show.base_handle_input_event(self,symbol)
+        # self.handle_input_event_this_show(symbol)
 
     def handle_input_event_this_show(self,symbol):
         # for radiobuttonshow the symbolic names are links to play tracks, also a limited number of in-track operations

@@ -1,3 +1,14 @@
+Version 1.3.1g
+
+A bug fix release.
+
+* The last version to use omplayer compatible with Raspbian Wheezy was issued on 29/4/2016 hence this will be the last version of Pi Presents Gapless to be tested on Raspbian Wheezy.  
+
+* In an attempt to remove occasional hangs when playing videos (1 in 24 hours when running a 1 second video!) this version uses dbus as the interface with omxplayer instead of Pexpect (Pexpect is still used for other players). Dbus is now the preferred interface for omxplayer so should provide bettr long term support. The Dbus interface in  pp_omxdriver.py is experimental and not complete in that it does not implement all key bindings for run-time controls. (You can add addittional bindings to the KEY_MAP dictionary at the start of pp_omxdriver.py). Should you need to revert the repository contains the Pexpect version of the interface in pp_omxdriver_px.py.
+
+* Raspbian Jessie uses systemd; it appears that user programs in the autostart file can now be started before the operating system is fully runnning. This requires a change to the autostart process as described in the manual and for Pi Presents and the Web Based Manager pp_manager.py to wait until the operating system boot is complete.
+
+
 Version 1.3.1c
 
 This release makes use of a later version of omxplayer. Anything after 21 July 2014  (92aad3f) will do. The latest version of Raspbian has a suitable (but not the latest version).
