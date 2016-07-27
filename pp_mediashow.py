@@ -35,7 +35,8 @@ class MediaShow(GapShow):
         
         GapShow.play(self,end_callback,show_ready_callback, direction_command,level,controls_list)
 
-        
+    def pause(self):
+        GapShow.do_operation(self, 'pause')
 
 
 
