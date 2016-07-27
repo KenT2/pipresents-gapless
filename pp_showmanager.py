@@ -155,7 +155,7 @@ class ShowManager(object):
         show_obj=self.show_running(index)
         if show_obj is not None:
             show_obj.pause()
-        return 'normal','exited a concurrent show'
+        return 'normal','paused a concurrent show'
 
     def start_show(self,show_ref):
         index=self.show_registered(show_ref)

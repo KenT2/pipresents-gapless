@@ -37,8 +37,3 @@ class MediaShow(GapShow):
 
     def pause(self):
         GapShow.do_operation(self, 'pause')
-
-
-
-
-        
