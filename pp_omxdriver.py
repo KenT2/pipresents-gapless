@@ -87,8 +87,8 @@ class OMXDriver(object):
         # print self.dbus_user, self.dbus_name
         # print self.omxplayer_cmd
         self.mon.log(self, "Send command to omxplayer: "+ self.omxplayer_cmd)
-        self._process=subprocess.Popen(self.omxplayer_cmd,shell=True,stdout=file('/dev/null','wa'),stderr=file('/dev/null','wa'))
-        # stdout=file('/dev/null','wa'),stderr=file('/dev/null','wa')
+        self._process=subprocess.Popen(self.omxplayer_cmd,shell=True,stdout=file('/dev/null','a'),stderr=file('/dev/null','a'))
+        # stdout=file('/dev/null','a'),stderr=file('/dev/null','a')
         self.pid=self._process.pid
 
         # wait for omxplayer to start
@@ -113,7 +113,7 @@ class OMXDriver(object):
             self.paused_at_start=True
 
         # get duration of the track in microsecs
-        sucess,duration=self.get_duration()
+        success,duration=self.get_duration()
         if success is False:
             self.duration=0
             self.end_play_signal=True
