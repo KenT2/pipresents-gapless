@@ -1,6 +1,9 @@
 PI PRESENTS  - Version 1.3.1
 ============================
 
+Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
+http://www.weser-echo.de/README_Vers_1_3.pdf
+
 This repository contains a beta test version of the next version Pi Presents. The version is a beta as it is likely to have a few bugs and also will be developed further to add new features.
 
 
@@ -46,6 +49,11 @@ Installation
 ============
 
 The full manual in English is here https://github.com/KenT2/pipresents-gapless/blob/master/manual.pdf
+
+There is a German version of the manual written by Peter Vasen ( http://www.web-echo.de/ ) you can download it here
+
+http://www.weser-echo.de/Pipresents_1_3_1_a_manual_de.pdf
+
 
 To download Pi Presents including the manual and get going follow the instructions below.
 
