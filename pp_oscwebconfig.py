@@ -1,14 +1,11 @@
 #! /usr/bin/env python
 
 import os
-import sys
 import ConfigParser
-import shutil
-import copy
-import string
+
 
 import remi.gui as gui
-from remi_plus import OKDialog,OKCancelDialog
+from remi_plus import OKDialog
 
 # ***************************************
 #  OSC CONFIG CLASS
@@ -21,9 +18,9 @@ class OSCConfig(object):
 
 
     def read(self):
-        print 'in read',OSCConfig.options_file
+        # print 'in read',OSCConfig.options_file
         if os.path.exists(OSCConfig.options_file) is True:
-            """reads options from options file"""
+            # reads options from options file
             config=ConfigParser.ConfigParser()
             config.read(OSCConfig.options_file)
 
@@ -57,7 +54,7 @@ class OSCConfig(object):
 
 
     def create(self):
-        print 'create'
+        # print 'create'
         if not os.path.exists(OSCConfig.options_file):
             config=ConfigParser.ConfigParser()
             config.add_section('this-unit')
@@ -104,7 +101,6 @@ class OSCWebEditor(gui.GenericDialog):
         if  OSCConfig.current_unit_type=='remote':
             e_home_field = gui.TextInput(width=200,height=30)
             self.add_field_with_label('e_home','Pi Presents Data Home:',e_home_field)            
-            self.e_home.insert(0,config.get('paths','home',0))
 
             e_offset_field = gui.TextInput(width=200,height=30)
             self.add_field_with_label('e_offset','Offset for Current Profiles:',e_offset_field)            
@@ -150,7 +146,7 @@ class OSCWebEditor(gui.GenericDialog):
 
     def edit(self):
 
-        print 'edit_options in class'
+        # print 'edit_options in class'
         config=ConfigParser.ConfigParser()
         config.read(OSCConfig.options_file)
 
@@ -186,15 +182,15 @@ class OSCWebEditor(gui.GenericDialog):
                 if os.path.exists(self.e_home.get()+os.sep+'pp_profiles'+self.get_field('e_offset').get_value()) is  False:
                     OKDialog("Pi Presents Remote","Current Profles directory not found").show(self)
                     return
-        print 'try save'
+        # print 'try save'
         self.hide()
         self.save()
 
 
 
     def save(self):
-        print ' in save'
-        """ save the output of the options edit dialog to file"""
+        # print ' in save'
+        # save the output of the options edit dialog to file
         config=ConfigParser.ConfigParser()
 
         config.add_section('paths')
@@ -275,7 +271,7 @@ class OSCUnitType(gui.GenericDialog):
     #called when the user presses the OK button
     def confirm(self):
         req_type=self.get_field('e_req_type').get_value()
-        print 'confirm uts',req_type
+        # print 'confirm uts',req_type
         if req_type == 'Select':
             self.get_field('error').set_text('<b>Unit Type not Selected</b>')
             return
