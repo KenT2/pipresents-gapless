@@ -1,10 +1,12 @@
 #! /usr/bin/env python
-# Dec 2015  - added return codes for manager and remove non mon error message when manager
-# feb 2016 added statistics logging
-# 6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in # a show which opened another show at its end.
-# 26 Feb 2016 - version 1.3.1f
-
 """
+Dec 2015  - added return codes for manager and remove non mon error message when manager
+feb 2016 added statistics logging
+6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in # a show which opened another show at its end.
+26 Feb 2016 - version 1.3.1f
+12 June 2016 - added wait for the environment variables to stabilise. Required for Jessie autostart
+12 June 2016 version 1.3.1g
+
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
 on the Raspberry Pi.
 It is aimed at primarily at  musems, exhibitions and galleries
@@ -13,7 +15,7 @@ but has many other applications including digital signage
 Version 1.3 [pipresents-gapless]
 Copyright 2012/2013/2014/2015/2016, Ken Thompson
 See github for licence conditions
-See manual.pdf for instructions.
+See readme.md and manual.pdf for instructions.
 """
 import os
 import sys
@@ -24,6 +26,7 @@ import gc
 import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
+from time import sleep
 import pp_paths
 
 from pp_options import command_options
@@ -45,7 +48,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1f'
+        self.pipresents_minorissue = '1.3.1g'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -88,11 +91,8 @@ class PiPresents(object):
         Monitor.classes  = ['PiPresents', 'pp_paths',
                             
                             'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
-                            #'GapShow','Show','ArtShow',
-                            #'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
-                            #'MediaList','LiveList','ShowList',
                             'PathManager','ControlsManager','ShowManager','PluginManager',
-                            #'MplayerDriver','OMXDriver','UZBLDriver',
+                            'MplayerDriver','OMXDriver','UZBLDriver',
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
 
@@ -594,6 +594,24 @@ class PiPresents(object):
 
          
 if __name__ == '__main__':
+
+    # wait for environment ariables to stabilize. Required for Jessie autostart
+    tries=0
+    success=False
+    while tries < 40:
+        # get directory holding the code
+        code_dir=sys.path[0]
+        code_path=code_dir+os.sep+'pipresents.py'
+        if os.path.exists(code_path):
+            success =True
+            break
+        tries +=1
+        sleep (0.5)
+        
+    if success is False:
+        tkMessageBox.showwarning("pipresents.py","Bad application directory: "+ code_dir)
+        exit()
+
     pp = PiPresents()
 
 

@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+
+"""
+12/6/2016 - wait for environment variable to stabilise. Required for Jessie autostart
+12/6/2106 - report startup failures via tk instead of printing
+"""
+
 import remi.gui as gui
 from remi import start, App
 from remi_plus import OKDialog, OKCancelDialog
@@ -8,7 +14,8 @@ import sys, os, shutil
 import ConfigParser
 import zipfile
 from threading import Timer
-
+from time import sleep
+import tkMessageBox
 
 
 
@@ -26,7 +33,7 @@ class PPManager(App):
             print 'Pi Presents Manager - Bad Application Directory'
             exit()
 
-        # create an options file if necessary
+        # object if there is no options file
         self.options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
         if not os.path.exists(self.options_file_path):
             print 'Pi Presents Manager - Cannot find web options file'
@@ -54,6 +61,7 @@ class PPManager(App):
         # Initialise an instance of the Pi Presents and Web Editor driver classes
         self.pp=PiPresents()
         self.ed = WebEditor()
+        self.ed.init(self.manager_dir)
 
 
         # root and frames
@@ -707,14 +715,16 @@ class PPManager(App):
       
 class WebEditor(object):
     my_ed=None
+    manager_dir=None
 
     # run when every instance is started
     def __init__(self):
         pass
 
     # run once when Manager is started
-    def init(self):
+    def init(self,manager_dir):
         WebEditor.my_ed=None
+        WebEditor.manager_dir=manager_dir
         pass
 
     def run_ed(self,command,options):
@@ -757,11 +767,12 @@ class WebEditor(object):
 
     def exit_ed(self):
         pid,user=self.is_ed_running()
+        command = WebEditor.manager_dir+"/exit_ed.sh"
         if pid !=-1:
             if user=='root':
-                subprocess.call(["./exit_ed.sh","sudo_exit"])
+                subprocess.call([command,"sudo_exit"])
             else:
-                subprocess.call(["./exit_ed.sh","exit"])
+                subprocess.call([command,"exit"])
             self.my_ed=None
             return True
         else:
@@ -791,14 +802,16 @@ class WebEditor(object):
       
 class PiPresents(object):
     my_pp=None
+    manager_dir=None
 
     # run when every instance is started
     def __init__(self):
         pass
 
     # run once when Manager is started
-    def init(self):
+    def init(self,manager_dir):
         PiPresents.my_pp=None
+        PiPresents.manager_dir=manager_dir
         pass
 
     def run_pp(self,sudo,command,current_profile,options):
@@ -843,11 +856,12 @@ class PiPresents(object):
 
     def exit_pp(self):
         pid,user,running_profile=self.is_pp_running()
+        command = PiPresents.manager_dir+"/exit_pp.sh"
         if pid !=-1:
             if user=='root':
-                subprocess.call(["./exit_pp.sh","sudo_exit"])
+                subprocess.call([command,"sudo_exit"])
             else:
-                subprocess.call(["./exit_pp.sh","exit"])
+                subprocess.call([command,"exit"])
             self.my_pp=None
             return True
         else:
@@ -900,7 +914,7 @@ class Autostart(object):
         #start the Pi Presents Driver
         pp_auto=PiPresents()
         # and initialise its class variables
-        pp_auto.init()
+        pp_auto.init(self.manager_dir)
 
 
         if self.autostart_path != '' and os.name !='nt':
@@ -940,12 +954,27 @@ class Autostart(object):
 
 if __name__  ==  "__main__":
 
-    # get directory holding the code
-    manager_dir=sys.path[0]
+    # wait for environment ariables to stabilize. Required for Jessie autostart
+    tries=0
+    success=False
+    while tries < 40:
+        # get directory holding the code
+        manager_dir=sys.path[0]
+        manager_path=manager_dir+os.sep+'pp_manager.py'
+        if os.path.exists(manager_path):
+            success =True
+            break
+        tries +=1
+        sleep (0.5)
+        
+    if success is False:
+        tkMessageBox.showwarning("pp_manager.py","Bad application directory: "+ manager_dir)
+        exit()
 
+    # object if there is no options file
     options_file_path=manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
     if not os.path.exists(options_file_path):
-        print 'Pi Presents Manager - Cannot find Web Options file'
+        tkMessageBox.showwarning("pp_manager.py","Pi Presents Manager - Cannot find web options file")
         exit()
 
     """reads options from options file to interface"""

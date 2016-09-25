@@ -2,6 +2,10 @@ import os
 from pp_mplayerdriver import MplayerDriver
 from pp_player import Player
 
+"""
+12/6/2016 - audio-other-options read from track or show
+12/6/2016 - add a space to mplayer options
+"""
 
 class AudioPlayer(Player):
     """       
@@ -83,6 +87,11 @@ class AudioPlayer(Player):
             self.speaker_option=AudioPlayer._RIGHT
         else:
             self.speaker_option=AudioPlayer._STEREO
+
+        if self.track_params['mplayer-other-options'] != '':
+            self.mplayer_other_options= self.track_params['mplayer-other-options']
+        else:
+            self.mplayer_other_options= self.show_params['mplayer-other-options']
 
         # initialise the state and signals      
         self.tick_timer=None
@@ -243,7 +252,7 @@ class AudioPlayer(Player):
                 else:
                     os.system("amixer -q -c 0 cset numid=3 1")   
             # play the track               
-            options = self.show_params['mplayer-other-options'] +  self.volume_option + ' -af '+ self.speaker_option + ' '
+            options = ' '+ self.mplayer_other_options + ' '+  self.volume_option + ' -af '+ self.speaker_option + ' '
             if self.track != '':
                 self.mplayer.play(self.track,options)
                 self.mon.log (self,'Playing audio track from show Id: '+ str(self.show_id))

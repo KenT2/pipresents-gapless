@@ -14,13 +14,13 @@ To upgrade follow the instructions in the 'Updating Pi Presents' section below. 
 
 PI PRESENTS
 ===========
-Pi Presents is a toolkit for producing interactive multimedia applications for museums, visitor centres and more. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cost effective way to provide interactiveaudio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
+Pi Presents is a toolkit for producing interactive multimedia applications for museums, visitor centres and more. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cost effective way to provide interactive audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
 
 This second major upgrade of Pi Presents adds three major new features  - multi-window displays running concurrent shows, gapless transition between tracks, and remote control from and of other Pi Presents and with any OSC enabled device. This has entailed a large rewrite and along the way many of the existing features have been improved.
 
- Pi Presents is now a flexible toolkit for interactive display and animation with a large range of features. This large range of features may seem to make it complicated, hopefully not so as most of them are optional.  I have tried to keep it simple for beginners by providing an editor with templates and a set of examples for basic applications. A extensive User Manual is also provided.
+Pi Presents is now a flexible toolkit for interactive display and animation with a large range of features. This large range of features may seem to make it complicated, hopefully not so as most of them are optional.  I have tried to keep it simple for beginners by providing an editor with templates and a set of examples for basic applications. A extensive User Manual is also provided.
 
-Pi Presents is basically five types of show, four media players for different types of track, a GPIO output sequencer, a time of day scheduler, and something to handle external inputs.  These can be combined using a simple to use editor to serve a great variety of simple or complex applications. Applications include:
+The components of Pi Presents are five types of show, four media players for different types of track, a GPIO output sequencer, a time of day scheduler, and something to handle external inputs.  These can be combined using a simple to use editor to serve a great variety of simple or complex applications. Applications include:
 
 *	Audio-visual interpretation of exhibits by triggering a sound, video, or slideshow from GPIO, keyboard or buttons.
 
@@ -154,28 +154,26 @@ There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in your
 Open the directory and move the 'pp_home' directory and its contents to your home directory.
 
 These examples are compatible with the version of  Pi Presents you have just downloaded. In addition you can update profiles from version 1.2.x [pipresents-next] to 1.3.1 by simply opening them in the editor (make a backup copy first):
-	  
+
 In either case you can use the tools>update all menu option to update all profiles in /pp_home
 
 Lastly you will need to do some manual updating of some of the field values as specified in  ReleaseNotes.txt. Start at the paragraph in releasenotes.txt that introduces version 1.3 and work backwards.
 
 I have started a new thread on the forum for [pipresents-gapless], see below.
 
-		 
+
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It will run on a Rev.1 on all versions of Pi including Pi 2. On 256MB machines display of large images (.jpg etc.) will run out of RAM and crash the Pi.
-
-I don't know the exact maximum but keep images in the 1 Megapixel range. Larger images, greater than the screen pixel size, will do nothing to improve the picture and will take longer to display even on 512MB machines.
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie, Wheezy now being obsolescent for over a year. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for videos and images. 
 
 omxplayer plays some videos using 64MB of RAM; others need 128MB, especially if you want sub-titles. 
 
 
 Bug Reports and Feature Requests
 ================================
-I am keen to develop Pi Presents further and would welcome bug reports and ideas for real world additional features and uses.
+I am keen to develop Pi Presents further and would welcome bug reports and ideas for additional features and uses.
 
-Please use the Issues tab on Github https://github.com/KenT2/pipresents-gapless/issues or the Pi Presents gapless thread  ??????  on the Raspberry Pi forum.
+Please use the Issues tab on Github https://github.com/KenT2/pipresents-gapless/issues.
 
 For more information on how Pi Presents is being used, Hints and Tips on how to use it and all the latest news hop over to the Pi Presents website http://pipresents.wordpress.com/
 
