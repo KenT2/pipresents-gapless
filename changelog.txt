@@ -1,3 +1,7 @@
+Version 1.3.1f 26/2/2016
+Enhanced - Web Based manager pp_manager.py
+Enhanced - Web based Editor pp_web_editor.py
+
 Version 1.3.1e 6/2/2016
 Enhanced - Adding logging option suitable for gathering statistics. See Release Notes for details.
 Enhanced - Added --manager command line option and other preparations for a web based manager and editor.
