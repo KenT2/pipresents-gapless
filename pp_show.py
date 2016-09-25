@@ -1,3 +1,5 @@
+#2/1/2016 add write_stats  function
+
 import os
 from Tkinter import NW
 from PIL import Image
@@ -564,7 +566,37 @@ class Show(object):
             self.canvas.delete(self.background_obj)
             self.background=None
             # self.canvas.update_idletasks( )
-    
+
+
+# ******************************
+# write statiscics
+# *********************************
+    def write_stats(self,command,show_params,next_track):
+            # action, this ref, this name, type, ref, name, location
+            if next_track['type']=='show':
+                # get the show from the showlist
+                index = self.showlist.index_of_show(next_track['sub-show'])
+                if index <0:
+                    self.mon.err(self,"Show not found in showlist: "+ next_track['sub-show'])
+                    self.end('error','show not in showlist')
+                else:
+                    target=self.showlist.show(index)
+                    ref=target['show-ref']
+                    title=target['title']
+                    track_type=target['type']
+            else:
+                # its a track
+                ref= next_track['track-ref']
+                title=next_track['title']
+                track_type=next_track['type']
+            if next_track['type'] in ('show','message'):
+                loc = ''
+            else:
+                loc = next_track['location']                 
+            self.mon.stats(show_params['type'],show_params['show-ref'],show_params['title'],command,
+                            track_type,ref,title,loc)
+            
+ 
 
 
 # ******************************

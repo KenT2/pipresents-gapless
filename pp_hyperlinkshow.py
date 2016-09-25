@@ -1,3 +1,5 @@
+# 2/1/2016 add write_stats
+
 from pp_medialist import MediaList
 from pp_pathmanager import PathManager
 from pp_screendriver import ScreenDriver
@@ -562,6 +564,7 @@ class HyperlinkShow(Show):
             self.current_track_ref=self.next_track_ref                    
             index = self.medialist.index_of_track(self.next_track_ref)
             if index >=0:
+                Show.write_stats(self,self.next_track_op,self.show_params,self.medialist.track(index))
                 # don't use select the track as not using selected_track in hyperlinkshow
                 self.start_load_show_loop(self.medialist.track(index))
 

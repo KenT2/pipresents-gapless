@@ -1,3 +1,5 @@
+#2/1/2016 add call to write_stats
+
 from pp_medialist import MediaList
 from pp_show import Show
 from pp_pathmanager import PathManager
@@ -367,6 +369,7 @@ class RadioButtonShow(Show):
             if index >=0:
                 # don't use select the track as not using selected_track in radiobuttonshow
                 # and load it
+                Show.write_stats(self,'play',self.show_params,self.medialist.track(index))
                 self.start_load_show_loop(self.medialist.track(index))
             else:
                 self.mon.err(self,"next track not found in medialist: "+ self.current_track_ref)

@@ -1,3 +1,5 @@
+# Dec 2015 - add --manager option
+
 from pp_utils import Monitor
 import argparse
 
@@ -14,6 +16,7 @@ def command_options():
     parser.add_argument( '-o','--home', nargs='?', default='', const='',help='Path to pp_home')
     parser.add_argument( '-l','--liveshow', nargs='?', default='', const='',help='Directory1 for live tracks')
     parser.add_argument( '-p','--profile', nargs='?', default='', const='',help='Profile')
+    parser.add_argument( '--manager', action='store_true',help='Use With Manager for PiPresents')
     args=parser.parse_args()
     return  vars(args)
 

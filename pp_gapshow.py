@@ -1,3 +1,5 @@
+# 1/2/2016 add write_stats
+
 from pp_show import Show
 from pp_controlsmanager import ControlsManager
 from pp_screendriver import ScreenDriver
@@ -115,6 +117,8 @@ class GapShow(Show):
         self.mon.trace(self, "Handling input event in this show: " + symbol + " State:" + self.state)
         #  check symbol against mediashow triggers
         if self.state == 'waiting' and self.show_params['trigger-start-type'] in ('input','input-persist') and symbol  ==  self.show_params['trigger-start-param']:
+            self.mon.stats(self.show_params['type'],self.show_params['show-ref'],self.show_params['title'],'start trigger',
+                            '','','')
             Show.delete_admin_message(self)
             self.start_list()
             
@@ -126,6 +130,8 @@ class GapShow(Show):
                 self.current_player.input_pressed('stop')
                 
         elif self.state == 'playing' and self.show_params['trigger-next-type'] == 'input' and symbol == self.show_params['trigger-next-param']:
+            self.mon.stats(self.show_params['type'],self.show_params['show-ref'],self.show_params['title'],'next trigger',
+                            '','','')
             self.mon.trace(self, "trigger-next-type detected; Calling next()")
             self.next()
         else:
@@ -176,6 +182,8 @@ class GapShow(Show):
                         self.current_player.input_pressed('stop')
             else:
                 if self.state == 'waiting':
+                    self.mon.stats(self.show_params['type'],self.show_params['show-ref'],self.show_params['title'],'start trigger',
+                            '','','')
                     Show.delete_admin_message(self)
                     self.start_list()
 
@@ -516,6 +524,7 @@ class GapShow(Show):
                 if index >=0:
                     # don't use select the track as need to preserve mediashow sequence for returning from child
                     child_track=self.medialist.track(index)
+                    Show.write_stats(self,'play child',self.show_params,child_track)
                     self.display_eggtimer()
                     self.enable_hint=False
                     self.start_load_show_loop(child_track)
