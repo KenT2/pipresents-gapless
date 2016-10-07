@@ -3,6 +3,9 @@ import copy
 import string
 import random
 import os
+import time
+
+from more_utils import ProcessFileName
 from pp_utils import Monitor
 
 
@@ -184,7 +187,59 @@ class MediaList(object):
             index -=1
         return False
 
+    # process filenames until we have a current file or exhausted all
+    def process_filenames(self, direction, sequence):
+        while True:
+            # current track is expired or future so advance to the next track
+            if direction > 0:
+                self.next_internal(sequence)
+            else:
+                self.previous_internal(sequence)
+            if self._selected_track_index >= len(self._tracks):
+                break
+            if self._selected_track_index < 0:
+                break
+            if self.process_filename(self._tracks[self._selected_track_index]):
+                break;
+
+    # test the filename for the current index. Return true if it is ready to
+    # play, or false if it occurs in the future or was expired.
+    def process_filename(self, track):
+        #Author Joe Houng 
+        #get properties from file name if it exists
+        filename = track['title']
+        tuple = ProcessFileName(filename)
+        startDate = tuple[1]
+        endDate = tuple[2]
+        isFuture = False
+        isExpired = False
+
+        if startDate != "":
+            curDate = time.strftime('%Y-%m-%d-%H-%M-%S')
+            if startDate > curDate:
+                #self.mon.log(self, 'Skipping {0} (future)'.format(filename))
+                #print 'Skipping {0} (future)'.format(filename)
+                isFuture = True
+
+        if not isFuture:
+          if endDate != "":
+            if endDate <= time.strftime('%Y-%m-%d-%H-%M-%S'):
+                #self.mon.log(self, 'Expiring {0}'.format(filename))
+                #print 'Expiring {0}'.format(filename)
+                isExpired = True
+                try:
+                    #archive_file(self.pp_live_dir1 + os.sep + filename, self.pp_archive_dir)
+                    #os.remove(self.pp_live_dir1 + os.sep + filename)
+                    pass
+                except IOError:
+                    None
+                    
+        return not (isFuture or isExpired)
+        
     def next(self,sequence):
+        self.process_filenames(direction=1, sequence=sequence)
+        
+    def next_internal(self,  sequence):
         if sequence=='ordered':
             if self._selected_track_index== self._num_tracks-1:
                 index=0
@@ -205,7 +260,9 @@ class MediaList(object):
         # search for next anonymous track
         # print 'index', index, 'end',end
         while index != end:
-            if self._tracks[index] ['track-ref'] =="":
+            if not self.process_filename(self._tracks[index]):
+                pass
+            elif self._tracks[index] ['track-ref'] =="":
                 self.select(index)
                 return True
             if self._num_tracks == 1:
@@ -217,6 +274,9 @@ class MediaList(object):
         return False
 
     def previous(self,sequence):
+        self.process_filenames(direction=-1,  sequence=sequence)
+        
+    def previous_internal(self,  sequence):
         if sequence=='ordered':
             if self._selected_track_index == 0:
                 index=self._num_tracks-1

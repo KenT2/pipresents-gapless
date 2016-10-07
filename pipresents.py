@@ -74,7 +74,7 @@ class PiPresents(object):
         
         if not os.path.exists(pp_dir+"/pipresents.py"):
             if self.options['manager']  is False:
-                tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+                tkMessageBox.showwarning("Pi Presents","Bad Application Directory:\n{0}".format(pp_dir))
             exit(103)
 
         
@@ -138,7 +138,6 @@ class PiPresents(object):
             self.end('error','Failed to find profile')
 
         # check profile exists
-        self.pp_profile=self.pp_home+self.pp_profile_path
         if os.path.exists(self.pp_profile):
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:

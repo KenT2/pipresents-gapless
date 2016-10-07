@@ -1443,7 +1443,9 @@ class PPEditor(object):
                 dic={'issue':__version__,'tracks':tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + to_file, "wb")
                 json.dump(dic,ofile,sort_keys=True,indent=1)
-                # end for show in shows
+                
+            elif show['type'] == 'liveshow':
+                show['live-tracks-dir1'] = show['live-tracks-dir']
 
         #update the fields in  all shows
         replacement_shows=self.update_shows_in_showlist(shows)

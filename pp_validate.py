@@ -776,6 +776,7 @@ class Validator(object):
         if self.is_blank(value): return RuleResult(blank=True)
         if pp_paths.get_dir(value) is None:
             return RuleResult(False, "'{0}' does not exist.")
+        return RuleResult(True)
 
     def rule_file_exists(self, value):
         if self.is_blank(value): return RuleResult(blank=True)

@@ -306,10 +306,15 @@ class GapShow(Show):
 
         #get rid of previous track in order to display the empty message
         if self.medialist.display_length() == 0:
-            Show.base_shuffle(self)
-            Show.base_track_ready_callback(self,False)
-            Show.display_admin_message(self,self.show_params['empty-text'])
-            self.wait_for_not_empty()
+            if self.show_params['empty-text']:
+                Show.base_shuffle(self)
+                Show.base_track_ready_callback(self,False)
+                Show.display_admin_message(self,self.show_params['empty-text'])
+                self.wait_for_not_empty()
+            else:
+                self.stop_timers()
+                self.ending_reason='exit'
+                Show.base_close_or_unload(self)                
         else:
             self.not_empty()
       
