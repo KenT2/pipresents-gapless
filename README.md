@@ -58,7 +58,7 @@ http://www.weser-echo.de/Pipresents_1_3_1_a_manual_de.pdf
 To download Pi Presents including the manual and get going follow the instructions below.
 
 
-Install required applications (MPlayer, PIL and X Server utils)
+Install required applications (MPlayer, PIL,  X Server utils and font)
 ------------------------------------------------------
 
          sudo apt-get update
@@ -67,6 +67,7 @@ Install required applications (MPlayer, PIL and X Server utils)
 		 sudo apt-get install unclutter
 		 sudo apt-get install mplayer
 		 sudo apt-get install uzbl
+		 sudo apt-get install ttf-liberation
 
 	   
 Download and install pexpect
@@ -90,7 +91,9 @@ Pi Presents MUST use Raspbian and be run from the desktop (startx). From a termi
 
          wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your home directory. Rename the directory to pipresents
+There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your home directory. Rename the directory to pipresents.
+
+To install install icons on your desktop and menu, run the install_desktop_icons.sh script in the pipresents directory.
 
 Run Pi Presents to check the installation is successful. From a terminal window opened in the home directory type:
 

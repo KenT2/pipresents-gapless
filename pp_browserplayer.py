@@ -322,6 +322,7 @@ class BrowserPlayer(Player):
     def show_state_machine(self):
 
         if self.play_state == 'closed':
+            self.hide_plugin()
             self.mon.log(self,"      Show state machine: " + self.show_state)
             return 
 

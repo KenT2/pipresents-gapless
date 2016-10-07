@@ -2,6 +2,10 @@ import json
 import copy
 import string
 import random
+import os
+import time
+
+from more_utils import ProcessFileName
 from pp_utils import Monitor
 
 
@@ -19,6 +23,7 @@ class MediaList(object):
         self.clear()
         self.mon=Monitor()
         self.sequence=sequence
+        self.filename = None
         
  # Functions for the editor dealing with complete list
 
@@ -85,6 +90,8 @@ class MediaList(object):
 
     def selected_track(self):
         """returns a dictionary containing all fields in the selected track """
+        if self._selected_track_index == -1:
+            self.select(0)
         return self._selected_track
 
     def select(self,index):
@@ -101,6 +108,8 @@ class MediaList(object):
   
      
     def at_end(self):
+        if self._num_tracks == 1:
+            return True
         # true is selected track is last anon
         index=self._num_tracks-1
         while index>=0:
@@ -178,7 +187,59 @@ class MediaList(object):
             index -=1
         return False
 
+    # process filenames until we have a current file or exhausted all
+    def process_filenames(self, direction, sequence):
+        while True:
+            # current track is expired or future so advance to the next track
+            if direction > 0:
+                self.next_internal(sequence)
+            else:
+                self.previous_internal(sequence)
+            if self._selected_track_index >= len(self._tracks):
+                break
+            if self._selected_track_index < 0:
+                break
+            if self.process_filename(self._tracks[self._selected_track_index]):
+                break;
+
+    # test the filename for the current index. Return true if it is ready to
+    # play, or false if it occurs in the future or was expired.
+    def process_filename(self, track):
+        #Author Joe Houng 
+        #get properties from file name if it exists
+        filename = track['title']
+        tuple = ProcessFileName(filename)
+        startDate = tuple[1]
+        endDate = tuple[2]
+        isFuture = False
+        isExpired = False
+
+        if startDate != "":
+            curDate = time.strftime('%Y-%m-%d-%H-%M-%S')
+            if startDate > curDate:
+                #self.mon.log(self, 'Skipping {0} (future)'.format(filename))
+                #print 'Skipping {0} (future)'.format(filename)
+                isFuture = True
+
+        if not isFuture:
+          if endDate != "":
+            if endDate <= time.strftime('%Y-%m-%d-%H-%M-%S'):
+                #self.mon.log(self, 'Expiring {0}'.format(filename))
+                #print 'Expiring {0}'.format(filename)
+                isExpired = True
+                try:
+                    #archive_file(self.pp_live_dir1 + os.sep + filename, self.pp_archive_dir)
+                    #os.remove(self.pp_live_dir1 + os.sep + filename)
+                    pass
+                except IOError:
+                    None
+                    
+        return not (isFuture or isExpired)
+        
     def next(self,sequence):
+        self.process_filenames(direction=1, sequence=sequence)
+        
+    def next_internal(self,  sequence):
         if sequence=='ordered':
             if self._selected_track_index== self._num_tracks-1:
                 index=0
@@ -187,17 +248,25 @@ class MediaList(object):
                 
             end=self._selected_track_index
         else:
-            index=random.randint(0,self._num_tracks-1)
-            if index==0:
-                end=self._num_tracks-1
+            if self._num_tracks == 1:
+                index = 0
+                end = 0
             else:
-                end=index-1
+              index=random.randint(0,self._num_tracks-1)
+              if index==0:
+                  end=self._num_tracks-1
+              else:
+                  end=index-1
         # search for next anonymous track
         # print 'index', index, 'end',end
         while index != end:
-            if self._tracks[index] ['track-ref'] =="":
+            if not self.process_filename(self._tracks[index]):
+                pass
+            elif self._tracks[index] ['track-ref'] =="":
                 self.select(index)
                 return True
+            if self._num_tracks == 1:
+                return False
             if index== self._num_tracks-1:
                 index=0
             else:
@@ -205,6 +274,9 @@ class MediaList(object):
         return False
 
     def previous(self,sequence):
+        self.process_filenames(direction=-1,  sequence=sequence)
+        
+    def previous_internal(self,  sequence):
         if sequence=='ordered':
             if self._selected_track_index == 0:
                 index=self._num_tracks-1
@@ -258,6 +330,7 @@ class MediaList(object):
             self.issue= mdict['issue']
         else:
             self.issue="1.0"
+        self.filename = os.path.basename(filename)
         if self.issue==showlist_issue:
             self._num_tracks=len(self._tracks)
             self._selected_track_index=-1
@@ -287,6 +360,7 @@ class MediaList(object):
                 json.dump(dic,ofile,sort_keys=True,indent=1)
                 ofile.close()
                 self.mon.log(self,"Saved medialist "+ filename)
+                self.filename = os.path.basename(filename)
                 break
             except IOError:
                 self.mon.err(self,"failed to save medialist, trying again " + str(tries))

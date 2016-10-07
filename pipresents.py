@@ -27,7 +27,7 @@ import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
-
+import pp_paths
 
 from pp_options import command_options
 from pp_showlist import ShowList
@@ -74,7 +74,7 @@ class PiPresents(object):
         
         if not os.path.exists(pp_dir+"/pipresents.py"):
             if self.options['manager']  is False:
-                tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+                tkMessageBox.showwarning("Pi Presents","Bad Application Directory:\n{0}".format(pp_dir))
             exit(103)
 
         
@@ -88,12 +88,9 @@ class PiPresents(object):
         # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mon.set_log_level()
         
         # make a shorter list to log/trace only some classes without using enable_in_code.
-        Monitor.classes  = ['PiPresents',
+        Monitor.classes  = ['PiPresents', 'pp_paths',
                             
                             'HyperlinkShow','RadioButtonShow','ArtLiveShow','ArtMediaShow','MediaShow','LiveShow','MenuShow',
-                            'GapShow','Show','ArtShow',
-                            'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
-                            'MediaList','LiveList','ShowList',
                             'PathManager','ControlsManager','ShowManager','PluginManager',
                             'MplayerDriver','OMXDriver','UZBLDriver',
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
@@ -128,40 +125,19 @@ class PiPresents(object):
         self.gpio_enabled=False
         self.tod_enabled=False
          
-        # get profile path from -p option
-        if self.options['profile'] != '':
-            self.pp_profile_path="/pp_profiles/"+self.options['profile']
-        else:
-            self.mon.err(self,"Profile not specified in command ")
-            self.end('error','No profile in command')
-        
-       # get directory containing pp_home from the command,
-        if self.options['home']  == "":
-            home = os.sep+ 'home' + os.sep + user + os.sep+"pp_home"
-        else:
-            home = self.options['home'] + os.sep+ "pp_home"         
-        self.mon.log(self,"pp_home directory is: " + home)
-
-
-        # check if pp_home exists.
-        # try for 10 seconds to allow usb stick to automount
-        found=False
-        for i in range (1, 10):
-            self.mon.log(self,"Trying pp_home at: " + home +  " (" + str(i)+')')
-            if os.path.exists(home):
-                found=True
-                self.pp_home=home
-                break
-            time.sleep (1)
-        if found is True:
-            self.mon.log(self,"Found Requested Home Directory, using pp_home at: " + home)
-        else:
-            self.mon.err(self,"Failed to find pp_home directory at " + home)
+        # get home path from -o option
+        self.pp_home = pp_paths.get_home(self.options['home'])
+        if self.pp_home is None:
             self.end('error','Failed to find pp_home')
 
+        # get profile path from -p option
+        # pp_profile is the full path to the directory that contains 
+        # pp_showlist.json and other files for the profile
+        self.pp_profile = pp_paths.get_profile_dir(self.pp_home, self.options['profile'])
+        if self.pp_profile is None:
+            self.end('error','Failed to find profile')
 
         # check profile exists
-        self.pp_profile=self.pp_home+self.pp_profile_path
         if os.path.exists(self.pp_profile):
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:
@@ -170,13 +146,13 @@ class PiPresents(object):
 
         self.mon.start_stats(self.options['profile'])
         
+        # check 'verify' option
         if self.options['verify'] is True:
             val =Validator()
             if  val.validate_profile(None,pp_dir,self.pp_home,self.pp_profile,self.pipresents_issue,False) is  False:
                 self.mon.err(self,"Validation Failed")
                 self.end('error','Validation Failed')
 
-         
         # initialise and read the showlist in the profile
         self.showlist=ShowList()
         self.showlist_file= self.pp_profile+ "/pp_showlist.json"
@@ -243,7 +219,7 @@ class PiPresents(object):
             self.window_width=self.screen_width
             self.window_height=self.screen_height
             self.root.attributes('-fullscreen', True)
-            os.system('unclutter &')
+            os.system('unclutter 1>&- 2>&- &') # Suppress 'someone created a subwindow' complaints from unclutter
             self.window_x=0
             self.window_y=0  
             self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))

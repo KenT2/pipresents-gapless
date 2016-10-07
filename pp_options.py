@@ -26,6 +26,8 @@ def ed_options():
     parser = argparse.ArgumentParser(description = 'Pi Presents Editor')
     parser.add_argument( '-d','--debug', nargs='?', default='7', const='15',help='Debug output to terminal window')
     parser.add_argument( '--forceupdate', action='store_true',help='Force Update')
+    parser.add_argument( '-o','--home', nargs='?', default='', const='',help='Path to pp_home')
+    parser.add_argument( '-p','--profile', nargs='?', default='', const='',help='Profile')
     args=parser.parse_args()
     return  vars(args)
 

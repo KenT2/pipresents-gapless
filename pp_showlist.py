@@ -13,6 +13,7 @@ class ShowList(object):
     def __init__(self):
         self.mon=Monitor()
         self.clear()
+        self._selected_show = None
 
     def clear(self):
         self._shows = []  #MediaList, stored as a list of dicts

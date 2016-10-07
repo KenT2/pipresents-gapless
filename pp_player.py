@@ -101,7 +101,7 @@ class Player(object):
         self.show_x_content()
 
         # and whatecer the plugin has created
-        self.pim.show_plugin()
+        self.show_plugin()
         
         #ready callback hides and closes players from previous track, also displays show background
         if self.ready_callback is not None:
@@ -193,6 +193,7 @@ class Player(object):
 
     # must be overriden by derived class
     def stop(self):
+        self.hide_plugin()
         self.mon.fatal(self,'stop not overidden by derived class')
         self.play_state='show-failed'
         if self.finished_callback is not None:
@@ -224,14 +225,27 @@ class Player(object):
 # *****************
 
     def load_plugin(self):
+        # this is called by derived players
         # load the plugin if required
-        if self.track_params['plugin'] != '':
-            reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'])
+        # we only handle one plugin currently; this gives preference to the show's plugin
+        plugin = None
+        if self.show_params['plugin'] != '':
+            plugin = self.show_params['plugin']
+        elif self.track_params['plugin'] != '':
+            plugin = self.track_params['plugin']
+        if plugin:
+            reason,message,self.track = self.pim.load_plugin(self.track, plugin)
             return reason,message
+
+    def show_plugin(self):
+        # show the plugin if required
+        if self.show_params['plugin'] != '' or self.track_params['plugin'] != '':
+            self.pim.show_plugin()
+            return
 
     def draw_plugin(self):
         # load the plugin if required
-        if self.track_params['plugin'] != '':
+        if self.show_params['plugin'] != '' or self.track_params['plugin'] != '':
             self.pim.draw_plugin()
             return
 
@@ -302,7 +316,7 @@ class Player(object):
 
         self.display_show_canvas_rectangle()
 
-        self.pim.draw_plugin()
+        self.draw_plugin()
 
         self.canvas.tag_raise('pp-click-area')
         self.canvas.itemconfig(self.background_obj,state='hidden')
@@ -359,6 +373,12 @@ class Player(object):
             self.enable_show_background=False
         # print 'ENABLE SB',self.enable_show_background
 
+    def hide_plugin(self):
+        # this is called by derived players because they are supposed to override our stop()
+        # hide the plugin if required
+        if self.show_params['plugin'] != '' or self.track_params['plugin'] != '':
+            self.pim.hide_plugin()
+            return		
 
     def hide_x_content(self):
         self.mon.trace(self,'')

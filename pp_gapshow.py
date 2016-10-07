@@ -110,9 +110,11 @@ class GapShow(Show):
 
    # respond to input events
     def handle_input_event(self,symbol):
+        self.mon.trace(self, "Sending input event to base show: " + symbol)
         Show.base_handle_input_event(self,symbol)
 
     def handle_input_event_this_show(self,symbol):
+        self.mon.trace(self, "Handling input event in this show: " + symbol + " State:" + self.state)
         #  check symbol against mediashow triggers
         if self.state == 'waiting' and self.show_params['trigger-start-type'] in ('input','input-persist') and symbol  ==  self.show_params['trigger-start-param']:
             self.mon.stats(self.show_params['type'],self.show_params['show-ref'],self.show_params['title'],'start trigger',
@@ -130,19 +132,22 @@ class GapShow(Show):
         elif self.state == 'playing' and self.show_params['trigger-next-type'] == 'input' and symbol == self.show_params['trigger-next-param']:
             self.mon.stats(self.show_params['type'],self.show_params['show-ref'],self.show_params['title'],'next trigger',
                             '','','')
+            self.mon.trace(self, "trigger-next-type detected; Calling next()")
             self.next()
         else:
             # event is not a trigger so must be internal operation
             operation=self.base_lookup_control(symbol,self.controls_list)
             if operation != '':
                 self.do_operation(operation)
+            else:
+                self.mon.trace(self, "No operation found for event")
 
 
     # overrides base
     # service the standard operations for this show
     def do_operation(self,operation):
         # print 'do_operation ',operation
-        self.mon.trace(self, operation)
+        self.mon.trace(self, "Doing operation: " + operation)
         if operation == 'exit':
             self.exit()
             
@@ -199,10 +204,14 @@ class GapShow(Show):
         # stop track if running and set signal
         self.next_track_signal=True
         if self.shower is not None:
+            self.mon.trace(self, "Sending operation to current shower")
             self.shower.do_operation('stop')
         else:
             if self.current_player is not None:
+                self.mon.trace(self, "Sending operation to current player")
                 self.current_player.input_pressed('stop')
+            else:
+                self.mon.trace(self, "There is nowhere to send the signal")
 
 
     def previous(self):
@@ -297,10 +306,15 @@ class GapShow(Show):
 
         #get rid of previous track in order to display the empty message
         if self.medialist.display_length() == 0:
-            Show.base_shuffle(self)
-            Show.base_track_ready_callback(self,False)
-            Show.display_admin_message(self,self.show_params['empty-text'])
-            self.wait_for_not_empty()
+            if self.show_params['empty-text']:
+                Show.base_shuffle(self)
+                Show.base_track_ready_callback(self,False)
+                Show.display_admin_message(self,self.show_params['empty-text'])
+                self.wait_for_not_empty()
+            else:
+                self.stop_timers()
+                self.ending_reason='exit'
+                Show.base_close_or_unload(self)                
         else:
             self.not_empty()
       

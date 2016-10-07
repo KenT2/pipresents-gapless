@@ -220,6 +220,7 @@ class ImagePlayer(Player):
                 self.canvas.update_idletasks( )
                 
             if self.paused is False and self.pause_text_obj is not None:
+                self.hide_plugin()
                 self.canvas.delete(self.pause_text_obj)
                 self.pause_text_obj=None
                 self.canvas.update_idletasks( )
