@@ -57,6 +57,10 @@ http://www.weser-echo.de/Pipresents_1_3_1_a_manual_de.pdf
 
 To download Pi Presents including the manual and get going follow the instructions below.
 
+Set the GPU Memory size to 128MB
+---------------------------------
+Using the Raspbian menu preferences>raspberry pi configuration>performance, increase the GPU Memory to 128.
+
 
 Install required applications (MPlayer, PIL and X Server utils)
 ------------------------------------------------------
@@ -86,7 +90,7 @@ Return the terminal window to the home directory.
 Download Pi Presents
 --------------------
 
-Pi Presents MUST use Raspbian and be run from the desktop (startx). From a terminal window open in your home directory type:
+Pi Presents MUST use Raspbian and be run from the PIXEL desktop (startx). From a terminal window open in your home directory type:
 
          wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
 
@@ -161,9 +165,9 @@ I have started a new thread on the forum for [pipresents-gapless], see below.
 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie, Wheezy now being obsolescent for over a year. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for videos and images. 
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for videos and images. 
 
-omxplayer plays some videos using 64MB of RAM; others need 128MB, especially if you want sub-titles. 
+omxplayer requires 128MB of video RAM. 
 
 
 Bug Reports and Feature Requests

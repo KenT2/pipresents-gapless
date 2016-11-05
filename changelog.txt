@@ -1,3 +1,13 @@
+Version 1.3.1h 5/11/2016
+Enhanced - When using GPIO it is now not necessary (or possible) to use sudo.
+Enhanced - an event for statistics reporting can now be generated for every track. Out of the box this is commented out in pp_gapshow.py in the function 'start_load_show_loop'
+Enhanced - It is now possible to debug pp_manager.py when it is run at boot by executing the script debug_autostart.sh in LXDE-pi/autostart
+Fixed - video tracks playing is more reliable. To achieve this GPU_MEM needs to be increased to 128MB if playing videos.
+Modified - browser update interval for pp_manager.py changed from 0.1 secs to 0.2 secs to  reduce processor loading on older models of RPi
+Fixed - added blank option to Videoplayer Field of shows to match manual
+Fixed - undefined error code in pp_manager. But if Pi Presents fails because a Python error is detected this will still produce an undefined error.
+
+
 Version 1.3.1g 12/6/2016
 Fixed - omxplayer interface now uses dbus instead of pexpect - see release notes. Hopefully this will reduce video track hangs with Jessie.
 Fixed - audioplayer other options now work correctly

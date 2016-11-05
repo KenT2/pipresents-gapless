@@ -1,3 +1,5 @@
+# 2/11/2016 - removed requirement for sudo
+
 import time
 import copy
 import os
@@ -86,10 +88,6 @@ class GPIODriver(object):
         reason,message=self.read(self.pp_dir,self.pp_home,self.pp_profile)
         if reason =='error':
             return 'error',message
-
-        if os.geteuid() !=0:
-            self.mon.err(self,'GPIO requires Pi Presents to be run as root\nhint: sudo pipresents.py .... ')
-            return 'error','GPIO without sudo'
 
         import RPi.GPIO as GPIO
         self.GPIO = GPIO

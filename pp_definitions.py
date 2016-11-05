@@ -1,3 +1,5 @@
+#3/11/2016 added blank option to videoplayer audio.
+
 class PPdefinitions(object):
 
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
@@ -267,7 +269,7 @@ class PPdefinitions(object):
                     'mplayer-other-options':{'shape':'entry','text':'Audio Player Options','must':'no','read-only':'no'},
                     'mplayer-volume':{'shape':'entry','text':'Audio Volume','must':'no','read-only':'no'},
                     'omx-audio':{'shape':'option-menu','text':'Video Player Audio','must':'no','read-only':'no',
-                                       'values':['hdmi','local','both']},
+                                       'values':['hdmi','local','both','']},
                     'omx-other-options':{'shape':'entry','text':'Video Player Options','must':'no','read-only':'no'},
                     'omx-volume':{'shape':'entry','text':'Video Player Volume','must':'no','read-only':'no'},
                     'omx-window':{'shape':'entry','text':'Video Window','must':'no','read-only':'no'},

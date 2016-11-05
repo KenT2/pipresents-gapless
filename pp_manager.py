@@ -3,6 +3,9 @@
 """
 12/6/2016 - wait for environment variable to stabilise. Required for Jessie autostart
 12/6/2106 - report startup failures via tk instead of printing
+1/10/2016 - send output to named channel to work with debug_autostart.sh
+2/11/2016 - remove sudo
+2/11/2016 - browser update interval now 0.2 seconds
 """
 
 import remi.gui as gui
@@ -30,19 +33,19 @@ class PPManager(App):
         self.manager_dir=sys.path[0]
             
         if not os.path.exists(self.manager_dir + os.sep + 'pp_manager.py'):
-            print 'Pi Presents Manager - Bad Application Directory'
+            print >> sys.stderr, 'Pi Presents Manager - Bad Application Directory'
             exit()
 
         # object if there is no options file
         self.options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
         if not os.path.exists(self.options_file_path):
-            print 'Pi Presents Manager - Cannot find web options file'
+            print >> sys.stderr, 'Pi Presents Manager - Cannot find web options file'
             exit()
 
         # read the options
         self.options_config=self.read_options(self.options_file_path)
         self.get_options(self.options_config)
-        # print 'options got'
+        
 
         #create upload directory if necessary
         self.upload_dir_path=self.pp_home_dir+os.sep+'pp_temp'
@@ -51,8 +54,10 @@ class PPManager(App):
 
         self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
         if not os.path.exists(self.pp_profiles_dir):
-            print 'Profiles directory does not exist: ' + self.pp_profiles_dir
+            print >> sys.stderr, 'Profiles directory does not exist: ' + self.pp_profiles_dir
             exit()
+
+        print >> sys.stderr, 'Web server started by pp_manager'
 
         #init variables
         self.profile_objects=[]
@@ -198,7 +203,6 @@ class PPManager(App):
 
         self.pp_profiles_offset =config.get('manager-editable','profiles_offset',0)
         self.media_offset =config.get('manager-editable','media_offset',0)
-        self.use_sudo=config.get('manager-editable','use_sudo')
         self.options = config.get('manager-editable','options',0)
 
         self.pp_home_dir =config.get('manager','home',0)
@@ -206,14 +210,9 @@ class PPManager(App):
         self.unit=config.get('manager','unit')
 
         self.autostart_path=config.get('manager-editable','autostart_path')
-        self.autostart_use_sudo=config.get('manager-editable','autostart_use_sudo')
         self.autostart_options = config.get('manager-editable','autostart_options',0)
 
         self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
-        if self.use_sudo == 'yes':
-            self.sudo=True
-        else:
-            self.sudo=False
         self.media_dir=self.pp_home_dir+self.media_offset
         # self.print_paths()
 
@@ -231,11 +230,9 @@ class PPManager(App):
         
         config.set('manager-editable','media_offset',self.media_offset)
         config.set('manager-editable','profiles_offset',self.pp_profiles_offset)
-        config.set('manager-editable','use_sudo',self.use_sudo)
         config.set('manager-editable','options',self.options)
 
         config.set('manager-editable','autostart_path',self.autostart_path)        
-        config.set('manager-editable','autostart_use_sudo',self.autostart_use_sudo)
         config.set('manager-editable','autostart_options',self.autostart_options)
         
         with open(options_file, 'wb') as config_file:
@@ -247,18 +244,13 @@ class PPManager(App):
         self.options_autostart_dialog=gui.GenericDialog(width=450,height=300,title='Auotstart Options',
                                             message='Edit then click OK or Cancel',autohide_ok=False)
              
+
+
         self.autostart_path_field= gui.TextInput(width=250, height=30)
         self.autostart_path_field.set_text(self.autostart_path)
         self.options_autostart_dialog.add_field_with_label('autostart_path_field','Autostart Profile Path',self.autostart_path_field)
 
-        self.autostart_sudo_dropdown = gui.DropDown(width=250, height=30)
-        c0 = gui.DropDownItem( 'no',width=100, height=20)
-        c1 = gui.DropDownItem( 'yes',width=100, height=20)
-        self.autostart_sudo_dropdown.append(c0)
-        self.autostart_sudo_dropdown.append(c1)
-        self.autostart_sudo_dropdown.set_value(self.autostart_use_sudo)
-        self.options_autostart_dialog.add_field_with_label('autostart_sudo_dropdown','Autostart Use SUDO',self.autostart_sudo_dropdown)
-        
+         
         self.autostart_options_field= gui.TextInput(width=250, height=30)
         self.autostart_options_field.set_text(self.autostart_options)
         self.options_autostart_dialog.add_field_with_label('autostart_options_field','Autostart Options',self.autostart_options_field)
@@ -279,13 +271,6 @@ class PPManager(App):
         self.media_field.set_on_enter_listener(self,'dummy_enter')
         self.options_manager_dialog.add_field_with_label('media_field','Media Offset',self.media_field)
 
-        self.sudo_dropdown = gui.DropDown(width=250, height=30)
-        c0 = gui.DropDownItem('no',width=200,height=20)
-        c1 = gui.DropDownItem('yes',width=200, height=20)
-        self.sudo_dropdown.append(c0)
-        self.sudo_dropdown.append(c1)
-        self.sudo_dropdown.set_value(self.use_sudo)
-        self.options_manager_dialog.add_field_with_label('sudo_dropdown','Use SUDO',self.sudo_dropdown)
         
         self.profiles_field= gui.TextInput(width=250, height=30)
         self.profiles_field.set_text(self.pp_profiles_offset)
@@ -309,14 +294,6 @@ class PPManager(App):
 
     def on_options_autostart_dialog_confirm(self):
 
-        result=self.options_autostart_dialog.get_field('autostart_sudo_dropdown').get_value()
-        # print 'AUTO SUDO',result
-        if result not in ('yes','no'):
-            self.autostart_error.set_text('Use SUDO is not yes or no: ' + result)
-            return
-        else:
-            self.autostart_use_sudo=result
-
         result=self.options_autostart_dialog.get_field('autostart_path_field').get_value()            
         autostart_profile_path=self.pp_home_dir+os.sep+'pp_profiles'+os.sep+result
         if not os.path.exists(autostart_profile_path):
@@ -334,13 +311,6 @@ class PPManager(App):
 
     def on_options_manager_dialog_confirm(self):
 
-        result=self.options_manager_dialog.get_field('sudo_dropdown').get_value()
-        # print 'SUDO',result
-        if result not in ('yes','no'):
-            self.options_error.set_text('Use SUDO is not yes or no: ' + result)
-            return
-        else:
-            self.use_sudo=result
 
         media_offset=self.options_manager_dialog.get_field('media_field').get_value()
         media_dir=self.pp_home_dir+media_offset
@@ -641,7 +611,7 @@ class PPManager(App):
             return
         if self.current_profile != '':
             command = self.manager_dir+'/pipresents.py'
-            success=self.pp.run_pp(self.sudo,command,self.current_profile,self.options)
+            success=self.pp.run_pp(command,self.current_profile,self.options)
             if success is True:
                 self.update_status('Pi Presents Started')
             else:
@@ -769,10 +739,7 @@ class WebEditor(object):
         pid,user=self.is_ed_running()
         command = WebEditor.manager_dir+"/exit_ed.sh"
         if pid !=-1:
-            if user=='root':
-                subprocess.call([command,"sudo_exit"])
-            else:
-                subprocess.call([command,"exit"])
+            subprocess.call([command,"exit"])
             self.my_ed=None
             return True
         else:
@@ -814,15 +781,13 @@ class PiPresents(object):
         PiPresents.manager_dir=manager_dir
         pass
 
-    def run_pp(self,sudo,command,current_profile,options):
+    def run_pp(self,command,current_profile,options):
         PiPresents.my_pp=None
         pid,user,running_profile=self.is_pp_running()
         # print pid,user,running_profile
         if pid ==-1:
             options_list= options.split(' ')
             command = ['python',command,'-p',current_profile,'--manager']
-            if sudo is True:
-                command=['sudo']+command
             if options_list[0] != '':
                 command = command + options_list
             # print 'COMMAND',command
@@ -858,10 +823,7 @@ class PiPresents(object):
         pid,user,running_profile=self.is_pp_running()
         command = PiPresents.manager_dir+"/exit_pp.sh"
         if pid !=-1:
-            if user=='root':
-                subprocess.call([command,"sudo_exit"])
-            else:
-                subprocess.call([command,"exit"])
+            subprocess.call([command,"exit"])
             self.my_pp=None
             return True
         else:
@@ -896,12 +858,12 @@ class Autostart(object):
         self.manager_dir=sys.path[0]
             
         if not os.path.exists(self.manager_dir + os.sep + 'pp_manager.py'):
-            print 'Pi Presents Manager - Bad Application Directory'
+            print >> sys.stderr, 'Pi Presents Manager - Bad Application Directory'
             exit()
 
         self.options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
         if not os.path.exists(self.options_file_path):
-            print 'Pi Presents Manager - web options file not found'
+            print >> sys.stderr, 'Pi Presents Manager - web options file not found'
             exit()
 
         # read the options
@@ -920,14 +882,14 @@ class Autostart(object):
         if self.autostart_path != '' and os.name !='nt':
             autostart_profile_path= self.pp_home_dir+os.sep+'pp_profiles'+os.sep+self.autostart_path
             if not os.path.exists(autostart_profile_path):
-                print 'Autostart - Profile does not exist: ' + autostart_profile_path
+                print >> sys.stderr, 'Autostart - Profile does not exist: ' + autostart_profile_path
             else:
                 command =self.manager_dir+'/pipresents.py'
-                success=pp_auto.run_pp(self.sudo,command,self.autostart_path,self.autostart_options)
+                success=pp_auto.run_pp(command,self.autostart_path,self.autostart_options)
                 if success is True:
-                    print 'Pi Presents AUTO Started'
+                    print >> sys.stderr, 'Pi Presents AUTO Started profile ',autostart_profile_path
                 else:
-                    print 'FAILED, Pi Presents AUTO Not Started'
+                    print >> sys.stderr, 'FAILED, Pi Presents AUTO Not Started'
 
     def autostart_read_options(self,options_file):
         """reads options from options file """
@@ -938,14 +900,9 @@ class Autostart(object):
 
     def autostart_get_options(self,config):
         self.autostart_path=config.get('manager-editable','autostart_path')
-        self.autostart_use_sudo=config.get('manager-editable','autostart_use_sudo')
         self.autostart_options = config.get('manager-editable','autostart_options',0)
         self.pp_home_dir =config.get('manager','home',0)
         
-        if self.autostart_use_sudo == 'yes':
-            self.sudo=True
-        else:
-            self.sudo=False
         # self.print_paths()
 
 # ***************************************
@@ -953,6 +910,8 @@ class Autostart(object):
 # ***************************************
 
 if __name__  ==  "__main__":
+
+    print >> sys.stderr, '\n *** Pi Presents Manager Started ***'
 
     # wait for environment ariables to stabilize. Required for Jessie autostart
     tries=0
@@ -971,11 +930,15 @@ if __name__  ==  "__main__":
         tkMessageBox.showwarning("pp_manager.py","Bad application directory: "+ manager_dir)
         exit()
 
+    print >> sys.stderr, 'Found pp_manager.py in ', manager_dir
+
     # object if there is no options file
     options_file_path=manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
     if not os.path.exists(options_file_path):
         tkMessageBox.showwarning("pp_manager.py","Pi Presents Manager - Cannot find web options file")
         exit()
+
+    print >> sys.stderr, 'Found pp_web.cfg in ', options_file_path
 
     """reads options from options file to interface"""
     config=ConfigParser.ConfigParser()
@@ -985,9 +948,7 @@ if __name__  ==  "__main__":
     port=int(config.get('manager','port',0))
     username=config.get('manager','username',0)
     password=config.get('manager','password',0)
-    # print ip
-
-    print 'Pi Presents Manager Started'
+    print >> sys.stderr, 'IP address/Port is ', ip, port
 
     # Autostart Pi Presents if necessary
     auto=Autostart()
@@ -1001,7 +962,7 @@ if __name__  ==  "__main__":
     # start the web server to serve the Pi Presents Manager App
     start(PPManager,address=ip, port=port,username=username,password=password,
           multiple_instance=False,enable_file_cache=True,
-          update_interval=0.1, start_browser=False)
+          update_interval=0.2, start_browser=False)
 
 
 

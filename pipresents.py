@@ -6,6 +6,8 @@ feb 2016 added statistics logging
 26 Feb 2016 - version 1.3.1f
 12 June 2016 - added wait for the environment variables to stabilise. Required for Jessie autostart
 12 June 2016 version 1.3.1g
+2/11/2016 - Display error if Pi Presents is run with sudo
+2/11/2016 - delete omxplayer dbus files from /tmp
 
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
 on the Raspberry Pi.
@@ -48,7 +50,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1g'
+        self.pipresents_minorissue = '1.3.1h'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -75,7 +77,7 @@ class PiPresents(object):
         if not os.path.exists(pp_dir+"/pipresents.py"):
             if self.options['manager']  is False:
                 tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
-            exit(103)
+            exit(102)
 
         
         # Initialise logging and tracing
@@ -99,7 +101,7 @@ class PiPresents(object):
                             'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
                             ]
 
-        # Monitor.classes=['PiPresents','ArtMediaShow','VideoPlayer','OMXDriver']
+        # Monitor.classes=['VideoPlayer','Player','OMXDriver']
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])
@@ -109,10 +111,12 @@ class PiPresents(object):
         self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue)
         # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
-        if os.geteuid() !=0:
-            user=os.getenv('USER')
-        else:
-            user = os.getenv('SUDO_USER')
+        if os.geteuid() == 0:
+            self.mon.err(self,'Do not run Pi Presents with sudo')
+            exit(102)
+        
+        user=os.getenv('USER')
+
         self.mon.log(self,'User is: '+ user)
         # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME')) # does not work
         # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))   # does not work
@@ -312,6 +316,12 @@ class PiPresents(object):
 # ****************************************
         self.shutdown_required=False
         self.exitpipresents_required=False
+
+	# delete omxplayer dbus files
+	if os.path.exists("/tmp/omxplayerdbus.{}".format(user)):
+		os.remove("/tmp/omxplayerdbus.{}".format(user))
+	if os.path.exists("/tmp/omxplayerdbus.{}.pid".format(user)):
+        	os.remove("/tmp/omxplayerdbus.{}.pid".format(user))
         
         # kick off GPIO if enabled by command line option
         self.gpio_enabled=False

@@ -1,4 +1,5 @@
 # 1/2/2016 add write_stats
+# 4/11/2016 write stats for each track (commented out)
 
 from pp_show import Show
 from pp_controlsmanager import ControlsManager
@@ -328,6 +329,10 @@ class GapShow(Show):
 
     # track playing loop starts here
     def start_load_show_loop(self,selected_track):
+
+        # uncomment the next line to write stats for every track
+        # Show.write_stats(self,'play a track',self.show_params,selected_track)
+        
         # shuffle players
         Show.base_shuffle(self)
         
