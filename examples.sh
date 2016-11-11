@@ -46,7 +46,7 @@ while [ $RET -eq 0 ]; do
      else
        if [ "$GAME" != "" ]; then
           cd /home/pi/pipresents
-          sudo python /home/pi/pipresents/pipresents.py -o /home/pi -p $GAME -bf
+          python /home/pi/pipresents/pipresents.py -o /home/pi -p $GAME -bf
        fi
      fi
   fi
