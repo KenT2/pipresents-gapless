@@ -127,6 +127,8 @@ class ShowManager(object):
             return self.start_show(show_ref)
         elif show_command  == 'close':
             return self.exit_show(show_ref)
+        elif show_command == 'pause':
+            return self.pause_show(show_ref)
         else:
             return 'error','command not recognised '+ show_command
 
@@ -146,7 +148,14 @@ class ShowManager(object):
         if show_obj is not None:
             show_obj.exit()
         return 'normal','exited a concurrent show'
-            
+
+    def pause_show(self, show_ref):
+        index=self.show_registered(show_ref)
+        self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
+        show_obj=self.show_running(index)
+        if show_obj is not None:
+            show_obj.pause()
+        return 'normal','paused a concurrent show'
 
     def start_show(self,show_ref):
         index=self.show_registered(show_ref)

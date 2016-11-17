@@ -428,7 +428,7 @@ class PiPresents(object):
         else:
             show_ref=''
             
-        if show_command in ('open','close'):
+        if show_command in ('open','close','pause'):
             if self.shutdown_required is False:
                 reason,message=self.show_manager.control_a_show(show_ref,show_command)
             else:

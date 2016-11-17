@@ -284,11 +284,11 @@ class Player(object):
 
         # load track text if enabled
         if self.track_params['track-text'] !=  '':
-            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x'])+self.show_canvas_x1,
+            self.track_text_obj=self.canvas.create_text(self.show_canvas_x1+self.show_canvas_centre_x,
                                                         int(self.track_params['track-text-y'])+ self.show_canvas_y1,
-                                                        anchor=NW,
                                                         text=self.track_params['track-text'],
                                                         fill=self.track_params['track-text-colour'],
+                                                        justify=self.track_params['track-text-justify'],
                                                         font=self.track_params['track-text-font'])
 
         # load instructions if enabled
