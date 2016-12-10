@@ -57,15 +57,20 @@ http://www.weser-echo.de/Pipresents_1_3_1_a_manual_de.pdf
 
 To download Pi Presents including the manual and get going follow the instructions below.
 
-Set the GPU Memory size to 128MB
+Set the GPU Memory size to 256MB
 ---------------------------------
-Using the Raspbian menu preferences>raspberry pi configuration>performance, increase the GPU Memory to 128.
+Using the Raspbian menu preferences>raspberry pi configuration>performance, increase the GPU Memory to 256.
 
+Ensure Raspbian is up to date.
+-------------------------------
+Pi Presents MUST have the latest version of omxplayer and of Raspbian, get this by
 
-Install required applications (MPlayer, PIL and X Server utils)
-------------------------------------------------------
+		sudo apt-get update
+		sudo apt-get upgrade
 
-         sudo apt-get update
+Install required applications 
+-----------------------------
+
          sudo apt-get install python-imaging
          sudo apt-get install python-imaging-tk
 		 sudo apt-get install unclutter
@@ -90,7 +95,7 @@ Return the terminal window to the home directory.
 Download Pi Presents
 --------------------
 
-Pi Presents MUST use Raspbian and be run from the PIXEL desktop (startx). From a terminal window open in your home directory type:
+Pi Presents MUST use Raspbian and be run from the PIXEL desktop. From a terminal window open in your home directory type:
 
          wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
 

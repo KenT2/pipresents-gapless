@@ -603,7 +603,7 @@ class VideoPlayer(Player):
         # deal with warp which has 1 or 5  arguments
         # check basic syntax
         if  fields[0]  != 'warp':
-            return 'error','not a valid type: '+fileds[0],'',False,0,0,0,0
+            return 'error','not a valid type: '+fields[0],'',False,0,0,0,0
         if len(fields) not in (1,5):
             return 'error','wrong number of coordinates for warp: '+ line,'',False,0,0,0,0
 

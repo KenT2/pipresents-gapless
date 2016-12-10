@@ -1,4 +1,3 @@
-import os
 from pp_show import Show
 from pp_controlsmanager import ControlsManager
 

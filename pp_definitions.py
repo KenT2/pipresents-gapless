@@ -159,7 +159,7 @@ class PPdefinitions(object):
                             'empty-text':'Nothing to show','admin-font':'Helvetica 10 bold','admin-colour':'white','admin-x':'100','admin-y':'200',
                          'transition': 'cut', 'duration': '5','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-end':'yes',
-                            'controls':'','live-tracks-dir1':'','live-tracks-dir2':'',
+                            'live-tracks-dir1':'','live-tracks-dir2':'',
                                'controls':'pp-down down\npp-stop stop\npp-pause pause\n'},
 
                 'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',

@@ -32,7 +32,7 @@ class MediaList(object):
         print self._tracks
 
     def first(self):
-        self.selected_track_index=-1
+        self._selected_track_index=-1
         self.next(self.sequence) #let this do the work of randomaising or  advancing to 0
 
     def length(self):

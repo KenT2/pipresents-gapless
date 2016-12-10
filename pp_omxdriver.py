@@ -3,8 +3,7 @@ import os
 import sys
 import dbus
 import subprocess
-from threading import Thread
-from time import sleep,time,strftime
+from time import time,strftime
 from pp_utils import Monitor
 
 

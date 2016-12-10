@@ -555,7 +555,7 @@ class HyperlinkShow(Show):
                 # append the jumped to track
                 self.next_track_ref=self.next_track_arg
                 self.path.append(self.next_track_ref)
-                if self.debug: 'Executed Jump ' + self.next_track_arg + self.path.pretty_path()
+                if self.debug: print 'Executed Jump ' + self.next_track_arg + self.path.pretty_path()
 
             else:
                 self.mon.err(self,"unaddressed what next: "+ self.next_track_op+ ' '+self.next_track_arg)

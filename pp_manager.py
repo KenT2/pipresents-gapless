@@ -25,9 +25,7 @@ import ConfigParser
 import zipfile
 from threading import Timer
 from time import sleep
-import tkMessageBox
 
-import socket
 from pp_network import Mailer, Network
 
 
@@ -902,11 +900,11 @@ class PPManager(App):
         self.on_logs_download_clicked('pp_stats.txt','Statistics')
         
     # download
-    def on_logs_download_clicked(self,file,name):
+    def on_logs_download_clicked(self,log_file,name):
         self.logs_dir=self.manager_dir+os.sep+'pp_logs'
         self.logs_download_dialog=gui.GenericDialog(width=500,height=200,title='<b>Download ' + name+ '</b>',
                                                        message='',autohide_ok=False)
-        self.logs_download_button = gui.FileDownloader('Click Link to Download',self.logs_dir+os.sep+file, width=200, height=30)
+        self.logs_download_button = gui.FileDownloader('Click Link to Download',self.logs_dir+os.sep+log_file, width=200, height=30)
         self.logs_download_status=gui.Label('', width=450, height=30)
         self.logs_download_dialog.add_field('1',self.logs_download_button)
         self.logs_download_dialog.add_field('2',self.logs_download_status)

@@ -1141,7 +1141,7 @@ if __name__  ==  "__main__":
     editor_options_file_path=editor_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
     if not os.path.exists(editor_options_file_path):
         print 'pp_web.cfg not found at ' + editor_options_file_path
-        tkMessageBox.showwarning("Pi Presents Web Editor",'pp_web.cfg not found at ' + editor_options_file_path)
+        # tkMessageBox.showwarning("Pi Presents Web Editor",'pp_web.cfg not found at ' + editor_options_file_path)
         exit()
 
     print 'Found pp_web.cfg in ', editor_options_file_path

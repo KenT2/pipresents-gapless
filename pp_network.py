@@ -1,10 +1,8 @@
 import subprocess
 import smtplib
-import socket
 from email.mime.text import MIMEText
 import ConfigParser
 import time
-import os
 from time import sleep
 from pp_utils import Monitor
 
@@ -79,13 +77,13 @@ class Mailer(object):
     def connect(self):
         tries = 0
         while True:
-            if (tries > 5):
-                return False, e
             try:
                 self.smtpserver = smtplib.SMTP(self.server, self.port, timeout=1)
                 break
             except Exception as e:
                 tries = tries + 1
+                if (tries > 5):
+                    return False, e
                 time.sleep(1)
         return True, ''
         
@@ -256,7 +254,7 @@ if __name__ == "__main__":
     print 'network available'
 
     preferred_interface=''   
-    i_type,ip=network.get_preferred_ip(preferred_interface)
+    i_type,ip=network.get_preferred_ip()
     print i_type,ip
 
     mailer=Mailer()

@@ -12,7 +12,7 @@ or run pydoc pyOSC.py. you can also get the docs by opening a python shell and d
 import os
 from pp_utils import Monitor
 from pp_oscconfig import OSCConfig
-import time, threading
+import threading
 import ConfigParser
 
 import OSC

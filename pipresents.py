@@ -29,11 +29,9 @@ import signal
 from subprocess import call, check_output
 import time
 import gc
-import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
-import ConfigParser
 
 
 from pp_options import command_options

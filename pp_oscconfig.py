@@ -1,19 +1,11 @@
 #! /usr/bin/env python
 
-from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry,Text,OptionMenu
-from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
-import tkFileDialog
+from Tkinter import Tk, StringVar,Frame,Label,Button,Scrollbar,Listbox,Entry,Text,OptionMenu
+from Tkinter import Y,END,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
 import tkMessageBox
 import tkSimpleDialog
 import os
-import sys
 import ConfigParser
-import shutil
-import copy
-import string
-
-
-from pp_utils import Monitor
 
 # ***************************************
 #  OSC CONFIG CLASS

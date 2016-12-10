@@ -1,6 +1,5 @@
 # 1/2/2016 - add write stats
 
-import copy
 from pp_medialist import MediaList
 from pp_show import Show
 from pp_controlsmanager import ControlsManager
