@@ -411,8 +411,8 @@ class ArtShow(Show):
             elif self.ending_reason == 'change-medialist':
                 self.load_first_track()   
             else:
-                self.mon.err(self,"Unhandled ending_reason: ")
-                self.end('error',"Unhandled ending_reason")                
+                self.mon.err(self,"Unhandled ending_reason: "+ self.ending_reason)
+                self.end('error',"Unhandled ending_reason: "+ self.ending_reason)                
 
     def track_ready_callback(self,enable_show_background):
         self.mon.trace(self, '')
@@ -425,7 +425,7 @@ class ArtShow(Show):
             reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
             if reason=='error':
                 self.mon.err(self,message)
-                self.end('error',"error in controls")
+                self.end('error',"error in controls: " + message)
                 return
             # print '\nshow controls',self.show_params['controls']
    

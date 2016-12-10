@@ -145,12 +145,12 @@ class HyperlinkShow(Show):
         reason,message,self.show_timeout=Show.calculate_duration(self,self.show_params['show-timeout'])
         if reason =='error':
             self.mon.err(self,'Show Timeout has bad time: '+self.show_params['show-timeout'])
-            self.end('error','show timeout, bad time')
+            self.end('error','show timeout, bad time: '+self.show_params['show-timeout'])
 
         reason,message,self.track_timeout=Show.calculate_duration(self,self.show_params['track-timeout'])
         if reason=='error':
             self.mon.err(self,'Track Timeout has bad time: '+self.show_params['track-timeout'])
-            self.end('error','track timeout, bad time')
+            self.end('error','track timeout, bad time: ' +self.show_params['track-timeout'])
   
         # and delete eggtimer
         if self.previous_shower is not None:
@@ -238,7 +238,7 @@ class HyperlinkShow(Show):
                     
             else:
                 self.mon.err(self,"unknown link command: "+ link_op)
-                self.end('error',"unknown link command")
+                self.end('error',"unknown link command: " + link_op)
 
     def do_operation(self,operation):
         if operation == 'stop':
@@ -340,7 +340,7 @@ class HyperlinkShow(Show):
             self.start_load_show_loop(first_track)
         else:
             self.mon.err(self,"first-track not found in medialist: "+ self.show_params['first-track-ref'])
-            self.end('error',"first track not found in medialist")
+            self.end('error',"first track not found in medialist: "+ self.show_params['first-track-ref'])
 
 
     def start_load_show_loop(self,selected_track):
@@ -379,7 +379,7 @@ class HyperlinkShow(Show):
             reason,message,self.links=self.path.parse_links(self.show_params['links'],self.allowed_links)
             if reason == 'error':
                 self.mon.err(self,message + " in show")
-                self.end('error',message)
+                self.end('error',message + " in show")
 
         # load the track or show
         # params - track,, track loaded callback, end eshoer callback,enable_menu
@@ -489,7 +489,7 @@ class HyperlinkShow(Show):
                 back_ref=self.path.back_to(self.home_track_ref)
                 if back_ref == '':
                     self.mon.err(self,"home - home track not in path: "+self.home_track_ref)
-                    self.end('error',"home - home track not in path")
+                    self.end('error',"home - home track not in path: "+self.home_track_ref)
                 # play home
                 self.next_track_ref=self.home_track_ref
                 self.path.append(self.next_track_ref)
@@ -522,7 +522,7 @@ class HyperlinkShow(Show):
                 back_ref=self.path.back_to(self.next_track_arg)
                 if back_ref == '':
                     self.mon.err(self,"return-to - track not in path: "+self.next_track_arg)
-                    self.end('error',"return-to - track not in path")
+                    self.end('error',"return-to - track not in path: "+self.next_track_arg)
                 # and append the return to track
                 self.next_track_ref=self.next_track_arg
                 self.path.append(self.next_track_ref)
@@ -549,7 +549,7 @@ class HyperlinkShow(Show):
                 back_ref=self.path.back_to(self.home_track_ref)
                 if back_ref == '':
                     self.mon.err(self,"jump - home track not in path: "+self.home_track_ref)
-                    self.end('error',"jump - track not in path")
+                    self.end('error',"jump - track not in path: "+self.home_track_ref)
                 # add back the home track without playing it
                 self.path.append(self.home_track_ref)
                 # append the jumped to track
@@ -559,7 +559,7 @@ class HyperlinkShow(Show):
 
             else:
                 self.mon.err(self,"unaddressed what next: "+ self.next_track_op+ ' '+self.next_track_arg)
-                self.end('error',"unaddressed what next")
+                self.end('error',"unaddressed what next: " + self.next_track_op+ ' '+self.next_track_arg)
             
             self.current_track_ref=self.next_track_ref                    
             index = self.medialist.index_of_track(self.next_track_ref)
@@ -570,7 +570,7 @@ class HyperlinkShow(Show):
 
             else:
                 self.mon.err(self,"next-track not found in medialist: "+ self.next_track_ref)
-                self.end('error',"next track not found in medialist")
+                self.end('error',"next track not found in medialist: "+ self.next_track_ref)
                 
         else:
             # track ends naturally look to see if there is a pp-onend link
@@ -600,11 +600,11 @@ class HyperlinkShow(Show):
                     self.what_next_after_showing() 
                 else:
                     self.mon.err(self,"unknown link command for pp_onend: "+ link_op)
-                    self.end('error',"unkown link command for pp-onend")
+                    self.end('error',"unkown link command for pp-onend: "+ link_op)
             else:
                 if self.show_params['disable-controls']!='yes':
                     self.mon.err(self,"pp-onend for this track not found: "+ link_op)
-                    self.end('error',"pp-onend for this track not found")
+                    self.end('error',"pp-onend for this track not found: "+ link_op)
 
 
 

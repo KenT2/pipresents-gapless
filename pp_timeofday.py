@@ -58,7 +58,8 @@ class TimeOfDay(object):
             second= int(self.schedule['sim-second'])
             TimeOfDay.now = datetime(day = day, month =month, year=year,hour=hour, minute=minute, second=second)
             self.testing=True
-            print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
+            # print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
+            self.mon.sched(self,'Testing is ON, Initial SIMULATED time ' + str(TimeOfDay.now.ctime()))
         else:
             #get the current date/time only this once
             TimeOfDay.now = datetime.now().replace(microsecond=0)
@@ -66,8 +67,9 @@ class TimeOfDay(object):
             self.testing=False
         TimeOfDay.last_now = TimeOfDay.now - timedelta(seconds=1)           
         self.build_schedule_for_today(self.schedule)
-        if self.testing:
-            self.print_todays_schedule()
+        self.mon.sched(self,self.pretty_todays_schedule())
+        # if self.testing:
+            # self.print_todays_schedule()
         self.build_events_lists()
         # self.print_events_lists()
         # and do exitpipresents or start any show that should be running at start up time
@@ -111,8 +113,9 @@ class TimeOfDay(object):
                             # print 'close - show-running= false' 
                             show_running=False
                     if show_running is True:
-                        if self.testing:
-                            print 'End of Catch Up Search doing', show_ref,last_start_element
+                        #if self.testing:
+                            # print 'End of Catch Up Search', show_ref,last_start_element
+                        self.mon.sched(self,'Catch up for show: ' + show_ref +' requires '+ last_start_element[0] + ' ' +str(last_start_element[1]))
                         self.do_event(show_ref,last_start_element)
 
 ##                    # print 'catchup time match', show_ref
@@ -165,12 +168,15 @@ class TimeOfDay(object):
         # if its midnight then build the events lists for the new day
         TimeOfDay.scheduler_time=TimeOfDay.now.time()
         if  TimeOfDay.scheduler_time == time(hour=0,minute=0,second=0):
-            if self.testing:
-                print 'Its midnight,  today is now', TimeOfDay.now.ctime()
+            # if self.testing:
+                # print 'Its midnight,  today is now', TimeOfDay.now.ctime()
+            self.mon.sched(self,'Its midnight,  today is now ' + str(TimeOfDay.now.ctime()))
             self.build_schedule_for_today(self.schedule)
-            if self.testing:
-                self.print_todays_schedule()
+            self.mon.sched(self,self.pretty_todays_schedule())
+            # if self.testing:
+                # self.print_todays_schedule()
             self.build_events_lists()
+            # self.mon.sched(self,self.pretty_events_lists())
             # self.print_events_lists()
 
         # print TimeOfDay.scheduler_time
@@ -187,8 +193,9 @@ class TimeOfDay(object):
     # execute an event
     def do_event(self,show_ref,time_element):
         self.mon.log (self,'Event : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
-        if self.testing:
-            print 'Event : ' +  time_element[0] + ' ' + show_ref + ' required at: '+ time_element[1].isoformat()
+        self.mon.sched (self,' ToD Scheduler : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
+        # if self.testing:
+            # print 'Event : ' +  time_element[0] + ' ' + show_ref + ' required at: '+ time_element[1].isoformat()
         self.callback(time_element[0]  + ' ' + show_ref)
 
 
@@ -307,6 +314,24 @@ class TimeOfDay(object):
 # *********************
 # print for debug
 # *********************
+
+    def pretty_todays_schedule(self):
+        op='Schedule For ' + TimeOfDay.now.ctime() + '\n'
+        for key in self.todays_schedule:
+            op += '  '+ key + '\n'
+            for show in self.todays_schedule[key]:
+                op += '    '+show[0]+ ':   '+ str(show[1])+ '\n'
+            op +='\n'
+        return op
+
+    def pretty_events_lists(self):
+        op = ' Events list for today'
+        for key in self.events:
+            op += '\n' + key
+            for show in self.events[key]:
+                op += '\n    ' + show[0] + ' ' + str(show[1].isoformat())
+        return op
+
                     
     def print_todays_schedule(self):
         print '\nSchedule For '+ TimeOfDay.now.ctime()

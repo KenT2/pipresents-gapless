@@ -127,7 +127,7 @@ class VideoPlayer(Player):
             self.mon.err(self,'omx window error: ' + message + ' in ' + self.omx_window)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
-                self.loaded_callback('error',message)
+                self.loaded_callback('error','omx window error: ' + message + ' in ' + self.omx_window)
                 return
         else:
             if has_window is True:
@@ -159,7 +159,7 @@ class VideoPlayer(Player):
             self.mon.err(self,"Track file not found: "+ track)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
-                self.loaded_callback('error','track file not found')
+                self.loaded_callback('error','track file not found: '+ track)
                 return
 
         self.omx=OMXDriver(self.canvas,self.pp_dir)
@@ -340,8 +340,8 @@ class VideoPlayer(Player):
                 # state machine will go to start_unloading state and stop omxplayer
                 self.unload_signal=True
             else:
-                self.mon.err(self,'illegal state in unload method ' + self.play_state)
-                self.end('error','illegal state in unload method')           
+                self.mon.err(self,'illegal state in unload method: ' + self.play_state)
+                self.end('error','illegal state in unload method: '+ self.play_state)           
             
     def start_state_machine_show(self):
         if self.play_state == 'loaded':
@@ -360,7 +360,7 @@ class VideoPlayer(Player):
             self.mon.fatal(self,'illegal state in show method ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
-                self.finished_callback('error','illegal state in show method')
+                self.finished_callback('error','illegal state in show method: ' + self.play_state)
              
 
     def start_state_machine_close(self):
@@ -456,8 +456,8 @@ class VideoPlayer(Player):
                         self.tick_timer=self.canvas.after(50, self.load_state_machine)
                     else:
                         # unexpected reason
-                        self.mon.err(self,'unexpected reason at unload '+self.omx.end_play_reason)
-                        self.end('error','unexpected reason at unload')
+                        self.mon.err(self,'unexpected reason at unload: '+self.omx.end_play_reason)
+                        self.end('error','unexpected reason at unload: '+self.omx.end_play_reason)
             else:
                 # end play signal false
                 self.tick_timer=self.canvas.after(50, self.load_state_machine)       
@@ -486,8 +486,8 @@ class VideoPlayer(Player):
                 else:
                     self.tick_timer=self.canvas.after(200, self.load_state_machine)
         else:
-            self.mon.err(self,'illegal state in load state machine' + self.play_state)
-            self.end('error','load state machine in illegal state')
+            self.mon.err(self,'illegal state in load state machine: ' + self.play_state)
+            self.end('error','load state machine in illegal state: '+ self.play_state)
 
 
 
@@ -535,7 +535,7 @@ class VideoPlayer(Player):
                     self.mon.err(self,'unexpected reason at end of show '+self.omx.end_play_reason)
                     self.play_state='show-failed'
                     if self.finished_callback is not None:
-                        self.finished_callback('error','unexpected reason at end of show')
+                        self.finished_callback('error','unexpected reason at end of show: '+ self.omx.end_play_reason)
 
             else:
                 # nothing to do just try again
@@ -584,34 +584,34 @@ class VideoPlayer(Player):
             self.mon.err(self,'unknown state in show/close state machine ' + self.play_state)
             self.play_state='show-failed'
             if self.finished_callback is not None:
-                self.finished_callback('error','show state machine in unknown state')
+                self.finished_callback('error','show state machine in unknown state: '+ self.play_state)
 
 
     def parse_video_window(self,line):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
-            return 'error','no type field','',False,0,0,0,0
+            return 'error','no type field: '+line,'',False,0,0,0,0
             
         # deal with original which has 1
         if fields[0] == 'original':
             if len(fields)  !=  1:
-                return 'error','number of fields for original','',False,0,0,0,0    
+                return 'error','number of fields for original: '+line,'',False,0,0,0,0    
             return 'normal','',fields[0],False,0,0,0,0
 
 
         # deal with warp which has 1 or 5  arguments
         # check basic syntax
         if  fields[0]  != 'warp':
-            return 'error','not a valid type','',False,0,0,0,0
+            return 'error','not a valid type: '+fileds[0],'',False,0,0,0,0
         if len(fields) not in (1,5):
-            return 'error','wrong number of coordinates for warp','',False,0,0,0,0
+            return 'error','wrong number of coordinates for warp: '+ line,'',False,0,0,0,0
 
         # deal with window coordinates    
         if len(fields) == 5:
             # window is specified
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                return 'error','coordinates are not positive integers','',False,0,0,0,0
+                return 'error','coordinates are not positive integers: '+ line,'',False,0,0,0,0
             has_window=True
             return 'normal','',fields[0],has_window,self.show_canvas_x1+int(fields[1]),self.show_canvas_y1+int(fields[2]),self.show_canvas_x1+int(fields[3]),self.show_canvas_y1+int(fields[4])
         else:

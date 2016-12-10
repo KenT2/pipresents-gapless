@@ -111,12 +111,12 @@ class Show(object):
 
         # check  data files are available.
         if self.show_params['medialist'] == '':
-            self.mon.err(self,"Blank Medialist in : "+ self.show_params['title'])
-            self.end('error',"Blank Medialist")
+            self.mon.err(self,"Blank Medialist in: "+ self.show_params['title'])
+            self.end('error',"Blank Medialist in: "+ self.show_params['title'])
         self.medialst_file = self.pp_profile + "/" + self.show_params['medialist']
         if not os.path.exists(self.medialst_file):
             self.mon.err(self,"Medialist file not found: "+ self.medialst_file)
-            self.end('error',"Medialist file not found")
+            self.end('error',"Medialist file not found: "+ self.medialst_file)
 
         # read the medialist for the show
         if self.medialist.open_list(self.medialst_file,self.showlist.sissue()) is False:
@@ -165,7 +165,7 @@ class Show(object):
             index = self.showlist.index_of_show(selected_track['sub-show'])
             if index <0:
                 self.mon.err(self,"Show not found in showlist: "+ selected_track['sub-show'])
-                self.end('error','show not in showlist')
+                self.end('error','show not in showlist: '+ selected_track['sub-show'])
             else:
                 self.showlist.select(index)
                 selected_show=self.showlist.selected_show()
@@ -338,8 +338,8 @@ class Show(object):
                 self.end('normal',"show quit by stop operation")
                     
             else:
-                self.mon.fatal(self,"Unhandled ending_reason: ")
-                self.end('error',"Unhandled ending_reason")          
+                self.mon.fatal(self,"Unhandled ending_reason: " + self.ending_reason)
+                self.end('error',"Unhandled ending_reason: " + self.ending_reason)          
 
 
     def _base_closed_callback_current(self,status,message):
@@ -395,7 +395,7 @@ class Show(object):
                     
                 else:
                     self.mon.fatal(self,"Unhandled ending_reason: " + self.ending_reason)
-                    self.end('error',"Unhandled ending_reason")
+                    self.end('error',"Unhandled ending_reason: "+ self.ending_reason)
         else:
             self.mon.trace(self,' - current is None ' +  self.mon.pretty_inst(self.current_player) + ' ' + self.ending_reason)
 
@@ -578,7 +578,7 @@ class Show(object):
                 index = self.showlist.index_of_show(next_track['sub-show'])
                 if index <0:
                     self.mon.err(self,"Show not found in showlist: "+ next_track['sub-show'])
-                    self.end('error','show not in showlist')
+                    self.end('error','show not in showlist: '+ next_track['sub-show'])
                 else:
                     target=self.showlist.show(index)
                     ref=target['show-ref']
@@ -685,7 +685,7 @@ class Show(object):
             minutes=fields[1]
             hours=fields[0]
         if not secs.isdigit() or not minutes.isdigit() or not hours.isdigit():
-            return 'error','bad time',0
+            return 'error','bad time: '+ line,0
         else:
             return 'normal','',3600*long(hours)+60*long(minutes)+long(secs)
 

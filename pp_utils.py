@@ -48,6 +48,7 @@ class Monitor(object):
     m_trace_instance =32 # trace with id of instances of player and showers
     m_leak = 64 # memory leak monitoring
     m_stats = 128  #statistics
+    m_sched = 256 #  time of day scheduler
 
     classes  = []
     
@@ -92,7 +93,7 @@ class Monitor(object):
   
     def newline(self,num):
         if Monitor.manager is False:
-            if Monitor.log_level & ~ (Monitor.m_warn|Monitor.m_err|Monitor.m_fatal) != 0:
+            if Monitor.log_level & ~ (Monitor.m_warn|Monitor.m_err|Monitor.m_fatal|Monitor.m_sched) != 0:
                 for i in range(0,num):
                     print
 
@@ -119,6 +120,15 @@ class Monitor(object):
         if self.enabled(r_class,Monitor.m_warn) is True:     
             print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",self.pretty_inst(caller) +": ", text
             Monitor.ofile.write (" WARNING: " + self.pretty_inst(caller)+ ":  " + text + "\n")
+
+    def sched(self,caller,text):
+        r_class=caller.__class__.__name__
+        if self.enabled(r_class,Monitor.m_sched) is True:
+            print time.strftime("%Y-%m-%d %H:%M") +" "+r_class+": " + text
+            # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.pretty_inst(caller)+": " + text
+            Monitor.ofile.write (time.strftime("%Y-%m-%d %H:%M") + " " + self.pretty_inst(caller)+": " + text+"\n")
+
+
 
     def log(self,caller,text):
         r_class=caller.__class__.__name__

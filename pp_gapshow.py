@@ -80,14 +80,14 @@ class GapShow(Show):
         reason,message,self.show_timeout = Show.calculate_duration(self,self.show_params['show-timeout'])
         if reason=='error':
             self.mon.err(self,'ShowTimeout has bad time: '+self.show_params['show-timeout'])
-            self.end('error','show timeout bad time')
+            self.end('error','ShowTimeout has bad time: '+self.show_params['show-timeout'])
             
         self.track_count_limit = int(self.show_params['track-count-limit'])
             
         reason,message,self.interval = Show.calculate_duration (self, self.show_params['interval'])
         if reason=='error':
             self.mon.err(self,'Interval has bad time: '+self.show_params['interval'])
-            self.end('error','interval bad time')
+            self.end('error','Interval has bad time: '+self.show_params['interval'])
             
         # delete eggtimer started by the parent
         if self.previous_shower is not None:
@@ -266,7 +266,7 @@ class GapShow(Show):
             
         else:
             self.mon.err(self,"Unknown trigger: "+ self.show_params['trigger-start-type'])
-            self.end('error',"Unknown trigger type")
+            self.end('error',"Unknown trigger: "+ self.show_params['trigger-start-type'])
 
 
     # timer for repeat=interval
@@ -638,7 +638,7 @@ class GapShow(Show):
                         
                 else:
                     self.mon.err(self,"Unhandled playing event at end of list: "+self.show_params['sequence'] +' with ' + self.show_params['repeat']+" of "+ self.show_params['trigger-end-param'])
-                    self.end('error',"Unhandled playing event")
+                    self.end('error',"Unhandled playing event at end of list: "+self.show_params['sequence'] +' with ' + self.show_params['repeat']+" of "+ self.show_params['trigger-end-param'])
                 
             elif self.medialist.at_end() is False:
                 # nothing special just do the next track
@@ -648,6 +648,7 @@ class GapShow(Show):
             else:
                 # unhandled state
                 self.mon.err(self,"Unhandled playing event: "+self.show_params['sequence'] +' with ' + self.show_params['repeat']+" of "+ self.show_params['trigger-end-param'])
+                self.end('error',"Unhandled playing event: "+self.show_params['sequence'] +' with ' + self.show_params['repeat']+" of "+ self.show_params['trigger-end-param'])
 
    
    
@@ -668,7 +669,7 @@ class GapShow(Show):
             reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
             if reason=='error':
                 self.mon.err(self,message)
-                self.end('error',"error in controls")
+                self.end('error',"error in controls: " + message)
                 return
 
             # print 'controls',reason,self.show_params['controls'],self.controls_list

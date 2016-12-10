@@ -4,6 +4,11 @@ import ConfigParser
 from Tkinter import Toplevel, Scrollbar,Text
 from Tkinter import VERTICAL,RIGHT,LEFT,BOTH,Y,NORMAL,END,DISABLED
 
+"""
+1/12/2016 - warn if foreign files in profile rather than abort
+
+"""
+
 class Validator(object):
 
     def validate_profile(self, root, pp_dir, pp_home, pp_profile,editor_issue,display):
@@ -53,9 +58,7 @@ class Validator(object):
         v_media_lists = []
         for medialist_file in os.listdir(pp_profile):
             if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
-                self.result.display('f',"Invalid medialist in profile: "+ medialist_file)
-                self.result.display('t', "Validation Aborted")
-                return False
+                self.result.display('w',"Non medialist file in profile: "+ medialist_file)
                 
             if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
                 self.result.display('t',"\nChecking medialist '"+medialist_file+"'")

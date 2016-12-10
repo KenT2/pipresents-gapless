@@ -275,7 +275,7 @@ class BrowserPlayer(Player):
                 self.tick_timer=self.canvas.after(10,self.start_unload_state_machine)
             else:
                 self.mon.err(self,'illegal state in unload method ' + self.play_state)
-                self.end('error','illegal state in unload method')           
+                self.end('error','illegal state in unload method '  + self.play_state)           
 
 
     def unload_state_machine(self):
@@ -452,13 +452,13 @@ class BrowserPlayer(Player):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
-            return 'error','no type field','',False,0,0,0,0
+            return 'error','no type field in '+ line,'',False,0,0,0,0
             
 
         #deal with warp which has 1 or 5  arguments
         # check basic syntax
         if  fields[0] <>'warp':
-            return 'error','not a valid type','',False,0,0,0,0
+            return 'error','not a valid type:'+ fields[0],'',False,0,0,0,0
         if len(fields) not in (1,5):
             return 'error','wrong number of coordinates for warp','',False,0,0,0,0
 
@@ -466,7 +466,7 @@ class BrowserPlayer(Player):
         if len(fields) == 5:
             #window is specified
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                return 'error','coordinates are not positive integers','',False,0,0,0,0
+                return 'error','window coordinates are not positive integers ' + line,'',False,0,0,0,0
             has_window=True
             return 'normal','',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4])
         else:

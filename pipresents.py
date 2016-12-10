@@ -8,6 +8,10 @@ feb 2016 added statistics logging
 12 June 2016 version 1.3.1g
 2/11/2016 - Display error if Pi Presents is run with sudo
 2/11/2016 - delete omxplayer dbus files from /tmp
+24/11/2016 - remove delete omxplayer dbus files from /tmp
+24/11/2016 = wait for network connection. Warn if no network connection if of Tod scheduler is to be used.
+24/11/2016  - added date and time that PP started to log, also time after connection confirmed.
+27/11/2016 - added email at start and exit on error/abort.
 
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
 on the Raspberry Pi.
@@ -22,13 +26,14 @@ See readme.md and manual.pdf for instructions.
 import os
 import sys
 import signal
-from subprocess import call
+from subprocess import call, check_output
 import time
 import gc
 import traceback
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
+import ConfigParser
 
 
 from pp_options import command_options
@@ -43,6 +48,7 @@ from pp_utils import StopWatch
 from pp_animate import Animate
 from pp_gpiodriver import GPIODriver
 from pp_oscdriver import OSCDriver
+from pp_network import Mailer, Network
 
 
 class PiPresents(object):
@@ -88,6 +94,7 @@ class PiPresents(object):
 
         # uncomment to enable control of logging from within a class
         # Monitor.enable_in_code = True # enables control of log level in the code for a class  - self.mon.set_log_level()
+
         
         # make a shorter list to log/trace only some classes without using enable_in_code.
         Monitor.classes  = ['PiPresents',
@@ -98,28 +105,31 @@ class PiPresents(object):
                             'MediaList','LiveList','ShowList',
                             'PathManager','ControlsManager','ShowManager','PluginManager',
                             'MplayerDriver','OMXDriver','UZBLDriver',
-                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver'
+                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver',
+                            'Network','Mailer'
                             ]
+        
 
-        # Monitor.classes=['VideoPlayer','Player','OMXDriver']
+        # Monitor.classes=['PiPresents','MediaShow','GapShow','Show','VideoPlayer','Player','OMXDriver']
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])
         Monitor.manager = self.options['manager']
         # print self.options['manager']
-        self.mon.newline(3)    
-        self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue)
+        self.mon.newline(3)
+        self.mon.sched (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue + ' at '+time.strftime("%Y-%m-%d %H:%M.%S"))
+        self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue+ ' at '+time.strftime("%Y-%m-%d %H:%M.%S"))
         # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
-        if os.geteuid() == 0:
-            self.mon.err(self,'Do not run Pi Presents with sudo')
-            exit(102)
-        
-        user=os.getenv('USER')
 
-        self.mon.log(self,'User is: '+ user)
-        # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME')) # does not work
-        # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))   # does not work
+        # log versions of Raspbian and omxplayer, and GPU Memory
+        with open("/boot/issue.txt") as file:
+            self.mon.log(self,'\nRaspbian: '+file.read())
+
+
+        self.mon.log(self,'\n'+check_output(["omxplayer", "-v"]))
+        self.mon.log(self,'\nGPU Memory: '+check_output(["vcgencmd", "get_mem", "gpu"]))
+        
 
         # optional other classes used
         self.root=None
@@ -131,13 +141,49 @@ class PiPresents(object):
         self.osc_enabled=False
         self.gpio_enabled=False
         self.tod_enabled=False
+        self.email_enabled=False
+
+
+        if os.geteuid() == 0:
+            self.mon.err(self,'Do not run Pi Presents with sudo')
+            self.end('error','Do not run Pi Presents with sudo')
+
+        
+        user=os.getenv('USER')
+
+        self.mon.log(self,'User is: '+ user)
+        # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME')) # does not work
+        # self.mon.log(self,"os.path.expanduser('~') -  user home directory: " + os.path.expanduser('~'))   # does not work
+
+
+
+        # check network is available
+        self.network_connected=False
+        self.network_details=False
+        self.interface=''
+        self.ip=''
+        self.unit=''
+        
+        # sets self.network_connected and self.network_details
+        self.init_network()
+
+        
+        # start the mailer and send email when PP starts
+        self.email_enabled=False
+        if self.network_connected is True:
+            self.init_mailer()
+            if self.email_enabled is True and self.mailer.email_at_start is True:
+                subject= '[Pi Presents] ' + self.unit + ': PP Started on ' + time.strftime("%Y-%m-%d %H:%M")
+                message = time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
+                self.send_email('start',subject,message) 
+
          
         # get profile path from -p option
         if self.options['profile'] != '':
             self.pp_profile_path="/pp_profiles/"+self.options['profile']
         else:
             self.mon.err(self,"Profile not specified in command ")
-            self.end('error','No profile in command')
+            self.end('error','Profile not specified with the commands -p option')
         
        # get directory containing pp_home from the command,
         if self.options['home']  == "":
@@ -161,16 +207,17 @@ class PiPresents(object):
             self.mon.log(self,"Found Requested Home Directory, using pp_home at: " + home)
         else:
             self.mon.err(self,"Failed to find pp_home directory at " + home)
-            self.end('error','Failed to find pp_home')
+            self.end('error',"Failed to find pp_home directory at " + home)
 
 
         # check profile exists
         self.pp_profile=self.pp_home+self.pp_profile_path
         if os.path.exists(self.pp_profile):
+            self.mon.sched(self,"Running profile: " + self.pp_profile_path)
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:
             self.mon.err(self,"Failed to find requested profile: "+ self.pp_profile)
-            self.end('error','Failed to find profile')
+            self.end('error',"Failed to find requested profile: "+ self.pp_profile)
 
         self.mon.start_stats(self.options['profile'])
         
@@ -188,12 +235,12 @@ class PiPresents(object):
             self.showlist.open_json(self.showlist_file)
         else:
             self.mon.err(self,"showlist not found at "+self.showlist_file)
-            self.end('error','showlist not found')
+            self.end('error',"showlist not found at "+self.showlist_file)
 
         # check profile and Pi Presents issues are compatible
         if float(self.showlist.sissue()) != float(self.pipresents_issue):
-            self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents, must exit")
-            self.end('error','wrong version of profile')
+            self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents")
+            self.end('error',"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents")
 
 
         # get the 'start' show from the showlist
@@ -203,10 +250,8 @@ class PiPresents(object):
             self.starter_show=self.showlist.selected_show()
         else:
             self.mon.err(self,"Show [start] not found in showlist")
-            self.end('error','start show not found')
+            self.end('error',"Show [start] not found in showlist")
 
-        if self.starter_show['start-show']=='':
-             self.mon.warn(self,"No Start Shows in Start Show")       
 
 # ********************
 # SET UP THE GUI
@@ -253,7 +298,7 @@ class PiPresents(object):
             self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))
             self.root.attributes('-zoomed','1')
 
-        # canvs cover the whole screen whatever the size of the window. 
+        # canvas cover the whole screen whatever the size of the window. 
         self.canvas_height=self.screen_height
         self.canvas_width=self.screen_width
   
@@ -293,14 +338,14 @@ class PiPresents(object):
         # use keyboard driver to bind keys to symbolic names and to set up callback
         kbd=KbdDriver()
         if kbd.read(pp_dir,self.pp_home,self.pp_profile) is False:
-            self.end('error','cannot find or error in keys.cfg')
+            self.end('error','cannot find, or error in keys.cfg')
         kbd.bind_keys(self.root,self.handle_input_event)
 
         self.sr=ScreenDriver()
         # read the screen click area config file
         reason,message = self.sr.read(pp_dir,self.pp_home,self.pp_profile)
         if reason == 'error':
-            self.end('error','cannot find screen.cfg')
+            self.end('error','cannot find, or error in screen.cfg')
 
 
         # create click areas on the canvas, must be polygon as outline rectangles are not filled as far as find_closest goes
@@ -317,11 +362,11 @@ class PiPresents(object):
         self.shutdown_required=False
         self.exitpipresents_required=False
 
-	# delete omxplayer dbus files
-	if os.path.exists("/tmp/omxplayerdbus.{}".format(user)):
-		os.remove("/tmp/omxplayerdbus.{}".format(user))
-	if os.path.exists("/tmp/omxplayerdbus.{}.pid".format(user)):
-        	os.remove("/tmp/omxplayerdbus.{}.pid".format(user))
+        # delete omxplayer dbus files
+        # if os.path.exists("/tmp/omxplayerdbus.{}".format(user)):
+            # os.remove("/tmp/omxplayerdbus.{}".format(user))
+        # if os.path.exists("/tmp/omxplayerdbus.{}.pid".format(user)):
+            # os.remove("/tmp/omxplayerdbus.{}.pid".format(user))
         
         # kick off GPIO if enabled by command line option
         self.gpio_enabled=False
@@ -352,32 +397,50 @@ class PiPresents(object):
             self.mon.err(self,message)
             self.end('error',message)
 
+
         # Init OSCDriver, read config and start OSC server
         self.osc_enabled=False
-        if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+ os.sep + 'osc.cfg'):
-            self.oscdriver=OSCDriver()
-            reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
-            if reason == 'error':
-                self.end('error',message)
-            else:
-                self.osc_enabled=True
-                self.root.after(1000,self.oscdriver.start_server())
+        if self.network_connected is True:
+            if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+ os.sep + 'osc.cfg'):
+                self.oscdriver=OSCDriver()
+                reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
+                if reason == 'error':
+                    self.end('error',message)
+                else:
+                    self.osc_enabled=True
+                    self.root.after(1000,self.oscdriver.start_server())
 
-        # and run the start shows
-        self.run_start_shows()
+        
+        # enable ToD scheduler if schedule exists      
+        if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):                
+            self.tod_enabled = True
+        else:
+            self.tod_enabled=False
 
-       # set up the time of day scheduler including catchup         
-        self.tod_enabled=False
-        if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):
-            # kick off the time of day scheduler which may run additional shows
+        # warn if the network not available when ToD required
+
+        if self.tod_enabled is True and self.network_connected is False:
+            self.mon.warn(self,'Network not connected  so Time of Day scheduler may be using the internal clock')
+
+        # warn about start shows and scheduler
+
+        if self.starter_show['start-show']=='' and self.tod_enabled is False:
+            self.mon.sched(self,"No Start Shows in Start Show and no shows scheduled") 
+            self.mon.warn(self,"No Start Shows in Start Show and no shows scheduled")
+
+        if self.starter_show['start-show'] !='' and self.tod_enabled is True:
+            self.mon.sched(self,"Start Shows in Start Show and shows scheduled - conflict?") 
+            self.mon.warn(self,"Start Shows in Start Show and shows scheduled - conflict?")
+
+        # run the start shows
+        self.run_start_shows()           
+
+        # kick off the time of day scheduler which may run additional shows
+        if self.tod_enabled is True:
             self.tod=TimeOfDay()
             self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
-            self.tod_enabled = True
+            self.tod.poll()            
 
-
-        # then start the time of day scheduler
-        if self.tod_enabled is True:
-            self.tod.poll()
 
         # start Tkinters event loop
         self.root.mainloop( )
@@ -388,7 +451,7 @@ class PiPresents(object):
         if len(fields)!=2:
             return 'error','do not understand --fullscreen comand option',0,0
         elif fields[0].isdigit()  is False or fields[1].isdigit()  is False:
-            return 'error','dimensions are not positive integers in ---fullscreen',0,0
+            return 'error','dimensions are not positive integers in --fullscreen',0,0
         else:
             return 'normal','',int(fields[0]),int(fields[1])
         
@@ -411,7 +474,7 @@ class PiPresents(object):
 # User inputs
 # ********************
     # handles one command provided as a line of text
-    def handle_command(self,command_text):
+    def handle_command(self,command_text,source=''):
         self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
             return
@@ -429,6 +492,7 @@ class PiPresents(object):
             show_ref=''
             
         if show_command in ('open','close'):
+            self.mon.sched(self, command_text + ' received from show:'+source)
             if self.shutdown_required is False:
                 reason,message=self.show_manager.control_a_show(show_ref,show_command)
             else:
@@ -455,10 +519,10 @@ class PiPresents(object):
         return
 
     def e_all_shows_ended_callback(self):
-            self.all_shows_ended_callback('normal','no shows running')
+        self.all_shows_ended_callback('normal','no shows running')
 
     def e_shutdown_pressed(self):
-            self.shutdown_pressed('now')
+        self.shutdown_pressed('now')
 
 
     def e_osc_handle_output_event(self,line):
@@ -581,27 +645,154 @@ class PiPresents(object):
         # gc.collect()
         # print gc.garbage
         if reason == 'killed':
+            if self.email_enabled is True and self.mailer.email_on_terminate is True:
+                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: aborted'
+                message = time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
+                self.send_email(reason,subject,message)
+            self.mon.sched(self, "Pi Presents Aborted, au revoir\n")
             self.mon.log(self, "Pi Presents Aborted, au revoir")
+                          
             # close logging files 
             self.mon.finish()
-            sys.exit(101)     
+            sys.exit(101)
+                          
         elif reason == 'error':
+            if self.email_enabled is True and self.mailer.email_on_error is True:
+                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: error'
+                message_text = 'Error message: '+ message + '\n'+ time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
+                self.send_email(reason,subject,message_text)   
+            self.mon.sched(self, "Pi Presents closing because of error, sorry\n")
             self.mon.log(self, "Pi Presents closing because of error, sorry")
+                          
             # close logging files 
             self.mon.finish()
-            sys.exit(102)            
-        else:
+            sys.exit(102)
+
+        else:           
+            self.mon.sched(self,"Pi Presents  exiting normally, bye\n")
             self.mon.log(self,"Pi Presents  exiting normally, bye")
+            
             # close logging files 
             self.mon.finish()
             if self.shutdown_required is True:
                 # print 'SHUTDOWN'
                 call(['sudo', 'shutdown', '-h', '-t 5','now'])
-                sys.exit(100)
+            sys.exit(100)
+
+
+
+    def init_network(self):
+
+        timeout=int(self.options['nonetwork'])
+        if timeout== 0:
+            self.network_connected=False
+            self.unit=''
+            self.ip=''
+            self.interface=''
+            return
+        
+        self.network=Network()
+        self.network_connected=False
+
+        # try to connect to network
+        self.mon.log (self, 'Waiting up to '+ str(timeout) + ' seconds for network')
+        success=self.network.wait_for_network(timeout)
+        if success is False:
+            self.mon.warn(self,'Failed to connect to network after ' + str(timeout) + ' seconds')
+            # tkMessageBox.showwarning("Pi Presents","Failed to connect to network so using fake-hwclock")
+            return
+
+        self.network_connected=True
+        self.mon.sched (self, 'Time after network check is '+ time.strftime("%Y-%m-%d %H:%M.%S"))
+        self.mon.log (self, 'Time after network check is '+ time.strftime("%Y-%m-%d %H:%M.%S"))
+
+        # Get web configuration
+        self.network_details=False
+        network_options_file_path=self.pp_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
+        if not os.path.exists(network_options_file_path):
+            self.mon.warn(self,"pp_web.cfg not found at "+network_options_file_path)
+            return
+        self.mon.log(self, 'Found pp_web.cfg in ' + network_options_file_path)
+
+        self.network.read_config(network_options_file_path)
+        self.unit=self.network.unit
+
+        # get interface and IP details of preferred interface
+        self.interface,self.ip = self.network.get_preferred_ip()
+        if self.interface == '':
+            self.network_connected=False
+            return
+        self.network_details=True
+        self.mon.log (self, 'Network details ' + self.unit + ' ' + self.interface + ' ' +self.ip)
+
+
+    def init_mailer(self):
+
+        self.email_enabled=False
+        email_file_path = self.pp_dir+os.sep+'pp_config'+os.sep+'pp_email.cfg'
+        if not os.path.exists(email_file_path):
+            self.mon.log(self,'pp_email.cfg not found at ' + email_file_path)
+            return
+        self.mon.log(self,'Found pp_email.cfg at ' + email_file_path)
+        self.mailer=Mailer()
+        self.mailer.read_config(email_file_path)
+        # all Ok so can enable email if config file allows it.
+        if self.mailer.email_allowed is True:
+            self.email_enabled=True
+            self.mon.log (self,'Email Enabled')
+
+
+##    def send_email(self,reason,subject,message):
+##        success, error = self.mailer.connect()
+##        if success is False:
+##            self.mon.log(self, 'Failed to connect to email SMTP server ' + str(error))
+##            return
+##        else:
+##            success,error = self.mailer.send(subject,message)
+##            if success is False:
+##                self.mon.log(self, 'Failed to send email: ' + str(error))
+##                self.mailer.disconnect()
+##                return
+##            else:
+##                self.mon.log(self, 'Sent email for ' + reason)
+##                self.mailer.disconnect()
+##                return
+
+
+
+    def send_email(self,reason,subject,message):
+        if self.try_connect() is False:
+            return False
+        else:
+            success,error = self.mailer.send(subject,message)
+            if success is False:
+                self.mon.log(self, 'Failed to send email: ' + str(error))
+                success,error=self.mailer.disconnect()
+                if success is False:
+                    self.mon.log(self,'Failed disconnect after send:' + str(error))
+                return False
             else:
-                sys.exit(100)
+                self.mon.log(self,'Sent email for ' + reason)
+                success,error=self.mailer.disconnect()
+                if success is False:
+                    self.mon.log(self,'Failed disconnect from email server ' + str(error))
+                return True
 
 
+    def try_connect(self):
+        tries=1
+        while True:
+            success, error = self.mailer.connect()
+            if success is True:
+                return True
+            else:
+                self.mon.log(self,'Failed to connect to email SMTP server ' + str(tries) +  '\n ' +str(error))
+                tries +=1
+                if tries >5:
+                    self.mon.log(self,'Failed to connect to email SMTP server after ' + str(tries))
+                    return False
+
+                
     
     # tidy up all the peripheral bits of Pi Presents
     def tidy_up(self):

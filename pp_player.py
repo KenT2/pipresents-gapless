@@ -143,7 +143,7 @@ class Player(object):
             if line.strip() == "":
                 continue
             # print 'show control command: ',line
-            self.command_callback(line)
+            self.command_callback(line, self.show_params['show-ref'])
 
 
 

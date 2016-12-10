@@ -3,6 +3,10 @@ import json
 import ConfigParser
 import remi.gui as gui
 
+"""
+1/12/2016 - warn if foreign files in profile rather than abort
+
+"""
 
 
 class Validator(gui.GenericDialog):
@@ -91,9 +95,7 @@ class Validator(gui.GenericDialog):
         v_media_lists = []
         for medialist_file in os.listdir(pp_profile):
             if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
-                self.display('f',"Invalid medialist in profile: "+ medialist_file)
-                self.display('t', "Validation Aborted")
-                return False
+                self.display('w',"Non medialist file in profile: "+ medialist_file)
                 
             if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
                 self.display('t',"\nChecking medialist '"+medialist_file+"'")

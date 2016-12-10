@@ -1,3 +1,22 @@
+Version 1.3.1i 11/12/2016
+
+enhanced - The Manager now automatically detects the IP address of the Pi which can then be sent by email to the remote user.
+enhanced - email alerts from Manager and Pi Presents
+enhanced  - extend Manager for managing livetracks, deleting media, downloading logs
+enhanced - improved logging to debug time of day scheduler
+enhanced - Manager and Pi Presents (optionally and if ToD scheduler is to be used) now  wait until the network is available
+enhanced - log now reports version of Raspbian and omxplayer, and GPU memory
+enhanced - added alsa to video track audio output
+enhanced - warning about shows in start show made dependent on ToD scheduler
+enhanced - In the Manager there is now a link to open a browser tab when running the editor.
+enhanced - In the Manager there is menu option to reboot the Raspberry Pi, primarily for if Pi Presents hangs and cannot be exited.
+enhanced - In the Manager profiles are sorted alphabetically.
+fixed - omxplayer, improve stability again
+fixed - removed deletion of dbus daemon at start
+fixed - editor, do not abort validation if there are media files in the profile, warn instead. 
+fixed - several corner case bugs in Manager
+
+
 Version 1.3.1h 5/11/2016
 Enhanced - When using GPIO it is now not necessary (or possible) to use sudo.
 Enhanced - an event for statistics reporting can now be generated for every track. Out of the box this is commented out in pp_gapshow.py in the function 'start_load_show_loop'

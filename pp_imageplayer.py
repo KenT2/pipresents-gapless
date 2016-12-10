@@ -95,11 +95,11 @@ class ImagePlayer(Player):
         Player.pre_load(self)
 
         # parse the image_window
-        status,self.command,self.has_coords,self.window_x1,self.window_y1,self.window_x2,self.window_y2,self.image_filter=self.parse_window(self.image_window)
+        status,message,self.command,self.has_coords,self.window_x1,self.window_y1,self.window_x2,self.window_y2,self.image_filter=self.parse_window(self.image_window)
         if status  == 'error':
-            self.mon.err(self,'image window error: '+self.image_window)
+            self.mon.err(self,'image window error, '+message+ ': '+self.image_window)
             self.play_state='load-failed'
-            self.loaded_callback('error','image window error: '+self.image_window)
+            self.loaded_callback('error','image window error, '+message+ ': '+self.image_window)
             return
  
         # load the plugin, this may modify self.track and enable the plugin drawing to canvas
@@ -365,49 +365,49 @@ class ImagePlayer(Player):
         fields = line.split()
         # check there is a command field
         if len(fields) < 1:
-            return 'error','',False,0,0,0,0,''
+            return 'error','No command field','',False,0,0,0,0,''
             
         # deal with original whch has 0 or 2 arguments
         image_filter=''
         if fields[0] == 'original':
             if len(fields) not in (1,3):
-                return 'error','',False,0,0,0,0,''       
+                return 'error','Original has wrong number of arguments','',False,0,0,0,0,''       
             # deal with window coordinates    
             if len(fields)  ==  3:
                 # window is specified
                 if not (fields[1].isdigit() and fields[2].isdigit()):
-                    return 'error','',False,0,0,0,0,''
+                    return 'error','coordinates are not numbers','',False,0,0,0,0,''
                 has_window=True
-                return 'normal',fields[0],has_window,float(fields[1]),float(fields[2]),0,0,image_filter
+                return 'normal','',fields[0],has_window,float(fields[1]),float(fields[2]),0,0,image_filter
             else:
                 # no window
                 has_window=False 
-                return 'normal',fields[0],has_window,0,0,0,0,image_filter
+                return 'normal','',fields[0],has_window,0,0,0,0,image_filter
 
 
 
         # deal with remainder which has 1, 2, 5 or  6arguments
         # check basic syntax
         if  fields[0] not in ('shrink','fit','warp'):
-            return 'error','',False,0,0,0,0,'' 
+            return 'error','illegal command'+fields[0],'',False,0,0,0,0,'' 
         if len(fields) not in (1,2,5,6):
-            return 'error','',False,0,0,0,0,''
+            return 'error','wrong number of fields' + str(len(fields)),'',False,0,0,0,0,''
         if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            return 'error','',False,0,0,0,0,''
+            return 'error','wrong filter or params'+ fields[5],'',False,0,0,0,0,''
         if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            return 'error','',False,0,0,0,0,''
+            return 'error','wrong filter or params'+ fields[5],'',False,0,0,0,0,''
         
         # deal with window coordinates    
         if len(fields) in (5,6):
             # window is specified
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                return 'error','',False,0,0,0,0,''
+                return 'error','coords are not numbers','',False,0,0,0,0,''
             has_window=True
             if len(fields) == 6:
                 image_filter=fields[5]
             else:
                 image_filter='Image.NEAREST'
-                return 'normal',fields[0],has_window,float(fields[1]),float(fields[2]),float(fields[3]),float(fields[4]),image_filter
+                return 'normal','',fields[0],has_window,float(fields[1]),float(fields[2]),float(fields[3]),float(fields[4]),image_filter
         else:
             # no window
             has_window=False
@@ -415,7 +415,7 @@ class ImagePlayer(Player):
                 image_filter=fields[1]
             else:
                 image_filter='Image.NEAREST'
-            return 'normal',fields[0],has_window,0,0,0,0,image_filter
+            return 'normal','',fields[0],has_window,0,0,0,0,image_filter
             
 
     

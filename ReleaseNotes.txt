@@ -1,3 +1,28 @@
+Version 1.3.1i
+
+* Significant improvements to Remote Management.
+
+    -  The content of pp_web.cfg has changed so do not copy it across from the previous version.
+	There are additional and renamed fields in the manager and manager editable section to add livetracks and change copy to import.
+    Unit has moved to the network section ip has been removed to  be replaced by preferred_interface and force_ip which for most user will need to left blank
+	 
+	- There is a new configuration file pp_email.cfg. Out of the box it disables email alerts, read the manual to set up email alerts.
+
+* Fixes bugs that were causing instability playing videos.
+
+	In 1.3.1g I changed the omxplayer interface to use dbus. 1.3.1h and 1.3.1i improves the stability of this interface. In addition to changes to the code I have found that it is essential to:
+
+      1.  Increase GPU memory from the default 64 MB to 256 MB. This is achieved using the Raspbian menu Preferences>Raspberry Pi Configuration>Performance, increase the 64 to 256.
+
+      2. Use a version of omxplayer dated 23 Sept 2016 or later. Thsi version is in the latest version of Raspbian or can be obtained from here http://omxplayer.sconde.net/ (I recommend keeping Raspbian up to date).
+	  
+	Running Pi Presents with the -d option will produce a log which tells you the version and gpu memory you are currently using
+	
+* A log which is designed to help debuf Time of Day Scheduler problems. Enable with -d 256.
+
+* Other minor improvements, see changelog.txt
+-------------------------------------
+
 Version 1.3.1h
 A bug fix release primarily to improve the reliability of playing videos. 
 

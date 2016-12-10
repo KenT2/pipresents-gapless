@@ -134,7 +134,7 @@ class AudioPlayer(Player):
             self.mon.err(self,"Track file not found: "+ track)
             self.play_state='load-failed'
             if self.loaded_callback is not  None:
-                self.loaded_callback('error','track file not found')
+                self.loaded_callback('error','track file not found: ' + track)
                 return
 
         # just create instance of mplayer don't bother with any pre-load

@@ -76,12 +76,12 @@ class MenuShow(Show):
         reason,message,self.show_timeout=Show.calculate_duration(self,self.show_params['show-timeout'])
         if reason =='error':
             self.mon.err(self,'Show Timeout has bad time: '+self.show_params['show-timeout'])
-            self.end('error','show timeout, bad time')
+            self.end('error','show timeout, bad time: ' + self.show_params['show-timeout'])
 
         reason,message,self.track_timeout=Show.calculate_duration(self,self.show_params['track-timeout'])
         if reason=='error':
             self.mon.err(self,'Track Timeout has bad time: '+self.show_params['track-timeout'])
-            self.end('error','track timeout, bad time')
+            self.end('error','track timeout, bad time: ' + self.show_params['track-timeout'])
             
         # and delete eggtimer
         if self.previous_shower is not None:
@@ -223,7 +223,7 @@ class MenuShow(Show):
         index = self.medialist.index_of_track(self.show_params['menu-track-ref'])
         if index == -1:
                 self.mon.err(self,"'menu-track' not in medialist: " + self.show_params['menu-track-ref'])
-                self.end('error',"menu-track not in medialist: ")
+                self.end('error',"menu-track not in medialist: " + self.show_params['menu-track-ref'])
                 return
         
         #make the medialist available to the menuplayer for cursor scrolling
@@ -251,7 +251,7 @@ class MenuShow(Show):
             reason,message,self.controls_list= self.controlsmanager.get_controls(self.show_params['controls'])
             if reason=='error':
                 self.mon.err(self,message)
-                self.end('error',"error in controls")
+                self.end('error',"error in controls: " + message)
                 return
 
         # load the track or show

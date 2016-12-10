@@ -98,12 +98,12 @@ class RadioButtonShow(Show):
         reason,message,self.show_timeout=Show.calculate_duration(self,self.show_params['show-timeout'])
         if reason =='error':
             self.mon.err(self,'Show Timeout has bad time: '+self.show_params['show-timeout'])
-            self.end('error','show timeout, bad time')
+            self.end('error','show timeout, bad time: '+self.show_params['show-timeout'])
 
         reason,message,self.track_timeout=Show.calculate_duration(self,self.show_params['track-timeout'])
         if reason=='error':
             self.mon.err(self,'Track Timeout has bad time: '+self.show_params['track-timeout'])
-            self.end('error','track timeout, bad time')
+            self.end('error','track timeout, bad time: '+self.show_params['track-timeout'])
             
         
         # and delete eggtimer
@@ -178,7 +178,7 @@ class RadioButtonShow(Show):
                     
             else:
                 self.mon.err(self,"unknown link command: "+ link_op)
-                self.end('error',"unknown link command")
+                self.end('error',"unknown link command: "+ link_op)
 
 
 
@@ -236,7 +236,7 @@ class RadioButtonShow(Show):
             self.start_load_show_loop(self.medialist.track(index))
         else:
             self.mon.err(self,"first-track not found in medialist: "+ self.show_params['first-track-ref'])
-            self.end('error',"first track not found in medialist")
+            self.end('error',"first track not found in medialist: " + self.show_params['first-track-ref'])
 
 
 # *********************
@@ -267,7 +267,7 @@ class RadioButtonShow(Show):
             reason,message,self.links=self.path.parse_links(self.show_params['links'],self.allowed_links)
             if reason == 'error':
                 self.mon.err(self,message + " in show")
-                self.end('error',message)
+                self.end('error',message + " in show")
             
         # load the track or show
         # params - track,, track loaded callback, end eshoer callback,enable_menu
@@ -377,7 +377,7 @@ class RadioButtonShow(Show):
                 self.start_load_show_loop(self.medialist.track(index))
             else:
                 self.mon.err(self,"next track not found in medialist: "+ self.current_track_ref)
-                self.end('error',"next track not found in medialist")
+                self.end('error',"next track not found in medialist: "+ self.current_track_ref)
                     
         else:
             # track ends naturally or is quit so go back to first track

@@ -140,8 +140,10 @@ class OSCDriver(object):
     def prepare_show_command_callback(self,command,args,limit):
         if len(args) == limit:
             if limit !=0:
+                self.mon.sched(self,'Received from OSC: '+ command + ' ' +args[0])
                 self.show_command_callback(command+args[0])
             else:
+                self.mon.sched(self,'Received from OSC: '+ command)
                 self.show_command_callback(command)                
         else:
             self.mon.warn(self,'OSC show command does not have '+limit +' argument - ignoring')  

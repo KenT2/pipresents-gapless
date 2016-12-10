@@ -7,6 +7,8 @@ def command_options():
     """ reads the command line options and returns a dictionary of them"""
     debug_no_d=Monitor.m_fatal|Monitor.m_err|Monitor.m_warn
     debug_d=Monitor.m_fatal|Monitor.m_err|Monitor.m_warn|Monitor.m_log
+    wait_no_w=5
+    wait_w = 0
     parser = argparse.ArgumentParser(description = 'Pi Presents multimedia toolkit')
     parser.add_argument( '-b','--noblank', action='store_true', help='Disable screen blanking.')
     parser.add_argument( '-f','--fullscreen', action='store_true',help='Full Screen')
@@ -17,6 +19,8 @@ def command_options():
     parser.add_argument( '-l','--liveshow', nargs='?', default='', const='',help='Directory1 for live tracks')
     parser.add_argument( '-p','--profile', nargs='?', default='', const='',help='Profile')
     parser.add_argument( '--manager', action='store_true',help='Use With Manager for PiPresents')
+    parser.add_argument( '-n','--nonetwork', nargs='?', default=wait_no_w, const=wait_w,help='Enable wait for network [and time in secs]')
+
     args=parser.parse_args()
     return  vars(args)
 

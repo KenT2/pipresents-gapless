@@ -1,5 +1,10 @@
 #! /usr/bin/env python
 
+"""
+14/11/2016 - automatically find the ip address of the Pi
+1/12/2016 - wait for network before proceeding (for standalone use)
+"""
+
 import os
 import sys
 import ConfigParser
@@ -8,10 +13,10 @@ import copy
 import string
 import remi.gui as gui
 from remi import start, App
+from pp_network import Network
 
 from remi_plus import OKDialog, OKCancelDialog
 from pp_web_edititem import WebEditItem, ColourMap
-
 
 from pp_medialist import MediaList
 from pp_showlist import ShowList
@@ -1123,29 +1128,38 @@ if __name__  ==  "__main__":
         print "Bad Application Directory"
         exit()
 
-    options_file_path=editor_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
-    if not os.path.exists(options_file_path):
-        print 'Web Editor - Cannot find Web Options file'
+    # wait for network to be available
+    network=Network()
+    print 'Waiting for Network'
+    success=network.wait_for_network(10)
+    if success is False:
+        print 'Failed to connect to network after 10 seconds'     
+        exit()   
+
+
+    # check pp_web.cfg
+    editor_options_file_path=editor_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
+    if not os.path.exists(editor_options_file_path):
+        print 'pp_web.cfg not found at ' + editor_options_file_path
+        tkMessageBox.showwarning("Pi Presents Web Editor",'pp_web.cfg not found at ' + editor_options_file_path)
         exit()
 
-    """reads options from options file to interface"""
-    config=ConfigParser.ConfigParser()
-    config.read(options_file_path)
-        
-    ip =config.get('network','ip',0)
-    port=int(config.get('editor','port',0))
-    username=config.get('editor','username',0)
-    password=config.get('editor','password',0)
-    print 'Web Editor Started'
-    # print ip,port, username,password
+    print 'Found pp_web.cfg in ', editor_options_file_path
+
+    # get interface and IP details of preferred interface
+    network.read_config(editor_options_file_path)
+    interface,ip = network.get_preferred_ip()
+    print 'Network details ' + network.unit + ' ' + interface + ' ' + ip
+
+
     # setting up remi debug level 
     #       2=all debug messages   1=error messages   0=no messages
     import remi.server
     remi.server.DEBUG_MODE = 0
 
     # start the web server to serve the Web Editor App
-    start(PPWebEditor,address=ip, port=port,username=username,password=password,
-          multiple_instance=False,enable_file_cache=True,
+    start(PPWebEditor,address=ip, port=network.editor_port,username=network.editor_username,password=network.editor_password,
+          multiple_instance=True,enable_file_cache=True,
           update_interval=0.1, start_browser=False)
 
 
