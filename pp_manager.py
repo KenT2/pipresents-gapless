@@ -600,7 +600,7 @@ class PPManager(App):
     def on_media_upload_clicked(self):
         self.media_upload_dialog=gui.GenericDialog(width=500,height=200,title='<b>Upload Media</b>',
                                                    message='Select Media to Upload',autohide_ok=False)
-        self.media_upload_button=gui.FileUploader("",width=250,height=30,multiple_selection_allowed=True)
+        self.media_upload_button=gui.FileUploader(self.media_dir+'/',width=250,height=30,multiple_selection_allowed=True)
         self.media_upload_button.set_on_success_listener(self,'on_media_upload_success')
         self.media_upload_button.set_on_failed_listener(self,'on_media_upload_failed')
         self.media_upload_status=gui.Label('', width=450, height=30)
@@ -622,6 +622,10 @@ class PPManager(App):
     #manage
 
     def on_media_manage_clicked(self):
+        media_items = os.listdir(self.media_dir) 
+        if len(media_items) ==0:
+            self.update_status('FAILED: Media folder empty')
+            return
         self.manage_media_dialog=FileManager("Manage Media",self.media_dir,self.finished_manage_media)
         self.manage_media_dialog.show(self)
 
@@ -687,7 +691,7 @@ class PPManager(App):
     def on_livetracks_upload_clicked(self):
         self.livetracks_upload_dialog=gui.GenericDialog(width=500,height=200,title='<b>Upload Live Tracks</b>',
                                                    message='Select Live Tracks to Upload',autohide_ok=False)
-        self.livetracks_upload_button=gui.FileUploader('',width=250,height=30,multiple_selection_allowed=True)
+        self.livetracks_upload_button=gui.FileUploader(self.livetracks_dir+'/',width=250,height=30,multiple_selection_allowed=True)
         self.livetracks_upload_button.set_on_success_listener(self,'on_livetracks_upload_success')
         self.livetracks_upload_button.set_on_failed_listener(self,'on_livetracks_upload_failed')
         self.livetracks_upload_status=gui.Label('', width=450, height=30)
@@ -709,6 +713,10 @@ class PPManager(App):
     #manage
 
     def on_livetracks_manage_clicked(self):
+        media_items = os.listdir(self.livetracks_dir) 
+        if len(media_items) ==0:
+            self.update_status('FAILED: Live Tracks folder empty')
+            return
         self.manage_livetracks_dialog=FileManager("Manage Live Tracks",self.livetracks_dir,self.finished_manage_livetracks)
         self.manage_livetracks_dialog.show(self)
 
@@ -1078,11 +1086,9 @@ class FileManager(gui.GenericDialog):
             self.set_on_confirm_dialog_listener(self,'on_media_manage_dialog_confirm')
             
             self.display_media()
-
             return None
-
         else:
-            OKDialog(self.title, 'Error: Directory Empty').show(self)
+            return None
         
 
     def on_refresh_media_pressed(self):
