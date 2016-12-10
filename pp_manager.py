@@ -11,6 +11,7 @@
 20/11/2016 - sorted profiles display
 20/11/2016 - Add livetracks, logs, and email options
 1/12/2016 - corrected bug where options coild be partially changed it cancel hit after an error
+10/12/2016 - fix email on abort bug after upload
 """
 
 import remi.gui as gui
@@ -472,10 +473,10 @@ class PPManager(App):
         self.email_on_error_field.set_on_enter_listener(self,'dummy_enter')
         self.options_email_dialog.add_field_with_label('email_on_error_field','Email on Error',self.email_on_error_field)
   
-        self.email_on_abort_field= gui.TextInput(width=200, height=30)
-        self.email_on_abort_field.set_text(self.mailer.config.get('email-editable','email_on_abort'))
-        self.email_on_abort_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_on_abort_field','Email on Abort',self.email_on_abort_field)
+        self.email_on_terminate_field= gui.TextInput(width=200, height=30)
+        self.email_on_terminate_field.set_text(self.mailer.config.get('email-editable','email_on_terminate'))
+        self.email_on_terminate_field.set_on_enter_listener(self,'dummy_enter')
+        self.options_email_dialog.add_field_with_label('email_on_terminate_field','Email on Terminate',self.email_on_terminate_field)
 
         self.log_on_error_field= gui.TextInput(width=200, height=30)
         self.log_on_error_field.set_text(self.mailer.config.get('email-editable','log_on_error'))
@@ -515,8 +516,8 @@ class PPManager(App):
             self.options_error.set_text('ERROR: Email on Error must be Yes or No')
             return
 
-        email_on_abort=self.options_email_dialog.get_field('email_on_abort_field').get_value()
-        if email_on_abort not in ('yes','no'):   
+        email_on_terminate=self.options_email_dialog.get_field('email_on_terminate_field').get_value()
+        if email_on_terminate not in ('yes','no'):   
             self.options_error.set_text('ERROR: Email on Abort must be Yes or No')
             return
 
@@ -531,7 +532,7 @@ class PPManager(App):
         self.mailer.email_with_ip = True if email_with_ip == 'yes' else False
         self.mailer.email_at_start = True if email_at_start == 'yes' else False
         self.mailer.email_on_error = True if email_on_error == 'yes' else False
-        self.mailer.email_on_abort = True if email_on_abort == 'yes' else False
+        self.mailer.email_on_terminate = True if email_on_terminate == 'yes' else False
         self.mailer.log_on_error = True if log_on_error == 'yes' else False
         self.mailer.save_config(self.email_options_file_path)
             

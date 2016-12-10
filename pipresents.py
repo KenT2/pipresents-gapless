@@ -646,11 +646,11 @@ class PiPresents(object):
         # print gc.garbage
         if reason == 'killed':
             if self.email_enabled is True and self.mailer.email_on_terminate is True:
-                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: aborted'
+                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: Terminated'
                 message = time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
                 self.send_email(reason,subject,message)
-            self.mon.sched(self, "Pi Presents Aborted, au revoir\n")
-            self.mon.log(self, "Pi Presents Aborted, au revoir")
+            self.mon.sched(self, "Pi Presents Terminated, au revoir\n")
+            self.mon.log(self, "Pi Presents Terminated, au revoir")
                           
             # close logging files 
             self.mon.finish()
@@ -658,7 +658,7 @@ class PiPresents(object):
                           
         elif reason == 'error':
             if self.email_enabled is True and self.mailer.email_on_error is True:
-                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: error'
+                subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: Error'
                 message_text = 'Error message: '+ message + '\n'+ time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
                 self.send_email(reason,subject,message_text)   
             self.mon.sched(self, "Pi Presents closing because of error, sorry\n")

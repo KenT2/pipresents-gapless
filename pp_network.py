@@ -70,7 +70,7 @@ class Mailer(object):
         self.config.set('email-editable','email_with_ip','yes' if self.email_with_ip is True else'no')
         self.config.set('email-editable','email_at_start','yes'if self.email_at_start is True else 'no')
         self.config.set('email-editable','email_on_error','yes' if self.email_on_error is True else 'no')
-        self.config.set('email-editable','email_on_abort','yes' if self.email_on_abort is True else 'no')
+        self.config.set('email-editable','email_on_terminate','yes' if self.email_on_terminate is True else 'no')
         self.config.set('email-editable','log_on_error','yes' if self.log_on_error is True else 'no')
         with open(options_file, 'wb') as config_file:
             self.config.write(config_file)
