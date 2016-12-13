@@ -7,7 +7,7 @@ http://www.weser-echo.de/README_Vers_1_3.pdf
 This repository contains a beta test version of the next version Pi Presents. The version is a beta as it is likely to have a few bugs and also will be developed further to add new features.
 
 
-TO UPGRADE FROM VERSION 1.2
+TO UPGRADE FROM VERSION 1.2 [PIPRESENTS-NEXT]
 ============================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Before doing so keep a copy of the current Pi Presents and all the profiles:
 
@@ -165,14 +165,13 @@ In either case you can use the tools>update all menu option to update all profil
 
 Lastly you will need to do some manual updating of some of the field values as specified in  ReleaseNotes.txt. Start at the paragraph in releasenotes.txt that introduces version 1.3 and work backwards.
 
-I have started a new thread on the forum for [pipresents-gapless], see below.
 
 
 Requirements
 ============
 Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for videos and images. 
 
-omxplayer requires 128MB of video RAM. 
+if you want to play videos omxplayer requires 256MB of GPU memory. 
 
 
 Bug Reports and Feature Requests
