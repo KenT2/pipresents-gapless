@@ -166,7 +166,7 @@ class LiveList(object):
                 track_file = self.pp_live_dir1 + os.sep + track_file
                 (root_name,leaf)=os.path.split(track_file)
                 if leaf[0] == '.':
-                    break
+                    continue
                 else:
                     (root_file,ext_file)= os.path.splitext(track_file)
                     if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
@@ -177,7 +177,7 @@ class LiveList(object):
                 track_file = self.pp_live_dir2 + os.sep + track_file
                 (root_name,leaf)=os.path.split(track_file)
                 if leaf[0] == '.':
-                    break
+                    continue
                 else:
                     (root_file,ext_file)= os.path.splitext(track_file)
                     if (ext_file.lower() in PPdefinitions.IMAGE_FILES+PPdefinitions.VIDEO_FILES+PPdefinitions.AUDIO_FILES) or (ext_file.lower()=='.cfg'):
