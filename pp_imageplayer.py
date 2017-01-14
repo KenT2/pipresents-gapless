@@ -412,7 +412,7 @@ class ImagePlayer(Player):
             # no window
             has_window=False
             if len(fields) == 2:
-                image_filter=fields[1]
+                image_filter='Image.'+fields[1]
             else:
                 image_filter='Image.NEAREST'
             return 'normal','',fields[0],has_window,0,0,0,0,image_filter
