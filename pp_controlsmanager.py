@@ -59,7 +59,7 @@ class ControlsManager(object):
             return "incorrect number of fields in control "+line,['','']
         symbol=fields[0]
         operation=fields[1]
-        if operation  in ('stop','play','up','down','pause','exit','null','no-command') or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
+        if operation  in ('stop','play','up','down','pause','exit','null','no-command','pause-on','pause-off','mute','unmute','go') or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':
             return '',[symbol,operation]
         else:
             return "controls, unknown operation in\n "+ line,['','']

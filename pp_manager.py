@@ -16,7 +16,7 @@
 
 import remi.gui as gui
 from remi import start, App
-from remi_plus import OKDialog, OKCancelDialog
+from remi_plus import OKDialog, OKCancelDialog, AdaptableDialog, append_with_label,FileSelectionDialog
 
 import time
 import subprocess
@@ -34,51 +34,67 @@ class PPManager(App):
 
     def __init__(self, *args):
         super(PPManager, self).__init__(*args)
+    
+    def read_options(self,options_file_path):
+        self.options=Options()
+        self.options.read_options(options_file_path)
+        
+        self.pp_home_dir=self.options.pp_home_dir
+
+        self.pp_profiles_offset=self.options.pp_profiles_offset
+        self.pp_profiles_dir=self.options.pp_profiles_dir
+        self.top_dir=self.options.top_dir
+        self.media_dir=self.options.media_dir
+        self.media_offset=self.options.media_offset
+        self.livetracks_dir=self.options.livetracks_dir
+        self.livetracks_offset=self.options.livetracks_offset
+        self.pp_options=self.options.pp_options
+        self.unit=self.options.unit
+        self.editor_port=self.options.editor_port
 
 
     def main(self):
+
+        #create upload and download directories if necessary
+        self.upload_dir='/tmp/pipresents/upload'
+        self.download_dir='/tmp/pipresents/download'
+
+        
         # get directory holding the code
         self.manager_dir=sys.path[0]
             
         if not os.path.exists(self.manager_dir + os.sep + 'pp_manager.py'):
-            print >> sys.stderr, 'Pi Presents Manager - Bad Application Directory'
+            print >> sys.stderr, 'Manager: Bad Application Directory'
             exit()
 
         # object if there is no options file
         self.options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
         if not os.path.exists(self.options_file_path):
-            print >> sys.stderr, 'Pi Presents Manager - Cannot find web options file'
+            print >> sys.stderr, 'Manager: Cannot find web options file'
             exit()
 
         # read the options
-        self.options_config=self.read_options(self.options_file_path)
-        self.get_options(self.options_config)
+        self.read_options(self.options_file_path)
 
         # get interface and IP
         network=Network()
         self.interface, self.ip = network.get_ip()
-        print self.interface, self.ip
+        print 'Manager: Network Details '+ self.interface, self.ip
 
         # create a mailer instance and read mail options
         self.email_options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_email.cfg'
         if not os.path.exists(self.email_options_file_path):
-            print >> sys.stderr, 'Pi Presents Manager - Cannot find email options file'
+            print >> sys.stderr, 'Manager: Cannot find email options file'
             exit()
         self.mailer=Mailer()
         self.mailer.read_config(self.email_options_file_path)
-        print >> sys.stderr,'read email options'
+        print >> sys.stderr,'Manager: read email options from '+self.email_options_file_path
 
-        #create upload directory if necessary
-        self.upload_dir_path=self.pp_home_dir+os.sep+'pp_temp'
-        if not os.path.exists(self.upload_dir_path):
-            os.makedirs(self.upload_dir_path)
-
-        self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
         if not os.path.exists(self.pp_profiles_dir):
-            print >> sys.stderr, 'Profiles directory does not exist: ' + self.pp_profiles_dir
+            print >> sys.stderr, 'Manager: Profiles directory does not exist: ' + self.pp_profiles_dir
             exit()
 
-        print >> sys.stderr, 'Web server started by pp_manager'
+        print >> sys.stderr, 'Manager: Web server started by pp_manager'
 
         #init variables
         self.profile_objects=[]
@@ -92,13 +108,22 @@ class PPManager(App):
 
         mww=550
         # root and frames
-        root = gui.VBox(width=mww,height=600) #10
+
+        root = gui.VBox(width=mww, margin='0px auto') #the margin 0px auto centers the main container
+        root.style['display'] = 'block'
+        root.style['overflow'] = 'hidden'
+        # root = gui.VBox(width=mww,height=600) #10
         top_frame=gui.VBox(width=mww,height=40) #1
         middle_frame=gui.VBox(width=mww,height=500) #5
-        button_frame=gui.HBox(width=250,height=40) #10
+        # middle_frame.style['background-color'] = 'LightGray'
+        button_frame=gui.HBox(width=280,height=30) #10
+
+        menubar=gui.MenuBar(width='100%', height='30px')
+
 
         # menu
-        menu = gui.Menu(width=mww-20, height=30)
+        # menu = gui.Menu(width=mww-20, height=30)
+        menu=gui.Menu(width='100%', height='30px')
 
         miw=70
         # media menu
@@ -106,62 +131,65 @@ class PPManager(App):
         media_import_menu = gui.MenuItem('Import',width=miw, height=30)
         media_upload_menu = gui.MenuItem('Upload',width=miw, height=30)
         media_manage_menu = gui.MenuItem('Manage',width=miw, height=30)
-        media_manage_menu.set_on_click_listener(self, 'on_media_manage_clicked')
-        media_import_menu.set_on_click_listener(self, 'on_media_import_clicked')
-        media_upload_menu.set_on_click_listener(self, 'on_media_upload_clicked')
+        media_manage_menu.set_on_click_listener(self.on_media_manage_clicked)
+        media_import_menu.set_on_click_listener(self.on_media_import_clicked)
+        media_upload_menu.set_on_click_listener(self.on_media_upload_clicked)
 
         # livetracks menu
         livetracks_menu = gui.MenuItem('Live Tracks',width=miw, height=30)        
         livetracks_import_menu = gui.MenuItem('Import',width=miw, height=30)
         livetracks_upload_menu = gui.MenuItem('Upload',width=miw, height=30)
-        livetracks_import_menu.set_on_click_listener(self, 'on_livetracks_import_clicked')
-        livetracks_upload_menu.set_on_click_listener(self, 'on_livetracks_upload_clicked')
+        livetracks_import_menu.set_on_click_listener(self.on_livetracks_import_clicked)
+        livetracks_upload_menu.set_on_click_listener(self.on_livetracks_upload_clicked)
         livetracks_manage_menu = gui.MenuItem('Manage',width=miw, height=30)
-        livetracks_manage_menu.set_on_click_listener(self, 'on_livetracks_manage_clicked')
+        livetracks_manage_menu.set_on_click_listener(self.on_livetracks_manage_clicked)
  
   
         #profile menu
         profile_menu = gui.MenuItem( 'Profile',width=miw, height=30)        
         profile_import_menu = gui.MenuItem('Import',width=miw, height=30)
-        profile_import_menu.set_on_click_listener(self, 'on_profile_import_clicked')
+        profile_import_menu.set_on_click_listener(self.on_profile_import_clicked)
         profile_upload_menu = gui.MenuItem('Upload',width=miw, height=30)
-        profile_upload_menu.set_on_click_listener(self, 'on_profile_upload_clicked')
+        profile_upload_menu.set_on_click_listener(self.on_profile_upload_clicked)
         profile_download_menu = gui.MenuItem('Download',width=miw, height=30)
-        profile_download_menu.set_on_click_listener(self, 'on_profile_download_clicked')
+        profile_download_menu.set_on_click_listener(self.on_profile_download_clicked)
+        profile_manage_menu = gui.MenuItem('Manage',width=miw, height=30)
+        profile_manage_menu.set_on_click_listener(self.on_profiles_manage_clicked)
 
         #logs menu
         logs_menu = gui.MenuItem( 'Logs',width=miw, height=30)  
         log_download_menu = gui.MenuItem('Download Log',width=miw + 80, height=30)
-        log_download_menu.set_on_click_listener(self, 'on_log_download_clicked')
+        log_download_menu.set_on_click_listener(self.on_log_download_clicked)
         stats_download_menu = gui.MenuItem('Download Stats',width=miw + 80, height=30)
-        stats_download_menu.set_on_click_listener(self, 'on_stats_download_clicked')
+        stats_download_menu.set_on_click_listener(self.on_stats_download_clicked)
         
         # editor menu
         editor_menu=gui.MenuItem('Editor',width=miw,height=30)
         editor_run_menu=gui.MenuItem('Run',width=miw,height=30)
-        editor_run_menu.set_on_click_listener(self,'on_editor_run_menu_clicked')
+        editor_run_menu.set_on_click_listener(self.on_editor_run_menu_clicked)
         editor_exit_menu=gui.MenuItem('Exit',width=miw,height=30)
-        editor_exit_menu.set_on_click_listener(self,'on_editor_exit_menu_clicked')  
+        editor_exit_menu.set_on_click_listener(self.on_editor_exit_menu_clicked)  
 
 
         #options menu
         options_menu=gui.MenuItem('Options',width=miw,height=30)
         options_manager_menu=gui.MenuItem('Manager',width=miw,height=30)
-        options_manager_menu.set_on_click_listener(self,'on_options_manager_menu_clicked')
+        options_manager_menu.set_on_click_listener(self.on_options_manager_menu_clicked)
         options_autostart_menu=gui.MenuItem('Autostart',width=miw,height=30)
-        options_autostart_menu.set_on_click_listener(self,'on_options_autostart_menu_clicked')        
+        options_autostart_menu.set_on_click_listener(self.on_options_autostart_menu_clicked)        
         options_email_menu=gui.MenuItem('Email',width=miw,height=30)
-        options_email_menu.set_on_click_listener(self,'on_options_email_menu_clicked')
+        options_email_menu.set_on_click_listener(self.on_options_email_menu_clicked)
 
         # Pi menu
         pi_menu=gui.MenuItem('Pi',width=miw,height=30)
         pi_reboot_menu=gui.MenuItem('Reboot',width=miw,height=30)
-        pi_reboot_menu.set_on_click_listener(self,'pi_reboot_menu_clicked')
-
+        pi_reboot_menu.set_on_click_listener(self.pi_reboot_menu_clicked)
+        pi_shutdown_menu=gui.MenuItem('Shutdown',width=miw,height=30)
+        pi_shutdown_menu.set_on_click_listener(self.pi_shutdown_menu_clicked)
         
         # list of profiles
         self.profile_list = gui.ListView(width=250, height=300)
-        self.profile_list.set_on_selection_listener(self,'on_profile_selected')
+        self.profile_list.set_on_selection_listener(self.on_profile_selected)
 
          
         #status and buttons
@@ -171,15 +199,14 @@ class PPManager(App):
         self.pp_state_display = gui.Label('',width=400, height=20)
         
         self.run_pp = gui.Button('Run',width=80, height=30)
-        self.run_pp.set_on_click_listener(self, 'on_run_button_pressed')
+        self.run_pp.set_on_click_listener(self.on_run_button_pressed)
         
         self.exit_pp = gui.Button('Exit',width=80, height=30)
-        self.exit_pp.set_on_click_listener(self, 'on_exit_button_pressed')
+        self.exit_pp.set_on_click_listener(self.on_exit_button_pressed)
 
         self.refresh = gui.Button('Refresh List',width=120, height=30)
-        self.refresh.set_on_click_listener(self, 'on_refresh_profiles_pressed')
+        self.refresh.set_on_click_listener(self.on_refresh_profiles_pressed)
         
-        self.status = gui.Label('Manager for Pi Presents Started',width=400, height=30)
 
         # Build the layout
 
@@ -189,16 +216,18 @@ class PPManager(App):
         button_frame.append(self.refresh)
         
         # middle frame
+        middle_frame.append(menubar)
         middle_frame.append(self.pp_state_display)
-        middle_frame.append(button_frame)
         middle_frame.append(self.profile_list)
+        middle_frame.append(button_frame)
         middle_frame.append(self.profile_name)
-        middle_frame.append(self.status)
+
 
         # menus
         profile_menu.append(profile_import_menu)
         profile_menu.append(profile_upload_menu)
         profile_menu.append(profile_download_menu)
+        profile_menu.append(profile_manage_menu)
         
         media_menu.append(media_import_menu)
         media_menu.append(media_upload_menu)
@@ -219,7 +248,8 @@ class PPManager(App):
         options_menu.append(options_email_menu)
 
         pi_menu.append(pi_reboot_menu)
-
+        pi_menu.append(pi_shutdown_menu)
+        
         menu.append(profile_menu)
         menu.append(media_menu)
         menu.append(livetracks_menu)
@@ -227,10 +257,12 @@ class PPManager(App):
         menu.append(editor_menu)
         menu.append(options_menu)
         menu.append(pi_menu)
+
+        menubar.append(menu)
         
-        top_frame.append(menu)
+
         
-        root.append(top_frame)
+        # root.append(top_frame)
         root.append(middle_frame)
         
 
@@ -244,19 +276,17 @@ class PPManager(App):
         return root
 
 
-    # Display Status
-
-    def update_status(self,text):
-        self.status.set_text(text)
 
 
     # ******************
     # Pi Reboot
     # ******************
 
-    def pi_reboot_menu_clicked(self):
+    def pi_reboot_menu_clicked(self,widget):
         subprocess.call (['sudo','reboot'])
 
+    def pi_shutdown_menu_clicked(self,widget):
+        subprocess.call (['sudo','shutdown','now','SHUTTING DOWN'])
 
         
     # ******************
@@ -264,369 +294,153 @@ class PPManager(App):
     # ******************
 
 
-    def read_options(self,options_file):
-        """reads options from options file """
-        config=ConfigParser.ConfigParser()
-        config.read(options_file)
-        return config
-    
-
-    def get_options(self,config):
-
-        self.pp_profiles_offset =config.get('manager-editable','profiles_offset',0)
-        self.media_offset =config.get('manager-editable','media_offset',0)
-        self.livetracks_offset =config.get('manager-editable','livetracks_offset',0)
-        self.options = config.get('manager-editable','options',0)
-
-        self.pp_home_dir =config.get('manager','home',0)
-        self.top_dir = config.get('manager','import_top',0)
-        self.unit=config.get('network','unit')
-
-        self.autostart_path=config.get('manager-editable','autostart_path')
-        self.autostart_options = config.get('manager-editable','autostart_options',0)
-
-        self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
-        self.media_dir=self.pp_home_dir+self.media_offset
-        self.livetracks_dir=self.pp_home_dir+self.livetracks_offset
-
-        self.editor_port= config.get('editor','port')
-        # self.print_paths()
-
-
-    def print_paths(self):
-        print 'home',self.pp_home_dir
-        print 'profiles',self.pp_profiles_offset, self.pp_profiles_dir
-        print 'media', self.media_offset, self.media_dir
-        print 'livetracks', self.livetracks_offset, self.livetracks_dir
-        print 'top',self.top_dir
-
-
-
-    def save_options(self,config,options_file):
-        """ save the output of the options edit dialog to file"""
-        
-        config.set('manager-editable','media_offset',self.media_offset)
-        config.set('manager-editable','livetracks_offset',self.livetracks_offset)
-        config.set('manager-editable','profiles_offset',self.pp_profiles_offset)
-        config.set('manager-editable','options',self.options)
-
-        config.set('manager-editable','autostart_path',self.autostart_path)        
-        config.set('manager-editable','autostart_options',self.autostart_options)
-        
-        with open(options_file, 'wb') as config_file:
-            config.write(config_file)
-    
-
-    def on_options_autostart_menu_clicked(self):
-        self.options_autostart_dialog=gui.GenericDialog(width=450,height=300,title='Autostart Options',
-                                            message='Edit then click OK or Cancel',autohide_ok=False)
-             
-
-
-        self.autostart_path_field= gui.TextInput(width=250, height=30)
-        self.autostart_path_field.set_text(self.autostart_path)
-        self.autostart_path_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_autostart_dialog.add_field_with_label('autostart_path_field','Autostart Profile Path',self.autostart_path_field)
-
-         
-        self.autostart_options_field= gui.TextInput(width=250, height=30)
-        self.autostart_options_field.set_text(self.autostart_options)
-        self.autostart_options_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_autostart_dialog.add_field_with_label('autostart_options_field','Autostart Options',self.autostart_options_field)
-
-        self.autostart_error=gui.Label('',width=440,height=30)
-        self.options_autostart_dialog.add_field('autostart_error',self.autostart_error)
-
-        self.options_autostart_dialog.set_on_confirm_dialog_listener(self,'on_options_autostart_dialog_confirm')
-        self.options_autostart_dialog.set_on_cancel_dialog_listener(self,'on_options_autostart_dialog_cancel')
+    def on_options_autostart_menu_clicked(self,widget):
+        self.options_autostart_dialog=AutostartOptionsDialog(self.pp_home_dir,self.pp_profiles_dir)
         self.options_autostart_dialog.show(self)
 
 
-    def on_options_manager_menu_clicked(self):
-        self.options_manager_dialog=gui.GenericDialog(width=450,height=300,title='Manager Options',
-                                                      message='Edit then click OK or Cancel',autohide_ok=False)
-
-        self.media_field= gui.TextInput(width=250, height=30)
-        self.media_field.set_text(self.media_offset)
-        self.media_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_manager_dialog.add_field_with_label('media_field','Media Offset',self.media_field)
-
-        self.livetracks_field= gui.TextInput(width=250, height=30)
-        self.livetracks_field.set_text(self.livetracks_offset)
-        self.livetracks_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_manager_dialog.add_field_with_label('livetracks_field','Live Tracks Offset',self.livetracks_field)
-
-        
-        self.profiles_field= gui.TextInput(width=250, height=30)
-        self.profiles_field.set_text(self.pp_profiles_offset)
-        self.profiles_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_manager_dialog.add_field_with_label('profiles_field','Profiles Offset',self.profiles_field)
-        
-        self.options_field= gui.TextInput(width=250, height=30)
-        self.options_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_field.set_text(self.options)
-        self.options_manager_dialog.add_field_with_label('options_field','Pi Presents Options',self.options_field)
-
-        self.options_error=gui.Label('',width=440,height=30)
-        self.options_manager_dialog.add_field('options_error',self.options_error)
-        
-        self.options_manager_dialog.set_on_confirm_dialog_listener(self,'on_options_manager_dialog_confirm')
-        self.options_manager_dialog.set_on_cancel_dialog_listener(self,'on_options_manager_dialog_cancel')
+    def on_options_manager_menu_clicked(self,widget):
+        self.options_manager_dialog=ManagerOptionsDialog(self.pp_home_dir,self.pp_profiles_dir,
+                                                         callback=self.options_manager_callback)
         self.options_manager_dialog.show(self)
 
-
-    def dummy_enter(self,fred):
-        # fudge to stop enter key making the text disapppear in single line text input
-        pass
-
-
-    def on_options_autostart_dialog_confirm(self):
-        result=self.options_autostart_dialog.get_field('autostart_path_field').get_value()            
-        autostart_profile_path=self.pp_home_dir+os.sep+'pp_profiles'+os.sep+result
-        if not os.path.exists(autostart_profile_path):
-            self.autostart_error.set_text('Profile does not exist: ' + autostart_profile_path)
-            return
-        else:
-            self.autostart_path=result
-
-        self.autostart_options=self.options_autostart_dialog.get_field('autostart_options_field').get_value() 
-
-        self.save_options(self.options_config,self.options_file_path)
-        self.options_autostart_dialog.hide()
-        
-
-    def on_options_autostart_dialog_cancel(self):
-        self.get_options(self.options_config)
-        
-
-    def on_options_manager_dialog_confirm(self):
-        media_offset=self.options_manager_dialog.get_field('media_field').get_value()
-        media_dir=self.pp_home_dir+media_offset
-        if not os.path.exists(media_dir):
-            self.options_error.set_text('Media Directory does not exist: ' + media_dir)
-            return
-        else:
-            self.media_offset=media_offset
-
-        livetracks_offset=self.options_manager_dialog.get_field('livetracks_field').get_value()
-        livetracks_dir=self.pp_home_dir+livetracks_offset
-        if not os.path.exists(livetracks_dir):
-            self.options_error.set_text('Live Tracks Directory does not exist: ' + livetracks_dir)
-            return
-        else:
-            self.livetracks_offset=livetracks_offset
-        
-        result=self.options_manager_dialog.get_field('profiles_field').get_value()
-        pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+result
-        if not os.path.exists(pp_profiles_dir):
-            self.options_error.set_text('Profiles Offset does not exist: ' + pp_profiles_dir)
-            return
-        else:
-            self.pp_profiles_offset = result
-
-        self.options=self.options_manager_dialog.get_field('options_field').get_value() 
-
-        self.save_options(self.options_config,self.options_file_path)
-
-        self.options_manager_dialog.hide()
-        
-        # and display the new list of profiles
-        self.get_options(self.options_config)
+    def options_manager_callback(self):
+        # and display the new list of profiles after editing options
+        self.read_options(self.options_file_path)
         self.display_profiles()
-        
-    def on_options_manager_dialog_cancel(self):
-        self.get_options(self.options_config)
-        
 
-    # ******************
-    # EMAIL OPTIONS
-    # ******************
 
-    def on_options_email_menu_clicked(self):
-        self.options_email_dialog=gui.GenericDialog(width=450,height=700,title='Email Options',
-                                                      message='Edit then click OK or Cancel',autohide_ok=False)
-
-        self.email_allowed_field= gui.TextInput(width=200, height=30)
-        self.email_allowed_field.set_text(self.mailer.config.get('email-editable','email_allowed'))
-        self.email_allowed_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_allowed_field','Allow Email',self.email_allowed_field)
-
-        self.email_to_field= gui.TextInput(width=200, height=90)
-        self.email_to_field.set_text(self.mailer.config.get('email-editable','to'))
-        # self.email_to_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_to_field','To',self.email_to_field)
-
-        self.email_with_ip_field= gui.TextInput(width=200, height=30)
-        self.email_with_ip_field.set_text(self.mailer.config.get('email-editable','email_with_ip'))
-        self.email_with_ip_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_with_ip_field','Email with IP',self.email_with_ip_field)
-
-        self.email_at_start_field= gui.TextInput(width=200, height=30)
-        self.email_at_start_field.set_text(self.mailer.config.get('email-editable','email_at_start'))
-        self.email_at_start_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_at_start_field','Email at Start',self.email_at_start_field)
-
-        self.email_on_error_field= gui.TextInput(width=200, height=30)
-        self.email_on_error_field.set_text(self.mailer.config.get('email-editable','email_on_error'))
-        self.email_on_error_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_on_error_field','Email on Error',self.email_on_error_field)
-  
-        self.email_on_terminate_field= gui.TextInput(width=200, height=30)
-        self.email_on_terminate_field.set_text(self.mailer.config.get('email-editable','email_on_terminate'))
-        self.email_on_terminate_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('email_on_terminate_field','Email on Terminate',self.email_on_terminate_field)
-
-        self.log_on_error_field= gui.TextInput(width=200, height=30)
-        self.log_on_error_field.set_text(self.mailer.config.get('email-editable','log_on_error'))
-        self.log_on_error_field.set_on_enter_listener(self,'dummy_enter')
-        self.options_email_dialog.add_field_with_label('log_on_error_field','Log on Error',self.log_on_error_field)
-  
- 
-        
-        self.options_error=gui.Label('',width=440,height=30)
-        self.options_email_dialog.add_field('options_error',self.options_error)
-        
-        self.options_email_dialog.set_on_confirm_dialog_listener(self,'on_options_email_dialog_confirm')
-        self.options_email_dialog.set_on_cancel_dialog_listener(self,'on_options_email_dialog_cancel')
+    def on_options_email_menu_clicked(self,widget):
+        self.options_email_dialog=EmailOptionsDialog(callback=self.options_email_callback)
         self.options_email_dialog.show(self)
 
-    def on_options_email_dialog_confirm(self):
+    def options_email_callback(self):
+        self.mailer.read_config()
 
-        email_allowed=self.options_email_dialog.get_field('email_allowed_field').get_value()
-        if email_allowed not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Allow Email must be Yes or No')
-            return
-
-        email_to=self.options_email_dialog.get_field('email_to_field').get_value()
-
-        email_with_ip=self.options_email_dialog.get_field('email_with_ip_field').get_value()
-        if email_with_ip not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Email with IP must be Yes or No')
-            return
-
-        email_at_start=self.options_email_dialog.get_field('email_at_start_field').get_value()
-        if email_at_start not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Email at Start must be Yes or No')
-            return
-
-        email_on_error=self.options_email_dialog.get_field('email_on_error_field').get_value()
-        if email_on_error not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Email on Error must be Yes or No')
-            return
-
-        email_on_terminate=self.options_email_dialog.get_field('email_on_terminate_field').get_value()
-        if email_on_terminate not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Email on Abort must be Yes or No')
-            return
-
-        log_on_error=self.options_email_dialog.get_field('log_on_error_field').get_value()
-        if log_on_error not in ('yes','no'):   
-            self.options_error.set_text('ERROR: Log on Error must be Yes or No')
-            return
-
-        # all correct so save
-        self.mailer.email_allowed = True if email_allowed == 'yes' else False
-        self.mailer.is_to=email_to
-        self.mailer.email_with_ip = True if email_with_ip == 'yes' else False
-        self.mailer.email_at_start = True if email_at_start == 'yes' else False
-        self.mailer.email_on_error = True if email_on_error == 'yes' else False
-        self.mailer.email_on_terminate = True if email_on_terminate == 'yes' else False
-        self.mailer.log_on_error = True if log_on_error == 'yes' else False
-        self.mailer.save_config(self.email_options_file_path)
-            
-        self.mailer.read_config(self.email_options_file_path)
-        self.options_email_dialog.hide()
-        
-
-    def on_options_email_dialog_cancel(self):
-        # use the previous saved options
-        self.mailer.read_config(self.email_options_file_path)
-        self.options_email_dialog.hide()        
 
     # ******************
     #MEDIA
     # ******************
     
      # import 
-    def on_media_import_clicked(self):
+    def on_media_import_clicked(self,widget):
         if not os.path.exists(self.top_dir):
-            self.update_status('ERROR: Cannot find import directory')
+            OKDialog('Import Media','Cannot find import starting directory: '+ self.top_dir).show(self)
             return              
-        fileselectionDialog = gui.FileSelectionDialog('Import Media', 'Select files to import',True, self.top_dir)
-        fileselectionDialog.set_on_confirm_value_listener(self, 'on_media_import_dialog_confirm')
-        fileselectionDialog.set_on_cancel_dialog_listener(self, 'on_media_import_dialog_cancel')
+        fileselectionDialog = FileSelectionDialog('Import Media', 'Select files to import',True, self.top_dir,
+                                                      allow_file_selection=True, allow_folder_selection=False,
+                                                  callback=self.on_media_import_dialog_confirm)
         fileselectionDialog.show(self)
 
-    def on_media_import_dialog_cancel(self):
-        self.update_status('Media import cancelled: ')
 
-    def on_media_import_dialog_confirm(self, filelist):
+    def on_media_import_dialog_confirm(self,filelist):
         if len(filelist)==0:
-            self.update_status('FAILED: Import Media')
-            OKDialog('Import Media','Error: No file selected').show(self)
+            OKDialog('Import Media','No file selected').show(self)
             return    
         self.import_list=filelist
         import_from1=filelist[0]
         self.import_to=self.media_dir
         if not import_from1.startswith(self.top_dir):
-            self.update_status('FAILED: Import Media')
-            OKDialog('Import Media','Error: Access to source prohibited: ' + import_from1).show(self)
+            OKDialog('Import Media','Access to import source prohibited: ' + import_from1).show(self)
             return
         if not os.path.exists(self.import_to):
-            self.update_status('FAILED: Import Media')
-            OKDialog('Import Media',' Error: Media directory does not exist: ' + self.import_to).show(self)
+            OKDialog('Import Media','Media directory does not exist: ' + self.import_to).show(self)
             return
 
-        # print self.import_list, self.import_to
-        OKCancelDialog('Import Media','Files will be ovewritten even if newer',self.import_media_confirm).show(self)
+        for item in self.import_list:
+            self.current_item=item
+            if os.path.isdir(item):
+                OKDialog('Import Media','Cannot import a directory, ignoring: '+ item).show(self)
+                continue
+            from_head,from_tail=os.path.split(item)
+            to_path=os.path.join(self.import_to,from_tail)                  
+            if os.path.exists(to_path):
+                OKCancelDialog('Import Media','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_import_media_item).show(self)
+            else:
+                self.do_import_media_item(True)
 
 
-    def import_media_confirm(self,result):
-        if result:
-            for item in self.import_list:
-                if os.path.isdir(item):
-                    self.update_status('FAILED: Import Media')
-                    OKDialog('Import Media',' Error: Cannot import a directory').show(self)
-                else:
-                    shutil.copy2(item, self.import_to)
-            self.update_status('Media import sucessful: ')
-        else:
-            self.update_status('Media import cancelled: ')
+    def do_import_media_item(self,result):
+        if result is True:
+            shutil.copy2(self.current_item, self.import_to)
+        return
+            
+
+
 
 
     #upload
 
 
-    def on_media_upload_clicked(self):
-        self.media_upload_dialog=gui.GenericDialog(width=500,height=200,title='<b>Upload Media</b>',
-                                                   message='Select Media to Upload',autohide_ok=False)
-        self.media_upload_button=gui.FileUploader(self.media_dir+'/',width=250,height=30,multiple_selection_allowed=True)
-        self.media_upload_button.set_on_success_listener(self,'on_media_upload_success')
-        self.media_upload_button.set_on_failed_listener(self,'on_media_upload_failed')
+    def on_media_upload_clicked(self,widget):
+        self.media_upload_dialog=AdaptableDialog(width=300,height=200,title='<b>Upload Media</b>',
+                                                   message='Select Media to Upload',
+                                                 cancel_name='Done')
+        self.media_upload_button=gui.FileUploader(self.upload_dir+'/',width=250,height=30,multiple_selection_allowed=False)
+        self.media_upload_button.set_on_success_listener(self.on_media_upload_success)
+        self.media_upload_button.set_on_failed_listener(self.on_media_upload_failed)
         self.media_upload_status=gui.Label('', width=450, height=30)
-        self.media_upload_dialog.add_field('1',self.media_upload_button)
-        self.media_upload_dialog.add_field('2',self.media_upload_status)
-        self.media_upload_dialog.set_on_confirm_dialog_listener(self,'on_media_upload_dialog_confirm')
- 
+        self.media_upload_dialog.append_field(self.media_upload_button)
+        self.media_upload_dialog.append_field(self.media_upload_status)
         self.media_upload_dialog.show(self)
       
-    def on_media_upload_success(self,filelist):
-        self.media_upload_status.set_text('File upload successful')
+    def on_media_upload_success(self,widget,filelist):
+        if len(filelist)==0:
+            OKDialog('Upload Media','No file selected').show(self)
+            return
+        self.upload_list=filelist
+        self.upload_to=self.media_dir
+        if not os.path.exists(self.upload_to):
+            OKDialog('Upload Media','Media directory does not exist: ' + self.upload_to).show(self)
+            return
 
-    def on_media_upload_failed(self,result):
+        item=self.upload_list
+        self.current_item=self.upload_list
+        if os.path.isdir(item):
+            OKDialog('Upload Media','Cannot upload a directory, ignoring: '+ item).show(self)
+            return
+        from_head,from_tail=os.path.split(item)
+        self.to_path=os.path.join(self.upload_to,from_tail)                  
+        if os.path.exists(self.to_path):
+            OKCancelDialog('Upload Media','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_upload_media_item).show(self)
+        else:
+            self.do_upload_media_item(True)
+
+
+##        for item in self.upload_list:
+##            self.current_item=item
+##            if os.path.isdir(item):
+##                OKDialog('Upload Media','Cannot upload a directory, ignoring: '+ item).show(self)
+##                continue
+##            from_head,from_tail=os.path.split(item)
+##            to_path=os.path.join(self.upload_to,from_tail)                  
+##            if os.path.exists(to_path):
+##                OKCancelDialog('Upload Media','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_upload_media_item).show(self)
+##            else:
+##                self.do_upload_media_item(True)
+
+
+    def do_upload_media_item(self,result):
+        if result is True:
+            if os.path.exists(self.to_path):
+                os.remove(self.to_path)
+            shutil.move(self.upload_dir+os.sep+self.current_item, self.upload_to)
+            self.media_upload_status.set_text('File upload successful')
+        else:
+            os.remove(self.upload_dir+os.sep+self.current_item)
+
+
+
+
+    def on_media_upload_failed(self,widget,result):
         self.media_upload_status.set_text('ERROR: File upload failed')
+        OKDialog('Import Media','File Upload Failed').show(self._base_app_instance)
 
-    def on_media_upload_dialog_confirm(self):
-        self.media_upload_dialog.hide()
 
     #manage
 
-    def on_media_manage_clicked(self):
-        media_items = os.listdir(self.media_dir) 
-        if len(media_items) ==0:
-            self.update_status('FAILED: Media folder empty')
-            return
-        self.manage_media_dialog=FileManager("Manage Media",self.media_dir,self.finished_manage_media)
+    def on_media_manage_clicked(self,widget):
+        self.manage_media_dialog=FileManager("Manage Media",self.media_dir,False,self.finished_manage_media)
         self.manage_media_dialog.show(self)
 
     def finished_manage_media(self):
@@ -640,84 +454,124 @@ class PPManager(App):
 
 
      # import 
-    def on_livetracks_import_clicked(self):
+    def on_livetracks_import_clicked(self,widget):
         if not os.path.exists(self.top_dir):
-            self.update_status('ERROR: Cannot find import directory')
+            OKDialog('Import Live Tracks','Cannot find import starting directory: '+self.top_dir).show(self)
             return              
-        fileselectionDialog = gui.FileSelectionDialog('Import Live Tracks', 'Select files to import',True, self.top_dir)
-        fileselectionDialog.set_on_confirm_value_listener(self, 'on_livetracks_import_dialog_confirm')
-        fileselectionDialog.set_on_cancel_dialog_listener(self, 'on_livetracks_import_dialog_cancel')
+        fileselectionDialog = FileSelectionDialog('Import Live Tracks', 'Select files to import',True, self.top_dir,
+                                                      allow_file_selection=True, allow_folder_selection=False,
+                                                  callback=self.on_livetracks_import_dialog_confirm)
+
         fileselectionDialog.show(self)
 
-    def on_livetracks_import_dialog_cancel(self):
-        self.update_status('Live Tracks import cancelled: ')
 
-    def on_livetracks_import_dialog_confirm(self, filelist):
+    def on_livetracks_import_dialog_confirm(self,filelist):
         if len(filelist)==0:
-            self.update_status('FAILED: Import Live Tracks')
-            OKDialog('Import Live Tracks','Error: No file selected').show(self)
+            OKDialog('Import Live Tracks','No file selected').show(self)
             return    
         self.import_list=filelist
         import_from1=filelist[0]
         self.import_to=self.livetracks_dir
         if not import_from1.startswith(self.top_dir):
-            self.update_status('FAILED: Import Live Tracks')
-            OKDialog('Import Live Tracks','Error: Access to source prohibited: ' + import_from1).show(self)
+            OKDialog('Import Live Tracks','Access to source prohibited: ' + import_from1).show(self)
             return
         if not os.path.exists(self.import_to):
-            self.update_status('FAILED: Import Live Tracks')
-            OKDialog('Import Live Tracks',' Error: Live Tracks directory does not exist: ' + self.import_to).show(self)
+            OKDialog('Import Live Tracks','Live Tracks directory does not exist: ' + self.import_to).show(self)
             return
+        for item in self.import_list:
+            self.current_item=item
+            if os.path.isdir(item):
+                OKDialog('Import Live Tracks','Cannot import a directory, ignoring: '+ item).show(self)
+                continue
+            from_head,from_tail=os.path.split(item)
+            to_path=os.path.join(self.import_to,from_tail)                  
+            if os.path.exists(to_path):
+                OKCancelDialog('Import Live Tracks','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_import_livetracks_item).show(self)
+            else:
+                self.do_import_livetracks_item(True)
 
-        # print self.import_list, self.import_to
-        OKCancelDialog('Import livetracks','Files will be ovewritten even if newer',self.import_livetracks_confirm).show(self)
 
-
-    def import_livetracks_confirm(self,result):
-        if result:
-            for item in self.import_list:
-                if os.path.isdir(item):
-                    self.update_status('FAILED: Import Live Tracks')
-                    OKDialog('Import Live Tracks',' Error: Cannot import a directory').show(self)
-                else:
-                    shutil.copy2(item, self.import_to)
-            self.update_status('Live Tracks import sucessful: ')
-        else:
-            self.update_status('Live Tracks import cancelled: ')
+    def do_import_livetracks_item(self,result):
+        if result is True:
+            shutil.copy2(self.current_item, self.import_to)
+        return
+ 
 
 
     #upload
 
-    def on_livetracks_upload_clicked(self):
-        self.livetracks_upload_dialog=gui.GenericDialog(width=500,height=200,title='<b>Upload Live Tracks</b>',
-                                                   message='Select Live Tracks to Upload',autohide_ok=False)
-        self.livetracks_upload_button=gui.FileUploader(self.livetracks_dir+'/',width=250,height=30,multiple_selection_allowed=True)
-        self.livetracks_upload_button.set_on_success_listener(self,'on_livetracks_upload_success')
-        self.livetracks_upload_button.set_on_failed_listener(self,'on_livetracks_upload_failed')
+    def on_livetracks_upload_clicked(self,widget):
+        self.livetracks_upload_dialog=AdaptableDialog(width=500,height=200,title='<b>Upload Live Tracks</b>',
+                                                   message='Select Live Tracks to Upload',
+                                                      cancel_name='Done')
+        self.livetracks_upload_button=gui.FileUploader(self.upload_dir+'/',width=250,height=30,
+                                                       multiple_selection_allowed=False)
+        self.livetracks_upload_button.set_on_success_listener(self.on_livetracks_upload_success)
+        self.livetracks_upload_button.set_on_failed_listener(self.on_livetracks_upload_failed)
         self.livetracks_upload_status=gui.Label('', width=450, height=30)
-        self.livetracks_upload_dialog.add_field('1',self.livetracks_upload_button)
-        self.livetracks_upload_dialog.add_field('2',self.livetracks_upload_status)
-        self.livetracks_upload_dialog.set_on_confirm_dialog_listener(self,'on_livetracks_upload_dialog_confirm')
+        self.livetracks_upload_dialog.append_field(self.livetracks_upload_button)
+        self.livetracks_upload_dialog.append_field(self.livetracks_upload_status)
  
         self.livetracks_upload_dialog.show(self)
       
-    def on_livetracks_upload_success(self,filelist):
-        self.livetracks_upload_status.set_text('File upload successful')
+    def on_livetracks_upload_success(self,widget,filelist):
+        if len(filelist)==0:
+            OKDialog('Upload Livetracks','No file selected').show(self)
+            return
+        self.upload_list=filelist
+        self.upload_to=self.livetracks_dir
+        if not os.path.exists(self.upload_to):
+            OKDialog('Upload Livetracks','Livetracks directory does not exist: ' + self.upload_to).show(self)
+            return
+
+        item=self.upload_list
+        self.current_item=self.upload_list
+        if os.path.isdir(item):
+            OKDialog('Upload Livetracks','Cannot upload a directory, ignoring: '+ item).show(self)
+            return
+        from_head,from_tail=os.path.split(item)
+        self.to_path=os.path.join(self.upload_to,from_tail)                  
+        if os.path.exists(self.to_path):
+            OKCancelDialog('Upload Livetracks','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_upload_livetracks_item).show(self)
+        else:
+            self.do_upload_livetracks_item(True)
+
+
+##        for item in self.upload_list:
+##            self.current_item=item
+##            if os.path.isdir(item):
+##                OKDialog('Upload Livetracks','Cannot upload a directory, ignoring: '+ item).show(self)
+##                continue
+##            from_head,from_tail=os.path.split(item)
+##            to_path=os.path.join(self.upload_to,from_tail)                  
+##            if os.path.exists(to_path):
+##                OKCancelDialog('Upload Livetracks','Item already exists: ' + self.current_item +'<br>Overwrite?',callback=self.do_upload_media_item).show(self)
+##            else:
+##                self.do_upload_livetracks_item(True)
+
+
+    def do_upload_livetracks_item(self,result):
+        if result is True:
+            if os.path.exists(self.to_path):
+                os.remove(self.to_path)
+            shutil.move(self.upload_dir+os.sep+self.current_item, self.upload_to)
+            self.livetracks_upload_status.set_text('File upload successful')
+        else:
+            os.remove(self.upload_dir+os.sep+self.current_item)
+
+
 
     def on_livetracks_upload_failed(self,result):
         self.livetracks_upload_status.set_text('ERROR: File upload failed')
+        OKDialog('Upload Live Tracks','File upload failed').show(selfself._base_app_instance)
 
-    def on_livetracks_upload_dialog_confirm(self):
-        self.livetracks_upload_dialog.hide()
+
 
     #manage
 
-    def on_livetracks_manage_clicked(self):
-        media_items = os.listdir(self.livetracks_dir) 
-        if len(media_items) ==0:
-            self.update_status('FAILED: Live Tracks folder empty')
-            return
-        self.manage_livetracks_dialog=FileManager("Manage Live Tracks",self.livetracks_dir,self.finished_manage_livetracks)
+    def on_livetracks_manage_clicked(self,widget):
+        self.manage_livetracks_dialog=FileManager("Manage Live Tracks",self.livetracks_dir,False,
+                                                  self.finished_manage_livetracks)
         self.manage_livetracks_dialog.show(self)
 
     def finished_manage_livetracks(self):
@@ -729,35 +583,32 @@ class PPManager(App):
     # ******************
 
     # import
-    def on_profile_import_clicked(self):
-        fileselectionDialog = gui.FileSelectionDialog('Import Profile', 'Select a Profile to import',False,self.top_dir)
-        fileselectionDialog.set_on_confirm_value_listener(self, 'on_profile_import_dialog_confirm')
-        fileselectionDialog.set_on_cancel_dialog_listener(self, 'on_profile_import_dialog_cancel')
+    def on_profile_import_clicked(self,widget):
+        if not os.path.exists(self.top_dir):
+            OKDialog('Import Profile','Cannot find import directory').show(self)
+            return 
+        fileselectionDialog = FileSelectionDialog('Import Profile', 'Select a Profile to import',False,self.top_dir,
+                                                      allow_file_selection=False,allow_folder_selection=True,
+                                                  callback=self.on_profile_import_dialog_confirm)
         fileselectionDialog.show(self)
 
-    def on_profile_import_dialog_cancel(self):
-        self.update_status('Profile import cancelled: ')
 
-    def on_profile_import_dialog_confirm(self, filelist):
+    def on_profile_import_dialog_confirm(self,filelist):
         if len(filelist)==0:
-            self.update_status('FAILED: import Profile')
-            OKDialog('Import Profile','Error: No profile selected').show(self)
+            OKDialog('Import Profile','No profile selected').show(self)
             return    
         self.import_from=filelist[0]
         self.from_basename=os.path.basename(self.import_from)
         self.import_to=self.pp_profiles_dir+os.sep+self.from_basename
         # print self.import_from, self.import_to, self.top_dir
         if not self.import_from.startswith(self.top_dir):
-            self.update_status('FAILED: Import Profile')
-            OKDialog('Import Profile','Error: Access to source prohibited: ' + self.import_from).show(self)
+            OKDialog('Import Profile','Access to import source prohibited: ' + self.import_from).show(self)
             return
         if not os.path.isdir(self.import_from):
-            self.update_status('FAILED: import Profile')
-            OKDialog('Import Profile','Error: Source is not a directory: ' + self.import_from).show(self)
+            OKDialog('Import Profile','Profile is not a directory: ' + self.import_from).show(self)
             return
         if not os.path.exists(self.import_from + os.sep + 'pp_showlist.json'):
-            self.update_status('FAILED: Import Profile')
-            OKDialog('Import Profile','Error: Source is not a profile: ' + self.import_from).show(self)            
+            OKDialog('Import Profile','Profile does not have pp_showlist.json: ' + self.import_from).show(self)            
             return
         if os.path.exists(self.import_to):
             OKCancelDialog('Import Profile','Profile already exists, overwrite?',self.import_profile_confirm).show(self)
@@ -767,80 +618,80 @@ class PPManager(App):
 
 
     def import_profile_confirm(self,result):            
-        if result:
+        if result is True:
             if os.path.exists(self.import_to):
                 shutil.rmtree(self.import_to)
             # print self.import_from,self.import_to
             shutil.copytree(self.import_from, self.import_to)
             self.profile_count=self.display_profiles()
 
-            self.update_status('Profile import successful ')
-        else:
-            self.update_status('Profile import cancelled ')
 
 
     # download
-    def on_profile_download_clicked(self):
+    def on_profile_download_clicked(self,widget):
         if self.current_profile != '':
-            dest=self.upload_dir_path+os.sep+self.current_profile_name
+            dest=self.download_dir+os.sep+self.current_profile_name
+            # print 'temp',dest
+            
             base=self.pp_home_dir+os.sep+'pp_profiles'+self.current_profile
+            # print 'proflie',base
             shutil.make_archive(dest,'zip',base)
-            self.profile_download_dialog=gui.GenericDialog(width=500,height=200,title='<b>Download Profile</b>',
-                                                           message='',autohide_ok=False)
-            self.profile_download_button = gui.FileDownloader('Click Link to Download', dest+'.zip', width=200, height=30)
+            self.profile_download_dialog=AdaptableDialog(width=500,height=200,title='<b>Download Profile</b>',
+                                                           message='',confirm_name='Done')
+            self.profile_download_button = gui.FileDownloader('<br>Click Link to Download', dest+'.zip', width=200, height=80)
             self.profile_download_status=gui.Label('', width=450, height=30)
-            self.profile_download_dialog.add_field('1',self.profile_download_button)
-            self.profile_download_dialog.add_field('2',self.profile_download_status)
+            self.profile_download_status.set_text('Selected Profile: '+ self.current_profile)
+            self.profile_download_dialog.append_field(self.profile_download_status)
+            self.profile_download_dialog.append_field(self.profile_download_button)
             self.profile_download_dialog.show(self)
-            self.profile_download_dialog.set_on_confirm_dialog_listener(self,'on_profile_download_dialog_confirm')
+            self.profile_download_dialog.set_on_confirm_dialog_listener(self.on_profile_download_dialog_done)
         else:
-            OKDialog('Download Profile', 'Error: No profile selected').show(self)
+            OKDialog('Download Profile', 'No profile selected').show(self)
 
 
-# NO WAY TO DELETE THE ZIP
+    # NO WAY TO DELETE THE ZIP except on _done
 
 
-    def on_profile_download_dialog_confirm(self):
+    def on_profile_download_dialog_done(self,widget):
+        shutil.rmtree(self.download_dir)
+        os.makedirs(self.download_dir)
         self.profile_download_dialog.hide()      
 
 
     # upload
-    def on_profile_upload_clicked(self):
-        self.profile_upload_dialog=gui.GenericDialog(width=500,height=200,title='<b>Upload Profile</b>',
-                                                     message='Select Profile to Upload',autohide_ok=False)
-        self.profile_upload_button=gui.FileUploader(self.upload_dir_path+os.sep,width=250,height=30,multiple_selection_allowed=False)
-        self.profile_upload_button.set_on_success_listener(self,'on_profile_upload_success')
-        self.profile_upload_button.set_on_failed_listener(self,'on_profile_upload_failed')
+    def on_profile_upload_clicked(self,widget):
+        self.profile_upload_dialog=AdaptableDialog(width=500,height=200,title='<b>Upload Profile</b>',
+                                                     message='Select Profile to Upload',
+                                                   cancel_name='Done')
+        self.profile_upload_button=gui.FileUploader(self.upload_dir+os.sep,width=250,height=30,multiple_selection_allowed=False)
+        self.profile_upload_button.set_on_success_listener(self.on_profile_upload_success)
+        self.profile_upload_button.set_on_failed_listener(self.on_profile_upload_failed)
         self.profile_upload_status=gui.Label('', width=450, height=30)
-        self.profile_upload_dialog.add_field('1',self.profile_upload_button)
-        self.profile_upload_dialog.add_field('2',self.profile_upload_status)
+        self.profile_upload_dialog.append_field(self.profile_upload_button)
+        self.profile_upload_dialog.append_field(self.profile_upload_status)
         self.profile_upload_dialog.show(self)
-        self.profile_upload_dialog.set_on_confirm_dialog_listener(self,'on_profile_upload_dialog_confirm')
 
 
-    def on_profile_upload_dialog_confirm(self):
-        self.profile_upload_dialog.hide()      
+    def on_profile_upload_success(self,widget,filename):
 
-
-    def on_profile_upload_success(self,filename):
         #filename is leafname of uploaded file
         # uploaded zip file goes into as specified in the widget constructor
         self.profile_upload_filename=filename    # xxxx.zip
         self.profile_upload_directory='/'+self.profile_upload_filename.split('.')[0]  # /xxxx
-        source_file_path =self.upload_dir_path+os.sep+self.profile_upload_filename   
+        source_file_path =self.upload_dir+os.sep+self.profile_upload_filename   
         # unzip it into  a directory in pp_temp with the uploaded filename
         if not zipfile.is_zipfile(source_file_path):
             self.profile_upload_status.set_text('ERROR: Uploaded file is not a Zip archive')
             os.remove(source_file_path)
             return
         zzip=zipfile.ZipFile(source_file_path)
-        zzip.extractall(self.upload_dir_path)
+        zzip.extractall(self.upload_dir+self.profile_upload_directory)
         os.remove(source_file_path)
         
         # check temp directory is a profile
-        if not os.path.exists(self.upload_dir_path+self.profile_upload_directory+os.sep+'pp_showlist.json'):
+        if not os.path.exists(self.upload_dir+self.profile_upload_directory+os.sep+'pp_showlist.json'):
             self.profile_upload_status.set_text('ERROR: Uploaded Zip is not a profile')
-            shutil.rmtree(self.upload_dir_path+self.profile_upload_directory)
+            shutil.rmtree(self.upload_dir+self.profile_upload_directory)
         else:
             # warn if profile already exists
             if os.path.exists(self.pp_profiles_dir+self.profile_upload_directory):
@@ -853,44 +704,55 @@ class PPManager(App):
         if result:
             if os.path.exists(self.pp_profiles_dir+self.profile_upload_directory):
                 shutil.rmtree(self.pp_profiles_dir+self.profile_upload_directory)
-            shutil.move(self.upload_dir_path+self.profile_upload_directory, self.pp_profiles_dir)
+            shutil.move(self.upload_dir+self.profile_upload_directory, self.pp_profiles_dir)
             self.profile_count=self.display_profiles()
             self.profile_upload_status.set_text('Profile upload successful: '+self.profile_upload_filename)
         else:
             self.profile_upload_status.set_text('Profile upload cancelled')
-            shutil.rmtree(self.upload_dir_path+self.profile_upload_directory)
+            shutil.rmtree(self.upload_dir+self.profile_upload_directory)
 
     def on_profile_upload_failed(self,filename):
         self.profile_upload_status.set_text(' Upload of Zip File Failed: ' + filename )
         self.profile_upload_filename=filename    # xxxx.zip
-        source_file_path =self.upload_dir_path+os.sep+self.profile_upload_filename   
+        source_file_path =self.upload_dir+os.sep+self.profile_upload_filename   
         if os.path.exists(source_file_path):
             os.remove(source_file_path)           
 
+
+    #manage
+
+    def on_profiles_manage_clicked(self,widget):
+        self.manage_media_dialog=FileManager("Manage Profiles",self.pp_profiles_dir,True,self.finished_manage_profiles)
+        self.manage_media_dialog.show(self)
+
+    def finished_manage_profiles(self):
+        self.display_profiles()
 
 
     # ******************
     # PROFILES LIST
     # ******************
 
-    def on_refresh_profiles_pressed(self):
+    def on_refresh_profiles_pressed(self,widget):
         self.display_profiles()
 
     
     def display_profiles(self):
+        self.current_profile=''
         self.profile_list.empty()
         us_items = os.listdir(self.pp_profiles_dir)
         items=sorted(us_items)
         i=0
         for item in items:
-            obj= gui.ListItem(item,width=300, height=20)
-            self.profile_objects.append(obj)
-            self.profile_list.append(obj,key=i)
-            i+=1
+            if os.path.isdir(self.pp_profiles_dir+ os.sep+item) is True and os.path.exists(self.pp_profiles_dir+ os.sep + item + os.sep + 'pp_showlist.json') is True:
+                obj= gui.ListItem(item,width=200, height=20)
+                self.profile_objects.append(obj)
+                self.profile_list.append(obj,key=i)
+                i+=1
         return
 
 
-    def on_profile_selected(self,key):
+    def on_profile_selected(self,widget,key):
         self.current_profile_name=self.profile_list.children[key].get_text()
         self.current_profile=self.pp_profiles_offset + os.sep + self.current_profile_name
         self.profile_name.set_text('Selected Profile:   '+self.pp_profiles_offset+os.sep+self.current_profile_name)
@@ -901,26 +763,28 @@ class PPManager(App):
     # LOGS
     # ******************
 
-    def on_log_download_clicked(self):
+    def on_log_download_clicked(self,widget):
         self.on_logs_download_clicked('pp_log.txt','Log')
         
-    def on_stats_download_clicked(self):
+    def on_stats_download_clicked(self,widget):
         self.on_logs_download_clicked('pp_stats.txt','Statistics')
         
     # download
     def on_logs_download_clicked(self,log_file,name):
         self.logs_dir=self.manager_dir+os.sep+'pp_logs'
-        self.logs_download_dialog=gui.GenericDialog(width=500,height=200,title='<b>Download ' + name+ '</b>',
-                                                       message='',autohide_ok=False)
-        self.logs_download_button = gui.FileDownloader('Click Link to Download',self.logs_dir+os.sep+log_file, width=200, height=30)
+        self.logs_download_dialog=AdaptableDialog(width=500,height=200,title='<b>Download ' + name+ '</b>',
+                                                       message='',confirm_name='Done')
+        self.logs_download_button = gui.FileDownloader('<br>Click Link to Start Download',self.logs_dir+os.sep+log_file, width=200, height=80)
         self.logs_download_status=gui.Label('', width=450, height=30)
-        self.logs_download_dialog.add_field('1',self.logs_download_button)
-        self.logs_download_dialog.add_field('2',self.logs_download_status)
+        self.logs_download_dialog.append_field(self.logs_download_status)
+        self.logs_download_status.set_text('Download: '+log_file)
+        self.logs_download_dialog.append_field(self.logs_download_button)
+
         self.logs_download_dialog.show(self)
-        self.logs_download_dialog.set_on_confirm_dialog_listener(self,'on_logs_download_dialog_confirm')
+        self.logs_download_dialog.set_on_confirm_dialog_listener(self.on_logs_download_dialog_confirm)
 
 
-    def on_logs_download_dialog_confirm(self):
+    def on_logs_download_dialog_confirm(self,widget):
         self.logs_download_dialog.hide()      
 
 
@@ -945,32 +809,26 @@ class PPManager(App):
             
 
 
-    def on_run_button_pressed(self):
+    def on_run_button_pressed(self,widget):
         if os.name== 'nt':
-            self.update_status('FAILED, Server on Windows')
+            OKDialog('Run Pi Presents','Failed, server on Windows').show(self)
             return
         if self.current_profile != '':
             command = self.manager_dir+'/pipresents.py'
-            success=self.pp.run_pp(command,self.current_profile,self.options)
-            if success is True:
-                self.update_status('Pi Presents Started')
-            else:
-                self.update_status('FAILED, Pi Presents Not Started')
+            success=self.pp.run_pp(command,self.current_profile,self.pp_options)
+            if success is False:
                 OKDialog('Run Pi Presents','Error: Pi Presents already Running').show(self)
         else:
             OKDialog('Run Pi Presents','Error: No profile selected').show(self)
-            self.update_status('FAILED, No profile selected')
 
 
-    def on_exit_button_pressed(self):
+
+    def on_exit_button_pressed(self,widget):
         if os.name== 'nt':
-            self.update_status('FAILED, Server on Windows')
+            OKDialog('Run Pi Presents','Failed, server on Windows').show(self)
             return
         success=self.pp.exit_pp()
-        if success is True:
-            self.update_status('Pi Presents Exited')
-        else:
-            self.update_status('FAILED, Pi Presents Not Exited')
+        if success is False:
             OKDialog('Exit Pi Presents','Pi Presents Not Running').show(self)
 
 
@@ -980,7 +838,7 @@ class PPManager(App):
 
     def ed_display_state(self):
         if os.name== 'nt':
-            self.ed_state_display.set_text('Server on Windows')   
+            OKDialog('Run Editor','Failed, server on Windows').show(self) 
         else:
             my_state=self.ed.am_i_running()
             # Poll state of Editor
@@ -993,27 +851,24 @@ class PPManager(App):
             
 
 
-    def on_editor_run_menu_clicked(self):
+    def on_editor_run_menu_clicked(self,widget):
         if os.name== 'nt':
-            self.update_status('FAILED, Server on Windows')
+            OKDialog('Run Pi Presents','Failed, server on Windows').show(self)
             return
         command = self.manager_dir+'/pp_web_editor.py'
         self.ed_options=''
         # run editor if it is not already running
         self.ed.run_ed(command,self.ed_options)
         # and show a dialog to open a browser tab
-        self.update_status('Editor Running')
         OKDialog('Open Editor Page',' <br><a href="http://'+self.ip+':'+self.editor_port +'"target="_blank">Click to Open Editor Page</a> ').show(self)
 
 
-    def on_editor_exit_menu_clicked(self):
+    def on_editor_exit_menu_clicked(self,widget):
         if os.name== 'nt':
-            self.update_status('FAILED, Server on Windows')
+            OKDialog('Run Pi Presents','Failed, server on Windows').show(self)
             return
         success=self.ed.exit_ed()
-        if success is True:
-            self.update_status('Editor Stopped')
-        else:
+        if success is False:
             OKDialog('Exit Editor','Error: Editor Not Running').show(self)
 
 
@@ -1021,109 +876,437 @@ class PPManager(App):
 # File Manager
 # ******************
 
-class RenameDialog(gui.GenericDialog):
-    def __init__(self, title,file_dir,filename):
+class RenameDialog(AdaptableDialog):
+    def __init__(self, title,file_dir,filename,callback):
         self.filename=filename
         self.file_dir=file_dir
+        self.callback=callback
         self.width=400
-        self.height=400
-        super(RenameDialog, self).__init__('<b>'+title+'</b>','',width=self.width,height=self.height,autohide_ok=False)
-        self.root=gui.VBox(width=self.width-50, height=self.height-100)
-        self.add_field('root',self.root)
+        self.height=200
+        super(RenameDialog, self).__init__('<b>'+title+'</b>','',width=self.width,height=self.height,
+                                           confirm_name='Ok',cancel_name='Cancel')
 
-        self.name_field=gui.TextInput(single_line=True,width=self.width-100,height=20)
-        self.name_field.set_value(self.filename)
-        self.set_on_confirm_dialog_listener(self,'on_rename_dialog_confirm')
-        self.show(self)
-        return None
+        self.spacer=gui.Label('',width=400, height=30)
+        self.append_field(self.spacer,key='spacer')
 
-    def rename_dialog_confirm(self):
-        new_name=self.name_field.get_value()
+        self.name_field=gui.TextInput(single_line=True,width=self.width-100,height=30)
+        self.name_field.set_text(self.filename)
+        self.append_field(self.name_field,'name_field')
+        
+
+
+    def confirm_dialog(self):
+        new_name=self.get_field('name_field').get_value()
         files_in_dir = os.listdir(self.file_dir)
         if new_name in files_in_dir:
-            print 'exists'
+            OKDialog('Rename File','File already exists').show(self._base_app_instance)
+            return
         else:
-            print 'absent'
+            # print self.file_dir + os.sep+ self.filename
+            os.rename(self.file_dir + os.sep+ self.filename,self.file_dir + os.sep + new_name)
+            self.hide()
+            self.callback()
+            
+
 
         
-class FileManager(gui.GenericDialog):
+class FileManager(AdaptableDialog):
     
-    def __init__(self, title, media_dir, callback):
+    def __init__(self, title, media_dir, is_profile, callback):
 
         self.title=title
-        self.media_dir=media_dir
+        self.is_profile=is_profile
+        self.current_media=media_dir
+        root_width= 550
+        root_height=500
         self.callback=callback
-        self.root_width= 400
-        self.root_height=450
+        self.current_media_name=''
 
-        super(FileManager, self).__init__('<b>'+title+'</b>','',width=self.root_width,height=self.root_height,autohide_ok=False,display_cancel=False)
-
-        media_items = os.listdir(self.media_dir)
+        super(FileManager, self).__init__('<b>'+title+'</b>','',
+                                          width=root_width,height=root_height,
+                                          cancel_name='Done')
+        self.style['display'] = 'block'
+        self.style['overflow'] = 'hidden'
+        self.style['margin'] = '0px auto'
         
-        if len(media_items) !=0:
-            
-            self.root=gui.VBox(width=self.root_width-50, height=self.root_height-100)
-            self.add_field('root',self.root)
-            
-            self.media_list = gui.ListView(width=300, height=300)
-            self.media_list.set_on_selection_listener(self,'on_media_selected')
-            self.root.append(self.media_list,key='media-list')
+        self._frame=gui.VBox(width=root_width, height=400)
 
-            self.media_name=gui.Label('Selected File: ',width=300, height=20)
-            self.root.append(self.media_name,key='media-name')
-            
-            self.buttons_frame= gui.HBox(width=300, height=40)
-            self.root.append(self.buttons_frame,key='buttons-frame')
-            
-            self.delete_media = gui.Button('Delete',width=80, height=30)
-            self.delete_media.set_on_click_listener(self, 'on_delete_media_button_pressed')
-            self.buttons_frame.append(self.delete_media,key='delete-media')
-            
-            # self.rename_media = gui.Button('Rename',width=80, height=30)
-            # self.rename_media.set_on_click_listener(self, 'on_rename_media_button_pressed')
-            # self.buttons_frame.append(self.rename_media,key='rename-media')
+        self.append_field(self._frame,key='frame')
 
-            self.set_on_confirm_dialog_listener(self,'on_media_manage_dialog_confirm')
-            
-            self.display_media()
-            return None
-        else:
-            return None
+        self.spacer=gui.Label('\n',width=400, height=20)
+        self._frame.append(self.spacer,key='spacer')
         
+        self.media_list = gui.ListView(width=250, height=300)
+        self.media_list.set_on_selection_listener(self.on_media_selected)
+        self._frame.append(self.media_list,key='media_list')
 
-    def on_refresh_media_pressed(self):
+        self.buttons_frame= gui.HBox(width=280, height=30)
+        self._frame.append(self.buttons_frame,key='buttons_frame')
+        
+        self.media_name=gui.Label('Selected Item: ',width=400, height=20)
+        self._frame.append(self.media_name,key='media_name')
+
+        self.delete_media = gui.Button('Delete',width=80, height=30)
+        self.delete_media.set_on_click_listener(self.on_delete_media_button_pressed)
+        self.buttons_frame.append(self.delete_media,key='delete_media')
+        
+        self.rename_media = gui.Button('Rename',width=80, height=30)
+        self.rename_media.set_on_click_listener(self.on_rename_media_button_pressed)
+        self.buttons_frame.append(self.rename_media,key='rename_media')
+
+        self.deleteall_media = gui.Button('Delete All',width=80, height=30)
+        self.deleteall_media.set_on_click_listener(self.on_deleteall_media_button_pressed)
+        self.buttons_frame.append(self.deleteall_media,key='deleteall_media')
+        
+        self.display_media()
+
+     
+
+    def on_refresh_media_pressed(self,widget):
         self.display_media()
 
     
     def display_media(self):
         self.media_list.empty()
-        items=sorted(os.listdir(self.media_dir))
+        self.current_media_name=''
+        items=sorted(os.listdir(self.current_media))
         i=0
         for item in items:
-            obj= gui.ListItem(item,width=300, height=20)
-            # self.media_objects.append(obj)
-            self.media_list.append(obj,key=i)
-            i+=1
+            if (self.is_profile is False and os.path.isdir(self.current_media+ os.sep+item) is False) or (self.is_profile is True and os.path.isdir(self.current_media+ os.sep+item) is True and os.path.exists(self.current_media+ os.sep + item + os.sep + 'pp_showlist.json') is True):
+                obj= gui.ListItem(item,width=200, height=20)
+                self.media_list.append(obj,key=i)
+                i+=1
         return
 
 
-    def on_media_selected(self,key):
+    def on_media_selected(self,widget,key):
         self.current_media_name=self.media_list.children[key].get_text()
         self.media_name.set_text('Selected File:   '+ self.current_media_name)
 
 
-    def on_media_manage_dialog_confirm(self):
+    def cancel_dialog(self):
         self.hide()
         self.callback()
 
-    def on_delete_media_button_pressed(self):
-        # print self.media_dir+os.sep+self.current_media_name
-        os.remove(self.media_dir+os.sep+self.current_media_name)
-        self.display_media()
+    def on_delete_media_button_pressed(self,widget):
+        OKCancelDialog('Delete Item','Delete '+self.current_media_name +'<br>Are you sure?',callback=self.on_delete_media_confirm).show(self._base_app_instance)
+        return
 
-    def on_rename_media_button_pressed(self):
-        self.rename_item_dialog=RenameDialog("Rename File",self.current_media_name,self.media_dir)
-        self.rename_item_dialog.show(self)
+    def on_deleteall_media_button_pressed(self,widget):
+        OKCancelDialog('DELETE ALL ITEMS','DELETE ALL ITEMS<br>Are you sure?',callback=self.on_deleteall_media_confirm).show(self._base_app_instance)
+        return
+    
+    def on_deleteall_media_confirm(self,result):
+        if result is False:
+            return
+        for item in os.listdir(self.current_media):
+            # print self.current_media+os.sep+item
+            os.remove(self.current_media+os.sep+item)
+        self.display_media()
+        
+
+
+    def on_delete_media_confirm(self,result):
+        if result is False:
+            return
+        # print self.current_media+os.sep+self.current_media_name
+        if self.is_profile is True:
+            shutil.rmtree(self.current_media+os.sep+self.current_media_name)
+        else:
+            os.remove(self.current_media+os.sep+self.current_media_name)        
+        self.display_media()
+        self.media_name.set_text('Selected File:')
+
+    def on_rename_media_button_pressed(self,widget):
+        if self.current_media_name=='':
+            # second level
+            OKDialog('Rename','No File Selected').show(self._base_app_instance )
+            return
+        # second level
+        self.rename_item_dialog=RenameDialog("Rename File",self.current_media,self.current_media_name,self.rename_done)
+        self.rename_item_dialog.show(self._base_app_instance )
+
+    def rename_done(self):
+        self.display_media()        
+
+
+
+
+    # ******************
+    # READ SAVE OPTIONS, used by edit dialogs
+    # ******************
+
+class Options(object):
+
+    config=None
+
+    def read_options(self,options_file=None):
+        if options_file != None:
+            Options.options_file=options_file
+            
+        """reads options from options file """
+        Options.config=ConfigParser.ConfigParser()
+        Options.config.read(Options.options_file)
+        
+        self.config=Options.config
+        self.pp_profiles_offset =self.config.get('manager-editable','profiles_offset',0)
+        self.media_offset =self.config.get('manager-editable','media_offset',0)
+        self.livetracks_offset =self.config.get('manager-editable','livetracks_offset',0)
+        self.pp_options = self.config.get('manager-editable','options',0)
+
+        self.pp_home_dir =self.config.get('manager','home',0)
+        self.top_dir = self.config.get('manager','import_top',0)
+        self.unit=self.config.get('network','unit')
+
+        self.autostart_path=self.config.get('manager-editable','autostart_path')
+        self.autostart_options = self.config.get('manager-editable','autostart_options',0)
+
+        self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
+        self.media_dir=self.pp_home_dir+self.media_offset
+        self.livetracks_dir=self.pp_home_dir+self.livetracks_offset
+
+        self.editor_port= self.config.get('editor','port')
+        # self.print_paths()
+
+
+    def print_paths(self):
+        print 'home',self.pp_home_dir
+        print 'profiles',self.pp_profiles_offset, self.pp_profiles_dir
+        print 'media', self.media_offset, self.media_dir
+        print 'livetracks', self.livetracks_offset, self.livetracks_dir
+        print 'top',self.top_dir
+
+
+    def save_options(self):
+        """ save the output of the options edit dialog to file"""
+        # print 'saved',self.pp_profiles_offset
+        self.config.set('manager-editable','media_offset',self.media_offset)
+        self.config.set('manager-editable','livetracks_offset',self.livetracks_offset)
+        self.config.set('manager-editable','profiles_offset',self.pp_profiles_offset)
+        self.config.set('manager-editable','options',self.pp_options)
+
+        self.config.set('manager-editable','autostart_path',self.autostart_path)        
+        self.config.set('manager-editable','autostart_options',self.autostart_options)
+        
+        with open(Options.options_file, 'wb') as config_file:
+            self.config.write(config_file)
+    
+    # ******************
+    # EMAIL OPTIONS
+    # ******************
+
+class EmailOptionsDialog(AdaptableDialog,Mailer):
+    def __init__(self, title='Title', message='Message',callback=None,**kwargs):
+        self.callback=callback
+        dialog_width=450
+        super(EmailOptionsDialog, self).__init__(title='<b>Email Options</b>',message='Edit then click OK or Cancel',
+                                                     width=dialog_width,height=500,
+                                                     confirm_name='OK',cancel_name='Cancel')
+        self.read_config() # no arguemnt because file is read elsewhere
+        self.email_allowed_field= gui.TextInput(single_line=True,width=250, height=30)
+        email_allowed='yes'if self.email_allowed is True else'no'
+        self.email_allowed_field.set_text(email_allowed)
+        self.append_field_with_label('Allow Email Alerts',self.email_allowed_field,
+                                                       None,width=dialog_width-20,key='email_allowed_field') 
+
+        self.email_to_field= gui.TextInput(single_line=False,width=250, height=90)
+        self.email_to_field.set_text(self.email_to)
+        self.append_field_with_label('To',self.email_to_field,
+                                                       None,width=dialog_width-20,key='email_to_field')
+
+        self.email_with_ip_field= gui.TextInput(single_line=True,width=250, height=30)
+        email_with_ip='yes'if self.email_with_ip is True else'no'
+        self.email_with_ip_field.set_text(email_with_ip)
+        self.append_field_with_label('Email with IP',self.email_with_ip_field,
+                                                       None,width=dialog_width-20,key='email_with_ip_field')
+
+        self.email_at_start_field= gui.TextInput(single_line=True,width=250, height=30)
+        email_at_start='yes'if self.email_at_start is True else 'no'
+        self.email_at_start_field.set_text(email_at_start)
+        self.append_field_with_label('Email at Start',self.email_at_start_field,
+                                                       None,width=dialog_width-20,key='email_at_start_field')
+
+        self.email_on_error_field= gui.TextInput(single_line=True,width=250, height=30)
+        email_on_error='yes' if self.email_on_error is True else 'no'
+        self.email_on_error_field.set_text(email_on_error)
+        self.append_field_with_label('Email on Error',self.email_on_error_field,
+                                                        None,width=dialog_width-20,key='email_on_error_field')
+  
+        self.email_on_terminate_field= gui.TextInput(single_line=True,width=250, height=30)
+        email_on_terminate='yes' if self.email_on_terminate is True else 'no'
+        self.email_on_terminate_field.set_text(email_on_terminate)
+        self.append_field_with_label('Email on Terminate',self.email_on_terminate_field,
+                                                        None,width=dialog_width-20,key='email_on_terminate_field')
+
+        self.log_on_error_field= gui.TextInput(single_line=True,width=250, height=30)
+        log_on_error='yes' if self.log_on_error is True else 'no'
+        self.log_on_error_field.set_text(log_on_error)
+        self.append_field_with_label('Log on Error',self.log_on_error_field,
+                                                       None,width=dialog_width-20,key='log_on_error_field')
+  
+
+    
+
+    def confirm_dialog(self):
+        email_allowed=self.get_field('email_allowed_field').get_value()
+        if email_allowed not in ('yes','no'):
+            OKDialog('Email Options','Allow Email must be Yes or No').show(self._base_app_instance)
+            return
+        
+        email_to=self.get_field('email_to_field').get_value()
+
+        email_with_ip=self.get_field('email_with_ip_field').get_value()
+        if email_with_ip not in ('yes','no'):
+            OKDialog('Email Options','Email with IP must be Yes or No').show(self._base_app_instance)
+            return
+
+        email_at_start=self.get_field('email_at_start_field').get_value()
+        if email_at_start not in ('yes','no'):
+            OKDialog('Email Options','Email at Start must be Yes or No').show(self._base_app_instance)
+            return
+
+        email_on_error=self.get_field('email_on_error_field').get_value()
+        if email_on_error not in ('yes','no'):
+            OKDialog('Email Options','Email on Error Start must be Yes or No').show(self._base_app_instance)
+            return
+
+        email_on_terminate=self.get_field('email_on_terminate_field').get_value()
+        if email_on_terminate not in ('yes','no'):
+            OKDialog('Email Options','Email on Terminate must be Yes or No').show(self._base_app_instance)
+            return
+
+        log_on_error=self.get_field('log_on_error_field').get_value()
+        if log_on_error not in ('yes','no'):
+            OKDialog('Email Options','Log on Error must be Yes or No').show(self._base_app_instance)
+            return
+
+        # all correct so save
+        self.email_allowed = True if email_allowed == 'yes' else False
+        self.email_to=email_to
+        self.email_with_ip = True if email_with_ip == 'yes' else False
+        self.email_at_start = True if email_at_start == 'yes' else False
+        self.email_on_error = True if email_on_error == 'yes' else False
+        self.email_on_terminate = True if email_on_terminate == 'yes' else False
+        self.log_on_error = True if log_on_error == 'yes' else False
+        self.save_config()
+        self.hide()
+        if self.callback!=None:
+            self.callback()
+        
+
+
+
+class AutostartOptionsDialog(AdaptableDialog,Options):
+    def __init__(self, pp_home_dir,pp_profiles_dir,title='Title', message='Message',**kwargs):
+        self.pp_home_dir = pp_home_dir
+        self.pp_profiles_dir = pp_profiles_dir
+        dialog_width=450
+        super(AutostartOptionsDialog, self).__init__(title='<b>AutostartOptions</b>',message='Edit then click OK or Cancel',
+                                                     width=450,height=300,
+                                                     confirm_name='Ok',cancel_name='Cancel')           
+        self.read_options()
+        self.autostart_path_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.autostart_path_field.set_text(self.autostart_path)
+        self.append_field_with_label('Autostart Profile',self.autostart_path_field,
+                                                        None,width=dialog_width-20,key='autostart_path_field')
+
+         
+        self.autostart_options_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.autostart_options_field.set_text(self.autostart_options)
+        self.append_field_with_label('Autostart Options',self.autostart_options_field,
+                                                        None,width=dialog_width-20,key='autostart_options_field')
+
+
+
+    def confirm_dialog(self):
+        result=self.get_field('autostart_path_field').get_value()            
+        autostart_profile_path=self.pp_home_dir+os.sep+'pp_profiles'+os.sep+result
+        if not os.path.exists(autostart_profile_path):
+            OKDialog('Autostart Options','Profile does not exist: ' + autostart_profile_path).show(self._base_app_instance)
+            return
+        else:
+            autostart_path=result
+
+        autostart_options=self.get_field('autostart_options_field').get_value()
+
+        # all OK save the options
+        self.autostart_path=autostart_path
+        self.autostart_options =autostart_options
+        self.save_options()
+        self.hide()
+        
+
+
+
+class ManagerOptionsDialog(AdaptableDialog,Options):
+    def __init__(self, pp_home_dir,pp_profiles_dir,title='Title', message='Message',callback=None,**kwargs):
+
+        #parent,text,field,button,width=300,key=''
+        dialog_width=450
+        super(ManagerOptionsDialog, self).__init__(title='<b>Manager Options</b>',message='Edit then click OK or Cancel',
+                                                     width=450,height=300,
+                                                     confirm_name='Ok',cancel_name='Cancel')
+
+        self.pp_home_dir = pp_home_dir
+        self.pp_profiles_dir = pp_profiles_dir
+        self.callback=callback
+        
+        self.read_options()
+        # self.options_manager_dialog.style['background-color'] = 'LightGray'
+        self.media_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.media_field.set_text(self.media_offset)
+        self.append_field_with_label('Media Offset',self.media_field,
+                                                        None,width=dialog_width-20,key='media_field')
+
+        self.livetracks_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.livetracks_field.set_text(self.livetracks_offset)
+        self.append_field_with_label('Live Tracks Offset',self.livetracks_field,
+                                                         None,width=dialog_width-20,key='livetracks_field')
+        
+        self.profiles_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.profiles_field.set_text(self.pp_profiles_offset)
+        self.append_field_with_label('Profiles Offset',self.profiles_field,
+                                                       None,width=dialog_width-20,key='profiles_field')       
+        
+        self.options_field= gui.TextInput(single_line=True,width=250, height=30)
+        self.options_field.set_text(self.pp_options)
+        self.append_field_with_label('Pi Presents Options',self.options_field,
+                                                       None,width=dialog_width-20,key='options_field')   
+      
+
+    def confirm_dialog(self):
+        media_offset=self.get_field('media_field').get_value()
+        media_dir=self.pp_home_dir+media_offset
+        if not os.path.exists(media_dir):
+            OKDialog('Manager Options','Media Directory does not exist: ' + media_dir).show(self._base_app_instance)
+            return
+
+        livetracks_offset=self.get_field('livetracks_field').get_value()
+        livetracks_dir=self.pp_home_dir+livetracks_offset
+        if not os.path.exists(livetracks_dir):
+            OKDialog('Manager Options','Live Tracks Directory does not exist: ' + livetracks_dir).show(self._base_app_instance)
+            return
+        
+        pp_profiles_offset=self.get_field('profiles_field').get_value()
+        pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+pp_profiles_offset
+        if not os.path.exists(pp_profiles_dir):
+            OKDialog('Manager Options','Profiles Directory does not exist: ' + pp_profiles_dir).show(self._base_app_instance)
+            return
+
+        pp_options=self.get_field('options_field').get_value() 
+
+        # all OK save the options
+        self.pp_profiles_offset = pp_profiles_offset
+        self.media_offset = media_offset
+        self.livetracks_offset = livetracks_offset
+        self.pp_options = pp_options
+
+        self.save_options()
+        self.hide()
+        if self.callback != None:
+            self.callback()
+        
+
 
 
 # ******************
@@ -1150,7 +1333,7 @@ class WebEditor(object):
         # print pid,user,running_profile
         if pid ==-1:
             options_list= options.split(' ')
-            command = ['python',command]
+            command = ['python',command, '-r']
             if options_list[0] != '':
                 command = command + options_list
             # print 'COMMAND',command
@@ -1175,23 +1358,21 @@ class WebEditor(object):
 
     def lookup_state(self,code):
         if code==-1: return ''
-        elif code==0: return 'running'
-        elif code==100: return 'normal exit'
-        elif code==101: return 'Aborted'
+        elif code==0: return 'Running'
+        elif code==100: return 'Normal Exit'
+        elif code==101: return 'Terminated'
         elif code==102: return 'Error Detected'
         else: return 'Unknown Code'
 
 
     def exit_ed(self):
         pid,user=self.is_ed_running()
-        command = WebEditor.manager_dir+"/exit_ed.sh"
         if pid !=-1:
-            subprocess.call([command,"exit"])
+            subprocess.call(['pkill', '-f', '/pipresents/pp_web_editor.py'])
             self.my_ed=None
             return True
         else:
             return False
-
  
     def is_ed_running(self):
         p = subprocess.Popen(['ps', '-A', '-o', 'pid,user,cmd'], stdout=subprocess.PIPE)
@@ -1228,12 +1409,12 @@ class PiPresents(object):
         PiPresents.manager_dir=manager_dir
         pass
 
-    def run_pp(self,command,current_profile,options):
+    def run_pp(self,command,current_profile,pp_options):
         PiPresents.my_pp=None
         pid,user,running_profile=self.is_pp_running()
         # print pid,user,running_profile
         if pid ==-1:
-            options_list= options.split(' ')
+            options_list= pp_options.split(' ')
             command = ['python',command,'-p',current_profile,'--manager']
             if options_list[0] != '':
                 command = command + options_list
@@ -1261,16 +1442,16 @@ class PiPresents(object):
         if code==-1: return ''
         elif code==0: return 'running'
         elif code==100: return 'normal exit'
-        elif code==101: return 'Aborted'
+        elif code==101: return 'Terminated'
         elif code==102: return 'Error Detected'
         else: return 'Unknown Code'
 
 
     def exit_pp(self):
         pid,user,running_profile=self.is_pp_running()
-        command = PiPresents.manager_dir+"/exit_pp.sh"
+
         if pid !=-1:
-            subprocess.call([command,"exit"])
+            subprocess.call(['pkill' ,'-f' ,'/pipresents/pipresents.py'])
             self.my_pp=None
             return True
         else:
@@ -1298,24 +1479,24 @@ class PiPresents(object):
     # Autostart Pi Presents
     # ******************
 
-class Autostart(object):
+class Autostart(Options,object):
 
     def autostart(self):
         # get directory holding the code
         self.manager_dir=sys.path[0]
             
         if not os.path.exists(self.manager_dir + os.sep + 'pp_manager.py'):
-            print >> sys.stderr, 'Pi Presents Manager - Bad Application Directory'
+            print >> sys.stderr, 'Manager: Bad Application Directory'
             exit()
 
         self.options_file_path=self.manager_dir+os.sep+'pp_config'+os.sep+'pp_web.cfg'
         if not os.path.exists(self.options_file_path):
-            print >> sys.stderr, 'Pi Presents Manager - web options file not found'
+            print >> sys.stderr, 'Manager: web options file not found'
             exit()
 
         # read the options
-        config=self.autostart_read_options(self.options_file_path)
-        self.autostart_get_options(config)
+        self.read_options(self.options_file_path)
+
 
         # and construct the paths
         self.pp_profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'
@@ -1329,37 +1510,20 @@ class Autostart(object):
         if self.autostart_path != '' and os.name !='nt':
             autostart_profile_path= self.pp_home_dir+os.sep+'pp_profiles'+os.sep+self.autostart_path
             if not os.path.exists(autostart_profile_path):
-                print >> sys.stderr, 'Autostart - Profile does not exist: ' + autostart_profile_path
+                print >> sys.stderr, 'Manager: Autostart Profile does not exist: ' + autostart_profile_path
             else:
                 command =self.manager_dir+'/pipresents.py'
                 success=pp_auto.run_pp(command,self.autostart_path,self.autostart_options)
                 if success is True:
-                    print >> sys.stderr, 'Pi Presents AUTO Started profile ',autostart_profile_path
+                    print >> sys.stderr, 'Manager: Auto-Started profile ',autostart_profile_path
                     return self.autostart_path
                 else:
-                    print >> sys.stderr, 'FAILED, Pi Presents AUTO Not Started'
+                    print >> sys.stderr, 'Manager: FAILED, Pi Presents AUTO Not Started'
                     return ''
         else:
             return ''
 
         
-
-
-    def autostart_read_options(self,options_file):
-        """reads options from options file """
-        config=ConfigParser.ConfigParser()
-        config.read(options_file)
-        return config
-    
-
-    def autostart_get_options(self,config):
-        self.autostart_path=config.get('manager-editable','autostart_path')
-        self.autostart_options = config.get('manager-editable','autostart_options',0)
-        self.pp_home_dir =config.get('manager','home',0)
-        
-        # self.print_paths()
-
-
 
 
 # ***************************************
@@ -1376,10 +1540,10 @@ if __name__  ==  "__main__":
             if success is True:
                 return True
             else:
-                print >> sys.stderr,'Failed to connect to email SMTP server ' + str(tries) +  '\n ' +str(error)
+                print >> sys.stderr,'Manager: Failed to connect to email SMTP server ' + str(tries) +  '\n ' +str(error)
                 tries +=1
                 if tries >5:
-                    print >> sys.stderr,'Failed to connect to email SMTP server after ' + str(tries)
+                    print >> sys.stderr,'Manager: Failed to connect to email SMTP server after ' + str(tries)
                     return False
 
     def send_email(mailer,reason,subject,message):
@@ -1388,22 +1552,22 @@ if __name__  ==  "__main__":
         else:
             success,error = mailer.send(subject,message)
             if success is False:
-                print >> sys.stderr, 'Failed to send email: ' + str(error)
+                print >> sys.stderr, 'Manager: Failed to send email: ' + str(error)
                 success,error=mailer.disconnect()
                 if success is False:
-                    print >> sys.stderr,'Failed disconnect after send:' + str(error)
+                    print >> sys.stderr,'Manager: Failed disconnect after send:' + str(error)
                 return False
             else:
-                print >> sys.stderr,'Sent email for ' + reason
+                print >> sys.stderr,'Manager: Sent email for ' + reason
                 success,error=mailer.disconnect()
                 if success is False:
-                    print >> sys.stderr,'Failed disconnect ' + str(error)
+                    print >> sys.stderr,'Manager: Failed disconnect ' + str(error)
                 return True
 
 
     print >> sys.stderr, '\n *** Pi Presents Manager Started ***'
 
-    # wait for environment ariables to stabilize. Required for Jessie autostart
+    # wait for environment variables to stabilize. Required for Jessie autostart
     tries=0
     success=False
     while tries < 40:
@@ -1422,6 +1586,15 @@ if __name__  ==  "__main__":
         exit()
 
     print >> sys.stderr, 'Manager: Found pp_manager.py in ', manager_dir
+
+
+    #create upload and download directories if necessary
+    upload_dir='/tmp/pipresents/upload'
+    download_dir='/tmp/pipresents/download'
+    if os.path.exists('/tmp/pipresents'):
+        shutil.rmtree('/tmp/pipresents')
+    os.makedirs(upload_dir)
+    os.makedirs(download_dir)
 
 
     # Autostart Pi Presents if necessary
@@ -1464,7 +1637,7 @@ if __name__  ==  "__main__":
         
         mailer=Mailer()
         email_enabled=False
-        mailer.read_config(email_file_path)    
+        mailer.read_config(options_file=email_file_path)    
         # all Ok so can enable email if config file allows it.
         if mailer.email_allowed is True:
             email_enabled=True
@@ -1489,12 +1662,14 @@ if __name__  ==  "__main__":
     # setting up remi debug level 
     #   2=all debug messages   1=error messages   0=no messages
     import remi.server
-    remi.server.DEBUG_MODE = 0
+    # remi.server.DEBUG_MODE = 0
 
     # start the web server to serve the Pi Presents Manager App
-    start(PPManager,address=ip, port=network.manager_port,username=network.manager_username,password=network.manager_password,
+    start(PPManager,address=ip, port=network.manager_port,
+          username=network.manager_username,
+          password=network.manager_password,
           multiple_instance=False,enable_file_cache=True,
-          update_interval=0.2, start_browser=False)
+          update_interval=0.2, start_browser=False,debug=False)
 
 
 

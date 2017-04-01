@@ -1,5 +1,5 @@
-from Tkinter import NW
-from pp_utils import StopWatch
+from Tkinter import NW,N,W,CENTER,LEFT,RIGHT
+from pp_utils import StopWatch,calculate_text_position
 from pp_player import Player
 
 class MessagePlayer(Player):
@@ -175,26 +175,28 @@ class MessagePlayer(Player):
 # x content
 # *****************    
 
+
+
     # called from Player, load_x_content       
     def load_track_content(self):
         # load message text
         # print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
         #  print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
         #  print
-        if self.track_params['message-x'] != '':
-            self.track_obj=self.canvas.create_text(int(self.track_params['message-x'])+self.show_canvas_x1,
-                                                   int(self.track_params['message-y'])+self.show_canvas_y1,
-                                                   text=self.track.rstrip('\n'),
-                                                   fill=self.track_params['message-colour'],
-                                                   font=self.track_params['message-font'],
-                                                   justify=self.track_params['message-justify'],
-                                                   anchor = NW)
-        else:
-            self.track_obj=self.canvas.create_text(self.show_canvas_x1+self.show_canvas_centre_x, self.show_canvas_y1+self.show_canvas_centre_y,
-                                                   text=self.track.rstrip('\n'),
-                                                   fill=self.track_params['message-colour'],
-                                                   font=self.track_params['message-font'],
-                                                   justify=self.track_params['message-justify'])     
+    
+        x,y,anchor,justify=calculate_text_position(self.track_params['message-x'],self.track_params['message-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.track_params['message-justify'])
+        
+
+        self.track_obj=self.canvas.create_text(x,y,
+                                               text=self.track.rstrip('\n'),
+                                               fill=self.track_params['message-colour'],
+                                               font=self.track_params['message-font'],
+                                               justify=justify,
+                                               anchor = anchor)
+            
         self.canvas.itemconfig(self.track_obj,state='hidden')
         return 'normal','message loaded'
     

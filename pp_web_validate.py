@@ -2,27 +2,28 @@ import os
 import json
 import ConfigParser
 import remi.gui as gui
-
+from remi_plus import AdaptableDialog
+from pp_utils import parse_rectangle
 """
 1/12/2016 - warn if foreign files in profile rather than abort
 
 """
 
 
-class Validator(gui.GenericDialog):
+class Validator(AdaptableDialog):
 
     def __init__(self, title):
         self.text=''
         self.errors=0
         self.warnings=0
 
-        super(Validator, self).__init__('Validation Result','',width=600,height=500)
+        super(Validator, self).__init__('Validation Result','',width=600,height=500,display_cancel=False,ok_name='Done')
         self.textb = gui.TextInput(width=550,height=400,single_line=False)
-        self.add_field('text',self.textb)
-        self.set_on_confirm_dialog_listener(self,'confirm')
+        self.add_field(self.textb,'text')
+        self.set_on_confirm_dialog_listener(self.confirm)
 
 
-    def confirm(self):
+    def confirm(self,widget):
           self.hide()
 
     def display(self,priority,text):
@@ -38,7 +39,7 @@ class Validator(gui.GenericDialog):
 
     def insert(self,text):
         self.text +=text
-        self.textb.set_value(self.text)   
+        self.textb.set_value(self.text)
 
     def stats(self):
         if self.display_it is False: return
@@ -94,8 +95,8 @@ class Validator(gui.GenericDialog):
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         v_media_lists = []
         for medialist_file in os.listdir(pp_profile):
-            if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
-                self.display('w',"Non medialist file in profile: "+ medialist_file)
+            if not medialist_file.endswith(".json") and medialist_file not in ('readme.txt') and not os.path.isdir(pp_profile+os.sep+medialist_file):
+                self.display('w',"Placing a media file in a profile is discouraged: "+ medialist_file + '\n         Place it in a directory')
                 
             if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
                 self.display('t',"\nChecking medialist '"+medialist_file+"'")
@@ -142,6 +143,10 @@ class Validator(gui.GenericDialog):
                         if track_file.strip() != '' and  track_file[0] == "+":
                             track_file=pp_home+track_file[1:]
                             if not os.path.exists(track_file): self.display('f',"location "+track['location']+ " Media File not Found")
+                            
+                        if track_file.strip() != '' and  track_file[0] == "@":
+                            track_file=pp_profile+track_file[1:]
+                            if not os.path.exists(track_file): self.display('f',"location "+track['location']+ " Media File not Found")
 
                     if track['type'] in ('video','audio','message','image','web','menu'):
                         
@@ -156,6 +161,10 @@ class Validator(gui.GenericDialog):
                             if track_file[0] == "+":
                                 track_file=pp_home+track_file[1:]
                                 if not os.path.exists(track_file): self.display('f',"background-image "+track['background-image']+ " background image file not found")                                
+                            if track_file[0] == "@":
+                                track_file=pp_profile+track_file[1:]
+                                if not os.path.exists(track_file): self.display('f',"location "+track['location']+ " Background Image not Found")
+
                         if track['track-text'] != "":
                             if not track['track-text-x'].isdigit(): self.display('f',"'Track Text x position' is not 0 or a positive integer")
                             if not track['track-text-y'].isdigit(): self.display('f',"'Track Text y Position' is not 0 or a positive integer")
@@ -286,6 +295,10 @@ class Validator(gui.GenericDialog):
                 if background_image_file.strip() != '' and  background_image_file[0] == "+":
                     track_file=pp_home+background_image_file[1:]
                     if not os.path.exists(track_file): self.display('f',"Background Image "+show['background-image']+ " background image file not found")
+                if background_image_file.strip() != '' and  background_image_file[0] == "@":
+                    track_file=pp_profile+background_image_file[1:]
+                    if not os.path.exists(track_file): self.display('f',"Background Image "+show['background-image']+ " background image file not found")
+
 
                 #track defaults
                 if not show['duration'].isdigit(): self.display('f',"'Duration' is not 0 or a positive integer")
@@ -356,28 +369,45 @@ class Validator(gui.GenericDialog):
                 if show['type'] == "menu":
                     self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
                     self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
-                    
-                    if show['menu-track-ref'] not in v_track_labels:
-                        self.display('f',"'menu track ' is not in medialist: " + show['menu-track-ref'])     
+
+                    if show['menu-track-ref']=='':
+                        self.display('f',"'menu track ' is blank")
+                    else:
+                        if show['menu-track-ref'] not in v_track_labels:
+                            self.display('f',"'menu track ' is not in medialist: " + show['menu-track-ref'])     
                     self.check_web_window('show','web-window',show['web-window'])
                     self.check_controls('controls',show['controls'])
 
   
                 if show['type'] == 'hyperlinkshow':
-                    if show['first-track-ref'] not in v_track_labels:
-                        self.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])             
-                    if show['home-track-ref'] not in v_track_labels:
-                        self.display('f',"'home track ' is not in medialist: " + show['home-track-ref'])              
-                    if show['timeout-track-ref'] not in v_track_labels:
-                        self.display('f',"'timeout track ' is not in medialist: " + show['timeout-track-ref'])            
+                    if show['first-track-ref']=='':
+                        self.display('f',"'First Track ' is blank")
+                    else:
+                        if show['first-track-ref'] not in v_track_labels:
+                            self.display('f',"'First track ' is not in medialist: " + show['first-track-ref'])
+                            
+                    if show['home-track-ref']=='':
+                        self.display('f',"'Home Track ' is blank")
+                    else:
+                        if show['home-track-ref'] not in v_track_labels:
+                            self.display('f',"'Home track ' is not in medialist: " + show['home-track-ref'])
+
+                    if show['timeout-track-ref']=='':
+                        self.display('w',"'Timeout Track ' is blank")
+                    else:
+                        if show['timeout-track-ref'] not in v_track_labels:
+                            self.display('f',"'timeout track ' is not in medialist: " + show['timeout-track-ref'])            
                     self.check_hyperlinks('links',show['links'],v_track_labels)
                     self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
                     self.check_hh_mm_ss('Track Timeout',show['track-timeout'])
                     self.check_web_window('show','web-window',show['web-window'])
 
                 if show['type'] == 'radiobuttonshow':
-                    if show['first-track-ref'] not in v_track_labels:
-                        self.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])
+                    if show['first-track-ref']=='':
+                        self.display('f',"'Home Track ' is blank")
+                    else:
+                        if show['first-track-ref'] not in v_track_labels:
+                            self.display('f',"'first track ' is not in medialist: " + show['first-track-ref'])
                         
                     self.check_radiobutton_links('links',show['links'],v_track_labels)
                     self.check_hh_mm_ss('Show Timeout',show['show-timeout'])                 
@@ -619,7 +649,10 @@ class Validator(gui.GenericDialog):
             plugin_cfg=pp_home+plugin_cfg[1:]
             if not os.path.exists(plugin_cfg):
                 self.display('f','plugin configuration file not found: '+ plugin_cfg)
-
+        if plugin_cfg.strip() != '' and  plugin_cfg[0] == "@":
+            plugin_cfg=pp_profile+plugin_cfg[1:]
+            if not os.path.exists(plugin_cfg):
+                self.display('f','plugin configuration file not found: '+ plugin_cfg)
 
 # *******************   
 # Check browser commands
@@ -684,7 +717,7 @@ class Validator(gui.GenericDialog):
             self.display('f',"incorrect number of fields in Control: " + line)
             return
         operation=fields[1]
-        if operation in ('up','down','play','stop','exit','pause','no-command','null') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('up','down','play','stop','exit','pause','no-command','null','pause-on','pause-off','mute','unmute','go') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
         else:
             self.display('f',"unknown Command in Control: " + line)
@@ -709,7 +742,7 @@ class Validator(gui.GenericDialog):
             return
         symbol=fields[0]
         operation=fields[1]
-        if operation in ('home','null','stop','exit','repeat','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('home','null','stop','exit','repeat','pause','no-command','pause-on','pause-off','mute','unmute','go') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
 
         elif operation in ('call','goto','jump'):
@@ -755,7 +788,7 @@ class Validator(gui.GenericDialog):
             return
         symbol=fields[0]
         operation=fields[1]
-        if operation in ('return','stop','exit','pause','no-command') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
+        if operation in ('return','stop','exit','pause','no-command','pause-on','pause-off','mute','unmute','go') or operation[0:6] == 'mplay-' or operation[0:4] == 'omx-' or operation[0:5] == 'uzbl-':
             return
         
         elif operation == 'play':
@@ -794,11 +827,16 @@ class Validator(gui.GenericDialog):
                 self.display('f','Show control - Unknown command in: ' + line)
                 return
         elif len(fields) == 2:
-            if fields[0] not in ('open','close'):
+            if fields[0] not in ('open','close','monitor'):
                 self.display('f','Show Control - Unknown command in: ' + line)
-            if fields[1] not in v_show_labels:
-                self.display('f',"Show Control - cannot find Show Reference: "+ line)
-                return
+            else:
+                if fields[0] =='monitor' and fields[1] not in ('on','off'):
+                    self.display('f',"Show Control - monitor paramter not on or off: "+ line)
+                    return
+
+                if fields[0] in ('open','close') and fields[1] not in v_show_labels:
+                    self.display('f',"Show Control - cannot find Show Reference: "+ line)
+                    return
         else:
             self.display('f','Show Control - Incorrect number of fields in: ' + line)
             return
@@ -879,25 +917,28 @@ class Validator(gui.GenericDialog):
         fields = line.split()
         
         if track_type == 'show' and len(fields) == 0:
-            self.display('f','Show must specify Web Window: ' + field + ", " + line)
+            self.display('f','Show must specify Web Window: ' + line)
             return
             
         if len(fields) == 0:
             return        
 
-        # deal with warp which has 1 or 5  arguments
-        if  fields[0]  != 'warp':
-            self.display('f','Illegal command: ' + field + ", " + line)
-        if len(fields) not in (1,5):
-            self.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-            return
+        #deal with warp which has 1 or 5  arguments
+        # check basic syntax
+        if  fields[0] !='warp':
+            self.display('f','Web Window, Illegal command: ' + line)
 
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.display('f','coordinate is not a positive integer ' + field + ", " + line)
+
+        # deal with window coordinates or not   
+        if len(fields) == 1:
+            # fullscreen so line is just warp - ok
+            return
+        else:
+            status,message,x1,y1,x2,y2 = parse_rectangle(' '.join(fields[1:]))
+            if status=='error':
+                self.display('f','Web Window: '+ message)
                 return
+
 
                 
 # *************************************
@@ -908,17 +949,19 @@ class Validator(gui.GenericDialog):
         fields=line.split()
         if len(fields)== 0:
             return
-        if len(fields) !=4:
-            self.display('f','wrong number of fields for ' + name + ", " + line)
-            return
-        else:
-            # show canvas is specified
-            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                self.display('f','coordinate is not a positive integer ' + name + ", " + line)
-                return
-       
 
-    
+        if len(fields) in (1,4):
+            # window is specified
+            status,message,x1,y1,x2,y2=parse_rectangle(line)
+            if status=='error':
+                self.display('f','Show Canvas: '+message)
+                return
+            else:
+                return
+        else:
+            self.display('f','Wrong number of fields in Show canvas: '+ line)
+
+
 
 # *************************************
 # IMAGE WINDOW
@@ -935,47 +978,55 @@ class Validator(gui.GenericDialog):
         if len(fields) == 0:
             return
 
+        
         # deal with original whch has 0 or 2 arguments
+        image_filter=''
         if fields[0] == 'original':
             if len(fields) not in (1,3):
-                self.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return      
+                self.display('f','Image Window, Original has wrong number of arguments')
+                return
+            
             # deal with window coordinates    
-            if len(fields) == 3:
+            if len(fields)  ==  3:
                 # window is specified
                 if not (fields[1].isdigit() and fields[2].isdigit()):
-                    self.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                    return
-                return
-            else:
-                return
+                    self.display('f','Image Window, coordinates are not numbers')
+            return
 
         # deal with remainder which has 1, 2, 5 or  6arguments
         # check basic syntax
         if  fields[0] not in ('shrink','fit','warp'):
-            self.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,2,5,6):
-            self.display('f','Wrong number of fields: ' + field + ", " + line)
+            self.display('f','Image Window, illegal command: '+fields[0])
+        if len(fields) not in (1,2,3,5,6):
+            self.display('f','wrong number of fields in: '+ line)
             return
         if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.display('f','Illegal Filter: ' + field + ", " + line)
+            self.display('f','wrong filter: '+ fields[5]+ ' in '+ line)
             return
-        if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.display('f','Illegal Filter: ' + field + ", " + line)
-        
-        # deal with window coordinates    
-        if len(fields) in (5,6):
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.display('f','coordinate is not a positive integer ' + field + ", " + line)
+        if len(fields) == 2 and (fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS') and '*' not in fields[1]):
+            self.display('f','wrong filter: '+ fields[1]+ ' in '+ line)
+            return
+        if len(fields) == 3 and fields[2] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            self.display('f','wrong filter: '+ fields[2]+ ' in '+ line)
+            return
+
+
+        # deal with no window coordinates and no filter
+        if len(fields) == 1:         
+            return
+   
+        # deal with window coordinates in +* format with optional filter
+        if len(fields) in (2,3) and '*' in fields[1]:
+            status,message,x1,y1,x2,y2 = parse_rectangle(fields[1])
+            if status=='error':
+                self.display('f','Image Window, '+message)
                 return
-
             
-
-
-
-
+        if len(fields) in (5,6):
+            # window is specified in x1 y1 x2 y2
+            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
+                self.display('f','coords are not numbers')
+                return
 
                      
 # *************************************
@@ -991,32 +1042,31 @@ class Validator(gui.GenericDialog):
             
         if len(fields) == 0:
             return
-            
+
         # deal with original which has 1
         if fields[0] == 'original':
             if len(fields)  !=  1:
-                self.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return 
-            return
-
-
-        # deal with warp which has 1 or 5  arguments
-        # check basic syntax
-        if  fields[0]  != 'warp':
-            self.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,5):
-            self.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.display('f','coordinate is not a positive integer ' + field + ", " + line)
+                self.display('f','Video Window, wrong number of fields for original in: '+line)  
                 return
-
-
-
+        else:
+            # deal with warp which has 1 or 5  arguments
+            # check basic syntax
+            if  fields[0]  != 'warp':
+                self.display('f','Video Window, '+fields[0] + 'is not a valid type in : '+ line)
+            else:
+            
+                if len(fields) not in (1,2,5):
+                    self.display('f','Video Window, wrong number of coordinates for warp in: '+ line)
+                    return
+                                 
+                # deal with window coordinates    
+                if len(fields) == 1:
+                    return 
+                else:
+                    # window is specified
+                    status,message,x1,y1,x2,y2=parse_rectangle(' '.join(fields[1:]))
+                    if status == 'error':                                   
+                        self.display('f','Video Window, '+message)
 
 
 

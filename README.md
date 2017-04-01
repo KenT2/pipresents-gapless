@@ -1,4 +1,4 @@
-PI PRESENTS  - Version 1.3.1
+PI PRESENTS  - Version 1.3.2
 ============================
 
 Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
@@ -6,21 +6,22 @@ http://www.weser-echo.de/README_Vers_1_3.pdf
 
 This repository contains a beta test version of the next version Pi Presents. The version is a beta as it is likely to have a few bugs and also will be developed further to add new features.
 
-
 TO UPGRADE FROM VERSION 1.2 [PIPRESENTS-NEXT]
 ============================
-To upgrade follow the instructions in the 'Updating Pi Presents' section below. Before doing so keep a copy of the current Pi Presents and all the profiles:
+To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then you will need to read the section of the manual on update from 1.2 to 1.3 and Release Notes for all 1.3x versions. Before doing so keep a copy of the current Pi Presents and all the profiles:
+
+TO UPGRADE FROM VERSION 1.3.1 (PIPRESENTS-GAPLESS)
+======================================
+To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then follow the instructions in the Release Notes
 
 
 PI PRESENTS
 ===========
 Pi Presents is a toolkit for producing interactive multimedia applications for museums, visitor centres and more. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cost effective way to provide interactive audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
 
-This second major upgrade of Pi Presents adds three major new features  - multi-window displays running concurrent shows, gapless transition between tracks, and remote control from and of other Pi Presents and with any OSC enabled device. This has entailed a large rewrite and along the way many of the existing features have been improved.
-
 Pi Presents is now a flexible toolkit for interactive display and animation with a large range of features. This large range of features may seem to make it complicated, hopefully not so as most of them are optional.  I have tried to keep it simple for beginners by providing an editor with templates and a set of examples for basic applications. A extensive User Manual is also provided.
 
-The components of Pi Presents are five types of show, four media players for different types of track, a GPIO output sequencer, a time of day scheduler, and something to handle external inputs.  These can be combined using a simple to use editor to serve a great variety of simple or complex applications. Applications include:
+The components of Pi Presents are five types of show, four media players for different types of track, a GPIO output sequencer, a time of day scheduler, and something to handle external inputs.  These can be combined using a simple to use web based editor to serve a great variety of simple or complex applications. Applications include:
 
 *	Audio-visual interpretation of exhibits by triggering a sound, video, or slideshow from GPIO, keyboard or buttons.
 
@@ -94,12 +95,17 @@ Return the terminal window to the home directory.
 	   
 Download Pi Presents
 --------------------
+Requirements:
 
-Pi Presents MUST use Raspbian and be run from the PIXEL desktop. From a terminal window open in your home directory type:
+	* must use the latest version of Raspbian Jessie
+	* must be run from the PIXEL desktop.
+	* must be installed and run from user Pi
+
+From a terminal window open in your home directory type:
 
          wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your home directory. Rename the directory to pipresents
+There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your /home/pi directory. Copy or rename the directory to pipresents
 
 Run Pi Presents to check the installation is successful. From a terminal window opened in the home directory type:
 
@@ -117,7 +123,7 @@ Open a terminal window in your home directory and type:
 
          wget https://github.com/KenT2/pipresents-gapless-examples/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in your home directory. Open the directory and move the 'pp_home' directory and its contents to your home directory.
+There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in the /home/pi directory. Open the directory and move the 'pp_home' directory and its contents to the home/pi directory.
 
 From the terminal window type:
 
@@ -128,26 +134,26 @@ to see a repeating multimedia show.
 Now read the manual to try other examples.
 
 
-Updating Pi Presents from Version 1.2
+Updating Pi Presents from earlier Versions
 ======================================
 
-Open a terminal window in your home directory and type:
+Open a terminal window in the /home/pi and type:
 
          wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your home directory
+There should now be a directory 'KenT2-pipresents-gapless-xxxx' in the /home/pi directory
 
 Rename the existing pipresents directory to old-pipresents
 
 Rename the new directory to pipresents.
 
-Copy pp_editor.cfg from the old to new /pipresents/pp_config directory.
+Copy pp_editor.cfg, pp_web.cfg, pp_email.cfg, keys.cfg, pp_oscmonitor.cfg, and pp_osc_remote.cfg from the old to new /pipresents/pp_config directory.
 
 
 Getting examples for this version.
 ----------------------------------
 
-New to this version is a github repository [pipresents-gapless-examples]
+Updated in this version is a github repository [pipresents-gapless-examples]
 
 Rename the existing pp_home directory to old_pp_home.
 
@@ -155,23 +161,23 @@ Open a terminal window in your home directory and type:
 
          wget https://github.com/KenT2/pipresents-gapless-examples/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in your home directory.
+There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in the /home/pi directory.
 
-Open the directory and move the 'pp_home' directory and its contents to your home directory.
+Open the directory and move the 'pp_home' directory and its contents to the /home/pi directory.
 
-These examples are compatible with the version of  Pi Presents you have just downloaded. In addition you can update profiles from version 1.2.x [pipresents-next] to 1.3.1 by simply opening them in the editor (make a backup copy first):
+These examples are compatible with the version of Pi Presents you have just downloaded. In addition you can update profiles from version 1.3.1 or earlier to 1.3.2 by simply opening them in the editor (make a backup copy first):
 
-In either case you can use the tools>update all menu option to update all profiles in /pp_home
+In either case you can use the tools>update all menu option to update all profiles in a single directory at once.
 
-Lastly you will need to do some manual updating of some of the field values as specified in  ReleaseNotes.txt. Start at the paragraph in releasenotes.txt that introduces version 1.3 and work backwards.
+Lastly you will need to do some manual updating of some of the field values as specified in  ReleaseNotes.txt. Start at the paragraph in releasenotes.txt that introduces version 1.3.1 and work forwards
 
 
 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for videos and images. 
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
 
-if you want to play videos omxplayer requires 256MB of GPU memory. 
+If you want to play videos omxplayer requires 256MB of GPU memory. 
 
 
 Bug Reports and Feature Requests

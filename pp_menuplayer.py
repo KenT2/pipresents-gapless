@@ -3,6 +3,7 @@ from Tkinter import N, CENTER, LEFT, NW, W
 from PIL import Image
 from PIL import ImageTk
 from pp_player import Player
+from pp_utils import parse_rectangle, calculate_text_position
 
 class MenuPlayer(Player):
 
@@ -177,9 +178,14 @@ class MenuPlayer(Player):
 
         # display menu text if enabled
         if self.track_params['track-text'] != '':
-            self.menu_text_obj=self.canvas.create_text(int(self.track_params['track-text-x'])+self.show_canvas_x1,
-                                                       int(self.track_params['track-text-y'])+self.show_canvas_y1,
-                                                       anchor=NW,
+            x,y,anchor,justify=calculate_text_position(self.track_params['track-text-x'],self.track_params['track-text-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.track_params['track-text-justify'])
+            
+            self.menu_text_obj=self.canvas.create_text(x,y,
+                                                       anchor=anchor,
+                                                       justify=justify,
                                                        text=self.track_params['track-text'],
                                                        fill=self.track_params['track-text-colour'],
                                                        font=self.track_params['track-text-font'])
@@ -187,9 +193,13 @@ class MenuPlayer(Player):
         # display instructions (hint)
         hint_text=self.track_params['hint-text']
         if hint_text != '':
-            self.hint_text_obj=self.canvas.create_text(int(self.track_params['hint-x'])+self.show_canvas_x1,
-                                                       int(self.track_params['hint-y'])+self.show_canvas_y1,
-                                                       anchor=NW,
+            x,y,anchor,justify=calculate_text_position(self.track_params['hint-x'],self.track_params['hint-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.track_params['hint-justify'])            
+            self.hint_text_obj=self.canvas.create_text(x,y,
+                                                       anchor=anchor,
+                                                       justify=justify,
                                                        text=hint_text,
                                                        fill=self.track_params['hint-colour'],
                                                        font=self.track_params['hint-font'])
@@ -222,7 +232,7 @@ class MenuPlayer(Player):
 
     def display_menu(self):
 
-        if self.medialist.display_length()==0:
+        if self.medialist.anon_length()==0:
             return 'error','no tracks to show in menu'
 
         # calculate menu geometry
@@ -353,8 +363,8 @@ class MenuPlayer(Player):
     def calculate_geometry(self):
 
         self.display_strip=self.track_params['menu-strip']
-        self.screen_width=int(self.canvas['width'])
-        self.screen_height=int(self.canvas['height'])
+        self.canvas_width=int(self.canvas['width'])
+        self.canvas_height=int(self.canvas['height'])
         
         if self.display_strip == 'yes':
             self.strip_padding=int(self.track_params['menu-strip-padding'])
@@ -376,7 +386,7 @@ class MenuPlayer(Player):
         self.menu_width=self.menu_x_right - self.menu_x_left
         self.menu_height=self.menu_y_bottom - self.menu_y_top
 
-        self.list_length=self.medialist.display_length()
+        self.list_length=self.medialist.anon_length()
 
         # get or calculate rows and columns
         if self.direction == 'horizontal':
@@ -476,7 +486,7 @@ class MenuPlayer(Player):
 
             # and display the icon rectangle
             self.canvas.create_rectangle(points,
-                                         outline='red',
+                                         outline='blue',
                                          fill='')
 
         
@@ -487,7 +497,7 @@ class MenuPlayer(Player):
                     self.menu_x_right + self.show_canvas_x1,
                     self.menu_y_bottom + self.show_canvas_y1]
             self.canvas.create_rectangle(points,
-                                         outline='blue',
+                                         outline='red',
                                          fill='')
                 
         return 'normal',''
@@ -804,23 +814,22 @@ class MenuPlayer(Player):
     def parse_menu_window(self,line):
         if line != '':
             fields = line.split()
-            if len(fields) not in  (1, 2,4):
+            if len(fields) not in  (1,2,4):
                 return 'error','wrong number of fields',0,0,0,0
-            if len(fields) == 1:
+            if len(fields) in (1,4):
                 if fields[0] == 'fullscreen':
-                    return 'normal','',0,0,self.screen_width - 1, self.screen_height - 1
+                    return 'normal','',0,0,self.canvas_width - 1, self.canvas_height - 1
                 else:
-                    return 'error','single field is not fullscreen',0,0,0,0
+                    status,message,x1,y1,x2,y2 = parse_rectangle (' '.join(fields))
+                    if status != 'error':
+                        return 'normal','',x1,y1,x2,y2
+                    else:
+                        return 'error',message,0,0,0,0                   
             if len(fields) == 2:                    
                 if fields[0].isdigit() and fields[1].isdigit():
-                    return 'normal','',int(fields[0]),int(fields[1]),self.screen_width, self.screen_height
+                    return 'normal','',int(fields[0]),int(fields[1]),self.canvas_width, self.canvas_height
                 else:
-                    return 'error','field is not a digit',0,0,0,0
-            if len(fields) == 4:                    
-                if fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit():
-                    return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
-            else:
-                return 'error','field is not a digit',0,0,0,0
+                    return 'error','dimension is not a number',0,0,0,0                    
         else:
             return 'error','line is blank',0,0,0,0
 

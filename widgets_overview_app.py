@@ -22,33 +22,27 @@ class MyApp(App):
         super(MyApp, self).__init__(*args)
 
     def main(self):
-        verticalContainer = gui.Widget(width=540)
+        verticalContainer = gui.Widget(width=540, margin='0px auto') #the margin 0px auto centers the main container
         verticalContainer.style['display'] = 'block'
         verticalContainer.style['overflow'] = 'hidden'
 
-        horizontalContainer = gui.Widget(width='100%')
-        horizontalContainer.set_layout_orientation(gui.Widget.LAYOUT_HORIZONTAL)
+        horizontalContainer = gui.Widget(width='100%', layout_orientation=gui.Widget.LAYOUT_HORIZONTAL, margin='0px')
         horizontalContainer.style['display'] = 'block'
         horizontalContainer.style['overflow'] = 'auto'
-        horizontalContainer.style['margin'] = '0px'
         
         subContainerLeft = gui.Widget(width=320)
         subContainerLeft.style['display'] = 'block'
         subContainerLeft.style['overflow'] = 'auto'
         subContainerLeft.style['text-align'] = 'center'
-        self.img = gui.Image('/res/logo.png', width=100, height=100)
-        self.img.style['margin'] = '10px'
-        self.img.style['margin'] = '10px'
-        self.img.set_on_click_listener(self, 'on_img_clicked')
+        self.img = gui.Image('/res/logo.png', width=100, height=100, margin='10px')
+        self.img.set_on_click_listener(self.on_img_clicked)
 
-        self.table = gui.Table(width=300, height=200)
-        self.table.style['margin'] = '10px'
-        self.table.from_2d_matrix([['ID', 'First Name', 'Last Name'],
-                                   ['101', 'Danny', 'Young'],
-                                   ['102', 'Christine', 'Holand'],
-                                   ['103', 'Lars', 'Gordon'],
-                                   ['104', 'Roberto', 'Robitaille'],
-                                   ['105', 'Maria', 'Papadopoulos']])
+        self.table = gui.Table.new_from_list([('ID', 'First Name', 'Last Name'),
+                                   ('101', 'Danny', 'Young'),
+                                   ('102', 'Christine', 'Holand'),
+                                   ('103', 'Lars', 'Gordon'),
+                                   ('104', 'Roberto', 'Robitaille'),
+                                   ('105', 'Maria', 'Papadopoulos')], width=300, height=200, margin='10px')
 
         # the arguments are	width - height - layoutOrientationOrizontal
         subContainerRight = gui.Widget()
@@ -57,77 +51,81 @@ class MyApp(App):
         subContainerRight.style['overflow'] = 'auto'
         subContainerRight.style['text-align'] = 'center'
         self.count = 0
-        self.counter = gui.Label('', width=200, height=30)
-        self.counter.style['margin'] = '10px'
+        self.counter = gui.Label('', width=200, height=30, margin='10px')
 
-        self.lbl = gui.Label('This is a LABEL!', width=200, height=30)
-        self.lbl.style['margin'] = '10px'
+        self.lbl = gui.Label('This is a LABEL!', width=200, height=90, margin='10px')
 
-        self.bt = gui.Button('Press me!', width=200, height=30)
-        self.bt.style['margin'] = '10px'
+        self.bt = gui.Button('Press me!', width=200, height=30, margin='10px')
         # setting the listener for the onclick event of the button
-        self.bt.set_on_click_listener(self, 'on_button_pressed')
+        self.bt.set_on_click_listener(self.on_button_pressed)
 
-        self.txt = gui.TextInput(width=200, height=30)
-        self.txt.style['margin'] = '10px'
+        self.txt = gui.TextInput(width=200, height=30, margin='10px')
         self.txt.set_text('This is a TEXTAREA')
-        self.txt.set_on_change_listener(self, 'on_text_area_change')
+        self.txt.set_on_change_listener(self.on_text_area_change)
 
-        self.spin = gui.SpinBox(100, width=200, height=30)
-        self.spin.style['margin'] = '10px'
-        self.spin.set_on_change_listener(self, 'on_spin_change')
+        self.spin = gui.SpinBox(100, width=200, height=30, margin='10px')
+        self.spin.set_on_change_listener(self.on_spin_change)
 
-        self.check = gui.CheckBoxLabel('Label checkbox', True, width=200, height=30)
-        self.check.style['margin'] = '10px'
-        self.check.set_on_change_listener(self, 'on_check_change')
+        self.check = gui.CheckBoxLabel('Label checkbox', True, width=200, height=30, margin='10px')
+        self.check.set_on_change_listener(self.on_check_change)
 
-        self.btInputDiag = gui.Button('Open InputDialog', width=200, height=30)
-        self.btInputDiag.style['margin'] = '10px'
-        self.btInputDiag.set_on_click_listener(self, 'open_input_dialog')
+        self.btInputDiag = gui.Button('Open InputDialog', width=200, height=30, margin='10px')
+        self.btInputDiag.set_on_click_listener(self.open_input_dialog)
 
-        self.btFileDiag = gui.Button('File Selection Dialog', width=200, height=30)
-        self.btFileDiag.style['margin'] = '10px'
-        self.btFileDiag.set_on_click_listener(self, 'open_fileselection_dialog')
+        self.btFileDiag = gui.Button('File Selection Dialog', width=200, height=30, margin='10px')
+        self.btFileDiag.set_on_click_listener(self.open_fileselection_dialog)
 
-        self.btUploadFile = gui.FileUploader('./', width=200, height=30)
-        self.btUploadFile.style['margin'] = '10px'
-        self.btUploadFile.set_on_success_listener(self, 'fileupload_on_success')
-        self.btUploadFile.set_on_failed_listener(self, 'fileupload_on_failed')
+        self.btUploadFile = gui.FileUploader('./', width=200, height=30, margin='10px')
+        self.btUploadFile.set_on_success_listener(self.fileupload_on_success)
+        self.btUploadFile.set_on_failed_listener(self.fileupload_on_failed)
 
         items = ('Danny Young','Christine Holand','Lars Gordon','Roberto Robitaille')
-        self.listView = gui.ListView.new_from_list(items)
-        self.listView.set_size(300, 120)
-        self.listView.style['margin'] = '10px'
-        self.listView.set_on_selection_listener(self, "list_view_on_selected")
+        self.listView = gui.ListView.new_from_list(items, width=300, height=120, margin='10px')
+        self.listView.set_on_selection_listener(self.list_view_on_selected)
 
-        self.link = gui.Link("http://localhost:8081", "A link to here", width=200, height=30)
-        self.link.style['margin'] = '10px'
+        self.link = gui.Link("http://localhost:8081", "A link to here", width=200, height=30, margin='10px')
 
-        self.dropDown = gui.DropDown(width=200, height=20)
-        self.dropDown.style['margin'] = '10px'
-        c0 = gui.DropDownItem('DropDownItem 0', width=200, height=20)
-        c1 = gui.DropDownItem('DropDownItem 1', width=200, height=20)
-        self.dropDown.append(c0)
-        self.dropDown.append(c1)
-        self.dropDown.set_on_change_listener(self, 'drop_down_changed')
-        self.dropDown.set_value('DropDownItem 0')
+        self.dropDown = gui.DropDown.new_from_list(('DropDownItem 0', 'DropDownItem 1'),
+                                                   width=200, height=20, margin='10px')
+        self.dropDown.set_on_change_listener(self.drop_down_changed)
+        self.dropDown.select_by_value('DropDownItem 0')
 
-        self.slider = gui.Slider(10, 0, 100, 5, width=200, height=20)
-        self.slider.style['margin'] = '10px'
-        self.slider.set_on_change_listener(self, 'slider_changed')
+        self.slider = gui.Slider(10, 0, 100, 5, width=200, height=20, margin='10px')
+        self.slider.set_on_change_listener(self.slider_changed)
 
-        self.colorPicker = gui.ColorPicker('#ffbb00', width=200, height=20)
-        self.colorPicker.style['margin'] = '10px'
-        self.colorPicker.set_on_change_listener(self, 'color_picker_changed')
+        self.colorPicker = gui.ColorPicker('#ffbb00', width=200, height=20, margin='10px')
+        self.colorPicker.set_on_change_listener(self.color_picker_changed)
 
-        self.date = gui.Date('2015-04-13', width=200, height=20)
-        self.date.style['margin'] = '10px'
-        self.date.set_on_change_listener(self, 'date_changed')
+        self.date = gui.Date('2015-04-13', width=200, height=20, margin='10px')
+        self.date.set_on_change_listener(self.date_changed)
 
-        self.video = gui.VideoPlayer('http://www.w3schools.com/tags/movie.mp4',
-                                     'http://www.oneparallel.com/wp-content/uploads/2011/01/placeholder.jpg',
-                                     width=300, height=270)
-        self.video.style['margin'] = '10px'
+        # self.video = gui.VideoPlayer('http://www.w3schools.com/tags/movie.mp4',
+        #                             'http://www.oneparallel.com/wp-content/uploads/2011/01/placeholder.jpg',
+        #                             width=300, height=270, margin='10px')
+        self.video=None
+                                     
+        self.tree = gui.TreeView(width='100%', height=300)
+        ti1 = gui.TreeItem("Item1")
+        ti2 = gui.TreeItem("Item2")
+        ti3 = gui.TreeItem("Item3")
+        subti1 = gui.TreeItem("Sub Item1")
+        subti2 = gui.TreeItem("Sub Item2")
+        subti3 = gui.TreeItem("Sub Item3")
+        subti4 = gui.TreeItem("Sub Item4")
+        subsubti1 = gui.TreeItem("Sub Sub Item1")
+        subsubti2 = gui.TreeItem("Sub Sub Item2")
+        subsubti3 = gui.TreeItem("Sub Sub Item3")
+        self.tree.append(ti1)
+        self.tree.append(ti2)
+        self.tree.append(ti3)
+        ti2.append(subti1)
+        ti2.append(subti2)
+        ti2.append(subti3)
+        ti2.append(subti4)
+        subti4.append(subsubti1)
+        subti4.append(subsubti2)
+        subti4.append(subsubti3)
+        
         # appending a widget to another, the first argument is a string key
         subContainerRight.append(self.counter)
         subContainerRight.append(self.lbl)
@@ -138,39 +136,38 @@ class MyApp(App):
         subContainerRight.append(self.btInputDiag)
         subContainerRight.append(self.btFileDiag)
         # use a defined key as we replace this widget later
-        fdownloader = gui.FileDownloader('download test', '../remi/res/logo.png', width=200, height=30)
-        fdownloader.style['margin'] = '10px'
+        fdownloader = gui.FileDownloader('download test', '../remi/res/logo.png', width=200, height=30, margin='10px')
         subContainerRight.append(fdownloader, key='file_downloader')
         subContainerRight.append(self.btUploadFile)
         subContainerRight.append(self.dropDown)
         subContainerRight.append(self.slider)
         subContainerRight.append(self.colorPicker)
         subContainerRight.append(self.date)
+        subContainerRight.append(self.tree)
         self.subContainerRight = subContainerRight
 
         subContainerLeft.append(self.img)
         subContainerLeft.append(self.table)
         subContainerLeft.append(self.listView)
         subContainerLeft.append(self.link)
-        subContainerLeft.append(self.video)
+        # subContainerLeft.append(self.video)
 
         horizontalContainer.append(subContainerLeft)
         horizontalContainer.append(subContainerRight)
 
-        menu = gui.Menu()
-        menu.set_size('100%', '30px')
+        menu = gui.Menu(width='100%', height='30px')
         m1 = gui.MenuItem('File', width=100, height=30)
         m2 = gui.MenuItem('View', width=100, height=30)
-        m2.set_on_click_listener(self, 'menu_view_clicked')
+        m2.set_on_click_listener(self.menu_view_clicked)
         m11 = gui.MenuItem('Save', width=100, height=30)
         m12 = gui.MenuItem('Open', width=100, height=30)
-        m12.set_on_click_listener(self, 'menu_open_clicked')
+        m12.set_on_click_listener(self.menu_open_clicked)
         m111 = gui.MenuItem('Save', width=100, height=30)
-        m111.set_on_click_listener(self, 'menu_save_clicked')
+        m111.set_on_click_listener(self.menu_save_clicked)
         m112 = gui.MenuItem('Save as', width=100, height=30)
-        m112.set_on_click_listener(self, 'menu_saveas_clicked')
+        m112.set_on_click_listener(self.menu_saveas_clicked)
         m3 = gui.MenuItem('Dialog', width=100, height=30)
-        m3.set_on_click_listener(self, 'menu_dialog_clicked')
+        m3.set_on_click_listener(self.menu_dialog_clicked)
 
         menu.append(m1)
         menu.append(m2)
@@ -180,27 +177,25 @@ class MyApp(App):
         m11.append(m111)
         m11.append(m112)
 
-        menubar = gui.MenuBar()
-        menubar.set_size('100%', '30px')
+        menubar = gui.MenuBar(width='100%', height='30px')
         menubar.append(menu)
 
         verticalContainer.append(menubar)
         verticalContainer.append(horizontalContainer)
 
         # kick of regular display of counter
-        self.display_counter()
+        # self.display_counter()
 
         # returning the root widget
         return verticalContainer
 
     def display_counter(self):
-        self.counter.set_text('Running Time: ' + str(self.count))
+        # self.counter.set_text('Running Time: ' + str(self.count))
         self.count += 1
         Timer(1, self.display_counter).start()
 
-    def menu_dialog_clicked(self):
-        self.dialog = gui.GenericDialog(title='Dialog Box', message='Click Ok to transfer content to main page')
-        self.dialog.style['width'] = '300px'
+    def menu_dialog_clicked(self, widget):
+        self.dialog = gui.GenericDialog(title='Dialog Box', message='Click Ok to transfer content to main page', width='500px')
         self.dtextinput = gui.TextInput(width=200, height=30)
         self.dtextinput.set_value('Initial Text')
         self.dialog.add_field_with_label('dtextinput', 'Text Input', self.dtextinput)
@@ -208,17 +203,11 @@ class MyApp(App):
         self.dcheck = gui.CheckBox(False, width=200, height=30)
         self.dialog.add_field_with_label('dcheck', 'Label Checkbox', self.dcheck)
         values = ('Danny Young', 'Christine Holand', 'Lars Gordon', 'Roberto Robitaille')
-        self.dlistView = gui.ListView(width=200, height=120)
-        for key, value in enumerate(values):
-            self.dlistView.append(value, key=str(key))
+        self.dlistView = gui.ListView.new_from_list(values, width=200, height=120)
         self.dialog.add_field_with_label('dlistView', 'Listview', self.dlistView)
 
-        self.ddropdown = gui.DropDown(width=200, height=20)
-        c0 = gui.DropDownItem('DropDownItem 0', width=200, height=20)
-        c1 = gui.DropDownItem('DropDownItem 1', width=200, height=20)
-        self.ddropdown.append(c0)
-        self.ddropdown.append(c1)
-        self.ddropdown.set_value('Value1')
+        self.ddropdown = gui.DropDown.new_from_list(('DropDownItem 0', 'DropDownItem 1'),
+                                                    width=200, height=20)
         self.dialog.add_field_with_label('ddropdown', 'Dropdown', self.ddropdown)
 
         self.dspinbox = gui.SpinBox(min=0, max=5000, width=200, height=20)
@@ -237,10 +226,10 @@ class MyApp(App):
         self.ddate.set_value('2000-01-01')
         self.dialog.add_field_with_label('ddate', 'Date', self.ddate)
 
-        self.dialog.set_on_confirm_dialog_listener(self, 'dialog_confirm')
+        self.dialog.set_on_confirm_dialog_listener(self.dialog_confirm)
         self.dialog.show(self)
 
-    def dialog_confirm(self):
+    def dialog_confirm(self, widget):
         result = self.dialog.get_field('dtextinput').get_value()
         self.txt.set_value(result)
 
@@ -248,7 +237,7 @@ class MyApp(App):
         self.check.set_value(result)
 
         result = self.dialog.get_field('ddropdown').get_value()
-        self.dropDown.set_value(result)
+        self.dropDown.select_by_value(result)
 
         result = self.dialog.get_field('dspinbox').get_value()
         self.spin.set_value(result)
@@ -262,49 +251,55 @@ class MyApp(App):
         result = self.dialog.get_field('ddate').get_value()
         self.date.set_value(result)
 
-        result = self.dialog.get_field('dlistView').get_key()
-        self.listView.select_by_key(result)
+        result = self.dialog.get_field('dlistView').get_value()
+        self.listView.select_by_value(result)
+        #krt add hide here as  removed from generic dialog
+        self.dialog.hide()
+        pass
 
     # listener function
-    def on_img_clicked(self):
+    def on_img_clicked(self, widget):
         self.lbl.set_text('Image clicked!')
 
-    def on_button_pressed(self):
-        self.lbl.set_text('Button pressed!')
+    def on_button_pressed(self, widget):
+        self.lbl.set_text('Button pressed! ')
         self.bt.set_text('Hi!')
 
-    def on_text_area_change(self, newValue):
+    def on_text_area_change(self, widget, newValue):
         self.lbl.set_text('Text Area value changed!')
 
-    def on_spin_change(self, newValue):
+    def on_spin_change(self, widget, newValue):
         self.lbl.set_text('SpinBox changed, new value: ' + str(newValue))
 
-    def on_check_change(self, newValue):
+    def on_check_change(self, widget, newValue):
         self.lbl.set_text('CheckBox changed, new value: ' + str(newValue))
 
-    def open_input_dialog(self):
+    def open_input_dialog(self, widget):
         self.inputDialog = gui.InputDialog('Input Dialog', 'Your name?',
                                            initial_value='type here', 
                                            width=500, height=160)
+        
         self.inputDialog.set_on_confirm_value_listener(
-            self, 'on_input_dialog_confirm')
+            self.on_input_dialog_confirm)
 
         # here is returned the Input Dialog widget, and it will be shown
         self.inputDialog.show(self)
+        
 
-    def on_input_dialog_confirm(self, value):
+    def on_input_dialog_confirm(self, widget, value):
+        print 'Ok pressed input_dialog_confirm',value
         self.lbl.set_text('Hello ' + value)
 
-    def open_fileselection_dialog(self):
+    def open_fileselection_dialog(self, widget):
         self.fileselectionDialog = gui.FileSelectionDialog('File Selection Dialog', 'Select files and folders', False,
-                                                           '.')
+                                                           '/home')
         self.fileselectionDialog.set_on_confirm_value_listener(
-            self, 'on_fileselection_dialog_confirm')
+            self.on_fileselection_dialog_confirm)
 
         # here is returned the Input Dialog widget, and it will be shown
         self.fileselectionDialog.show(self)
 
-    def on_fileselection_dialog_confirm(self, filelist):
+    def on_fileselection_dialog_confirm(self, widget, filelist):
         # a list() of filenames and folders is returned
         self.lbl.set_text('Selected files: %s' % ','.join(filelist))
         if len(filelist):
@@ -313,40 +308,40 @@ class MyApp(App):
             fdownloader = gui.FileDownloader("download selected", f, width=200, height=30)
             self.subContainerRight.append(fdownloader, key='file_downloader')
 
-    def list_view_on_selected(self, selected_item_key):
+    def list_view_on_selected(self, widget, selected_item_key):
         """ The selection event of the listView, returns a key of the clicked event.
             You can retrieve the item rapidly
         """
         self.lbl.set_text('List selection: ' + self.listView.children[selected_item_key].get_text())
 
-    def drop_down_changed(self, value):
+    def drop_down_changed(self, widget, value):
         self.lbl.set_text('New Combo value: ' + value)
 
-    def slider_changed(self, value):
+    def slider_changed(self, widget, value):
         self.lbl.set_text('New slider value: ' + str(value))
 
-    def color_picker_changed(self, value):
+    def color_picker_changed(self, widget, value):
         self.lbl.set_text('New color value: ' + value)
 
-    def date_changed(self, value):
+    def date_changed(self, widget, value):
         self.lbl.set_text('New date value: ' + value)
 
-    def menu_save_clicked(self):
+    def menu_save_clicked(self, widget):
         self.lbl.set_text('Menu clicked: Save')
 
-    def menu_saveas_clicked(self):
+    def menu_saveas_clicked(self, widget):
         self.lbl.set_text('Menu clicked: Save As')
 
-    def menu_open_clicked(self):
+    def menu_open_clicked(self, widget):
         self.lbl.set_text('Menu clicked: Open')
 
-    def menu_view_clicked(self):
+    def menu_view_clicked(self, widget):
         self.lbl.set_text('Menu clicked: View')
 
-    def fileupload_on_success(self, filename):
+    def fileupload_on_success(self, widget, filename):
         self.lbl.set_text('File upload success: ' + filename)
 
-    def fileupload_on_failed(self, filename):
+    def fileupload_on_failed(self, widget, filename):
         self.lbl.set_text('File upload failed: ' + filename)
 
 
@@ -355,4 +350,5 @@ if __name__ == "__main__":
     # optional parameters
     # start(MyApp,address='127.0.0.1', port=8081, multiple_instance=False,enable_file_cache=True, update_interval=0.1, start_browser=True)
 
-    start(MyApp, debug=True,address='192.168.1.108')
+    start(MyApp, debug=False, address='192.168.1.67',start_browser=False,enable_file_cache=False,multiple_instance=True)
+    # start(MyApp, debug=True, address='192.168.1.67',start_browser=False)

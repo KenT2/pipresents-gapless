@@ -5,7 +5,7 @@ from PIL import ImageTk
 
 from pp_pluginmanager import PluginManager
 from pp_animate import Animate
-from pp_utils import Monitor
+from pp_utils import Monitor,calculate_text_position
 
 class Player(object):
 
@@ -143,7 +143,7 @@ class Player(object):
             if line.strip() == "":
                 continue
             # print 'show control command: ',line
-            self.command_callback(line, self.show_params['show-ref'])
+            self.command_callback(line, source='track',show=self.show_params['show-ref'])
 
 
 
@@ -274,9 +274,15 @@ class Player(object):
                           
         # load show text if enabled
         if self.show_params['show-text'] !=  '' and self.track_params['display-show-text'] == 'yes':
-            self.show_text_obj=self.canvas.create_text(int(self.show_params['show-text-x'])+self.show_canvas_x1,
-                                                       int(self.show_params['show-text-y'])+self.show_canvas_y1,
-                                                       anchor=NW,
+
+            x,y,anchor,justify=calculate_text_position(self.show_params['show-text-x'],self.show_params['show-text-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.show_params['show-text-justify'])
+ 
+            self.show_text_obj=self.canvas.create_text(x,y,
+                                                       anchor=anchor,
+                                                       justify=justify,
                                                        text=self.show_params['show-text'],
                                                        fill=self.show_params['show-text-colour'],
                                                        font=self.show_params['show-text-font'])
@@ -284,21 +290,35 @@ class Player(object):
 
         # load track text if enabled
         if self.track_params['track-text'] !=  '':
-            self.track_text_obj=self.canvas.create_text(int(self.track_params['track-text-x'])+self.show_canvas_x1,
-                                                        int(self.track_params['track-text-y'])+ self.show_canvas_y1,
-                                                        anchor=NW,
+
+            x,y,anchor,justify=calculate_text_position(self.track_params['track-text-x'],self.track_params['track-text-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.track_params['track-text-justify'])
+ 
+            
+            self.track_text_obj=self.canvas.create_text(x,y,
+                                                        anchor=anchor,
+                                                        justify=justify,
                                                         text=self.track_params['track-text'],
                                                         fill=self.track_params['track-text-colour'],
                                                         font=self.track_params['track-text-font'])
 
         # load instructions if enabled
         if enable_menu is  True:
-            self.hint_obj=self.canvas.create_text(int(self.show_params['hint-x'])+ self.show_canvas_x1,
-                                                  int(self.show_params['hint-y'])+ self.show_canvas_y1,
+
+            x,y,anchor,justify=calculate_text_position(self.show_params['hint-x'],self.show_params['hint-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.show_params['hint-justify'])
+ 
+
+            self.hint_obj=self.canvas.create_text(x,y,
+                                                  justify=justify,
                                                   text=self.show_params['hint-text'],
                                                   fill=self.show_params['hint-colour'],
                                                   font=self.show_params['hint-font'],
-                                                  anchor=NW)
+                                                  anchor=anchor)
 
         self.display_show_canvas_rectangle()
 
@@ -389,7 +409,8 @@ class Player(object):
         #  complete path of the filename of the selected entry
         if track_file[0] == "+":
             track_file=self.pp_home+track_file[1:]
-        # self.mon.log(self,"Background image is "+ track_file)
+        elif track_file[0] == "@":
+            track_file=self.pp_profile+track_file[1:]
         return track_file
         
     # get a text string from resources.cfg

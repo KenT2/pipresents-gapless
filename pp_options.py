@@ -25,6 +25,17 @@ def command_options():
     return  vars(args)
 
 
+def web_ed_options():
+    """ reads the command line options and returns a dictionary of them"""
+    parser = argparse.ArgumentParser(description = 'Pi Presents Web Editor')
+    parser.add_argument( '-d','--debug', nargs='?', default='7', const='15',help='Debug output to terminal window')
+    parser.add_argument( '-n','--native', action='store_true',help='Native')
+    parser.add_argument( '-l','--local', action='store_true',help='Local')
+    parser.add_argument( '-r','--remote', action='store_true',help='Remote')
+    args=parser.parse_args()
+    return  vars(args)
+
+
 def ed_options():
     """ reads the command line options and returns a dictionary of them"""
     parser = argparse.ArgumentParser(description = 'Pi Presents Editor')

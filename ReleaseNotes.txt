@@ -1,3 +1,18 @@
+Version 1.3.2a
+
+Version 1.3.2a continues the improvements to Remote Management including a revamp of the look and feel of the Manager and Web Editor. Otherwise there is a large number of enhancements to the core show/player.
+
+The existing editor pp_editor.py will be discontinued after this issue. It is replaced by the web based editor pp_web_editor.py. pp_web_editor.py displays in a browser. It works well on the local Pi and can also be used remotely from any computer with a browser.
+The old editor has been updated for this version of Pi Presents but not rigoursly tested. Please use the new editor.
+
+The improvements to the core functionality require changes to the fields in a profile. The example profiles have been updated and  you should download the latest set of profiles from Github. Profiles made under previous versions of PP will not run with this version and will produce an error message. However if you edit those profiles they will automatically be updated, a backup being made first.
+
+After using the editor to update the fields of the profile some of the field content will require manual update.
+
+Liveshow
+Liveshows have been enhanced such that if the livelist is empty an alternative track or show can be played.  This is controlled by the List Empty Track field of the liveshow. After update this will be blank resulting in a blank display for an empty list. Replace this with a media track or a show track if required.
+
+
 Version 1.3.1i
 
 * Significant improvements to Remote Management.

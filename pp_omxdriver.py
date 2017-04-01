@@ -47,10 +47,15 @@ Signals
 """
 
 class OMXDriver(object):
+
+    # adjust this to determine freeze after the first frame
+    after_first_frame_position =-50000 # microseconds
+   
     _LAUNCH_CMD = '/usr/bin/omxplayer --no-keys '  # needs changing if user has installed his own version of omxplayer elsewhere
-    KEY_MAP =   { '-': 17, '+': 18, '=': 18} # add more keys here, see popcornmix/omxplayer github
+    KEY_MAP =   { '-': 17, '+': 18, '=': 18} # add more keys here, see popcornmix/omxplayer github file KeyConfig.h
 
     def __init__(self,widget,pp_dir):
+
 
         self.widget=widget
         self.pp_dir=pp_dir
@@ -67,8 +72,9 @@ class OMXDriver(object):
         self.paused_at_end=False
         self.pause_at_end_time=0
         
-        self.pause_before_play_required=True
-        self.paused_at_start=False
+        # self.pause_before_play_required='before-first-frame'  #no,before-first-frame, after-first-frame
+        # self.pause_before_play_required='no'
+        self.paused_at_start='False'
 
         self.paused=False      
 
@@ -81,13 +87,8 @@ class OMXDriver(object):
         self.__iface_player = None
 
 
-        # legacy
-        self.xbefore='ignore this - legacy'
-        self.xafter='ignore this - legacy'
-
-
-
-    def load(self, track, options,caller):
+    def load(self, track, freeze_at_start,options,caller):
+        self.pause_before_play_required=freeze_at_start
         self.caller=caller
         track= "'"+ track.replace("'","'\\''") + "'"
         # self.mon.log(self,'TIME OF DAY: '+ strftime("%Y-%m-%d %H:%M"))
@@ -122,7 +123,7 @@ class OMXDriver(object):
             self.mon.log(self,'connected to omxplayer dbus after ' + str(self.dbus_tries) + ' centisecs')
                 
             # get duration of the track in microsecs if fails return a very large duration
-            # posibly faile because omxplaer is running but not omxplayer.bin
+            # posibly faile because omxplayer is running but not omxplayer.bin
             duration_success,duration=self.get_duration()
             if duration_success is False:
                 self.mon.warn(self,'get duration failed for n attempts using '+ str(duration/60000000)+ ' minutes')
@@ -143,10 +144,18 @@ class OMXDriver(object):
         self.end_play_signal=False
         self.end_play_reason='nothing'
         self.paused_at_end=False
-        self.paused_at_start=False
-        self.widget.after(0,self._status_loop)
+        self.paused_at_start='False'
         self.delay = 50
+        self.widget.after(0,self._status_loop)
 
+
+
+    """
+    freeze at start
+    'no' - unpause in show - test !=0
+    'before_first_frame' - don't unpause in show, test !=0
+    'after_first_frame' - don't unpause in show, test > -100000
+    """
         
     def _status_loop(self):
             if self.is_running() is False:
@@ -159,7 +168,7 @@ class OMXDriver(object):
                 success, video_position = self.get_position()
                 # if video_position <= 0: print 'read position',video_position
                 if success is False:
-                    # print 'send nice day - process not running when reading video position - previous ' + str(self.video_position)
+                    # print 'send nice day - exception when reading video position'
                     self.end_play_signal=True
                     self.end_play_reason='nice_day'
                     return
@@ -176,18 +185,21 @@ class OMXDriver(object):
                             self.end_play_reason='pause_at_end'
                             return
                         else:
-                            # pause at end failed, probably because of delay after detection, just run on
+                            print 'pause at end failed, probably because of delay after detection, just run on'
                             self.widget.after(self.delay,self._status_loop)
                     else:
                         # need to do the pausing for preload after first timestamp is received 0 is default value before start
-                        if self.pause_before_play_required is True and self.paused_at_start is False and self.video_position !=0:
+                        # print self.pause_before_play_required,self.paused_at_start,self.video_position,OMXDriver.after_first_frame_position
+                        if (self.pause_before_play_required == 'after-first-frame' and self.paused_at_start == 'False' and self.video_position >OMXDriver.after_first_frame_position)\
+                        or(self.pause_before_play_required != 'after-first-frame' and self.paused_at_start == 'False' and self.video_position !=0):
                             pause_after_load_success=self.pause('after load')
                             if pause_after_load_success is True:
                                 # print self.id,' pause after load success',self.video_position
                                 self.start_play_signal = True
-                                self.paused_at_start=True
+                                self.paused_at_start='True'
                             else:
                                 # should never fail, just warn at the moment
+                                # print 'pause after load failed '+ + str(self.video_position)
                                 self.mon.warn(self, str(self.id)+ ' pause after load fail ' + str(self.video_position))                                   
                             self.widget.after(self.delay,self._status_loop)
                         else:
@@ -195,17 +207,19 @@ class OMXDriver(object):
 
 
     
-    def show(self,freeze_at_end_required):
+    def show(self,freeze_at_end_required,initial_volume):
+        self.initial_volume=initial_volume
         self.pause_at_end_required=freeze_at_end_required
         # unpause to start playing
-        unpause_show_success=self.unpause(' to start showing')
-        if unpause_show_success is True:
-            # print self.id,' unpause for show success', self.video_position
-            pass
-        else:
-            # should never fail, just warn at the moment
-            self.mon.warn(self, str(self.id)+ ' unpause for show fail ' + str(self.video_position))                                   
-
+        if self.pause_before_play_required =='no':
+            unpause_show_success=self.unpause(' to start showing')
+            # print 'unpause for show',self.paused
+            if unpause_show_success is True:
+                pass
+                # print self.id,' unpause for show success', self.video_position
+            else:
+                # should never fail, just warn at the moment
+                self.mon.warn(self, str(self.id)+ ' unpause for show fail ' + str(self.video_position))                                   
 
         
     def control(self,char):
@@ -223,8 +237,8 @@ class OMXDriver(object):
             return
 
         
-    # at end and after load
-    # return succces of the operation, several tries if pause did not work for and no error reported.
+    # USE ONLY at end and after load
+    # return succces of the operation, several tries if pause did not work and no error reported.
     def pause(self,reason):
         self.mon.log(self,'pause received '+reason)
         if self.paused is False:
@@ -253,12 +267,12 @@ class OMXDriver(object):
             # repeat
 
             
-    # for show
+    # USE ONLY for show
 
     def unpause(self,reason):
         self.mon.log(self,'Unpause received '+ reason)
         if self.paused is True:
-            self.mon.log(self,'Is paused so Track unpaused '+ reason)
+            self.mon.log(self,'Is paused so Track will be unpaused '+ reason)
             tries=1
             while True:
                 if self.send_unpause() is False:
@@ -266,7 +280,10 @@ class OMXDriver(object):
                 status = self.omxplayer_is_paused() # test omxplayer
                 if status == 'Playing':
                     self.paused = False
+                    self.paused_at_start='done'
+                    self.set_volume(self.initial_volume)
                     return True
+
                 if status == 'Failed':
                     # failed for good reason because of exception or process not running caused by end of track
                     return False
@@ -320,7 +337,60 @@ class OMXDriver(object):
             self.mon.warn(self,'Failed to send unpause - process not running')
             # print self.id,' send unpause not successful - process'
             return False
+
+    def pause_on(self):
+        self.mon.log(self,'pause on received ')
+        # print 'pause on',self.paused
+        if self.paused is True:
+            return
+        if self.is_running():
+            try:
+                # self.__iface_player.Action(16)                
+                self.__iface_player.Pause()  # - this should work but does not!!!
+                self.paused=True
+                # print 'paused OK'
+                return
+            except dbus.exceptions.DBusException as ex:
+                self.mon.warn(self,'Failed to do pause on - dbus exception: {}'.format(ex.get_dbus_message()))
+                return
+        else:
+            self.mon.warn(self,'Failed to do pause on - process not running')
+            return
                     
+
+    def pause_off(self):
+        self.mon.log(self,'pause off received ')
+        # print 'pause off',self.paused
+        if self.paused is False:
+            return
+        if self.is_running():
+            try:
+                self.__iface_player.Action(16)
+                self.paused=False
+                # print 'not paused OK'
+                return
+            except dbus.exceptions.DBusException as ex:
+                self.mon.warn(self,'Failed to do pause off - dbus exception: {}'.format(ex.get_dbus_message()))
+                return
+        else:
+            self.mon.warn(self,'Failed to do pause off - process not running')
+            return
+
+    def go(self):
+        self.mon.log(self,'go received ')
+        self.unpause('for go')
+
+
+    def mute(self):
+            self.__iface_player.Mute()
+            
+    def unmute(self):
+            self.__iface_player.Unmute()
+
+    def set_volume(self,millibels):
+        volume = pow(10, millibels / 2000.0);
+        self.__iface_props.Volume(volume)
+        
 
     def toggle_pause(self,reason):
         self.mon.log(self,'toggle pause received '+ reason)
@@ -391,7 +461,7 @@ class OMXDriver(object):
             micros = self.__iface_props.Position()
             return True,micros
         except dbus.exceptions.DBusException as ex:
-            # self.mon.warn(self,'Failed get_position - dbus exception: {}'.format(ex.get_dbus_message()))
+            # print 'Failed get_position - dbus exception: {}'.format(ex.get_dbus_message())
             return False,-1               
 
 

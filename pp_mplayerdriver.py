@@ -55,10 +55,24 @@ class MplayerDriver(object):
         
         self._process=None
         self.paused=False
+        self.muted=False
 
     def control(self,char):
         if self._process is not None:
             self._process.send(char)
+
+    def mute(self):
+        if self.muted is False:
+            if self._process is not None:
+                self._process.send('m') 
+                self.muted = True
+
+    def unmute(self):
+        if self.muted is True:
+            if self._process is not None:
+                self._process.send('m') 
+                self.muted = False
+        
 
     def pause(self):
         if self._process is not None:
@@ -67,6 +81,21 @@ class MplayerDriver(object):
                 self.paused = True
             else:
                 self.paused=False
+
+    def pause_on(self):
+        if self.paused is True:
+            return
+        if self._process is not None:
+            self._process.send('p') 
+            self.paused = True
+
+    def pause_off(self):
+        if self.paused is False:
+            return
+        if self._process is not None:
+            self._process.send('p') 
+            self.paused = False
+
 
     def play(self, track, options):
         self._pp(track, options,False)

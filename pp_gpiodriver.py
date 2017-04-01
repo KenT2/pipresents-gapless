@@ -29,12 +29,15 @@ class GPIODriver(object):
     REPEAT =  7   # repeat interval for state callbacks (mS)
     THRESHOLD = 8       # threshold of debounce count for state change to be considered
     PULL = 9                  # pull up or down or none
+    LINKED_NAME = 10     # output pin that follows the input
+    LINKED_INVERT = 11   # invert the linked pin
+
     
 # dynamic data
-    COUNT=10          # variable - count of the number of times the input has been 0 (limited to threshold)
-    PRESSED = 11      # variable - debounced state 
-    LAST = 12       # varible - last state - used to detect edge
-    REPEAT_COUNT = 13
+    COUNT=12          # variable - count of the number of times the input has been 0 (limited to threshold)
+    PRESSED = 13     # variable - debounced state 
+    LAST = 14      # varible - last state - used to detect edge
+    REPEAT_COUNT = 15
 
     
     TEMPLATE = ['',   # pin
@@ -44,6 +47,8 @@ class GPIODriver(object):
                 0,             # repeat
                 0,             # threshold
                 '',             #pull
+                -1,             #linked pin
+                False,          # linked invert
                 0,False,False,0]   #dynamics
     
 # for A and B
@@ -113,6 +118,18 @@ class GPIODriver(object):
                         pin[GPIODriver.FALLING_NAME]=self.config.get(pin_def,'falling-name')
                         pin[GPIODriver.ONE_NAME]=self.config.get(pin_def,'one-name')
                         pin[GPIODriver.ZERO_NAME]=self.config.get(pin_def,'zero-name')
+
+                        if self.config.has_option(pin_def,'linked-output'):
+                            # print self.config.get(pin_def,'linked-output')
+                            pin[GPIODriver.LINKED_NAME]=self.config.get(pin_def,'linked-output')
+                            if  self.config.get(pin_def,'linked-invert') == 'yes':
+                                pin[GPIODriver.LINKED_INVERT]=True
+                            else:
+                                pin[GPIODriver.LINKED_INVERT]=False
+                        else:
+                            pin[GPIODriver.LINKED_NAME]= ''
+                            pin[GPIODriver.LINKED_INVERT]=False
+                                               
                         if pin[GPIODriver.FALLING_NAME] == 'pp-shutdown':
                             GPIODriver.shutdown_index=index
                         if self.config.get(pin_def,'repeat') != '':
@@ -120,6 +137,7 @@ class GPIODriver(object):
                         else:
                             pin[GPIODriver.REPEAT]=-1
                         pin[GPIODriver.THRESHOLD]=int(self.config.get(pin_def,'threshold'))
+                        
                         if self.config.get(pin_def,'pull-up-down') == 'up':
                             pin[GPIODriver.PULL]=GPIO.PUD_UP
                         elif self.config.get(pin_def,'pull-up-down') == 'down':
@@ -192,6 +210,13 @@ class GPIODriver(object):
     def do_buttons(self):
         for index, pin in enumerate(GPIODriver.pins):
             if pin[GPIODriver.DIRECTION] == 'in':
+
+                # linked pin
+                if pin[GPIODriver.LINKED_NAME] != '':
+                    link_pin=self.output_pin_of(pin[GPIODriver.LINKED_NAME])
+                    if link_pin!=-1:
+                        self.GPIO.output(link_pin,self.GPIO.input(pin[GPIODriver.PIN]) ^ pin[GPIODriver.LINKED_INVERT])
+                    
                 # debounce
                 if self.GPIO.input(pin[GPIODriver.PIN]) == 0:
                     if pin[GPIODriver.COUNT]<pin[GPIODriver.THRESHOLD]:
@@ -228,8 +253,7 @@ class GPIODriver(object):
                 else:
                     if pin[GPIODriver.REPEAT] != -1:
                         pin[GPIODriver.REPEAT_COUNT]-=1
-
-                    
+         
 
     # execute an output event
     def handle_output_event(self,name,param_type,param_values,req_time):
@@ -280,6 +304,7 @@ class GPIODriver(object):
         for pin in GPIODriver.pins:
             # print " in list" + pin[GPIODriver.NAME] + str(pin[GPIODriver.PIN] )
             if pin[GPIODriver.NAME] == name and pin[GPIODriver.DIRECTION] == 'out':
+                # print " linked pin " + pin[GPIODriver.NAME] + ' ' + str(pin[GPIODriver.PIN] )
                 return pin[GPIODriver.PIN]
         return -1
 

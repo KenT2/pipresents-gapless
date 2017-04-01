@@ -1,10 +1,11 @@
 [Desktop Entry]
 Name=Pi Presents Editor
 Comment=Profile Editor for Pi Presents
-Exec= python /home/pi/pipresents/pp_editor.py
+Exec=python /home/pi/pipresents/pp_web_editor.py -l
 Icon=/home/pi/pipresents/pp_resources/billboard_picture.png
-Terminal=false
+Terminal=true
 MultipleArgs=false
 Type=Application
 Categories=Application;Development;
 StartupNotify=true
+X-KeepTerminal=true

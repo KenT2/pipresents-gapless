@@ -37,8 +37,8 @@ class ArtShow(Show):
                           command_callback)
 
         # delay in mS before next track is loaded after showing a track.
-        # can be reduced if animation is not required
-        self.load_delay = 2000
+        # can be inceeased if animation is required
+        self.load_delay = 5
 
         # Init variables for this show
         self.end_medialist_signal=False
@@ -46,6 +46,7 @@ class ArtShow(Show):
         self.next_track_signal=False
         self.state='closed'
         self.req_next=''
+        self.next_player=None
 
 
     def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
@@ -124,10 +125,10 @@ class ArtShow(Show):
         elif operation == 'down':
             self.next()
 
-        elif operation  ==  'pause':
+        elif operation  in ('pause','pause-on','pause-off','mute','unmute','go'):
             # pass down if show or track running.
             if self.current_player is not None:
-                self.current_player.input_pressed('pause')
+                self.current_player.input_pressed(operation)
 
         elif operation  in ('no-command','null'):
             return
@@ -157,13 +158,17 @@ class ArtShow(Show):
     # load the first track of the show
     def load_first_track(self):
         self.mon.trace(self,'')
+        self.medialist.create_new_livelist()
+        self.medialist.use_new_livelist()
         if self.medialist.start() is False:
+            print 'FIRST EMPTY'
             # list is empty - display a message for 5 secs and then retry
             Show.display_admin_message(self,self.show_params['empty-text'])
             self.canvas.after(5000,self.remove_list_empty_message)
         else:
             # otherwise load the first track
-            # print "!!!!! artshow init first"
+            print "!!!!! artshow init first"
+            # print 'after wait EMPTY'
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
                 self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
@@ -175,7 +180,7 @@ class ArtShow(Show):
                     track_file=self.medialist.selected_track()['text']
                 else:
                     track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
-                # print "!!!!! artshow load first ",track_file
+                print "!!!!! artshow load first ",track_file
                 self.next_player.load(track_file,
                                       self.loaded_callback,
                                       enable_menu=False)
@@ -274,8 +279,8 @@ class ArtShow(Show):
         if self.end_medialist_warning is True:
             self.end_medialist_signal = True
         self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
-        # wait a short time before loading next
-        self.canvas.after(10,self.what_to_load_next)
+        # load the next after a wait to allow animation etc to be timely.
+        self.canvas.after(self.load_delay,self.what_to_load_next)
 
 
     def finished_showing(self,reason,message):
@@ -316,36 +321,38 @@ class ArtShow(Show):
             self.what_next()
 
         # has content of list been changed (replaced if it has, used for content of livelist)
-        if self.medialist.replace_if_changed() is True:
+        print 'WHAT to load NEXT'
+        self.medialist.create_new_livelist()
+
+        # print result, self.medialist.new_length(),self.medialist.anon_length()
+        if self.medialist.livelist_changed() is True:
+            print 'ITS CHANGED'
             self.ending_reason='change-medialist'
             self.close_current_and_next()
         else:
             # get the next track and init player
             self.medialist.next(self.show_params['sequence'])
+            Show.delete_admin_message(self)
             if self.medialist.at_end() is True:
                 self.end_medialist_warning=True
-            # print "!!!!! artshow init next "
+            print "!!!!! artshow init next "
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
                 self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
                 self.req_next='error'
                 self.what_next()
             else:
-                # and load the next after a wait to allow animation etc to be timely.
-                self.canvas.after(self.load_delay,self.load_next)
-
-    def load_next(self):
-        # load the next track while current is showing
-        # messageplayer passes the text not a file name
-        if self.medialist.selected_track()['type'] == 'message':
-            track_file=self.medialist.selected_track()['text']
-        else:
-            track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
-        # print "!!!!! artshow load next ",track_file
-        self.mon.trace(self, track_file)
-        self.next_player.load(track_file,
-                              self.loaded_callback,
-                              enable_menu=False)
+                # load the next track while current is showing
+                # messageplayer passes the text not a file name
+                if self.medialist.selected_track()['type'] == 'message':
+                    track_file=self.medialist.selected_track()['text']
+                else:
+                    track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
+                print "!!!!! artshow load next ",track_file
+                self.mon.trace(self, track_file)
+                self.next_player.load(track_file,
+                                      self.loaded_callback,
+                                      enable_menu=False)
 
     def loaded_callback(self,reason,message):
         self.mon.trace(self,' - load complete with reason: ' + reason + '  message: ' + message)  
@@ -363,9 +370,10 @@ class ArtShow(Show):
         if self.current_player is not None and self.current_player.get_play_state() == 'showing':
             self.mon.trace(self,' - closing_current from ' + self.ending_reason)
             self.current_player.close(self.end_close_current)
-        if self.next_player is not None and self.next_player.get_play_state() not in ('unloaded','closed','initialised','load-failed'):
-            self.mon.trace(self, '- unloading next from ' + self.ending_reason)
-            self.next_player.unload()
+        if self.next_player is not None:
+            if self.next_player.get_play_state() not in ('unloaded','closed','initialised','load-failed'):
+                self.mon.trace(self, '- unloading next from ' + self.ending_reason)
+                self.next_player.unload()
         self.wait_for_end()
 
 
@@ -408,7 +416,7 @@ class ArtShow(Show):
                 self.end('normal',"show quit by user or natural end")                
 
             elif self.ending_reason == 'change-medialist':
-                self.load_first_track()   
+                    self.load_first_track()
             else:
                 self.mon.err(self,"Unhandled ending_reason: "+ self.ending_reason)
                 self.end('error',"Unhandled ending_reason: "+ self.ending_reason)                
@@ -496,9 +504,10 @@ class ArtShow(Show):
 # ***************************
 
     def end(self,reason,message):
+        Show.delete_admin_message(self)
         self.base_withdraw_show_background()
         self.base_delete_show_background()
-        self.mon.log(self,"Ending Mediashow: "+ self.show_params['show-ref'])
+        self.mon.log(self,"Ending Artshow: "+ self.show_params['show-ref'])
         self.end_callback(self.show_id,reason,message)
         self=None
 

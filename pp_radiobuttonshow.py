@@ -70,7 +70,7 @@ class RadioButtonShow(Show):
         # create an instance of PathManager -  only used to parse the links.
         self.path = PathManager()
 
-        self.allowed_links=('play','pause','exit','return','null','no-command','stop')
+        self.allowed_links=('play','pause','exit','return','null','no-command','stop','pause-on','pause-off','mute','unmute','go')
         # init variables
         self.links=[]
         self.track_timeout_timer=None
@@ -134,8 +134,10 @@ class RadioButtonShow(Show):
 
    # respond to inputs
     def handle_input_event(self,symbol):
-        Show.base_handle_input_event(self,symbol)
-        # self.handle_input_event_this_show(symbol)
+        # uncomment this and comment next line if you want subshows to have controls but no radiobuttons in the subshow 
+        # Show.base_handle_input_event(self,symbol)
+        # uncomment this and comment next line if you want radiobuttons during subshows but no controls in subshows
+        self.handle_input_event_this_show(symbol)
 
     def handle_input_event_this_show(self,symbol):
         # for radiobuttonshow the symbolic names are links to play tracks, also a limited number of in-track operations
@@ -165,7 +167,7 @@ class RadioButtonShow(Show):
                     self.do_play(self.first_track_ref)
 
             # in-track operations
-            elif link_op =='pause':
+            elif link_op in ('pause','pause-on','pause-off','mute','unmute','go'):
                 if self.current_player is not  None:
                     self.current_player.input_pressed(link_op)
 
@@ -376,8 +378,8 @@ class RadioButtonShow(Show):
                 Show.write_stats(self,'play',self.show_params,self.medialist.track(index))
                 self.start_load_show_loop(self.medialist.track(index))
             else:
-                self.mon.err(self,"next track not found in medialist: "+ self.current_track_ref)
-                self.end('error',"next track not found in medialist: "+ self.current_track_ref)
+                self.mon.err(self,"track reference not found in medialist: "+ self.current_track_ref)
+                self.end('error',"track reference not found in medialist: "+ self.current_track_ref)
                     
         else:
             # track ends naturally or is quit so go back to first track

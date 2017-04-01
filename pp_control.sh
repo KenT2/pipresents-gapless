@@ -14,7 +14,7 @@ case "$1" in
    run)
        echo "run"
        echo "python /home/pi/pipresents/pipresents.py " "$2"
-       sudo python /home/pi/pipresents/pipresents.py $2 > /dev/null &
+       python /home/pi/pipresents/pipresents.py $2 > /dev/null &
        echo $!
        ;;
 
@@ -27,8 +27,7 @@ case "$1" in
        # Just print the PID first for debugging
        pgrep -f /pipresents/pipresents.py
 
-       # sudo is required for when PP is run with sudo
-       sudo pkill -f /pipresents/pipresents.py
+       pkill -f /pipresents/pipresents.py
        ;;
 esac
 

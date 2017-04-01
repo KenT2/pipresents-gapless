@@ -56,13 +56,16 @@ class Validator(object):
 
         # CHECK ALL MEDIALISTS AND THEIR TRACKS
         v_media_lists = []
+
+
         for medialist_file in os.listdir(pp_profile):
-            if not medialist_file.endswith(".json") and medialist_file not in ('pp_io_config','readme.txt'):
-                self.result.display('w',"Non medialist file in profile: "+ medialist_file)
+            if not medialist_file.endswith(".json") and medialist_file not in ('readme.txt') and not os.path.isdir(pp_profile+os.sep+medialist_file):
+                self.result.display('w',"Placing a media file in a profile is discouraged: "+ medialist_file + '\n         Place it in a directory')
                 
             if medialist_file.endswith(".json") and medialist_file not in  ('pp_showlist.json','schedule.json'):
                 self.result.display('t',"\nChecking medialist '"+medialist_file+"'")
                 v_media_lists.append(medialist_file)
+
 
                 # open a medialist and test its tracks
                 ifile  = open(pp_profile + os.sep + medialist_file, 'rb')
@@ -106,6 +109,10 @@ class Validator(object):
                             track_file=pp_home+track_file[1:]
                             if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " Media File not Found")
 
+                        if track_file.strip() != '' and  track_file[0] == "@":
+                            track_file=pp_profile+track_file[1:]
+                            if not os.path.exists(track_file): self.result.display('f',"location "+track['location']+ " Media File not Found")
+
                     if track['type'] in ('video','audio','message','image','web','menu'):
                         
                         # check common fields
@@ -119,6 +126,11 @@ class Validator(object):
                             if track_file[0] == "+":
                                 track_file=pp_home+track_file[1:]
                                 if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
+                            if track_file[0] == "@":
+                                track_file=pp_profile+track_file[1:]
+                                if not os.path.exists(track_file): self.result.display('f',"background-image "+track['background-image']+ " background image file not found")                                
+
+
                         if track['track-text'] != "":
                             if not track['track-text-x'].isdigit(): self.result.display('f',"'Track Text x position' is not 0 or a positive integer")
                             if not track['track-text-y'].isdigit(): self.result.display('f',"'Track Text y Position' is not 0 or a positive integer")
@@ -248,6 +260,9 @@ class Validator(object):
                 background_image_file=show['background-image']
                 if background_image_file.strip() != '' and  background_image_file[0] == "+":
                     track_file=pp_home+background_image_file[1:]
+                    if not os.path.exists(track_file): self.result.display('f',"Background Image "+show['background-image']+ " background image file not found")
+                if background_image_file.strip() != '' and  background_image_file[0] == "@":
+                    track_file=pp_profile+background_image_file[1:]
                     if not os.path.exists(track_file): self.result.display('f',"Background Image "+show['background-image']+ " background image file not found")
 
                 #track defaults
@@ -582,7 +597,10 @@ class Validator(object):
             plugin_cfg=pp_home+plugin_cfg[1:]
             if not os.path.exists(plugin_cfg):
                 self.result.display('f','plugin configuration file not found: '+ plugin_cfg)
-
+        if plugin_cfg.strip() != '' and  plugin_cfg[0] == "@":
+            plugin_cfg=pp_profile+plugin_cfg[1:]
+            if not os.path.exists(plugin_cfg):
+                self.result.display('f','plugin configuration file not found: '+ plugin_cfg)
 
 # *******************   
 # Check browser commands
@@ -745,6 +763,7 @@ class Validator(object):
         for line in lines:
             self.check_show_control_fields(line,v_show_labels)
 
+
     def check_show_control_fields(self,line,v_show_labels):
         fields = line.split()
         if len(fields) == 0:
@@ -757,15 +776,21 @@ class Validator(object):
                 self.result.display('f','Show control - Unknown command in: ' + line)
                 return
         elif len(fields) == 2:
-            if fields[0] not in ('open','close'):
+            if fields[0] not in ('open','close','monitor'):
                 self.result.display('f','Show Control - Unknown command in: ' + line)
-            if fields[1] not in v_show_labels:
-                self.result.display('f',"Show Control - cannot find Show Reference: "+ line)
-                return
+            else:
+                if fields[0] =='monitor' and fields[1] not in ('on','off'):
+                    self.result.display('f',"Show Control - monitor paramter not on or off: "+ line)
+                    return
+
+                if fields[0] in ('open','close') and fields[1] not in v_show_labels:
+                    self.result.display('f',"Show Control - cannot find Show Reference: "+ line)
+                    return
         else:
             self.result.display('f','Show Control - Incorrect number of fields in: ' + line)
             return
-                 
+
+             
             
 # ***********************************
 # checking animation
@@ -834,51 +859,64 @@ class Validator(object):
 
 # *************************************
 # WEB WINDOW
-# ************************************           
-                 
+# ************************************
+
+
     def check_web_window(self,track_type,field,line):
 
         # check warp _ or xy2
         fields = line.split()
         
         if track_type == 'show' and len(fields) == 0:
-            self.result.display('f','Show must specify Web Window: ' + field + ", " + line)
+            self.reusult.display('f','Show must specify Web Window: ' + line)
             return
             
         if len(fields) == 0:
             return        
 
-        # deal with warp which has 1 or 5  arguments
-        if  fields[0]  != 'warp':
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-        if len(fields) not in (1,5):
-            self.result.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-            return
+        #deal with warp which has 1 or 5  arguments
+        # check basic syntax
+        if  fields[0] !='warp':
+            self.result.display('f','Web Window, Illegal command: ' + line)
 
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
+
+        # deal with window coordinates or not   
+        if len(fields) == 1:
+            # fullscreen so line is just warp - ok
+            return
+        else:
+            status,message,x1,y1,x2,y2 = parse_rectangle(' '.join(fields[1:]))
+            if status=='error':
+                self.result.display('f','Web Window: '+ message)
                 return
 
+
+                
                 
 # *************************************
 # SHOW CANVAS
 # ************************************              
-                           
+
+
     def check_show_canvas(self,track_type,name,line):
         fields=line.split()
         if len(fields)== 0:
             return
-        if len(fields) !=4:
-            self.result.display('f','wrong number of fields for ' + name + ", " + line)
-            return
-        else:
-            # show canvas is specified
-            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + name + ", " + line)
+
+        if len(fields) in (1,4):
+            # window is specified
+            status,message,x1,y1,x2,y2=parse_rectangle(line)
+            if status=='error':
+                self.result.display('f','Show Canvas: '+message)
                 return
+            else:
+                return
+        else:
+            self.result.display('f','Wrong number of fields in Show canvas: '+ line)
+
+
+
+                           
        
 
     
@@ -886,6 +924,7 @@ class Validator(object):
 # *************************************
 # IMAGE WINDOW
 # ************************************
+
 
     def check_image_window(self,track_type,field,line):
     
@@ -898,46 +937,55 @@ class Validator(object):
         if len(fields) == 0:
             return
 
+        
         # deal with original whch has 0 or 2 arguments
+        image_filter=''
         if fields[0] == 'original':
             if len(fields) not in (1,3):
-                self.result.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return      
+                self.result.display('f','Image Window, Original has wrong number of arguments')
+                return
+            
             # deal with window coordinates    
-            if len(fields) == 3:
+            if len(fields)  ==  3:
                 # window is specified
                 if not (fields[1].isdigit() and fields[2].isdigit()):
-                    self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
-                    return
-                return
-            else:
-                return
+                    self.result.display('f','Image Window, coordinates are not numbers')
+            return
 
         # deal with remainder which has 1, 2, 5 or  6arguments
         # check basic syntax
         if  fields[0] not in ('shrink','fit','warp'):
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,2,5,6):
-            self.result.display('f','Wrong number of fields: ' + field + ", " + line)
+            self.result.display('f','Image Window, illegal command: '+fields[0])
+        if len(fields) not in (1,2,3,5,6):
+            self.result.display('f','wrong number of fields in: '+ line)
             return
         if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.result.display('f','Illegal Filter: ' + field + ", " + line)
+            self.result.display('f','wrong filter: '+ fields[5]+ ' in '+ line)
             return
-        if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            self.result.display('f','Illegal Filter: ' + field + ", " + line)
-        
-        # deal with window coordinates    
-        if len(fields) in (5,6):
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
+        if len(fields) == 2 and (fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS') and '*' not in fields[1]):
+            self.result.display('f','wrong filter: '+ fields[1]+ ' in '+ line)
+            return
+        if len(fields) == 3 and fields[2] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            self.result.display('f','wrong filter: '+ fields[2]+ ' in '+ line)
+            return
+
+
+        # deal with no window coordinates and no filter
+        if len(fields) == 1:         
+            return
+   
+        # deal with window coordinates in +* format with optional filter
+        if len(fields) in (2,3) and '*' in fields[1]:
+            status,message,x1,y1,x2,y2 = parse_rectangle(fields[1])
+            if status=='error':
+                self.result.display('f','Image Window, '+message)
                 return
-
             
-
-
-
+        if len(fields) in (5,6):
+            # window is specified in x1 y1 x2 y2
+            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
+                self.result.display('f','coords are not numbers')
+                return
 
 
                      
@@ -954,30 +1002,31 @@ class Validator(object):
             
         if len(fields) == 0:
             return
-            
+
         # deal with original which has 1
         if fields[0] == 'original':
             if len(fields)  !=  1:
-                self.result.display('f','Wrong number of fields for original: ' + field + ", " + line)
-                return 
-            return
-
-
-        # deal with warp which has 1 or 5  arguments
-        # check basic syntax
-        if  fields[0]  != 'warp':
-            self.result.display('f','Illegal command: ' + field + ", " + line)
-            return
-        if len(fields) not in (1,5):
-            self.result.display('f','Wrong number of fields for warp: ' + field + ", " + line)
-
-        # deal with window coordinates    
-        if len(fields) == 5:
-            # window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                self.result.display('f','coordinate is not a positive integer ' + field + ", " + line)
+                self.result.display('f','Video Window, wrong number of fields for original in: '+line)  
                 return
-
+        else:
+            # deal with warp which has 1 or 5  arguments
+            # check basic syntax
+            if  fields[0]  != 'warp':
+                self.result.display('f','Video Window, '+fields[0] + 'is not a valid type in : '+ line)
+            else:
+            
+                if len(fields) not in (1,2,5):
+                    self.result.display('f','Video Window, wrong number of coordinates for warp in: '+ line)
+                    return
+                                 
+                # deal with window coordinates    
+                if len(fields) == 1:
+                    return 
+                else:
+                    # window is specified
+                    status,message,x1,y1,x2,y2=parse_rectangle(' '.join(fields[1:]))
+                    if status == 'error':                                   
+                        self.result.display('f','Video Window, '+message)
 
 
 

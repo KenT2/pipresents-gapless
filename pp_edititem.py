@@ -244,7 +244,7 @@ class TabBar(Frame):
 
 class EditItem(tkSimpleDialog.Dialog):
 
-    def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_home_dir,initial_tab):
+    def __init__(self, parent, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,pp_profile_dir,pp_home_dir,initial_tab):
         self.mon=Monitor()
         # save the extra arg to instance variable
         self.field_content = field_content   # dictionary - the track parameters to be edited
@@ -255,6 +255,7 @@ class EditItem(tkSimpleDialog.Dialog):
         self.show_refs.append('')
         self.initial_media_dir=initial_media_dir
         self.pp_home_dir=pp_home_dir
+        self.pp_profile_dir=pp_profile_dir
         self.initial_tab=initial_tab
         
         # list of stringvars from which to get edited values (for optionmenu only??)
@@ -434,6 +435,55 @@ class EditItem(tkSimpleDialog.Dialog):
             return
         file_path=os.path.normpath(file_path)
         # print "file path ", file_path
+
+        # is media in the profile
+        print 'pp_profile dir ',self.pp_profile_dir
+        in_profile=False
+        if self.pp_profile_dir in file_path:
+            in_profile=True
+            
+        if in_profile is True:
+            # deal with media in profile @
+            relpath = os.path.relpath(file_path,self.pp_profile_dir)
+            print "@ relative path ",relpath
+            common = os.path.commonprefix([file_path,self.pp_profile_dir])
+            print "@ common ",common
+            if common == self.pp_profile_dir:
+                location = "@" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                obj.delete(0,END)
+                obj.insert(END,location)
+                print '@location ',location
+                return
+            else:
+                print '@absolute ',file_path
+                obj.delete(0,END)
+                obj.insert(END,file_path)
+                return                
+        else:
+            # deal with media in pp_home  +     
+            relpath = os.path.relpath(file_path,self.pp_home_dir)
+            print "+ relative path ",relpath
+            common = os.path.commonprefix([file_path,self.pp_home_dir])
+            print "+ common ",common
+            if common ==self.pp_home_dir:
+                location = "+" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                # print "location ",location
+                obj.delete(0,END)
+                obj.insert(END,location)
+                print '+location ', location
+                return
+            else:
+                print '+ absolute ',file_path
+                obj.delete(0,END)
+                obj.insert(END,file_path)
+                return
+
+
+
+
+        
         relpath = os.path.relpath(file_path,self.pp_home_dir)
         # print "relative path ",relpath
         common = os.path.commonprefix([file_path,self.pp_home_dir])

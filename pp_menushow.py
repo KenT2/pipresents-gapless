@@ -54,6 +54,8 @@ class MenuShow(Show):
         self.menu_index=0
         self.menu_showing=True
         self.req_next=''
+        self.last_menu_index=0
+        self.return_to_zero=False
 
 
 
@@ -149,6 +151,7 @@ class MenuShow(Show):
                 
         elif operation =='play':
             self.next_track_signal=True
+            st=self.medialist.select_anon_by_index(self.menu_index)
             self.next_track=self.medialist.selected_track()
             self.current_player.stop()
 
@@ -167,7 +170,7 @@ class MenuShow(Show):
         elif operation  in ('no-command','null'):
             return
 
-        elif operation == 'pause':
+        elif operation in ('pause','pause-on','pause-off','mute','unmute','go'):
             if self.current_player is not None:
                 self.current_player.input_pressed(operation)
                 
@@ -216,9 +219,6 @@ class MenuShow(Show):
         if self.show_timeout != 0:
             self.show_timeout_timer=self.canvas.after(self.show_timeout *1000,self.show_timeout_stop)
 
-        # init the index used to hiighlight the selected menu entry by menuplayer
-        self.menu_index=0
-
         index = self.medialist.index_of_track(self.show_params['menu-track-ref'])
         if index == -1:
                 self.mon.err(self,"'menu-track' not in medialist: " + self.show_params['menu-track-ref'])
@@ -259,22 +259,34 @@ class MenuShow(Show):
  
   # track has loaded (menu or otherwise) so show it.
     def what_next_after_load(self,status,message):
-        # get the calculated length of the menu for the loaded menu track
-        if self.current_player.__class__.__name__ == 'MenuPlayer':
-            if self.medialist.display_length()==0:
-                self.req_next='error'
-                self.what_next_after_showing()
-                return
-            self.medialist.start()
-            self.menu_index=0
-            self.menu_length=self.current_player.menu_length
-            self.current_player.highlight_menu_entry(self.menu_index,True)
-        self.mon.trace(self,' - load complete with status: ' + status + '  message: ' + message)
+
         if self.current_player.play_state=='load-failed':
             self.req_next='error'
             self.what_next_after_showing()
 
         else:
+            # get the calculated length of the menu for the loaded menu track
+            if self.current_player.__class__.__name__ == 'MenuPlayer':
+                if self.medialist.anon_length()==0:
+                    self.req_next='error'
+                    self.what_next_after_showing()
+                    return
+
+                #highlight either first or returning entry and select appropiate medialist entry
+                if self.return_to_zero is True:
+                    # init the index used to hiighlight the selected menu entry by menuplayer
+                    self.menu_index=0
+                    # print 'initial index',self.menu_index
+                else:
+                    self.menu_index=self.last_menu_index
+                    # print ' return to last ',self.menu_index
+
+                
+                self.menu_length=self.current_player.menu_length
+                self.current_player.highlight_menu_entry(self.menu_index,True)
+            self.mon.trace(self,' - load complete with status: ' + status + '  message: ' + message)
+
+
             if self.show_timeout_signal is True or self.terminate_signal  is True or self.exit_signal  is True or self.user_stop_signal  is True:
                 self.what_next_after_showing()
             else:
@@ -359,7 +371,7 @@ class MenuShow(Show):
             # start timeout for the track if required           
             if self.track_timeout != 0:
                 self.track_timeout_timer=self.canvas.after(self.track_timeout*1000,self.track_timeout_callback)
-
+            self.last_menu_index=self.menu_index
             Show.write_stats(self,'play',self.show_params,self.next_track)
             self.start_load_show_loop(self.next_track)
             

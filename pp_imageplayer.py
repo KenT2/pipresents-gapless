@@ -5,7 +5,7 @@ import os
 from Tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
-from pp_utils import StopWatch
+from pp_utils import StopWatch, parse_rectangle,calculate_text_position
 from pp_player import Player
 
 class ImagePlayer(Player):
@@ -175,6 +175,10 @@ class ImagePlayer(Player):
         self.mon.trace(self,symbol)
         if symbol  == 'pause':
             self.pause()
+        if symbol  == 'pause-on':
+            self.pause_on()
+        if symbol  == 'pause-off':
+            self.pause_off()
         elif symbol == 'stop':
             self.stop()
 
@@ -184,6 +188,12 @@ class ImagePlayer(Player):
             self.paused = True
         else:
             self.paused=False
+
+    def pause_on(self):
+        self.paused = True
+
+    def pause_off(self):
+        self.paused = False
 
     def stop(self):
         self.quit_signal=True
@@ -213,7 +223,11 @@ class ImagePlayer(Player):
             # one time flipping of pause text
             pause_text= self.track_params['pause-text']
             if self.paused is True and self.pause_text_obj is None:
-                self.pause_text_obj=self.canvas.create_text(self.track_params['pause-text-x'],self.track_params['pause-text-y'], anchor=NW,
+                x,y,anchor,justify=calculate_text_position(self.track_params['pause-text-x'],self.track_params['pause-text-y'],
+                                             self.show_canvas_x1,self.show_canvas_y1,
+                                             self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                             self.show_canvas_x2,self.show_canvas_y2,self.track_params['pause-text-justify'])                
+                self.pause_text_obj=self.canvas.create_text(x,y, anchor=anchor,justify=justify,
                                                         text=pause_text,
                                                         fill=self.track_params['pause-text-colour'],
                                                         font=self.track_params['pause-text-font'])
@@ -244,7 +258,13 @@ class ImagePlayer(Player):
         
         # get the track to be displayed
         if os.path.exists(self.track) is True:
-            ppil_image=Image.open(self.track)
+            try:
+                ppil_image=Image.open(self.track)
+            except:
+                ppil_image=None
+                self.tk_img=None
+                self.track_image_obj=None
+                return 'error','Not a recognised image format '+ self.track                
         else:
             ppil_image=None
             self.tk_img=None
@@ -366,6 +386,7 @@ class ImagePlayer(Player):
         # check there is a command field
         if len(fields) < 1:
             return 'error','No command field','',False,0,0,0,0,''
+
             
         # deal with original whch has 0 or 2 arguments
         image_filter=''
@@ -390,32 +411,52 @@ class ImagePlayer(Player):
         # check basic syntax
         if  fields[0] not in ('shrink','fit','warp'):
             return 'error','illegal command'+fields[0],'',False,0,0,0,0,'' 
-        if len(fields) not in (1,2,5,6):
+        if len(fields) not in (1,2,3,5,6):
             return 'error','wrong number of fields' + str(len(fields)),'',False,0,0,0,0,''
         if len(fields) == 6 and fields[5] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
             return 'error','wrong filter or params'+ fields[5],'',False,0,0,0,0,''
-        if len(fields) == 2 and fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
-            return 'error','wrong filter or params'+ fields[5],'',False,0,0,0,0,''
-        
-        # deal with window coordinates    
+        if len(fields) == 2 and (fields[1] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS') and '*' not in fields[1]):
+            return 'error','wrong filter or params'+ fields[1],'',False,0,0,0,0,''
+        if len(fields) == 3 and fields[2] not in ('NEAREST','BILINEAR','BICUBIC','ANTIALIAS'):
+            return 'error','wrong filter or params'+ fields[2],'',False,0,0,0,0,''
+
+
+        # deal with no window coordinates and no
+        if len(fields) == 1:
+            has_window=False           
+            return 'normal','',fields[0],has_window,0,0,0,0,'Image.NEAREST'
+   
+        # deal with window coordinates in +* format with optional filter
+        if len(fields) in (2,3) and '*' in fields[1]:
+            status,message,x1,y1,x2,y2 = parse_rectangle(fields[1])
+            if status=='error':
+                return 'error',message,'',False,0,0,0,0,''
+            else:
+                has_window=True
+                if len(fields) == 3:
+                    image_filter='Image.'+fields[2]
+                else:
+                    image_filter='Image.NEAREST'                
+                return 'normal','',fields[0],has_window,x1,y1,x2,y2,image_filter
+            
         if len(fields) in (5,6):
-            # window is specified
+            # window is specified in x1 y1 x2 y2
             if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
                 return 'error','coords are not numbers','',False,0,0,0,0,''
             has_window=True
             if len(fields) == 6:
-                image_filter=fields[5]
+                image_filter='Image.'+fields[5]
             else:
                 image_filter='Image.NEAREST'
-                return 'normal','',fields[0],has_window,float(fields[1]),float(fields[2]),float(fields[3]),float(fields[4]),image_filter
+            return 'normal','',fields[0],has_window,float(fields[1]),float(fields[2]),float(fields[3]),float(fields[4]),image_filter
+
         else:
             # no window
             has_window=False
             if len(fields) == 2:
-                image_filter=fields[1]
+                image_filter='Image.'+fields[1]
             else:
                 image_filter='Image.NEAREST'
             return 'normal','',fields[0],has_window,0,0,0,0,image_filter
-            
 
     

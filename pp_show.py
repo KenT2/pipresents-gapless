@@ -13,7 +13,7 @@ from pp_audioplayer import AudioPlayer
 from pp_browserplayer import BrowserPlayer
 from pp_messageplayer import MessagePlayer
 from pp_menuplayer import MenuPlayer
-from pp_utils import Monitor
+from pp_utils import Monitor,calculate_text_position
 
 class Show(object):
 
@@ -119,7 +119,7 @@ class Show(object):
             self.end('error',"Medialist file not found: "+ self.medialst_file)
 
         # read the medialist for the show
-        if self.medialist.open_list(self.medialst_file,self.showlist.sissue()) is False:
+        if self.medialist.open_list(self.medialst_file,self.showlist.profile_version()) is False:
             self.mon.err(self,"Version of medialist different to Pi Presents")
             self.end('error',"Version of medialist different to Pi Presents")
 
@@ -127,6 +127,10 @@ class Show(object):
             # get the previous player from calling show its stored in current because its going to be shuffled before use
             self.previous_shower, self.current_player=self.show_ready_callback()
             self.mon.trace(self,' - previous shower and player is ' + self.mon.pretty_inst(self.previous_shower)+ ' ' + self.mon.pretty_inst(self.current_player))
+
+
+        # Control other shows at beginning
+        self.show_control(self.show_params['show-control-begin'])
 
         #load the show background
         reason,message=Show.base_load_show_background(self)
@@ -336,7 +340,7 @@ class Show(object):
 
             elif self.ending_reason == 'user-stop':
                 self.end('normal',"show quit by stop operation")
-                    
+                 
             else:
                 self.mon.fatal(self,"Unhandled ending_reason: " + self.ending_reason)
                 self.end('error',"Unhandled ending_reason: " + self.ending_reason)          
@@ -412,6 +416,10 @@ class Show(object):
     def base_end(self,reason,message):
         self.base_withdraw_show_background()
         self.base_delete_show_background()
+
+        # Control concurrent shows at end
+        self.show_control(self.show_params['show-control-end'])
+        
         self.mon.trace(self,' at level ' + str(self.level) + '\n - Current is ' + self.mon.pretty_inst(self.current_player) + '\n - Previous is ' + self.mon.pretty_inst(self.previous_player) + '\n with reason' + reason + '\n\n')
         self.mon.log(self,self.show_params['show-ref']+ ' Show Id: '+ str(self.show_id)+ ": Ending Show")
         self.end_callback(self.show_id,reason,message)
@@ -596,7 +604,24 @@ class Show(object):
             self.mon.stats(show_params['type'],show_params['show-ref'],show_params['title'],command,
                             track_type,ref,title,loc)
             
- 
+
+
+ # Control shows so pass the show control commands back to PiPresents via the command callback
+    def show_control(self,show_control_text):
+        lines = show_control_text.split('\n')
+        for line in lines:
+            if line.strip() != "":
+                # print 'show control command: ',line
+                self.show_control_command(line)
+
+    def show_control_command(self,line):
+        fields= line.split()
+        show_command=fields[0]
+        if len(fields)>1:
+            show_ref=fields[1]
+        else:
+            show_ref=''
+        self.command_callback(line,source='show',show=self.show_params['show-ref'])
 
 
 # ******************************
@@ -616,12 +641,18 @@ class Show(object):
     def display_eggtimer(self):
         text=self.show_params['eggtimer-text']
         if text != '':
-            self.egg_timer=self.canvas.create_text(int(self.show_params['eggtimer-x'])+ self.show_canvas_x1,
-                                                   int(self.show_params['eggtimer-y']) + self.show_canvas_y1,
+
+            x,y,anchor,justify=calculate_text_position(self.show_params['eggtimer-x'],self.show_params['eggtimer-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.show_params['eggtimer-justify'])
+            
+            self.egg_timer=self.canvas.create_text(x,y,
                                                    text= text,
+                                                   justify=justify,
                                                    fill=self.show_params['eggtimer-colour'],
                                                    font=self.show_params['eggtimer-font'],
-                                                   anchor='nw')
+                                                   anchor=anchor)
             
             self.canvas.update_idletasks( )
 
@@ -640,12 +671,17 @@ class Show(object):
 
     def display_admin_message(self,text):
 
-        self.admin_message=self.canvas.create_text(int(self.show_params['admin-x']) + self.show_canvas_x1,
-                                                   int(self.show_params['admin-y'])+self.show_canvas_y1,
+        x,y,anchor,justify=calculate_text_position(self.show_params['admin-x'],self.show_params['admin-y'],
+                                     self.show_canvas_x1,self.show_canvas_y1,
+                                     self.show_canvas_centre_x,self.show_canvas_centre_y,
+                                     self.show_canvas_x2,self.show_canvas_y2,self.show_params['admin-justify'])
+
+        self.admin_message=self.canvas.create_text(x,y,
+                                                   justify=justify,
                                                    text= text,
                                                    fill=self.show_params['admin-colour'],
                                                    font=self.show_params['admin-font'],
-                                                   anchor='nw')
+                                                   anchor=anchor)
             
         self.canvas.update_idletasks( )
 
@@ -660,12 +696,12 @@ class Show(object):
 # utilities
 # ******************************        
 
-
-
     def base_complete_path(self,track_file):
         #  complete path of the filename of the selected entry
         if track_file != '' and track_file[0]=="+":
             track_file=self.pp_home+track_file[1:]
+        elif track_file[0] == "@":
+            track_file=self.pp_profile+track_file[1:]
         self.mon.log(self,"Track to load is: "+ track_file)
         return track_file     
   

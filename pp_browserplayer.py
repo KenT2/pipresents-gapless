@@ -2,6 +2,7 @@ import os
 import copy
 from pp_uzbldriver import UZBLDriver
 from pp_player import Player
+from pp_utils import parse_rectangle
 
 
 class BrowserPlayer(Player):
@@ -176,12 +177,26 @@ class BrowserPlayer(Player):
             self.control(symbol[5:])
         elif symbol == 'pause':
             self.pause()
+        elif symbol == 'pause-on':
+            self.pause_on()
+        elif symbol == 'pause-off':
+            self.pause_off()
         elif symbol=='stop':
             self.stop()
 
     # browsers do not do pause
     def pause(self):
         self.mon.log(self,"!<pause rejected")
+        return False
+
+    # browsers do not do pause
+    def pause_on(self):
+        self.mon.log(self,"!<pause on rejected")
+        return False
+
+    # browsers do not do pause
+    def pause_off(self):
+        self.mon.log(self,"!<pauseon rejected")
         return False
         
     # other control when playing, not currently used
@@ -447,7 +462,7 @@ class BrowserPlayer(Player):
 
 # parse the browser window field
     def parse_window(self,line):
-        # parses warp _ or xy2
+        # parses warp _ or xy2 or x+y*w*h
         
         fields = line.split()
         # check there is a command field
@@ -459,19 +474,23 @@ class BrowserPlayer(Player):
         # check basic syntax
         if  fields[0] <>'warp':
             return 'error','not a valid type:'+ fields[0],'',False,0,0,0,0
-        if len(fields) not in (1,5):
-            return 'error','wrong number of coordinates for warp','',False,0,0,0,0
 
-        # deal with window coordinates    
-        if len(fields) == 5:
-            #window is specified
-            if not (fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit() and fields[4].isdigit()):
-                return 'error','window coordinates are not positive integers ' + line,'',False,0,0,0,0
-            has_window=True
-            return 'normal','',fields[0],has_window,int(fields[1]),int(fields[2]),int(fields[3]),int(fields[4])
-        else:
+        # deal with window coordinatesor not   
+        if len(fields) == 1:
             # fullscreen
             has_window=False
             return 'normal','',fields[0],has_window,0,0,0,0
+        else:
+            print ' '.join(fields[1:])
+            status,message,x1,y1,x2,y2 = parse_rectangle(' '.join(fields[1:]))
+            if status=='error':
+                return 'error',message,'',False,0,0,0,0
+            else:
+                has_window=True
+                return 'normal','',fields[0],has_window,x1,y1,x2,y2                
+            #window is specified
+            
+
+
 
 

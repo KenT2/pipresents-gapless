@@ -72,7 +72,7 @@ class AudioPlayer(Player):
             mplayer_volume= self.track_params['mplayer-volume'].strip()
         else:
             mplayer_volume= self.show_params['mplayer-volume'].strip()
-        mplayer_volume_int=int(mplayer_volume)+100
+        mplayer_volume_int=int(mplayer_volume)+60
         self.volume_option= '-volume ' + str(mplayer_volume_int)
 
         # get speaker from profile
@@ -185,13 +185,54 @@ class AudioPlayer(Player):
     def input_pressed(self,symbol):
         if symbol[0:6] == 'mplay-':
             self.control(symbol[6])
-            
+        elif symbol  == 'unmute':
+            self.unmute()
+        elif symbol  == 'mute':
+            self.mute()
+        elif symbol == 'pause-on':
+            self.pause_on()
+        elif symbol == 'pause-off':
+            self.pause_off()
         elif symbol == 'pause':
             self.pause()
-
         elif symbol == 'stop':
             self.stop()
 
+
+    def mute(self):
+        if self.play_state == 'showing' and self.track != '':
+            self.mplayer.mute()
+            return True
+        else:
+            self.mon.log(self,"!<mute rejected " + self.play_state)
+            return False
+
+    def unmute(self):
+        if self.play_state == 'showing' and self.track != '':
+            self.mplayer.unmute()
+            return True
+        else:
+            self.mon.log(self,"!<unmute rejected " + self.play_state)
+            return False
+
+
+    # pause on
+    def pause_on(self):
+        if self.play_state == 'showing' and self.track != '':
+            self.mplayer.pause_on()
+            return True
+        else:
+            self.mon.log(self,"!<pause on rejected")
+            return False
+
+    # pause off
+    def pause_off(self):
+        if self.play_state == 'showing' and self.track != '':
+            self.mplayer.pause_off()
+            return True
+        else:
+            self.mon.log(self,"!<pause off rejected")
+            return False
 
 
     # toggle pause

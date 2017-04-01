@@ -5,7 +5,7 @@ import ConfigParser
 
 
 import remi.gui as gui
-from remi_plus import OKDialog
+from remi_plus import OKDialog,AdaptableDialog
 
 # ***************************************
 #  OSC CONFIG CLASS
@@ -54,8 +54,9 @@ class OSCConfig(object):
 
 
     def create(self):
-        # print 'create'
+        #print 'create'
         if not os.path.exists(OSCConfig.options_file):
+            #print'not exist'
             config=ConfigParser.ConfigParser()
             config.add_section('this-unit')
             config.set('this-unit','name','')
@@ -84,62 +85,64 @@ class OSCConfig(object):
 
 
 
-
     def delete(self):
         os.rename(OSCConfig.options_file,OSCConfig.options_file+'.bak')
+        # OKDialog('OSC Delete','OSC Config file deleted').show(self)        
     
 # *************************************
 # OSC Web EDITOR CLASS
 # ************************************
 
-class OSCWebEditor(gui.GenericDialog):
+class OSCWebEditor(AdaptableDialog):
     
 
     def __init__(self, *args):
-        super(OSCWebEditor, self).__init__(width=500,height=600,title='<b>Edit OSC Configuration</b>')
-        self.set_on_confirm_dialog_listener(self,'confirm')
+        super(OSCWebEditor, self).__init__(width=450,height=600,title='<b>Edit OSC Configuration</b>',
+                                           confirm_name='OK',cancel_name='Cancel')
+
         if  OSCConfig.current_unit_type=='remote':
             e_home_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_home','Pi Presents Data Home:',e_home_field)            
+            self.append_field_with_label('Pi Presents Data Home',e_home_field,key='e_home')            
 
             e_offset_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_offset','Offset for Current Profiles:',e_offset_field)            
+            self.append_field_with_label('Offset for Current Profiles:',e_offset_field,key='e_offset')            
 
         e_type_field = gui.Label('',width=200,height=30)
-        self.add_field_with_label('e_type','Type of this Unit:',e_type_field)            
+        self.append_field_with_label('Type of this Unit:',e_type_field,key='e_type')            
 
         e_remote_name_field = gui.TextInput(width=200,height=30)
-        self.add_field_with_label('e_remote_name','Name of This Unit:',e_remote_name_field)       
+        self.append_field_with_label('Name of This Unit:',e_remote_name_field,key='e_remote_name')       
 
         e_remote_ip_field = gui.TextInput(width=200,height=30)
-        self.add_field_with_label('e_remote_ip','IP of This Unit:',e_remote_ip_field)    
+        self.append_field_with_label('IP of This Unit:',e_remote_ip_field,key='e_remote_ip')    
         
         e_remote_port_field = gui.TextInput(width=200,height=30)
-        self.add_field_with_label('e_remote_port','Listening Port of This Unit:',e_remote_port_field)
+        self.append_field_with_label('Listening Port of This Unit:',e_remote_port_field,key='e_remote_port')
         
 
         if  OSCConfig.current_unit_type in ('master','remote','master+slave'):
             e_controlled_units_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_controlled_units','Controlled Units (not used):',e_controlled_units_field)
+            self.append_field_with_label('Controlled Units (not used)',e_controlled_units_field,key='e_controlled_units')
 
             e_pipresents_unit_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_pipresents_unit','Name of Controlled Unit:',e_pipresents_unit_field)
+            self.append_field_with_label('Name of Controlled Unit',e_pipresents_unit_field,key='e_pipresents_unit')
 
             e_pipresents_ip_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_pipresents_ip','IP of Controlled Unit:',e_pipresents_ip_field)
+            self.append_field_with_label('IP of Controlled Unit',e_pipresents_ip_field,key='e_pipresents_ip')
 
             e_pipresents_port_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_pipresents_port','Listening Port of Controlled Unit:',e_pipresents_port_field)
+            self.append_field_with_label('Listening Port of Controlled Unit',e_pipresents_port_field,key='e_pipresents_port')
              
         if  OSCConfig.current_unit_type in('slave','master+slave'):
             e_controlled_by_unit_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_controlled_by_unit','Controlled By Unit:',e_controlled_by_unit_field)
+            self.append_field_with_label('Controlled By Unit',e_controlled_by_unit_field,key='e_controlled_by_unit')
 
             e_controlled_by_ip_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_controlled_by_ip','IP of Controlled By Unit:',e_controlled_by_ip_field)
+            self.append_field_with_label('IP of Controlled By Unit',e_controlled_by_ip_field,key='e_controlled_by_ip')
 
             e_controlled_by_port_field = gui.TextInput(width=200,height=30)
-            self.add_field_with_label('e_controlled_by_port','Listening Port of Controlled By Unit:',e_controlled_by_port_field)
+            self.append_field_with_label('Listening Port of Controlled By Unit',e_controlled_by_port_field,key='e_controlled_by_port')
+
         return
 
 
@@ -172,19 +175,22 @@ class OSCWebEditor(gui.GenericDialog):
 
 
 
-    def confirm(self):
+    def confirm_dialog(self):
         if OSCConfig.current_unit_type == 'remote':
             if self.get_field('e_home').get_value().strip() != '':
                 if os.path.exists( self.get_field('e_home').get_value()) is  False:
-                    OKDialog("Pi Presents Remote","Data Home not found").show(self)
+                    OKDialog("Pi Presents Remote","Data Home not found").show(self._base_app_instance)
+                    self.hide()
                     return
             if self.get_field('e_offset').get_value().strip() != '':
                 if os.path.exists(self.e_home.get()+os.sep+'pp_profiles'+self.get_field('e_offset').get_value()) is  False:
-                    OKDialog("Pi Presents Remote","Current Profles directory not found").show(self)
+                    OKDialog("Pi Presents Remote","Current Profles directory not found").show(self._base_app_instance)
+                    self.hide()
                     return
         # print 'try save'
-        self.hide()
         self.save()
+        self.hide()
+
 
 
 
@@ -237,14 +243,15 @@ class OSCWebEditor(gui.GenericDialog):
 # OSC UNIT TYPE EDITOR CLASS
 # ************************************
 
-class OSCUnitType(gui.GenericDialog):
+class OSCUnitType(AdaptableDialog):
 
     # define the gui  at initilisation time
     def __init__(self, *args):
-        super(OSCUnitType, self).__init__(width=500,height=300,title='<b>Select Unit Type</b>')
+        super(OSCUnitType, self).__init__(width=500,height=300,title='<b>Select Unit Type</b>',
+                                          confirm_name='OK',cancel_name='Cancel')
 
         e_current_type_field = gui.Label('',width=200,height=30)
-        self.add_field_with_label('e_type','Current Type:',e_current_type_field)
+        self.append_field_with_label('Current Type:',e_current_type_field,key='e_type')
         e_req_type_field = gui.DropDown(width=200, height=30)
         c0 = gui.DropDownItem('Select',width=200, height=20)
         c1 = gui.DropDownItem('master',width=200, height=20)
@@ -254,11 +261,10 @@ class OSCUnitType(gui.GenericDialog):
         e_req_type_field.append(c1)
         e_req_type_field.append(c2)
         e_req_type_field.append(c3)
-        self.add_field_with_label('e_req_type','Change Type:',e_req_type_field)
+        self.append_field_with_label('Change Type:',e_req_type_field,key='e_req_type')
         error_field= gui.Label('',width=400, height=30)
-        self.add_field('error',error_field)
+        self.append_field(error_field,'error')
         e_req_type_field.set_value(OSCConfig.current_unit_type)
-        self.set_on_confirm_dialog_listener(self,'confirm')
 
     # populate the gui just before showing it
     def edit(self,callback):
@@ -269,10 +275,11 @@ class OSCUnitType(gui.GenericDialog):
 
 
     #called when the user presses the OK button
-    def confirm(self):
+    def confirm_dialog(self):
         req_type=self.get_field('e_req_type').get_value()
         # print 'confirm uts',req_type
         if req_type == 'Select':
+            OKDialog('OSC-Select Unit Type','Unit Type not Selected').show(self._base_app_instance)
             self.get_field('error').set_text('<b>Unit Type not Selected</b>')
             return
         OSCConfig.current_unit_type=req_type

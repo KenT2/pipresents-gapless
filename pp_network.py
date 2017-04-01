@@ -8,20 +8,24 @@ from pp_utils import Monitor
 
 class Mailer(object):
 
+    config=None
+
     def __init__(self):
         self.mon=Monitor()
-        self. config=ConfigParser.ConfigParser()
-        
-    def read_config(self,options_file):
-        """ email is enabled if email.cfg exists"""
 
-        self.config.read(options_file)
+    """ email is enabled if email.cfg exists"""        
+    def read_config(self,options_file=None):
+        if options_file != None:
+            Mailer.options_file=options_file
+            Mailer.config=ConfigParser.ConfigParser()
+        self.config=Mailer.config
+        self.config.read(Mailer.options_file)
         self.server=self.config.get('email','server',0)
         self.port=self.config.get('email','port',0)
         self.username=self.config.get('email','username',0)
         self.password=self.config.get('email','password',0)
-        is_to=self.config.get('email-editable','to',0)
-        self.is_to_list= is_to.splitlines()
+        self.email_to=self.config.get('email-editable','to',0)
+        self.is_to_list= self.email_to.splitlines()
         self.is_to = ', '.join(self.is_to_list)
 
         email_allowed=self.config.get('email-editable','email_allowed',0)
@@ -62,15 +66,15 @@ class Mailer(object):
             self.log_on_error=False
 
 
-    def save_config(self,options_file):
+    def save_config(self):
         self.config.set('email-editable','email_allowed','yes' if self.email_allowed is True else'no')
-        self.config.set('email-editable','to',self.is_to)
+        self.config.set('email-editable','to',self.email_to)
         self.config.set('email-editable','email_with_ip','yes' if self.email_with_ip is True else'no')
         self.config.set('email-editable','email_at_start','yes'if self.email_at_start is True else 'no')
         self.config.set('email-editable','email_on_error','yes' if self.email_on_error is True else 'no')
         self.config.set('email-editable','email_on_terminate','yes' if self.email_on_terminate is True else 'no')
         self.config.set('email-editable','log_on_error','yes' if self.log_on_error is True else 'no')
-        with open(options_file, 'wb') as config_file:
+        with open(Mailer.options_file, 'wb') as config_file:
             self.config.write(config_file)
             
 

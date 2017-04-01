@@ -1,3 +1,56 @@
+CHANGES FOR 1.3.2a  1/4/2017
+====================
+enhanced - Manager,delete and rename media, livetracks, profile, download log and stats, reboot and shutdown Pi
+enhanced - web editor updated for latest version of remi; gives a more modern look and feel
+enhanced - web editor, profile update now updates automatically between minor versions e.g. 1.3.1>1.3.2 in both editors (--forceupdate not required)
+enhanced - web editor  makes a backup in pp_profiles.bak before doing an update
+enhanced - web editor, copy profile, delete button, selecting a show automatically selects its medialist
+enhanced - web editor has command line options for remote, local, and native display
+enhanced - web editor, shows, medialists and tracks are displayed alphabetically
+enhanced - web editor, adding a menu show now adds a menu track
+enhanced - GPIO linked output,an output pin can now be directly linked to an input pin (gpio.cfg) ??? in Manual?????
+enhanced - players, additional track commands pause-on, pause-off, mute, unmute
+enhanced - video track can now be 'frozen at start', either before or after the first frame. Additional command, 'go', unfreezes the track
+enhanced - pp_magicpicture_1p3 example rewritten to use freeze at start
+enhanced - new example pp_videoplayout_1p3 to show video playout possibilities using the new 'freeze-at-start' parameter' and Go command
+enhanced - the background colour behind show canvases can now be set from the editor in Start Show
+enhanced - shows now have 'show control at beginning' and 'show control at end'
+enhanced - new show control command 'event symbolic-name' allows one show to send an event to other shows
+enhanced - new show control command monitor on/off controls monitor power using vcgencmd
+enhanced - new pp_showcontrolevent_1p3 example demonstrating show control events and the pause-on/pause-off commands.
+enhanced - PP reports an error if Pi Presents is not run from a desktop
+enhanced - Window definitions can now be x1+y1+w*h in addition to x1 y1 x2 y2
+enhanced - Media can now reside inside a profile, by convention in the directory 'media'. Accessed using @ e.g. @/media/my_track
+enhanced - calibrated the output level for audio tracks so that it is the same as video. Resuting lower volume also reduces distortion on audio tracks
+enhanced - menu now returns with the just played entry highlighted, not the first entry
+enhanced - text can now be centred on the show canvas and justified.
+enhanced - for liveshow, when the list is empty the list empty track is played, or exits if single run
+enhanced - liveshow can execute show control commands on transition empty>not-empty and not=empty>empty
+enhanced - new example pp_liveshowempty_1p3 demonstrating list empty functions
+enhanced - for liveshow shuffle is now a proper 'card shuffle' not random.(mediashow still random)
+
+fixed - web editor moves i/o config files to pp_io_config when moving from 1,2 to 1.3.x 
+fixed - missing error report when opening osc.cfg in Pi Presents
+fixed - crash when medishow or liveshow is using shuffle with a single track
+fixed - web editor, removed leading and trailing spaces from edited items so that they validate OK
+fixed - again! radiobuttonshow now allows a radiobutton to be pressed during a subshow at the expense of the subshow not having any controls.
+        To change back edit pp_radiobuttonshow.py in def handle_input_event()
+fixed - liveshow now skips dot tracks (.sync etc) instead of exiting the show
+fixed - web editor validation now tests if first/home track is blank before trying the medialist
+fixed - crash in image track when interpolation method is specified
+fixed - removed initial blip of sound from a video track during artmediashow
+fixed - PP now exits immeadiately on Terminate or SIGTERM even if in a track which opens a show at its end
+fixed - menu bounding box and extent are displayed in the correct colours
+fixed - crash if menu geometry paramters are erroneous
+fixed - regression, liveshow can now include web tracks
+fixed - crash if liveshow has a child track
+fixed - playing of liveshow when there is a non-anonymous track
+fixed - artliveshow now does not return an error when a track is deleted from the livelist
+fixed - removed sudo from pp_control.sh
+fixed - shutdown the Pi, changes for Jessie compatibility
+
+
+
 Version 1.3.1i 11/12/2016
 
 enhanced - The Manager now automatically detects the IP address of the Pi which can then be sent by email to the remote user.

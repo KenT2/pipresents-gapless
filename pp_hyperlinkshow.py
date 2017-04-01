@@ -105,7 +105,7 @@ class HyperlinkShow(Show):
             self.debug=False
         self.path = PathManager()
         
-        self.allowed_links=('return','home','call','null','exit','goto','play','jump','repeat','pause','no-command','stop')
+        self.allowed_links=('return','home','call','null','exit','goto','play','jump','repeat','pause','no-command','stop','pause-on','pause-off','mute','unmute','go')
         
         # init variables
         self.track_timeout_timer=None
@@ -228,7 +228,7 @@ class HyperlinkShow(Show):
                 return
             
             # in-track operations
-            elif link_op =='pause':
+            elif link_op in ('pause','pause-on','pause-off','mute','unmute','go'):
                 if self.current_player is not  None:
                     self.current_player.input_pressed(link_op)
                     

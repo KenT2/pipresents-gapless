@@ -19,6 +19,9 @@ class ShowList(object):
         self._num_shows=0
         self._selected_show_index=-1 # index of currently selected show
 
+    def deselect_all(self):
+        self._selected_show_index=-1 # index of currently selected show
+        
     def print_list(self):
         print self._shows
 
@@ -124,19 +127,26 @@ class ShowList(object):
             ifile  = open(filename, 'rb')
             sdict= json.load(ifile)
             ifile.close()
-            self._shows=sdict['shows']
+            self._rawshows=sdict['shows']
+            self._shows= sorted(self._rawshows, key=lambda k: k['show-ref'])
             if 'issue' in sdict:
-                self.issue= sdict['issue']
+                self.profile_version_string= sdict['issue']
             else:
-                self.issue="1.0"
+                self.profile_version_string="1.0"
             self._num_shows=len(self._shows)
             self._selected_show_index=-1
             return True
         else:
             return False
 
-    def sissue(self):
-        return self.issue
+
+    def profile_version(self):
+        vitems=self.profile_version_string.split('.')
+        if len(vitems)==2:
+            # cope with 2 digit version numbers before 1.3.2
+            return 1000*int(vitems[0])+100*int(vitems[1])
+        else:
+            return 1000*int(vitems[0])+100*int(vitems[1])+int(vitems[2])
         
             
     def save_list(self,filename):
@@ -147,7 +157,7 @@ class ShowList(object):
             filename = string.replace(filename,'/','\\')
         else:
             filename = string.replace(filename,'\\','/')
-        dic={'issue':self.issue,'shows':self._shows}
+        dic={'issue':self.profile_version_string,'shows':self._shows}
         ofile  = open(filename, "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
         ofile.close()

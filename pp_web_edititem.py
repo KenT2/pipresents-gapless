@@ -3,8 +3,7 @@
 import os
 import string
 import remi.gui as gui
-from remi_plus import TabView, append_with_label
-
+from remi_plus import TabView, append_with_label, OKDialog, OKCancelDialog,AdaptableDialog,FileSelectionDialog
 from pprint import pprint
 
 # !!! do not use self.container in dialog sub-classes
@@ -14,19 +13,20 @@ from pprint import pprint
 # EDIT SHOW AND TRACK CONTENT
 # ************************************
 
-class WebEditItem(gui.GenericDialog):
+class WebEditItem(AdaptableDialog):
     
     def __init__(self, title, field_content, record_specs,field_specs,show_refs,initial_media_dir,
-                        pp_home_dir,initial_tab,callback):
+                        pp_home_dir,pp_profile_dir,initial_tab,callback):
 
         self.callback=callback
         self.frame_width=450
-        self.frame_height=400
-        self.field_width= 250
-        self.ffn_width=400
-        self.ffn_height=300
+        self.fields_height=500
+        self.tab_height=100
+        self.okcancel_height=100
+        self.field_width= 200
 
-        super(WebEditItem, self).__init__('<b>'+title+'</b>','',width=self.ffn_width+700,height=600,autohide_ok=False)
+        super(WebEditItem, self).__init__('<b>'+title+'</b>','',width=self.frame_width+700,height=self.fields_height+self.tab_height+self.okcancel_height,
+                                          confirm_name='OK',cancel_name='Cancel')
 
         self.field_content = field_content   # dictionary - the track parameters to be edited and returned
                                                                  # key is field name e.g. omx-window
@@ -38,33 +38,12 @@ class WebEditItem(gui.GenericDialog):
         
         self.initial_media_dir=initial_media_dir
         self.pp_home_dir=pp_home_dir
+        self.pp_profile_dir=pp_profile_dir
         self.initial_tab=initial_tab
 
-        # Create a File Folder Navigator in a frame
-        self.ffn = gui.FileFolderNavigator(False,self.initial_media_dir,True,False)#width=self.ffn_width, height=self.ffn_height
-
-        # with some buttons
-        self.ffn_select=gui.Button('Select',width=100,height=30)
-        self.ffn_cancel=gui.Button('Cancel',width=100,height=30)
-        self.ffn_select.set_on_click_listener(self,'on_fileselection_dialog_select')
-        self.ffn_cancel.set_on_click_listener(self,'on_fileselection_dialog_cancel')
-        self.ffn_button_frame=gui.HBox(width=self.ffn_width+60,height=30)
-        self.ffn_button_frame.append(self.ffn_cancel)
-        self.ffn_button_frame.append(self.ffn_select)
-
-        # and error label for ffn
-        self.ffn_error=gui.Label('',width=self.ffn_width,height=20)
-
-        # frame for ffn and buttons
-        self.ffn_frame=gui.VBox(width=self.ffn_width+60, height=self.ffn_height+90) #10
-        self.ffn_frame.append(self.ffn,key='ffn')
-        self.ffn_frame.append(self.ffn_error,key='ffn_error')
-        self.ffn_frame.append(self.ffn_button_frame,key='ffn_buttons')
-
-  
 
         # create a Tabbed Editor
-        self.tabview= TabView(self.frame_width,self.frame_height,30)
+        self.tabview= TabView(self.frame_width,self.fields_height,30)
 
 
         # tabs are created dynamically from pp_definitions.py
@@ -102,15 +81,14 @@ class WebEditItem(gui.GenericDialog):
         self.tabview.construct_tabview()
         
         # frame for file navigator and tabbed editor
-        # conent of frame is switched between ffn and tabview
-        self.root = gui.HBox(width=self.tabview.get_width() + 100, height=self.frame_height+ 100) #1
-        self.root.append(self.tabview,key='switch')
-        self.add_field('cont',self.root)
+        # content of frame is switched between ffn and tabview
+        self.root_frame = gui.HBox(width=self.tabview.get_width() + 100, height=self.fields_height+self.tab_height) #1
+        self.root_frame.append(self.tabview,key='switch')
+        self.append_field(self.root_frame,'cont')
 
         #adjust width of diaolg box
-        self.style['width']=gui.to_pix(self.tabview.get_width() + 200)
-        
-        self.set_on_confirm_dialog_listener(self,'confirm')      
+        self.style['width']=gui.to_pix(self.tabview.get_width() + 100)
+         
         return None
 
     def show_tab(self,key):
@@ -152,7 +130,7 @@ class WebEditItem(gui.GenericDialog):
                     obj.set_value(self.field_content[field])
                     
                 elif field_spec['shape']=='text':
-                    obj=gui.TextInput(width=self.field_width,height=80,single_line=False)
+                    obj=gui.TextInput(width=self.field_width,height=110,single_line=False)
                     obj.set_value(self.field_content[field])
 
                 elif field_spec['shape']=='spinbox':
@@ -161,9 +139,9 @@ class WebEditItem(gui.GenericDialog):
 
                     
                 elif field_spec['shape']=='option-menu':
-                    obj=gui.DropDown(width=self.field_width,height=20)
+                    obj=gui.DropDown(width=self.field_width,height=25)
                     for key, value in enumerate(values):
-                        item=gui.DropDownItem(value,width=200,height=20)
+                        item=gui.DropDownItem(value,width=200,height=25)
                         obj.append(item, key=key)
                     obj.set_value(self.field_content[field])
 
@@ -173,7 +151,7 @@ class WebEditItem(gui.GenericDialog):
                 
                 # create buttons where required
                 if field_spec['shape']=='browse':
-                    button=self.browse_button(20,20,'','browse_button',self.field_index)
+                    button=self.browse_button(20,20,'','browse_button',self.field_index,field_spec['text'])
                     
                 elif field_spec['shape']=='colour':
                     if ColourMap().exists(self.field_content[field]) is True:
@@ -181,7 +159,7 @@ class WebEditItem(gui.GenericDialog):
                     else:
                         colour=self.field_content[field]
                     button= gui.ColorPicker(colour,width=20, height=20)
-                    button.set_on_change_listener(self, 'color_picker_changed' )
+                    button.set_on_change_listener(self.color_picker_changed)
                     
                 else:
                     button=None
@@ -190,7 +168,7 @@ class WebEditItem(gui.GenericDialog):
                 self.tab_row+=1    
                 return obj,button
 
-    def confirm(self):
+    def confirm_dialog(self):
         # OK button is pressed so update the field values in the profile
         # self.field_content - dictionary - the track parameters to be edited and returned
         # key is field name e.g. omx-window
@@ -210,19 +188,20 @@ class WebEditItem(gui.GenericDialog):
 
                 #bodge for type which is a label
                 if field_spec['read-only']=='yes':
-                    self.field_content[field]=self.field_objs[field_index].get_text()
+                    self.field_content[field]=self.field_objs[field_index].get_text().strip()
 
                 # get result of button from button and also put it in field
                 elif field_spec['shape'] in ('colour'):
                     # button is actually a color picker
-                    self.field_content[field]=self.button_objs[field_index].get_value()
+                    self.field_content[field]=self.button_objs[field_index].get_value().strip()
                     self.field_objs[field_index].set_value(self.field_content[field])
 
                 else:
-                    self.field_content[field]=str(self.field_objs[field_index].get_value())
+                    self.field_content[field]=str(self.field_objs[field_index].get_value()).strip()
                     
                 # print field_spec['shape'],field_spec['text']+':  ',self.field_content[field]    
                 field_index +=1
+        print 'edit item hide'
         self.hide()
         self.callback()
 
@@ -230,54 +209,78 @@ class WebEditItem(gui.GenericDialog):
 
 # browse button
 
-    def browse_button(self,w,h,label,base_name,field_index):
+    def browse_button(self,w,h,label,base_name,field_index,title):
         # create a button that returns the key to on_click_listener
         bname=base_name+str(field_index)
         but=gui.Button(label,width=w,height=h)
-        f = lambda  _bname=field_index: self.open_fileselection_dialog( _bname)
-        fname=base_name+'_' + str(field_index)
-        setattr(self, fname, f)
-        but.set_on_click_listener(self, fname)
+        # f = lambda  _bname=field_index: self.open_fileselection_dialog( _bname)
+        # fname='self.'+base_name+'_' + str(field_index)
+        # setattr(self, fname, f)
+        but.set_on_click_listener(self.open_fileselection_dialog,field_index,title)
         return but
 
 
-    def open_fileselection_dialog(self,browse_field_index):
+    def open_fileselection_dialog(self,widget,browse_field_index,title):
         self.browse_field_index=browse_field_index
-        self.root.append(self.ffn_frame,key='switch')
+        self.file_dialog=FileSelectionDialog(title,'Select File',False, self.initial_media_dir,callback=self.on_fileselection_dialog_callback)
+        self.file_dialog.show(self._base_app_instance)
+    
 
-    def on_fileselection_dialog_cancel(self):
-        self.root.append(self.tabview,key='switch')
-
-    def on_fileselection_dialog_select(self):
+    def on_fileselection_dialog_callback(self,flist):
         # a list() of filenames and folders is returned
-        flist=self.ffn.get_selection_list()
         if len(flist)==0:
-            self.ffn_error.set_text('nothing selected')
+            OKDialog('Select File','nothing selected').show(self._base_app_instance)
             return
-        file_path=flist[0]
-        file_path=os.path.normpath(file_path)
+        file_path=os.path.normpath(flist[0])
         # print "file path ", file_path
-        relpath = os.path.relpath(file_path,self.pp_home_dir)
-        # print "relative path ",relpath
-        common = os.path.commonprefix([file_path,self.pp_home_dir])
-        # print "common ",common
-        if common.endswith("pp_home") is False:
-            #print file_path
-            self.ffn_error.set_text(file_path)
-            #self.button_objs[self.field_index]=file_path
+
+        # is media in the profile
+        # print 'pp_profile dir ',self.pp_profile_dir
+        in_profile=False
+        if self.pp_profile_dir in file_path:
+            in_profile=True
+            
+        if in_profile is True:
+            # deal with media in profile @
+            relpath = os.path.relpath(file_path,self.pp_profile_dir)
+            # print "@ relative path ",relpath
+            common = os.path.commonprefix([file_path,self.pp_profile_dir])
+            # print "@ common ",common
+            if common == self.pp_profile_dir:
+                location = "@" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                self.field_objs[self.browse_field_index].set_value(location)
+                # print '@location ',location
+                # print
+                return
+            else:
+                # print '@absolute ',file_path
+                self.field_objs[self.browse_field_index].set_value(file_path)
+                return                
         else:
-            location = "+" + os.sep + relpath
-            location = string.replace(location,'\\','/')
-            self.ffn_error.set_text(location)
-            self.field_objs[self.browse_field_index].set_value(location)
-            self.root.append(self.tabview,key='switch')
-            #print location
+            # deal with media in pp_home  +     
+            relpath = os.path.relpath(file_path,self.pp_home_dir)
+            # print "+ relative path ",relpath
+            common = os.path.commonprefix([file_path,self.pp_home_dir])
+            # print "+ common ",common
+            if common ==self.pp_home_dir:
+                location = "+" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                self.field_objs[self.browse_field_index].set_value(location)
+                # print '+location ', location
+                # print
+                return
+            else:
+                # print '+ absolute ',file_path
+                self.field_objs[self.browse_field_index].set_value(file_path)
+                return
+
 
 
         
 # colour picker
 
-    def color_picker_changed(self,result):
+    def color_picker_changed(self,widget,result):
         self.update_colour_fields()
         # print 'colour picked',result
 

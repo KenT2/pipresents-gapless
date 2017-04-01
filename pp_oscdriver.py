@@ -1,5 +1,7 @@
 
 """
+30/12/2016 - fixed missing self.mon.err(
+
 Heavily modified from the examples here, with thanks:
 receiving OSC with pyOSC
 https://trac.v2.nl/wiki/pyOSC
@@ -33,7 +35,7 @@ class OSCDriver(object):
         self.mon=Monitor()
         config_file=self.pp_profile + os.sep +'pp_io_config'+os.sep+ 'osc.cfg'
         if not os.path.exists(config_file):
-            self.mon.err(self, 'OSC Configuration file nof found: '+config_file)
+            self.mon.err(self, 'OSC Configuration file not found: '+config_file)
             return'error','OSC Configuration file nof found: '+config_file
         
         self.mon.log(self, 'OSC Configuration file found at: '+config_file)        
@@ -52,7 +54,7 @@ class OSCDriver(object):
         self.server=None
 
         if self.this_unit_type not in ('master','slave','master+slave'):
-            return 'error','this unit type not known: '+self.this_unit_type
+            return 'error','OSC config, this unit type not known: '+self.this_unit_type
 
         if self.this_unit_type in('slave','master+slave'):
             #start the client that sends replies to controlling unit

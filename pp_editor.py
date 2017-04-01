@@ -34,7 +34,7 @@ class PPEditor(object):
 
     def __init__(self):
     
-        self.editor_issue="1.3"
+        self.editor_issue="1.3.2"
 
         # get command options
         self.command_options=ed_options()
@@ -362,18 +362,45 @@ class PPEditor(object):
         
 
     def open_profile(self,dir_path):
+        if self.editor_version()!= self.definitions_version():
+            self.mon.err(self,'Incorrect version of Editor: '+ self.editor_issue +'Definitions are: '+ PPdefinitions.DEFINITIONS_VERSION_STRING)
+            return     
         showlist_file = dir_path + os.sep + "pp_showlist.json"
         if os.path.exists(showlist_file) is False:
             self.mon.err(self,"Not a Profile: " + dir_path + "\n\nHint: Have you opened the profile directory?")
             return
         self.pp_profile_dir = dir_path
         self.root.title("Editor for Pi Presents - "+ self.pp_profile_dir)
-        if self.open_showlist(self.pp_profile_dir) is False:
-            self.init()
+        
+        self.osc_config_file=self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg'
+
+
+        self.open_showlist(self.pp_profile_dir)
+        if self.current_showlist.profile_version() == self.definitions_version():
+            self.profile_finish_open()
             return
+        
+        if self.current_showlist.profile_version()> self.definitions_version():
+            self.mon.err(self,"Version of profile is greater than Pi Presents")
+            return
+        
+        if tkMessageBox.askokcancel("Update Profile","Existing profile will be OVERWRITTEN. Are you sure"):
+            self.update_profile()
+            self.profile_finish_open()
+            return
+        else:
+            return
+
+
+  
+    def profile_finish_open(self):
+        self.current_medialist=None
+        self.current_showlist=None
+        self.current_show=None
+        self.open_showlist(self.pp_profile_dir)        
+        self.refresh_shows_display()        
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
-        self.osc_config_file=self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg'
 
 
     def new_profile(self,profile):
@@ -443,20 +470,8 @@ class PPEditor(object):
 
     def open_showlist(self,profile_dir):
         showlist_file = profile_dir + os.sep + "pp_showlist.json"
-        if os.path.exists(showlist_file) is False:
-            self.mon.err(self,"showlist file not found at " + profile_dir + "\n\nHint: Have you opened the profile directory?")
-            self.app_exit()
         self.current_showlist=ShowList()
         self.current_showlist.open_json(showlist_file)
-        if float(self.current_showlist.sissue())<float(self.editor_issue) or  (self.command_options['forceupdate']  is  True and float(self.current_showlist.sissue()) == float(self.editor_issue)):
-            self.update_profile()
-            self.mon.err(self,"Version of profile has been updated to "+self.editor_issue+", please re-open")
-            return False
-        if float(self.current_showlist.sissue())>float(self.editor_issue):
-            self.mon.err(self,"Version of profile is greater than editor, must exit")
-            self.app_exit()
-        self.refresh_shows_display()
-        return True
 
 
     def save_showlist(self,showlist_dir):
@@ -555,7 +570,7 @@ class PPEditor(object):
     def edit_show(self,show_types,field_specs):
         if self.current_showlist is not None and self.current_showlist.show_is_selected():
             d=EditItem(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs(),
-                       self.initial_media_dir,self.pp_home_dir,'show')
+                       self.initial_media_dir,self.pp_profile_dir,self.pp_home_dir,'show')
             if d.result  is  True:
 
                 self.save_showlist(self.pp_profile_dir)
@@ -676,7 +691,7 @@ class PPEditor(object):
         if len(self.medialists)>0:
             self.current_medialists_index=int(event.widget.curselection()[0])
             self.current_medialist=MediaList('ordered')
-            if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
+            if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.definitions_version()):
                 self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
                 self.app_exit()        
             self.refresh_tracks_display()
@@ -730,7 +745,7 @@ class PPEditor(object):
     def edit_track(self,track_types,field_specs):      
         if self.current_medialist is not None and self.current_medialist.track_is_selected():
             d=EditItem(self.root,"Edit Track",self.current_medialist.selected_track(),track_types,field_specs,
-                       self.show_refs(),self.initial_media_dir,self.pp_home_dir,'track')
+                       self.show_refs(),self.initial_media_dir,self.pp_profile_dir,self.pp_home_dir,'track')
             if d.result  is  True:
                 self.save_medialist()
             self.refresh_tracks_display()
@@ -857,6 +872,25 @@ class PPEditor(object):
     # UPDATE PROFILE
     # **********************************************
 
+
+    def editor_version(self):
+        vitems=self.editor_issue.split('.')
+        if len(vitems)==2:
+            # cope with 2 digit version numbers before 1.3.2
+            return 1000*int(vitems[0])+100*int(vitems[1])
+        else:
+            return 1000*int(vitems[0])+100*int(vitems[1])+int(vitems[2])
+
+    def definitions_version(self):
+        # don't need to cope with earlier as this editor will be used only with 1.3.2 or later of defs
+        # cope with earlier pp_definitions which does not have a version number
+        # just make it 1.3.2 as thr first one to have a version in defs.
+        #if not hasattr(PPdefinitions,'DEFINITIONS_VERSION_STRING'):
+        #    return 1302
+        #else:
+        return PPdefinitions().definitions_version()
+
+
     def update_all(self):
         self.init()
         for profile_file in os.listdir(self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset):
@@ -867,38 +901,89 @@ class PPEditor(object):
             else:
                 self.current_showlist=ShowList()
                 self.current_showlist.open_json(self.pp_profile_dir+os.sep+"pp_showlist.json")
-                self.mon.log (self,"Version of profile "+ profile_file + ' is ' + self.current_showlist.sissue())
-                if float(self.current_showlist.sissue())<float(self.editor_issue):
-                    self.mon.log(self,"Version of profile "+profile_file+ "  is being updated to "+self.editor_issue)
+                if self.current_showlist.profile_version() < self.definitions_version():
+                    self.mon.log(self,"Version of profile "+profile_file+ "  is being updated to "+ PPdefinitions.DEFINITIONS_VERSION_STRING)
                     self.update_profile()
-                elif (self.command_options['forceupdate']  is  True and float(self.current_showlist.sissue()) == float(self.editor_issue)):
-                    self.mon.log(self, "Forced updating of " + profile_file + ' to '+self.editor_issue)
-                    self.update_profile()
-                elif float(self.current_showlist.sissue())>float(self.editor_issue):
+                elif self.current_showlist.profile_version()>self.definitions_version():
                     tkMessageBox.showwarning("Pi Presents", "Version of profile " +profile_file+ " is greater than editor, skipping")
                 else:
                     self.mon.log(self," Skipping Profile " + profile_file + " It is already up to date ")
         self.init()
         tkMessageBox.showwarning("Pi Presents","All profiles updated")
+
+
+    def backup_profile(self):
+        # make a backup directory for profiles at this level
+        backup_dir=self.pp_home_dir+os.sep+'pp_profiles.bak'+self.pp_profiles_offset
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+
+        #make a directory for this profile
+        if not os.path.exists(backup_dir+os.sep+self.profile_name):
+            os.makedirs(backup_dir+os.sep+self.profile_name)
+                
+        for this_file in os.listdir(self.pp_profile_dir):
+            if this_file.endswith(".json") and this_file !='schedule.json':
+                from_file=self.pp_profile_dir+os.sep+this_file
+                to_file=backup_dir+os.sep+self.profile_name+os.sep+this_file
+                # print 'backup',from_file,to_file
+                shutil.copy(from_file,to_file)
+
+
+
+    def move_io_config(self):
+        if not os.path.exists(self.pp_profile_dir+os.sep+'pp_io_config'):
+            os.makedirs(self.pp_profile_dir+os.sep+'pp_io_config')
+        # print 'io',self.pp_profile_dir,self.pp_profile_dir+os.sep+'pp_io_config'
+        if os.path.exists(self.pp_profile_dir+os.sep+'gpio.cfg'):
+            os.rename(self.pp_profile_dir+os.sep+'gpio.cfg',self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'gpio.cfg')
+        if os.path.exists(self.pp_profile_dir+os.sep+'keys.cfg'):
+            os.rename(self.pp_profile_dir+os.sep+'keys.cfg',self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'keys.cfg')                          
+        if os.path.exists(self.pp_profile_dir+os.sep+'screen.cfg'):
+            os.rename(self.pp_profile_dir+os.sep+'screen.cfg',self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'screen.cfg')                        
+        if os.path.exists(self.pp_profile_dir+os.sep+'osc.cfg'):
+            os.rename(self.pp_profile_dir+os.sep+'osc.cfg',self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg')  
+
             
     def update_profile(self):
-
+        self.profiles_dir=self.pp_home_dir+os.sep+'pp_profiles'+self.pp_profiles_offset
+        # sef.pp_profile_dir already set
+        self.profile_name=self.pp_profile_dir.split(os.sep)[-1]
+        self.backup_profile()
         self.update_medialists()   # medialists and their tracks
-        self.update_shows()         #shows in showlist, also creates menu tracks for 1.2>1.3
+        self.update_shows()         #shows in showlist, also creates menu tracks and moves io_config for 1.2>1.3
         
 
     def update_shows(self):
         # open showlist into a list of dictionaries
         self.mon.log (self,"Updating show ")
         ifile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", 'rb')
-        shows = json.load(ifile)['shows']
+        sdict = json.load(ifile)
         ifile.close()
+
+        shows = sdict['shows']
+        if 'issue' in sdict:
+            profile_version_string= sdict['issue']
+        else:
+            profile_version_string="1.0"
+                
+        vitems=profile_version_string.split('.')
+        if len(vitems)==2:
+            # cope with 2 digit version numbers before 1.3.2
+            profile_version = 1000*int(vitems[0])+100*int(vitems[1])
+        else:
+            profile_version = 1000*int(vitems[0])+100*int(vitems[1])+int(vitems[2])
+
+        #special 1.2 to 1.3 move io configs to pp_io_config
+        
+        if profile_version == 1200:
+            self.move_io_config()
 
         # special 1.2>1.3 create menu medialists with menu track from show
         #go through shows - if type = menu and version is greater copy its medialist to a new medialist with  name = <show-ref>-menu1p3.json
         for show in shows:
             #create a new medialist medialist != show-ref as menus can't now share medialists
-            if show['type']=='menu' and float(self.current_showlist.sissue())<float(self.editor_issue):
+            if show['type']=='menu' and profile_version == 1200:
                 to_file=show['show-ref']+'-menu1p3.json'
                 from_file = show['medialist']
                 if to_file != from_file:
@@ -938,7 +1023,7 @@ class PPEditor(object):
 
         #update the fields in  all shows
         replacement_shows=self.update_shows_in_showlist(shows)
-        dic={'issue':self.editor_issue,'shows':replacement_shows}
+        dic={'issue':PPdefinitions.DEFINITIONS_VERSION_STRING,'shows':replacement_shows}
         ofile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
         return True
@@ -972,7 +1057,7 @@ class PPEditor(object):
                 tracks = json.load(ifile)['tracks']
                 ifile.close()
                 replacement_tracks=self.update_tracks(tracks)
-                dic={'issue':self.editor_issue,'tracks':replacement_tracks}
+                dic={'issue':PPdefinitions.DEFINITIONS_VERSION_STRING,'tracks':replacement_tracks}
                 ofile  = open(self.pp_profile_dir + os.sep + this_file, "wb")
                 json.dump(dic,ofile,sort_keys=True,indent=1)       
 

@@ -6,6 +6,83 @@ import datetime
 import sys
 import os
 import tkMessageBox
+from Tkinter import NW,N,W,CENTER,LEFT,RIGHT
+
+def calculate_text_position(x_text,y_text,x1,y1,centre_x,centre_y,width,height,justify_text):
+    if x_text == '':
+        x=x1+centre_x
+    else:
+        x = int(x_text)+x1
+        
+    if y_text == '':
+        y=y1+centre_y 
+    else:
+        y=int(y_text)+y1
+
+    if x_text == '' and y_text=='':
+        anchor=CENTER
+    elif x_text == '' and y_text!='':
+        anchor = N
+    elif x_text != '' and y_text=='':
+        anchor = W
+    else:
+        anchor= NW
+
+    if justify_text=='left':
+        justify=LEFT
+    elif justify_text=='right':
+        justify=RIGHT
+    else:
+        justify=CENTER
+    return x,y,anchor,justify
+
+
+def parse_rectangle(text):
+    if text.strip() == '':
+        return 'error','No points in rectangle: '+text,0,0,0,0
+    if '+' in text:
+        # parse  x+y+width*height
+        fields=text.split('+')
+        if len(fields) != 3:
+            return 'error','Do not understand rectangle: '+ text,0,0,0,0
+        dimensions=fields[2].split('*')
+        if len(dimensions)!=2:
+            return 'error','Do not understand rectangle: '+text,0,0,0,0
+        
+        if not fields[0].isdigit():
+            return 'error','x1 is not a positive integer: '+ text,0,0,0,0
+        else:
+            x1=int(fields[0])
+        
+        if not fields[1].isdigit():
+            return 'error','y1 is not a positive integer: '+ text,0,0,0,0
+        else:
+            y1=int(fields[1])
+            
+        if not dimensions[0].isdigit():
+            return 'error','width is not a positive integer: '+text,0,0,0,0
+        else:
+            width=int(dimensions[0])
+            
+        if not dimensions[1].isdigit():
+            return 'error','height is not a positive integer: '+text,0,0,0,0
+        else:
+            height=int(dimensions[1])
+
+        return 'normal','',x1,y1,x1+width,y1+height
+    
+    else:
+        fields=text.split()
+        if len(fields) == 4:
+            # rectangle is specified
+            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
+                return 'error','coordinates are not positive integers ' +text,0,0,0,0
+            return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
+        else:
+            # error
+            return 'error','illegal rectangle: '+ text,0,0,0,0
+
+ 
 
 class StopWatch(object):
     

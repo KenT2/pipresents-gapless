@@ -1,7 +1,10 @@
 {
- "issue": "1.3", 
+ "issue": "1.3.2", 
  "shows": [
   {
+   "background-colour": "#000000", 
+   "show-control-begin": "", 
+   "show-control-end": "", 
    "show-ref": "start", 
    "start-show": "", 
    "title": "Start", 

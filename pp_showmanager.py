@@ -1,5 +1,5 @@
 import copy
-from pp_utils import Monitor
+from pp_utils import Monitor, parse_rectangle
 
 
 class ShowManager(object):
@@ -141,9 +141,10 @@ class ShowManager(object):
     # it will result in all the shows in a stack being closed and end_play_show being called
     def exit_show(self,show_ref):
         index=self.show_registered(show_ref)
-        self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
+        self.mon.log(self,"De-registering show "+ show_ref + ' show index:' + str(index))
         show_obj=self.show_running(index)
         if show_obj is not None:
+            self.mon.log(self,"Exiting show "+ show_ref + ' show index:' + str(index))
             show_obj.exit()
         return 'normal','exited a concurrent show'
             
@@ -308,14 +309,16 @@ class ShowManager(object):
         if len(fields) < 1:
             return 'normal','',0,0,int(self.canvas['width']),int(self.canvas['height'])
              
-        elif len(fields) == 4:
+        elif len(fields) in (1,4):
             # window is specified
-            if not (fields[0].isdigit() and fields[1].isdigit() and fields[2].isdigit() and fields[3].isdigit()):
-                return 'error','coordinates are not positive integers',0,0,0,0
-            return 'normal','',int(fields[0]),int(fields[1]),int(fields[2]),int(fields[3])
+            status,message,x1,y1,x2,y2=parse_rectangle(text)
+            if status=='error':
+                return 'error',message,0,0,0,0
+            else:
+                return 'normal','',x1,y1,x2,y2
         else:
             # error
-            return 'error','illegal Show canvas dimensions '+ text,0,0,0,0
+            return 'error','Wrong number of fields in Show canvas: '+ text,0,0,0,0
 
 from pp_menushow import MenuShow
 from pp_liveshow import LiveShow

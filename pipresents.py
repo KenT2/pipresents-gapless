@@ -19,7 +19,7 @@ It is aimed at primarily at  musems, exhibitions and galleries
 but has many other applications including digital signage
 
 Version 1.3 [pipresents-gapless]
-Copyright 2012/2013/2014/2015/2016, Ken Thompson
+Copyright 2012/2013/2014/2015/2016/2017, Ken Thompson
 See github for licence conditions
 See readme.md and manual.pdf for instructions.
 """
@@ -47,20 +47,29 @@ from pp_animate import Animate
 from pp_gpiodriver import GPIODriver
 from pp_oscdriver import OSCDriver
 from pp_network import Mailer, Network
-
+from pp_definitions import PPdefinitions
 
 class PiPresents(object):
 
+    def pipresents_version(self):
+        vitems=self.pipresents_issue.split('.')
+        if len(vitems)==2:
+            # cope with 2 digit version numbers before 1.3.2
+            return 1000*int(vitems[0])+100*int(vitems[1])
+        else:
+            return 1000*int(vitems[0])+100*int(vitems[1])+int(vitems[2])
+
+
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
-        self.pipresents_issue="1.3"
-        self.pipresents_minorissue = '1.3.1i'
+        self.pipresents_issue="1.3.2"
+        self.pipresents_minorissue = '1.3.2a'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
         self.nonfull_window_x = 0 # position of top left corner
         self.nonfull_window_y=0   # position of top left corner
-        self.pp_background='black'
+
 
         StopWatch.global_enable=False
 
@@ -124,11 +133,17 @@ class PiPresents(object):
         with open("/boot/issue.txt") as file:
             self.mon.log(self,'\nRaspbian: '+file.read())
 
-
         self.mon.log(self,'\n'+check_output(["omxplayer", "-v"]))
         self.mon.log(self,'\nGPU Memory: '+check_output(["vcgencmd", "get_mem", "gpu"]))
         
-
+        if "DESKTOP_SESSION" not in os.environ:
+            print 'Pi Presents must be run from the Desktop'
+            self.mon.log(self,'Pi Presents must be run from the Desktop')
+            self.mon.finish()
+            sys.exit(102)
+        else:
+            self.mon.log(self,'Desktop is '+ os.environ['DESKTOP_SESSION'])
+        
         # optional other classes used
         self.root=None
         self.ppio=None
@@ -172,7 +187,7 @@ class PiPresents(object):
             self.init_mailer()
             if self.email_enabled is True and self.mailer.email_at_start is True:
                 subject= '[Pi Presents] ' + self.unit + ': PP Started on ' + time.strftime("%Y-%m-%d %H:%M")
-                message = time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
+                message = time.strftime("%Y-%m-%d %H:%M") + '\nUnit: ' + self.unit + '   Profile: '+ self.options['profile']+ '\n ' + self.interface + '\n ' + self.ip 
                 self.send_email('start',subject,message) 
 
          
@@ -236,9 +251,9 @@ class PiPresents(object):
             self.end('error',"showlist not found at "+self.showlist_file)
 
         # check profile and Pi Presents issues are compatible
-        if float(self.showlist.sissue()) != float(self.pipresents_issue):
-            self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents")
-            self.end('error',"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents")
+        if self.showlist.profile_version() != self.pipresents_version():
+            self.mon.err(self,"Version of showlist " + self.showlist.profile_version_string + " is not  same as Pi Presents")
+            self.end('error',"Version of showlist " + self.showlist.profile_version_string + " is not  same as Pi Presents")
 
 
         # get the 'start' show from the showlist
@@ -265,9 +280,9 @@ class PiPresents(object):
         self.icon_text= 'Pi Presents'
         self.root.title(self.title)
         self.root.iconname(self.icon_text)
-        self.root.config(bg=self.pp_background)
+        self.root.config(bg=self.starter_show['background-colour'])
 
-        self.mon.log(self, 'native screen dimensions are ' + str(self.root.winfo_screenwidth()) + ' x ' + str(self.root.winfo_screenheight()) + ' pixcels')
+        self.mon.log(self, 'monitor screen dimensions are ' + str(self.root.winfo_screenwidth()) + ' x ' + str(self.root.winfo_screenheight()) + ' pixels')
         if self.options['screensize'] =='':        
             self.screen_width = self.root.winfo_screenwidth()
             self.screen_height = self.root.winfo_screenheight()
@@ -277,7 +292,7 @@ class PiPresents(object):
                 self.mon.err(self,message)
                 self.end('error',message)
 
-        self.mon.log(self, 'commanded screen dimensions are ' + str(self.screen_width) + ' x ' + str(self.screen_height) + ' pixcels')
+        self.mon.log(self, 'forced screen dimensions (--screensize) are ' + str(self.screen_width) + ' x ' + str(self.screen_height) + ' pixels')
        
         # set window dimensions and decorations
         if self.options['fullscreen'] is False:
@@ -307,7 +322,7 @@ class PiPresents(object):
         self.root.protocol ("WM_DELETE_WINDOW", self.handle_user_abort)
 
         # setup a canvas onto which will be drawn the images or text
-        self.canvas = Canvas(self.root, bg=self.pp_background)
+        self.canvas = Canvas(self.root, bg=self.starter_show['background-colour'])
 
 
         if self.options['fullscreen'] is True:
@@ -358,6 +373,7 @@ class PiPresents(object):
 # INITIALISE THE APPLICATION AND START
 # ****************************************
         self.shutdown_required=False
+        self.terminate_required=False
         self.exitpipresents_required=False
 
         # delete omxplayer dbus files
@@ -403,6 +419,7 @@ class PiPresents(object):
                 self.oscdriver=OSCDriver()
                 reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
                 if reason == 'error':
+                    self.mon.err(self,message)
                     self.end('error',message)
                 else:
                     self.osc_enabled=True
@@ -447,9 +464,9 @@ class PiPresents(object):
     def parse_screen(self,size_text):
         fields=size_text.split('*')
         if len(fields)!=2:
-            return 'error','do not understand --fullscreen comand option',0,0
+            return 'error','do not understand --screensize comand option',0,0
         elif fields[0].isdigit()  is False or fields[1].isdigit()  is False:
-            return 'error','dimensions are not positive integers in --fullscreen',0,0
+            return 'error','dimensions are not positive integers in --screensize',0,0
         else:
             return 'normal','',int(fields[0]),int(fields[1])
         
@@ -472,7 +489,9 @@ class PiPresents(object):
 # User inputs
 # ********************
     # handles one command provided as a line of text
-    def handle_command(self,command_text,source=''):
+    
+    def handle_command(self,command_text,source='',show=''):
+        # print 'PIPRESENTS ',command_text,source,'from',show
         self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
             return
@@ -488,13 +507,19 @@ class PiPresents(object):
             show_ref=fields[1]
         else:
             show_ref=''
-            
+
         if show_command in ('open','close'):
-            self.mon.sched(self, command_text + ' received from show:'+source)
-            if self.shutdown_required is False:
+            self.mon.sched(self, command_text + ' received from show:'+show)
+            if self.shutdown_required is False and self.terminate_required is False:
                 reason,message=self.show_manager.control_a_show(show_ref,show_command)
             else:
                 return
+        elif show_command =='monitor':
+            self.handle_monitor_command(show_ref)
+            return
+        elif show_command == 'event':
+            self.handle_input_event(show_ref,'Show Control')
+            return
         elif show_command == 'exitpipresents':
             self.exitpipresents_required=True
             if self.show_manager.all_shows_exited() is True:
@@ -515,6 +540,15 @@ class PiPresents(object):
         if reason=='error':
             self.mon.err(self,message)
         return
+
+
+    def handle_monitor_command(self,command):
+        if command == 'on':
+            os.system('vcgencmd display_power 1 >/dev/null')
+        elif command == 'off':
+            os.system('vcgencmd display_power 0 >/dev/null')           
+                      
+    
 
     def e_all_shows_ended_callback(self):
         self.all_shows_ended_callback('normal','no shows running')
@@ -612,6 +646,7 @@ class PiPresents(object):
 
     def terminate(self):
         self.mon.log(self, "terminate received")
+        self.terminate_required=True
         needs_termination=False
         for show in self.show_manager.shows:
             # print  show[ShowManager.SHOW_OBJ], show[ShowManager.SHOW_REF]
@@ -631,7 +666,7 @@ class PiPresents(object):
 
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message):
-        self.canvas.config(bg=self.pp_background)
+        self.canvas.config(bg=self.starter_show['background-colour'])
         if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True:
             self.end(reason,message)
 
@@ -674,7 +709,7 @@ class PiPresents(object):
             self.mon.finish()
             if self.shutdown_required is True:
                 # print 'SHUTDOWN'
-                call(['sudo', 'shutdown', '-h', '-t 5','now'])
+                call (['sudo','shutdown','now','SHUTTING DOWN'])
             sys.exit(100)
 
 
@@ -740,23 +775,6 @@ class PiPresents(object):
             self.mon.log (self,'Email Enabled')
 
 
-##    def send_email(self,reason,subject,message):
-##        success, error = self.mailer.connect()
-##        if success is False:
-##            self.mon.log(self, 'Failed to connect to email SMTP server ' + str(error))
-##            return
-##        else:
-##            success,error = self.mailer.send(subject,message)
-##            if success is False:
-##                self.mon.log(self, 'Failed to send email: ' + str(error))
-##                self.mailer.disconnect()
-##                return
-##            else:
-##                self.mon.log(self, 'Sent email for ' + reason)
-##                self.mailer.disconnect()
-##                return
-
-
 
     def send_email(self,reason,subject,message):
         if self.try_connect() is False:
@@ -794,6 +812,7 @@ class PiPresents(object):
     
     # tidy up all the peripheral bits of Pi Presents
     def tidy_up(self):
+        self.handle_monitor_command('on')
         self.mon.log(self, "Tidying Up")
         # turn screen blanking back on
         if self.options['noblank'] is True:
