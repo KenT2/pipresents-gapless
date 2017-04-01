@@ -563,7 +563,7 @@ class PPManager(App):
 
     def on_livetracks_upload_failed(self,result):
         self.livetracks_upload_status.set_text('ERROR: File upload failed')
-        OKDialog('Upload Live Tracks','File upload failed').show(selfself._base_app_instance)
+        OKDialog('Upload Live Tracks','File upload failed').show(self._base_app_instance)
 
 
 

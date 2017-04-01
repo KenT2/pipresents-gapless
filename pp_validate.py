@@ -1,6 +1,7 @@
 import os
 import json
 import ConfigParser
+from pp_utils import parse_rectangle
 from Tkinter import Toplevel, Scrollbar,Text
 from Tkinter import VERTICAL,RIGHT,LEFT,BOTH,Y,NORMAL,END,DISABLED
 
@@ -118,7 +119,7 @@ class Validator(object):
                         # check common fields
                         self.check_animate('animate-begin',track['animate-begin'])
                         self.check_animate('animate-end',track['animate-end'])
-                        self.check_plugin(track['plugin'],pp_home)
+                        self.check_plugin(track['plugin'],pp_home,pp_profile)
                         self.check_show_control(track['show-control-begin'],v_show_labels)
                         self.check_show_control(track['show-control-end'],v_show_labels)
                         if track['background-image'] != '':
@@ -592,7 +593,7 @@ class Validator(object):
 # Check plugin
 # ***********************             
              
-    def check_plugin(self,plugin_cfg,pp_home):
+    def check_plugin(self,plugin_cfg,pp_home,pp_profile):
         if plugin_cfg.strip() != '' and  plugin_cfg[0] == "+":
             plugin_cfg=pp_home+plugin_cfg[1:]
             if not os.path.exists(plugin_cfg):

@@ -275,9 +275,9 @@ class FileSelectionDialog(AdaptableDialog):
 
     def confirm_dialog(self):
         #overides Adaptable Dialog
-        print 'file dialog - hide'
+        # print 'file dialog - hide'
         params = self.fileFolderNavigator.get_selection_list()
-        print 'params',params
+        # print 'params',params
         self.hide()
         if self.callback==None:
             return params

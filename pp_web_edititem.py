@@ -201,7 +201,7 @@ class WebEditItem(AdaptableDialog):
                     
                 # print field_spec['shape'],field_spec['text']+':  ',self.field_content[field]    
                 field_index +=1
-        print 'edit item hide'
+        # print 'edit item hide'
         self.hide()
         self.callback()
 

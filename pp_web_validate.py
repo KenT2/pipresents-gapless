@@ -17,13 +17,12 @@ class Validator(AdaptableDialog):
         self.errors=0
         self.warnings=0
 
-        super(Validator, self).__init__('Validation Result','',width=600,height=500,display_cancel=False,ok_name='Done')
+        super(Validator, self).__init__('Validation Result','',width=600,height=500,confirm_name='Done')
         self.textb = gui.TextInput(width=550,height=400,single_line=False)
-        self.add_field(self.textb,'text')
-        self.set_on_confirm_dialog_listener(self.confirm)
+        self.append_field(self.textb,'text')
 
 
-    def confirm(self,widget):
+    def confirm_dialog(self):
           self.hide()
 
     def display(self,priority,text):
@@ -153,7 +152,7 @@ class Validator(AdaptableDialog):
                         # check common fields
                         self.check_animate('animate-begin',track['animate-begin'])
                         self.check_animate('animate-end',track['animate-end'])
-                        self.check_plugin(track['plugin'],pp_home)
+                        self.check_plugin(track['plugin'],pp_home,pp_profile)
                         self.check_show_control(track['show-control-begin'],v_show_labels)
                         self.check_show_control(track['show-control-end'],v_show_labels)
                         if track['background-image'] != '':
@@ -334,13 +333,13 @@ class Validator(AdaptableDialog):
                     if not show['track-count-limit'].isdigit(): self.display('f',"'Track Count Limit' is not 0 or a positive integer")
 
                     if show['trigger-start-type']in('input','input-persist'):
-                        self.check_triggers('Trigger for Start',show['trigger-start-param'])
+                        self.check_triggers('Start Trigger Parameters',show['trigger-start-param'])
 
                     if show['trigger-next-type'] == 'input':
-                        self.check_triggers('Trigger for Next',show['trigger-next-param'])
+                        self.check_triggers('Next Trigger Parameters',show['trigger-next-param'])
 
                     if show['trigger-end-type'] == 'input':
-                        self.check_triggers('Trigger for End',show['trigger-end-param']) 
+                        self.check_triggers('End Trigger Parameters',show['trigger-end-param']) 
                         
                     self.check_web_window('show','web-window',show['web-window'])
                     
@@ -644,7 +643,7 @@ class Validator(AdaptableDialog):
 # Check plugin
 # ***********************             
              
-    def check_plugin(self,plugin_cfg,pp_home):
+    def check_plugin(self,plugin_cfg,pp_home,pp_profile):
         if plugin_cfg.strip() != '' and  plugin_cfg[0] == "+":
             plugin_cfg=pp_home+plugin_cfg[1:]
             if not os.path.exists(plugin_cfg):
@@ -827,7 +826,7 @@ class Validator(AdaptableDialog):
                 self.display('f','Show control - Unknown command in: ' + line)
                 return
         elif len(fields) == 2:
-            if fields[0] not in ('open','close','monitor'):
+            if fields[0] not in ('open','close','monitor','event'):
                 self.display('f','Show Control - Unknown command in: ' + line)
             else:
                 if fields[0] =='monitor' and fields[1] not in ('on','off'):

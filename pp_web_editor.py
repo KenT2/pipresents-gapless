@@ -38,7 +38,7 @@ from pp_oscwebconfig import OSCConfig,OSCWebEditor, OSCUnitType
 class PPWebEditor(App):
 
     def __init__(self, *args):
-        # print 'DOIING _INIT do not use'
+        # print 'DOING _INIT do not use'
         super(PPWebEditor, self).__init__(*args)
      
     def main(self):
@@ -623,7 +623,7 @@ class PPWebEditor(App):
                 d = InputDialog("Copy Profile","To File",width=400,height=200,callback=self.copy_profile_confirm)
                 d.show(self)
             else:
-                self.copy_medialist_confirm(None,to_file)
+                self.copy_profile_confirm(to_file)
 
     def copy_profile_confirm(self,to_file):
         # print self.from_file,to_file
@@ -1510,7 +1510,7 @@ class Options(AdaptableDialog):
             return
         
         self.get_field('error').set_text('')
-        print 'options hide'
+        # print 'options hide'
         self.hide()
         
         config=ConfigParser.ConfigParser()
