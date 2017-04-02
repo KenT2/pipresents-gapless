@@ -1142,7 +1142,7 @@ class PPWebEditor(App):
         elif ext.lower() in PPdefinitions.WEB_FILES:
             self.new_track(PPdefinitions.new_tracks['web'],{'title':title,'track-ref':'','location':location})
         else:
-            OKDialog('Add Track',afile + " - cannot determine track type, use menu track>new").show(self)
+            OKDialog('Add Track',file_path + " - cannot determine track type, use menu track>new").show(self)
 
 
 
