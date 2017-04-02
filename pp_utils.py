@@ -1,6 +1,7 @@
 # dec 2015 - hide terminal output if --manager option.
 # 28/1/2016  - additional filter and log output for statistics
 
+import string
 import time
 import datetime
 import sys
@@ -81,6 +82,45 @@ def parse_rectangle(text):
         else:
             # error
             return 'error','illegal rectangle: '+ text,0,0,0,0
+
+def calculate_relative_path(file_path,pp_home_dir,pp_profile_dir):
+        # is media in the profile
+        # print 'pp_profile dir ',pp_profile_dir
+        in_profile=False
+        if pp_profile_dir in file_path:
+            in_profile=True
+            
+        if in_profile is True:
+            # deal with media in profile @
+            relpath = os.path.relpath(file_path,pp_profile_dir)
+            # print "@ relative path ",relpath
+            common = os.path.commonprefix([file_path,pp_profile_dir])
+            # print "@ common ",common
+            if common == pp_profile_dir:
+                location = "@" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                print '@location ',location
+                print
+                return location
+            else:
+                print '@absolute ',file_path
+                return file_path            
+        else:
+            # deal with media in pp_home  +     
+            relpath = os.path.relpath(file_path,pp_home_dir)
+            # print "+ relative path ",relpath
+            common = os.path.commonprefix([file_path,pp_home_dir])
+            # print "+ common ",common
+            if common == pp_home_dir:
+                location = "+" + os.sep + relpath
+                location = string.replace(location,'\\','/')
+                print '+location ', location
+                print
+                return location
+            else:
+                print '+ absolute ',file_path
+                print
+                return file_path
 
  
 

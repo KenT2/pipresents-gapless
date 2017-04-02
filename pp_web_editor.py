@@ -27,7 +27,7 @@ from pp_options import web_ed_options
 
 from remi_plus import OKDialog, OKCancelDialog,AdaptableDialog,FileSelectionDialog,InputDialog,ReportDialog
 from pp_web_edititem import WebEditItem, ColourMap
-
+from pp_utils import calculate_relative_path
 from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_web_validate import Validator
@@ -1129,19 +1129,10 @@ class PPWebEditor(App):
         self.save_medialist()
 
 
-    def add_track(self,afile):
-        relpath = os.path.relpath(afile,self.pp_home_dir)
-        # print "relative path ",relpath
-        common = os.path.commonprefix([afile,self.pp_home_dir])
-        # print "common ",common
-        if common.endswith("pp_home")  is  False:
-            location = afile
-        else:
-            location = "+" + os.sep + relpath
-            location = string.replace(location,'\\','/')
-            # print "location ",location
-        (root,title)=os.path.split(afile)
-        (root,ext)= os.path.splitext(afile)
+    def add_track(self,file_path):
+        location=calculate_relative_path(file_path,self.pp_home_dir,self.pp_profile_dir)
+        (root,title)=os.path.split(file_path)
+        (root,ext)= os.path.splitext(file_path)
         if ext.lower() in PPdefinitions.IMAGE_FILES:
             self.new_track(PPdefinitions.new_tracks['image'],{'title':title,'track-ref':'','location':location})
         elif ext.lower() in PPdefinitions.VIDEO_FILES:

@@ -5,6 +5,7 @@ import string
 import remi.gui as gui
 from remi_plus import TabView, append_with_label, OKDialog, OKCancelDialog,AdaptableDialog,FileSelectionDialog
 from pprint import pprint
+from pp_utils import calculate_relative_path
 
 # !!! do not use self.container in dialog sub-classes
 
@@ -232,50 +233,11 @@ class WebEditItem(AdaptableDialog):
             OKDialog('Select File','nothing selected').show(self._base_app_instance)
             return
         file_path=os.path.normpath(flist[0])
-        # print "file path ", file_path
+        print "file path ", file_path
 
-        # is media in the profile
-        # print 'pp_profile dir ',self.pp_profile_dir
-        in_profile=False
-        if self.pp_profile_dir in file_path:
-            in_profile=True
-            
-        if in_profile is True:
-            # deal with media in profile @
-            relpath = os.path.relpath(file_path,self.pp_profile_dir)
-            # print "@ relative path ",relpath
-            common = os.path.commonprefix([file_path,self.pp_profile_dir])
-            # print "@ common ",common
-            if common == self.pp_profile_dir:
-                location = "@" + os.sep + relpath
-                location = string.replace(location,'\\','/')
-                self.field_objs[self.browse_field_index].set_value(location)
-                # print '@location ',location
-                # print
-                return
-            else:
-                # print '@absolute ',file_path
-                self.field_objs[self.browse_field_index].set_value(file_path)
-                return                
-        else:
-            # deal with media in pp_home  +     
-            relpath = os.path.relpath(file_path,self.pp_home_dir)
-            # print "+ relative path ",relpath
-            common = os.path.commonprefix([file_path,self.pp_home_dir])
-            # print "+ common ",common
-            if common ==self.pp_home_dir:
-                location = "+" + os.sep + relpath
-                location = string.replace(location,'\\','/')
-                self.field_objs[self.browse_field_index].set_value(location)
-                # print '+location ', location
-                # print
-                return
-            else:
-                # print '+ absolute ',file_path
-                self.field_objs[self.browse_field_index].set_value(file_path)
-                return
-
-
+        result=calculate_relative_path(file_path,self.pp_home_dir,self.pp_profile_dir)
+        self.field_objs[self.browse_field_index].set_value(result)
+        
 
         
 # colour picker
