@@ -700,7 +700,7 @@ class Show(object):
         #  complete path of the filename of the selected entry
         if track_file != '' and track_file[0]=="+":
             track_file=self.pp_home+track_file[1:]
-        elif track_file[0] == "@":
+        elif track_file != '' and track_file[0] == "@":
             track_file=self.pp_profile+track_file[1:]
         self.mon.log(self,"Track to load is: "+ track_file)
         return track_file     

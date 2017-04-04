@@ -735,6 +735,7 @@ class PPManager(App):
 
     def on_refresh_profiles_pressed(self,widget):
         self.display_profiles()
+        self.profile_name.set_text('Selected Profile:')
 
     
     def display_profiles(self):
