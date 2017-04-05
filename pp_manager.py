@@ -819,6 +819,7 @@ class PPManager(App):
             success=self.pp.run_pp(command,self.current_profile,self.pp_options)
             if success is False:
                 OKDialog('Run Pi Presents','Error: Pi Presents already Running').show(self)
+                return
         else:
             OKDialog('Run Pi Presents','Error: No profile selected').show(self)
 
