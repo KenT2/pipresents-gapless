@@ -71,7 +71,7 @@ Pi Presents MUST have the latest version of omxplayer and of Raspbian, get this 
 
 Install required applications 
 -----------------------------
-
+         sudo apt-get install pexpect
          sudo apt-get install python-imaging
          sudo apt-get install python-imaging-tk
 		 sudo apt-get install unclutter
@@ -79,25 +79,12 @@ Install required applications
 		 sudo apt-get install uzbl
 
 	   
-Download and install pexpect
------------------------------
-
-Specified here http://www.noah.org/wiki/pexpect#Download_and_Installation and below.
-
-From a terminal window open in your home directory type:
-
-         wget http://pexpect.sourceforge.net/pexpect-2.3.tar.gz
-         tar xzf pexpect-2.3.tar.gz
-         cd pexpect-2.3
-         sudo python ./setup.py install
-
-Return the terminal window to the home directory.
 	   
 Download Pi Presents
 --------------------
 Requirements:
 
-	* must use the latest version of Raspbian Jessie
+	* must use the latest version of Raspbian Stretch
 	* must be run from the PIXEL desktop.
 	* must be installed and run from user Pi
 
@@ -175,7 +162,7 @@ Lastly you will need to do some manual updating of some of the field values as s
 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Stretch and will not work on Wheezy or Jessie. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
 
 If you want to play videos omxplayer requires 256MB of GPU memory. 
 
