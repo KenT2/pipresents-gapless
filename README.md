@@ -1,4 +1,4 @@
-PI PRESENTS  - Version 1.3.2
+PI PRESENTS  - Version 1.3.3
 ============================
 
 Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
@@ -10,7 +10,7 @@ TO UPGRADE FROM VERSION 1.2 [PIPRESENTS-NEXT]
 ============================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then you will need to read the section of the manual on update from 1.2 to 1.3 and Release Notes for all 1.3x versions. Before doing so keep a copy of the current Pi Presents and all the profiles:
 
-TO UPGRADE FROM VERSION 1.3.1 (PIPRESENTS-GAPLESS)
+TO UPGRADE FROM VERSION 1.3.2 (PIPRESENTS-GAPLESS)
 ======================================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then follow the instructions in the Release Notes
 
@@ -51,7 +51,7 @@ Installation
 
 The full manual in English is here https://github.com/KenT2/pipresents-gapless/blob/master/manual.pdf
 
-There is a German version of the manual written by Peter Vasen ( http://www.web-echo.de/ ) you can download it here
+There is a German version of the manual (version 1.3.2) written by Peter Vasen ( http://www.web-echo.de/ ) you can download it here
 
 http://www.web-echo.de/4.html
 
