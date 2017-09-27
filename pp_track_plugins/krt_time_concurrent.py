@@ -38,14 +38,16 @@ class krt_time_concurrent(object):
         return 'normal','',track_file
 
 
-    def draw(self):
-        #  a. draw objects direct to the screen setting their state to 'hidden' so they are not seen until show is called
-        #  b. determines whether drawing to the screen should happen repeatedly in the track by calling the redraw method
-        #    =0  do not redraw
-        #     >0 redraw at intervals (mS.)
-        # returns the above value
+    def show(self):
+        #  Draw objects direct to the screen setting their state
+        #  to 'normal' so they are dislayed
+        #
+        #  Determine whether drawing to the screen should happen repeatedly
+        #  in the track by calling the redraw method
+        #   = 0  do not redraw
+        #   > 0 redraw at intervals (mS.)
+        #  return the above value
 
-        # draw objects direct to the screen setting their state to 'hidden' so they are not seen until show is called
         time_text= time.asctime()
 
         plugin_obj2=self.canvas.create_text(100,100,
@@ -53,18 +55,12 @@ class krt_time_concurrent(object):
                                       text=time_text,
                                       fill='green',
                                       font='arial 25 bold',
-                                     state = 'hidden'
+                                     state = 'normal'
                                 )
         self.plugin_objects.append(plugin_obj2)
+        
         # return the interval to redraw
         return 500
-
-
-    def show(self):
-        # executed at ready_callback to show the plugin objects
-        # show any objects that have been loaded
-        for plugin_object in self.plugin_objects:
-            self.canvas.itemconfig(plugin_object,state='normal')
 
 
     def redraw(self):
@@ -79,6 +75,7 @@ class krt_time_concurrent(object):
         for plugin_object in self.plugin_objects:
             self.canvas.itemconfig(plugin_object,state='hidden')
             self.canvas.delete(plugin_object)
+            
         # and delete any PIL image files
         for plugin_image in self.plugin_images:
             plugin_image=None

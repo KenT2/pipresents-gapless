@@ -1,19 +1,5 @@
 #! /usr/bin/env python
 
-"""
-12/6/2016 - wait for environment variable to stabilise. Required for Jessie autostart
-12/6/2106 - report startup failures via tk instead of printing
-1/10/2016 - send output to named channel to work with debug_autostart.sh
-2/11/2016 - remove sudo
-2/11/2016 - browser update interval now 0.2 seconds
-14/11/2016 - automatically find the ip address of the Pi
-14/11/2016 - send an email with IP address of the Pi
-20/11/2016 - sorted profiles display
-20/11/2016 - Add livetracks, logs, and email options
-1/12/2016 - corrected bug where options coild be partially changed it cancel hit after an error
-10/12/2016 - fix email on abort bug after upload
-"""
-
 import remi.gui as gui
 from remi import start, App
 from remi_plus import OKDialog, OKCancelDialog, AdaptableDialog, append_with_label,FileSelectionDialog
@@ -633,7 +619,7 @@ class PPManager(App):
             dest=self.download_dir+os.sep+self.current_profile_name
             # print 'temp',dest
             
-            base=self.pp_home_dir+os.sep+'pp_profiles'+self.current_profile
+            base=self.pp_home_dir+os.sep+'pp_profiles/'+self.current_profile
             # print 'proflie',base
             shutil.make_archive(dest,'zip',base)
             self.profile_download_dialog=AdaptableDialog(width=500,height=200,title='<b>Download Profile</b>',
@@ -755,8 +741,11 @@ class PPManager(App):
 
     def on_profile_selected(self,widget,key):
         self.current_profile_name=self.profile_list.children[key].get_text()
-        self.current_profile=self.pp_profiles_offset + os.sep + self.current_profile_name
-        self.profile_name.set_text('Selected Profile:   '+self.pp_profiles_offset+os.sep+self.current_profile_name)
+        if self.pp_profiles_offset !='':
+            self.current_profile=self.pp_profiles_offset + os.sep + self.current_profile_name
+        else:
+            self.current_profile=self.current_profile_name
+        self.profile_name.set_text('Selected Profile:   '+ self.current_profile_name)
 
 
 
@@ -816,7 +805,7 @@ class PPManager(App):
             return
         if self.current_profile != '':
             command = self.manager_dir+'/pipresents.py'
-            success=self.pp.run_pp(command,self.current_profile,self.pp_options)
+            success=self.pp.run_pp(command,self.pp_home_dir,self.current_profile,self.pp_options)
             if success is False:
                 OKDialog('Run Pi Presents','Error: Pi Presents already Running').show(self)
                 return
@@ -1411,16 +1400,17 @@ class PiPresents(object):
         PiPresents.manager_dir=manager_dir
         pass
 
-    def run_pp(self,command,current_profile,pp_options):
+    def run_pp(self,command,pp_home,current_profile,pp_options):
         PiPresents.my_pp=None
+        pp_home=pp_home[:-8]
         pid,user,running_profile=self.is_pp_running()
         # print pid,user,running_profile
         if pid ==-1:
             options_list= pp_options.split(' ')
-            command = ['python',command,'-p',current_profile,'--manager']
+            command = ['python',command,'-o',pp_home,'-p',current_profile,'--manager']
             if options_list[0] != '':
                 command = command + options_list
-            # print 'COMMAND',command
+            print 'COMMAND',command
             PiPresents.my_pp=subprocess.Popen(command)
             return True
         else:
@@ -1510,12 +1500,13 @@ class Autostart(Options,object):
 
 
         if self.autostart_path != '' and os.name !='nt':
-            autostart_profile_path= self.pp_home_dir+os.sep+'pp_profiles'+os.sep+self.autostart_path
-            if not os.path.exists(autostart_profile_path):
+            autostart_profile_path= self.pp_home_dir+os.sep+'pp_profiles'+ self.autostart_path
+            if False:
+            #if not os.path.exists(autostart_profile_path):
                 print >> sys.stderr, 'Manager: Autostart Profile does not exist: ' + autostart_profile_path
             else:
                 command =self.manager_dir+'/pipresents.py'
-                success=pp_auto.run_pp(command,self.autostart_path,self.autostart_options)
+                success=pp_auto.run_pp(command,self.pp_home_dir,self.autostart_path,self.autostart_options)
                 if success is True:
                     print >> sys.stderr, 'Manager: Auto-Started profile ',autostart_profile_path
                     return self.autostart_path

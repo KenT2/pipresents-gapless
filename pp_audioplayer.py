@@ -72,7 +72,7 @@ class AudioPlayer(Player):
             mplayer_volume= self.track_params['mplayer-volume'].strip()
         else:
             mplayer_volume= self.show_params['mplayer-volume'].strip()
-        mplayer_volume_int=int(mplayer_volume)+60
+        mplayer_volume_int=int(mplayer_volume)+100    #60 for Jessie
         self.volume_option= '-volume ' + str(mplayer_volume_int)
 
         # get speaker from profile

@@ -38,6 +38,8 @@ while [ $RET -eq 0 ]; do
     pp_plugin_1p3 "Demonstration of Track Plugins" \
     pp_shutdown_1p3 "Shutdown the Raspberry Pi from Pi Presents" \
     pp_videoplayout_1p3 "Using Pi Presents as a simple video playout system" \
+    pp_counters_1p3 "Demonstraation od Counters" \
+    pp_quiz_1p3 "A simple quiz using a hyperlinkshow and counters" \
     website "pipresents.wordpress.com")
   RET=$?
   echo $RET

@@ -28,6 +28,7 @@ class TimeOfDay(object):
     # executed by main program and by each object using tod
     def __init__(self):
         self.mon=Monitor()
+        TimeOfDay.now=None
 
 
      # executed once from main program  only 
@@ -59,15 +60,16 @@ class TimeOfDay(object):
             TimeOfDay.now = datetime(day = day, month =month, year=year,hour=hour, minute=minute, second=second)
             self.testing=True
             # print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
-            self.mon.sched(self,'Testing is ON, Initial SIMULATED time ' + str(TimeOfDay.now.ctime()))
+            self.mon.sched(self,TimeOfDay.now,'Testing is ON, Initial SIMULATED time ' + str(TimeOfDay.now.ctime()))
         else:
             #get the current date/time only this once
             TimeOfDay.now = datetime.now().replace(microsecond=0)
+            self.mon.sched(self,TimeOfDay.now,'Testing is OFF, Initial REAL time ' + str(TimeOfDay.now.ctime()))
             # print '\nInitial REAL time',TimeOfDay.now.ctime()
             self.testing=False
         TimeOfDay.last_now = TimeOfDay.now - timedelta(seconds=1)           
         self.build_schedule_for_today(self.schedule)
-        self.mon.sched(self,self.pretty_todays_schedule())
+        self.mon.sched(self,TimeOfDay.now,self.pretty_todays_schedule())
         # if self.testing:
             # self.print_todays_schedule()
         self.build_events_lists()
@@ -115,7 +117,7 @@ class TimeOfDay(object):
                     if show_running is True:
                         #if self.testing:
                             # print 'End of Catch Up Search', show_ref,last_start_element
-                        self.mon.sched(self,'Catch up for show: ' + show_ref +' requires '+ last_start_element[0] + ' ' +str(last_start_element[1]))
+                        self.mon.sched(self,TimeOfDay.now,'Catch up for show: ' + show_ref +' requires '+ last_start_element[0] + ' ' +str(last_start_element[1]))
                         self.do_event(show_ref,last_start_element)
 
 ##                    # print 'catchup time match', show_ref
@@ -170,13 +172,13 @@ class TimeOfDay(object):
         if  TimeOfDay.scheduler_time == time(hour=0,minute=0,second=0):
             # if self.testing:
                 # print 'Its midnight,  today is now', TimeOfDay.now.ctime()
-            self.mon.sched(self,'Its midnight,  today is now ' + str(TimeOfDay.now.ctime()))
+            self.mon.sched(self,TimeOfDay.now,'Its midnight,  today is now ' + str(TimeOfDay.now.ctime()))
             self.build_schedule_for_today(self.schedule)
-            self.mon.sched(self,self.pretty_todays_schedule())
+            self.mon.sched(self,TimeOfDay.now,self.pretty_todays_schedule())
             # if self.testing:
                 # self.print_todays_schedule()
             self.build_events_lists()
-            # self.mon.sched(self,self.pretty_events_lists())
+            # self.mon.sched(self,TimeOfDay.now,self.pretty_events_lists())
             # self.print_events_lists()
 
         # print TimeOfDay.scheduler_time
@@ -193,7 +195,7 @@ class TimeOfDay(object):
     # execute an event
     def do_event(self,show_ref,time_element):
         self.mon.log (self,'Event : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
-        self.mon.sched (self,' ToD Scheduler : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
+        self.mon.sched (self,TimeOfDay.now,' ToD Scheduler : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
         # if self.testing:
             # print 'Event : ' +  time_element[0] + ' ' + show_ref + ' required at: '+ time_element[1].isoformat()
         self.callback(time_element[0]  + ' ' + show_ref)

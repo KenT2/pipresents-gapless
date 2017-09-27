@@ -84,14 +84,16 @@ class Animate(object):
             if event_found is False: break
 
     def send_event(self,name,param_type,param_values,req_time):
-        self.event_callback(name,param_type,param_values,req_time)
         self.mon.log(self, 'send event '+ name)
+        self.event_callback(name,param_type,param_values,req_time)
+
 
 
 # ************************************************
 # output sequencer interface methods
 # these can be called from many classes so need to operate on class variables
 # ************************************************
+
     def animate(self,text,tag):
         lines = text.split("\n")
         for line in lines:
@@ -171,7 +173,7 @@ class Animate(object):
         Animate.events=[]
 
 
-    # [delay],symbol,type,state
+    # [delay],symbol,type,values(one or more)
     def parse_animate_fields(self,line):
         fields= line.split()
         if len(fields) == 0:
@@ -192,20 +194,14 @@ class Animate(object):
             delay=int(delay_text)
 
         #only one param type at the moment.
-        if param_type != 'state':
-            return 'error','uknown parameter type in : '+ line,'','',[],0
-        else:
-            params_length = 1
-            params_check = ('on','off')
-
+        if param_type == '':
+            return 'error','blank parameter type in : '+ line,'','',[],0
 
         params=[]
-        for index in range(start_params, start_params+ params_length):
+        for index in range(start_params, len(fields)):
             param=fields[index]
-            if not param in  params_check:
-                return 'error','unknown parameter value in : '+ line,'','',[],0
             params.append(param)
-        
+  
         return 'normal','event parsed OK',delay,name,param_type,params
         
 

@@ -52,7 +52,11 @@ class OMXDriver(object):
     after_first_frame_position =-50000 # microseconds
    
     _LAUNCH_CMD = '/usr/bin/omxplayer --no-keys '  # needs changing if user has installed his own version of omxplayer elsewhere
-    KEY_MAP =   { '-': 17, '+': 18, '=': 18} # add more keys here, see popcornmix/omxplayer github file KeyConfig.h
+
+    # add more keys here, see popcornmix/omxplayer github files readme.md and  KeyConfig.h
+    KEY_MAP =   {'<':3,'>':4,'z':5,'j':6,'k':7,'i':8,'o':9,'n':10,'m':11,'s':12,
+                 '-': 17, '+': 18, '=':18,'x':30,'w':31}
+
 
     def __init__(self,widget,pp_dir):
 
@@ -199,7 +203,7 @@ class OMXDriver(object):
                                 self.paused_at_start='True'
                             else:
                                 # should never fail, just warn at the moment
-                                # print 'pause after load failed '+ + str(self.video_position)
+                                # print 'pause after load failed ' + str(self.video_position)
                                 self.mon.warn(self, str(self.id)+ ' pause after load fail ' + str(self.video_position))                                   
                             self.widget.after(self.delay,self._status_loop)
                         else:

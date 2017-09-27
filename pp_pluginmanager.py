@@ -72,16 +72,12 @@ class PluginManager(object):
         else:
             return 'normal','',used_track
 
-    def draw_plugin(self):
-        if self.plugin is not None:
-            self.plugin_redraw_time=self.plugin.draw()
-        
 
     # called by players show method to start the plugin's display.
     def show_plugin(self):
-        # call the plugins show method to unhide the objects
+        # call the plugins show method to write direct to canvas and unhide the objects
         if self.plugin is not None:
-            self.plugin.show()
+            self.plugin_redraw_time=self.plugin.show()
             self.canvas.update_idletasks()
             # and repeat if time>0
             if self.plugin_redraw_time>0:
@@ -100,8 +96,8 @@ class PluginManager(object):
         # stop the timer as the stop_plugin may have been called while it is running
         if self.plugin_timer is not None:
             self.canvas.after_cancel(self.plugin_timer)
-            self.plugin.hide()
-            self.canvas.update_idletasks()
+        self.plugin.hide()
+        self.canvas.update_idletasks()
 
 
 # **************************************

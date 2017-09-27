@@ -1,4 +1,75 @@
+Version 1.3.3a
+
+Version 1.3.3a introduce I/O plugins and quiz counters. There is a fix to liveshows and other smaller enhancements and fixes.
+
+You will need to update your profiles using the editor.
+
+I/O Plugins
+-----------
+input/output is now implemented as plugins so people can write their own. The following changes are required to introduce configuration files:
+
+If you have a modified gpio.cfg or keys.cfg in /pipresents/pp_config  then these should be moved to /pipresents/pp_io_config
+
+gpio.cfg and keys.cfg in a profile remain in /pp_io_config
+
+Any keys.cfg file you have created will require moodification to add the following section
+
+[DRIVER]
+title = Tkinter Keys    
+enabled = yes
+bind-printing = yes
+module= pp_kbddriver
+
+See updated /pipresents/pp_io_config/keys.cfg
+
+Any gpio.cfg file you have created yourself will require moodification to add the following section
+
+[DRIVER]
+title = GPIO    
+enabled = yes
+tick-interval = 50
+module= pp_gpiodriver
+
+See updated /pipresents/pp_resources/pp_templates/gpio.cfg
+
+
+/dev/input I/O plugin
+---------------------
+There is a new I/O plugin pp_inputdevicedriver.py which suppports devices such as wireless remote controls
+To use this it will be necessary to install evdev (sudo apt-get install evdev)
+
+
+Shutting Down the RPi from Pi Presents
+-----------------------------------------
+The method of achieving this has changed. The delay is now implemented by the I/O plugin so gpio.cfg requires change to any pin used for shutdown:
+
+# shutdown the Rpi after 5 seconds
+# changed for version 1.3.3a
+[P1-12]
+direction = in
+rising-name =
+falling-name = 
+one-name = 
+#event is sent after the button is pressed fo 5 seconds NOTE CHANGE OF SYMBOLIC NAME
+zero-name = pp-shutdownnow
+# 50mS*100
+repeat = 100    
+threshold = 8
+pull-up-down = up
+
+See updated /pipresents/pp_resources/pp_templates/gpio.cfg
+
+
+Liveshows
+---------
+Liveshows have been improved to cope with a lockup condition when an empty liveshow was a subshow. It was not possible to return to the parent show.
+There is a new field in the profile called an Escape Track
+The List Empty Track is now mandatory. The Escape Track is now esential if the List Empty track is a show, it must not be a show. See updated example pp_liveshowempty_1p3
+
+
+
 Version 1.3.2a
+=================
 
 Version 1.3.2a continues the improvements to Remote Management including a revamp of the look and feel of the Manager and Web Editor. Otherwise there is a large number of enhancements to the core show/player.
 

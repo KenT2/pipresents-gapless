@@ -67,6 +67,7 @@ class GapShow(Show):
         self.duration=0
         self.controls_list=[]
         self.enable_hint= True
+        self.escapetrack_required=False
         
 
     def play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
@@ -442,6 +443,7 @@ class GapShow(Show):
         # user wants to stop the show
         elif self.user_stop_signal is True:
             self.user_stop_signal=False
+            # print 'user stop'
             self.stop_timers()
             self.ending_reason='user-stop'
             Show.base_close_or_unload(self)
@@ -466,8 +468,27 @@ class GapShow(Show):
 
         else:
             self.medialist.create_new_livelist()
+            escapetrack_required=self.escapetrack_required
+            self.escapetrack_required=False
+            # print escapetrack_required,self.medialist.new_length()
+            if escapetrack_required is True and self.medialist.new_length() == 0:
+                # print 'use escape track'
+                index = self.medialist.index_of_track(self.show_params['escape-track-ref'])
+                self.mon.log(self,'Starting Escape Track: '+ self.show_params['escape-track-ref'])
+                if index >=0:
+                    # don't use select the track as need to preserve mediashow sequence for returning from esacpe track
+                    escape_track=self.medialist.track(index)
+                    Show.write_stats(self,'play escape track',self.show_params,escape_track)
+                    self.display_eggtimer()
+                    # use new empty livelist so if changed works OK when return from empty track
+                    self.medialist.use_new_livelist()
+                    self.start_load_show_loop(escape_track)
+                else:
+                    self.mon.err(self,"Escape Track empty")
+                    self.end('error',"Escape Track empty")
+
             # print 'FOR IF CHANGED',self.first_list,self.medialist.length(),self.medialist.new_length(),self.medialist.livelist_changed()
-            if self.first_list is True or self.medialist.livelist_changed() is True or (self.medialist.length() == 0 and self.medialist.new_length() == 0):                            
+            elif self.first_list is True or self.medialist.livelist_changed() is True or (self.medialist.length() == 0 and self.medialist.new_length() == 0):                            
 
                 if self.first_list is False:
                     # do show control
@@ -484,27 +505,25 @@ class GapShow(Show):
                 self.first_list=False
                 
                 if self.medialist.new_length()==0 and self.show_params['repeat']=='repeat':
-                    # start empty track
+                    # start empty track/show
                     index = self.medialist.index_of_track(self.show_params['empty-track-ref'])
                     self.mon.log(self,'Starting Empty Track: '+ self.show_params['empty-track-ref'])
                     if index >=0:
-                        # don't use select the track as need to preserve mediashow sequence for returning from child
+                        # don't use select the track as need to preserve mediashow sequence for returning from empty track/show
                         empty_track=self.medialist.track(index)
-                        # print 'play empty track'
+                        # print 'play empty track', empty_track['title'],empty_track['type']
                         Show.write_stats(self,'play empty track',self.show_params,empty_track)
+                        if empty_track['type'] =='show':
+                            self.escapetrack_required=True
+                        
                         self.display_eggtimer()
                         # use new empty livelist so if changed works OK when return from empty track
                         self.medialist.use_new_livelist()
                         self.start_load_show_loop(empty_track)
                     else:
-                        # print 'wait for track'
-                        # close current track to show blank
-                        Show.base_shuffle(self)
-                        Show.base_track_ready_callback(self,False)
-                        # use new empty livelist so if changed works OK
-                        self.medialist.use_new_livelist()
-                        self.canvas.after(1000,self.what_next_after_showing)
-
+                        self.mon.err(self,"List Empty Track not specified")
+                        self.end('error',"List Empty Track not specified")
+  
 
                 elif self.medialist.new_length()==0 and self.show_params['repeat']=='single-run':
                     if self.level != 0:
@@ -677,6 +696,7 @@ class GapShow(Show):
                                 self.end('normal',"End of Single Run")
                             else:
                                 # at top so close the show
+                                # print 'closing show'
                                 self.stop_timers()
                                 self.ending_reason='user-stop'
                                 Show.base_close_or_unload(self)

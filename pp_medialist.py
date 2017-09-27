@@ -68,6 +68,12 @@ class MediaList(object):
             self._tracks.insert(self._selected_track_index+1, self._tracks.pop(self._selected_track_index))
             self.select(self._selected_track_index+1)
 
+    def copy(self):
+        self._tracks.insert(self._selected_track_index+1, copy.deepcopy(self._tracks[self._selected_track_index]))
+        self._num_tracks+=1
+        self.select(self._selected_track_index+1)
+
+
     def replace(self,index,replacement):
         self._tracks[index]= replacement     
         

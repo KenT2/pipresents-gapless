@@ -99,11 +99,11 @@ def calculate_relative_path(file_path,pp_home_dir,pp_profile_dir):
             if common == pp_profile_dir:
                 location = "@" + os.sep + relpath
                 location = string.replace(location,'\\','/')
-                print '@location ',location
-                print
+                # print '@location ',location
+                # print
                 return location
             else:
-                print '@absolute ',file_path
+                # print '@absolute ',file_path
                 return file_path            
         else:
             # deal with media in pp_home  +     
@@ -114,12 +114,12 @@ def calculate_relative_path(file_path,pp_home_dir,pp_profile_dir):
             if common == pp_home_dir:
                 location = "+" + os.sep + relpath
                 location = string.replace(location,'\\','/')
-                print '+location ', location
-                print
+                # print '+location ', location
+                # print
                 return location
             else:
-                print '+ absolute ',file_path
-                print
+                # print '+ absolute ',file_path
+                # print
                 return file_path
 
  
@@ -238,10 +238,14 @@ class Monitor(object):
             print "%.2f" % (time.time()-Monitor.start_time), " Warning: ",self.pretty_inst(caller) +": ", text
             Monitor.ofile.write (" WARNING: " + self.pretty_inst(caller)+ ":  " + text + "\n")
 
-    def sched(self,caller,text):
+    def sched(self,caller,pipresents_time,text):
         r_class=caller.__class__.__name__
         if self.enabled(r_class,Monitor.m_sched) is True:
-            print time.strftime("%Y-%m-%d %H:%M") +" "+r_class+": " + text
+            if pipresents_time is None:
+                ptime='       '
+            else:
+                ptime=str(pipresents_time)
+            print ptime +" "+r_class+": " + text
             # print "%.2f" % (time.time()-Monitor.start_time) +" "+self.pretty_inst(caller)+": " + text
             Monitor.ofile.write (time.strftime("%Y-%m-%d %H:%M") + " " + self.pretty_inst(caller)+": " + text+"\n")
 

@@ -88,8 +88,7 @@ class Player(object):
 
 
     def pre_load(self):
-        # Control other shows at beginning
-        self.show_control(self.track_params['show-control-begin'])
+
         pass
 
               
@@ -99,15 +98,17 @@ class Player(object):
 
         # show_x_content moved to just before ready_callback to improve flicker.
         self.show_x_content()
-
-        # and whatecer the plugin has created
-        self.pim.show_plugin()
-        
+  
         #ready callback hides and closes players from previous track, also displays show background
         if self.ready_callback is not None:
             self.ready_callback(self.enable_show_background)
 
 
+        # Control other shows and do counters and osc at beginning
+        self.show_control(self.track_params['show-control-begin'])
+
+        # and show whatever the plugin has created
+        self.show_plugin()
         
         # create animation events
         reason,message=self.animate.animate(self.animate_begin_text,id(self))
@@ -162,8 +163,7 @@ class Player(object):
         self.hide_x_content()
         
         # stop the plugin
-        if self.track_params['plugin'] != '':
-            self.pim.stop_plugin()
+        self.hide_plugin()
 
         # Control concurrent shows at end
         self.show_control(self.track_params['show-control-end'])
@@ -173,11 +173,13 @@ class Player(object):
             self.animate.clear_events_list(id(self))
                 
         # create animation events for ending
+        # !!!!! TEMPORARY FIX
         reason,message=self.animate.animate(self.animate_end_text,id(self))
         if reason == 'error':
-            self.play_state='show-failed'
-            if self.finished_callback is not None:
-                self.finished_callback('error',message)
+            self.mon.err(self,message)
+            # self.play_state='show-failed'
+            # if self.finished_callback is not None:
+                # self.finished_callback('error',message)
         else:
             return
 
@@ -224,16 +226,20 @@ class Player(object):
 # *****************
 
     def load_plugin(self):
-        # load the plugin if required
+        # called in load before load_x_content modify the track here
         if self.track_params['plugin'] != '':
             reason,message,self.track = self.pim.load_plugin(self.track,self.track_params['plugin'])
             return reason,message
-
-    def draw_plugin(self):
-        # load the plugin if required
+        
+    def show_plugin(self):
+        # called at show time, write to the track here if you need it after show_control_begin (counters)
         if self.track_params['plugin'] != '':
-            self.pim.draw_plugin()
-            return
+            self.pim.show_plugin()
+
+    def hide_plugin(self):
+        # called at the end of the track
+        if self.track_params['plugin'] != '':
+            self.pim.stop_plugin()
 
     def load_x_content(self,enable_menu):
         self.mon.trace(self,'')
@@ -251,7 +257,13 @@ class Player(object):
             if not os.path.exists(background_img_file):
                 return 'error',"Track background file not found "+ background_img_file
             else:
-                pil_background_img=Image.open(background_img_file)
+                try:
+                    pil_background_img=Image.open(background_img_file)
+                except:
+                    pil_background_img=None
+                    self.background=None
+                    self.background_obj=None
+                    return 'error','Track background, not a recognised image format '+ background_img_file                
                 # print 'pil_background_img ',pil_background_img
                 image_width,image_height=pil_background_img.size
                 window_width=self.show_canvas_width
@@ -289,20 +301,49 @@ class Player(object):
 
 
         # load track text if enabled
+
+        if self.track_params['track-text-x'] =='':
+            track_text_x= self.show_params['track-text-x']
+        else:
+            track_text_x= self.track_params['track-text-x']
+
+
+        if self.track_params['track-text-y'] =='':
+            track_text_y= self.show_params['track-text-y']
+        else:
+            track_text_y= self.track_params['track-text-y']
+
+        if self.track_params['track-text-justify'] =='':
+            track_text_justify= self.show_params['track-text-justify']
+        else:
+            track_text_justify= self.track_params['track-text-justify']
+
+        if self.track_params['track-text-font'] =='':
+            track_text_font= self.show_params['track-text-font']
+        else:
+            track_text_font= self.track_params['track-text-font']
+            
+
+        if self.track_params['track-text-colour'] =='':
+            track_text_colour= self.show_params['track-text-colour']
+        else:
+            track_text_colour= self.track_params['track-text-colour']
+            
+            
         if self.track_params['track-text'] !=  '':
 
-            x,y,anchor,justify=calculate_text_position(self.track_params['track-text-x'],self.track_params['track-text-y'],
+            x,y,anchor,justify=calculate_text_position(track_text_x,track_text_y,
                                      self.show_canvas_x1,self.show_canvas_y1,
                                      self.show_canvas_centre_x,self.show_canvas_centre_y,
-                                     self.show_canvas_x2,self.show_canvas_y2,self.track_params['track-text-justify'])
+                                     self.show_canvas_x2,self.show_canvas_y2,track_text_justify)
  
             
             self.track_text_obj=self.canvas.create_text(x,y,
                                                         anchor=anchor,
                                                         justify=justify,
                                                         text=self.track_params['track-text'],
-                                                        fill=self.track_params['track-text-colour'],
-                                                        font=self.track_params['track-text-font'])
+                                                        fill=track_text_colour,
+                                                        font=track_text_font)
 
         # load instructions if enabled
         if enable_menu is  True:
@@ -321,8 +362,6 @@ class Player(object):
                                                   anchor=anchor)
 
         self.display_show_canvas_rectangle()
-
-        self.pim.draw_plugin()
 
         self.canvas.tag_raise('pp-click-area')
         self.canvas.itemconfig(self.background_obj,state='hidden')

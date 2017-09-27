@@ -40,15 +40,11 @@ class krt_image_text(object):
 
         #and return the image modified
         return 'normal','',self.used_file
-
-
-    def draw(self):
-        # nothing to redraw so set redraw time to 0
-        return 0
-        
+ 
 
     def show(self):
-        pass
+        # nothing to redraw so set redraw time to 0
+        return 0
 
     def redraw(self):
         pass

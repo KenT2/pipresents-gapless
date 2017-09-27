@@ -261,7 +261,7 @@ class FileSelectionDialog(AdaptableDialog):
 
     def __init__(self, title='File dialog', message='Select files and folders',
                  multiple_selection=True, selection_folder='.',
-                 allow_file_selection=True, allow_folder_selection=False,
+                 allow_file_selection=True, allow_folder_selection=True,
                  confirm_name='OK',cancel_name='Cancel',callback=None,**kwargs):
         super(FileSelectionDialog, self).__init__(title, message,confirm_name,cancel_name, **kwargs)
 
@@ -322,7 +322,7 @@ class ReportDialog(AdaptableDialog):
 
 
     def confirm_dialog(self):
-        print 'report dialog - hide'
+        # print 'report dialog - hide'
         self.hide()
 
 

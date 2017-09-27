@@ -108,7 +108,6 @@ class Show(object):
         # self.controls_list=controls_list
         self.mon.trace(self,self.show_params['show-ref'] + ' at level ' + str(self.level))
         self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Starting show")
-
         # check  data files are available.
         if self.show_params['medialist'] == '':
             self.mon.err(self,"Blank Medialist in: "+ self.show_params['title'])
@@ -533,7 +532,13 @@ class Show(object):
             if not os.path.exists(background_img_file):
                 return 'error',"Show background file not found "+ background_img_file
             else:
-                pil_background_img=Image.open(background_img_file)
+                try:
+                    pil_background_img=Image.open(background_img_file)
+                except:
+                    pil_background_img=None
+                    self.background=None
+                    self.background_obj=None
+                    return 'error','Show background file, not a recognised image format '+ background_img_file  
                 # print 'pil_background_img ',pil_background_img
                 image_width,image_height=pil_background_img.size
                 window_width=self.show_canvas_width

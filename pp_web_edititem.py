@@ -20,11 +20,14 @@ class WebEditItem(AdaptableDialog):
                         pp_home_dir,pp_profile_dir,initial_tab,callback):
 
         self.callback=callback
-        self.frame_width=450
-        self.fields_height=500
+        self.frame_width=800   # frame for 2 columns
+        self.col_width=400     # width of a column
+        self.field_width= 200  # width of data field, label must fit in col_width-field_width- 15
+        self.fields_height=300
+        self.rows_in_col=15
         self.tab_height=100
         self.okcancel_height=100
-        self.field_width= 200
+
 
         super(WebEditItem, self).__init__('<b>'+title+'</b>','',width=self.frame_width+700,height=self.fields_height+self.tab_height+self.okcancel_height,
                                           confirm_name='OK',cancel_name='Cancel')
@@ -58,6 +61,8 @@ class WebEditItem(AdaptableDialog):
                                         # can be used as an index to self.field_objs and self.button_objs
         self.button_objs=[]   # list of button objects in record field order , not for sep or tab =None for non-buttons
         
+        self.col_row=0
+        self.current_col=None
         # populate the dialog box using the record fields to determine the order
         for field in record_fields:
             # get list of values where required
@@ -81,13 +86,12 @@ class WebEditItem(AdaptableDialog):
         #construct the tabview
         self.tabview.construct_tabview()
         
-        # frame for file navigator and tabbed editor
-        # content of frame is switched between ffn and tabview
+        # frame for tabbed editor
         self.root_frame = gui.HBox(width=self.tabview.get_width() + 100, height=self.fields_height+self.tab_height) #1
         self.root_frame.append(self.tabview,key='switch')
         self.append_field(self.root_frame,'cont')
 
-        #adjust width of diaolg box
+        #adjust width of dialog box
         self.style['width']=gui.to_pix(self.tabview.get_width() + 100)
          
         return None
@@ -99,15 +103,34 @@ class WebEditItem(AdaptableDialog):
     # create an entry in an editor panel
     def make_entry(self,field,field_spec,values):
         # print 'make entry',self.field_index,field,field_spec
+        if self.col_row >= self.rows_in_col:
+            self.current_col=self.col_1
+        
+        # print 'make entry',self.col_row, self.current_col        
+        
         if field_spec['shape']=='tab':
             width=len(field_spec['text'])*8+4
             self.current_tab = self.tabview.add_tab(width,field_spec['name'],field_spec['text'])
             # print 'make tab', field_spec['name']
+            self.current_tab.set_layout_orientation(gui.Widget.LAYOUT_HORIZONTAL)
+            self.col_0=gui.Widget(width=self.frame_width/2) #0
+            self.col_0.set_layout_orientation(gui.Widget.LAYOUT_VERTICAL)
+            self.col_1=gui.Widget(width=self.frame_width/2) #0
+            self.col_1.set_layout_orientation(gui.Widget.LAYOUT_VERTICAL)
+
+            self.current_tab.append(self.col_0,key='col_0')
+            self.current_tab.append(self.col_1,key='col_1')
+
+            self.current_col=self.col_0
+            self.col_row=1
+            # print '\nNEW TAB',self.col_row
             self.tab_row=1
             return None,None
+        
         elif field_spec['shape']=='sep':
-            self.current_tab.append(gui.Label('',width=self.frame_width,height=10))
+            self.current_col.append(gui.Label('',width=self.field_width,height=10))
             self.tab_row+=1
+            self.col_row+=1
             return None,None
 
         else:
@@ -133,6 +156,8 @@ class WebEditItem(AdaptableDialog):
                 elif field_spec['shape']=='text':
                     obj=gui.TextInput(width=self.field_width,height=110,single_line=False)
                     obj.set_value(self.field_content[field])
+                    # extra lines
+                    self.col_row+=5
 
                 elif field_spec['shape']=='spinbox':
                     print 'spinbox not implemented'
@@ -142,7 +167,7 @@ class WebEditItem(AdaptableDialog):
                 elif field_spec['shape']=='option-menu':
                     obj=gui.DropDown(width=self.field_width,height=25)
                     for key, value in enumerate(values):
-                        item=gui.DropDownItem(value,width=200,height=25)
+                        item=gui.DropDownItem(value,width=self.field_width,height=25)
                         obj.append(item, key=key)
                     obj.set_value(self.field_content[field])
 
@@ -165,8 +190,9 @@ class WebEditItem(AdaptableDialog):
                 else:
                     button=None
 
-                append_with_label(self.current_tab,field_spec['text'],obj,button,width=self.frame_width)
-                self.tab_row+=1    
+                append_with_label(self.current_col,field_spec['text'],obj,button,width=self.col_width)
+                self.tab_row+=1
+                self.col_row+=1
                 return obj,button
 
     def confirm_dialog(self):
@@ -233,7 +259,7 @@ class WebEditItem(AdaptableDialog):
             OKDialog('Select File','nothing selected').show(self._base_app_instance)
             return
         file_path=os.path.normpath(flist[0])
-        print "file path ", file_path
+        # print "file path ", file_path
 
         result=calculate_relative_path(file_path,self.pp_home_dir,self.pp_profile_dir)
         self.field_objs[self.browse_field_index].set_value(result)

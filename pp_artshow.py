@@ -161,7 +161,7 @@ class ArtShow(Show):
         self.medialist.create_new_livelist()
         self.medialist.use_new_livelist()
         if self.medialist.start() is False:
-            print 'FIRST EMPTY'
+            # print 'FIRST EMPTY'
             # list is empty - display a message for 5 secs and then retry
             Show.display_admin_message(self,self.show_params['empty-text'])
             self.canvas.after(5000,self.remove_list_empty_message)

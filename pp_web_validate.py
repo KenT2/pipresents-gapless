@@ -165,11 +165,9 @@ class Validator(AdaptableDialog):
                                 if not os.path.exists(track_file): self.display('f',"location "+track['location']+ " Background Image not Found")
 
                         if track['track-text'] != "":
-                            if not track['track-text-x'].isdigit(): self.display('f',"'Track Text x position' is not 0 or a positive integer")
-                            if not track['track-text-y'].isdigit(): self.display('f',"'Track Text y Position' is not 0 or a positive integer")
-                            if track['track-text-colour']=='': self.display('f',"'Track Text Colour' is blank")
-                            if track['track-text-font']=='': self.display('f',"'Track Text Font' is blank")                        
-
+                            if track['track-text-x'] != "" and not track['track-text-x'].isdigit(): self.display('f',"'Track Text x position' is not a positive integer")
+                            if track['track-text-y'] != "" and not track['track-text-y'].isdigit(): self.display('f',"'Track Text y Position' is not a positive integer")
+                            if track['track-text-justify'] != "" and track['track-text-justify'] not in ('left','right','center'): self.display('f',"'Track Text Justify' has illegal value")
 
                     if track['type']=='menu':
                         self.check_menu(track)
@@ -192,8 +190,8 @@ class Validator(AdaptableDialog):
                     if track['type'] == "message":
                         if track['duration'] != '' and not track['duration'].isdigit(): self.display('f',"'Duration' is not 0 or a positive integer")
                         if track['text'] != "":
-                            if track['message-x'] != '' and not track['message-x'].isdigit(): self.display('f',"'Message x Position' is not blank, 0 or a positive integer")
-                            if track['message-y'] != '' and not track['message-y'].isdigit(): self.display('f',"'Message y Position' is not blank, 0 or a positive integer")
+                            if track['message-x'] != '' and not track['message-x'].isdigit(): self.display('f',"'Message x Position' is not blank, a positive integer")
+                            if track['message-y'] != '' and not track['message-y'].isdigit(): self.display('f',"'Message y Position' is not blank, a positive integer")
                             if track['message-colour']=='': self.display('f',"'Message Text Colour' is blank")
                             if track['message-font']=='': self.display('f',"Message Text Font' is blank")                        
                             
@@ -286,10 +284,11 @@ class Validator(AdaptableDialog):
                 
                 #show background and text
                 if show['show-text'] != "":
-                    if not show['show-text-x'].isdigit(): self.display('f',"'Show Text x Position' is not 0 or a positive integer")
-                    if not show['show-text-y'].isdigit(): self.display('f',"'Show Text y Position' is not 0 or a positive integer")
+                    if show['show-text-x'] != "" and not show['show-text-x'].isdigit(): self.display('f',"'Show Text x Position' is not a positive integer")
+                    if show['show-text-y'] != "" and not show['show-text-y'].isdigit(): self.display('f',"'Show Text y Position' is not a positive integer")
                     if show['show-text-colour']=='': self.display('f',"'Show Text Colour' is blank")
                     if show['show-text-font']=='': self.display('f',"'Show Text Font' is blank")
+                    
                 background_image_file=show['background-image']
                 if background_image_file.strip() != '' and  background_image_file[0] == "+":
                     track_file=pp_home+background_image_file[1:]
@@ -300,6 +299,14 @@ class Validator(AdaptableDialog):
 
 
                 #track defaults
+
+                if show['track-text-x'] != ''and not show['track-text-x'].isdigit(): self.display('f',"'Track Text x Position' is not a positive integer")
+                if show['track-text-y'] != ''and not show['track-text-y'].isdigit(): self.display('f',"'Track Text y Position' is not a positive integer")
+                if show['track-text-colour']=='': self.display('f',"'Track Text Colour' is blank")
+                if show['track-text-font']=='': self.display('f',"'Track Text Font' is blank")
+                if show['track-text-justify'] not in ('left','right','center'): self.display('f',"'Track Text Justify' has illegal value")
+                
+                
                 if not show['duration'].isdigit(): self.display('f',"'Duration' is not 0 or a positive integer")
                 if not show['image-rotate'].isdigit(): self.display('f',"'Image Rotation' is not 0 or a positive integer")
                 self.check_volume('show','Video Player Volume',show['omx-volume'])
@@ -311,8 +318,8 @@ class Validator(AdaptableDialog):
                 if show['eggtimer-text'] != "":
                     if show['eggtimer-colour']=='': self.display('f',"'Eggtimer Colour' is blank")
                     if show['eggtimer-font']=='': self.display('f',"'Eggtimer Font' is blank")                
-                    if not show['eggtimer-x'].isdigit(): self.display('f',"'Eggtimer x Position' is not 0 or a positive integer")
-                    if not show['eggtimer-y'].isdigit(): self.display('f',"'Eggtimer y Position' is not 0 or a positive integer")
+                    if not show['eggtimer-x']!='' and not show['eggtimer-x'].isdigit(): self.display('f',"'Eggtimer x Position' is not a positive integer")
+                    if not show['eggtimer-y']!='' and not show['eggtimer-y'].isdigit(): self.display('f',"'Eggtimer y Position' is not a positive integer")
 
  
                 # Validate simple fields of each show type
@@ -320,8 +327,8 @@ class Validator(AdaptableDialog):
                     if show['child-track-ref'] != '':
                         if show['child-track-ref'] not in v_track_labels:
                             self.display('f',"'Child Track ' " + show['child-track-ref'] + ' is not in medialist' )             
-                        if not show['hint-y'].isdigit(): self.display('f',"'Hint y Position' is not 0 or a positive integer")
-                        if not show['hint-x'].isdigit(): self.display('f',"'Hint x Position' is not 0 or a positive integer")
+                        if not show['hint-x']!='' and not show['hint-y'].isdigit(): self.display('f',"'Hint y Position' is not a positive integer")
+                        if not show['hint-x']!='' and not show['hint-x'].isdigit(): self.display('f',"'Hint x Position' is not a positive integer")
                         if show['hint-colour']=='': self.display('f',"'Hint Colour' is blank")
                         if show['hint-font']=='': self.display('f',"'Hint Font' is blank")
 
@@ -349,8 +356,8 @@ class Validator(AdaptableDialog):
                     if show['trigger-wait-text'] != "" or show['empty-text'] != "":
                         if show['admin-colour']=='': self.display('f',"' Notice Text Colour' is blank")
                         if show['admin-font']=='': self.display('f',"'Notice Text Font' is blank")                
-                        if not show['admin-x'].isdigit(): self.display('f',"'Notice Text x Position' is not 0 or a positive integer")
-                        if not show['admin-y'].isdigit(): self.display('f',"'Notice Text y Position' is not 0 or a positive integer")
+                        if not show['admin-x']!='' and not show['admin-x'].isdigit(): self.display('f',"'Notice Text x Position' is not a positive integer")
+                        if not show['admin-y']!='' and not show['admin-y'].isdigit(): self.display('f',"'Notice Text y Position' is not a positive integer")
 
 
                 if show['type'] in ("artmediashow",'artliveshow'):
@@ -359,8 +366,8 @@ class Validator(AdaptableDialog):
                     if show['empty-text'] != "":
                         if show['admin-colour']=='': self.display('f',"' Notice Text Colour' is blank")
                         if show['admin-font']=='': self.display('f',"'Notice Text Font' is blank")                
-                        if not show['admin-x'].isdigit(): self.display('f',"'Notice Text x Position' is not 0 or a positive integer")
-                        if not show['admin-y'].isdigit(): self.display('f',"'Notice Text y Position' is not 0 or a positive integer")
+                        if not show['admin-x']!='' and not show['admin-x'].isdigit(): self.display('f',"'Notice Text x Position' is not a positive integer")
+                        if not show['admin-y']!='' and not show['admin-y'].isdigit(): self.display('f',"'Notice Text y Position' is not a positive integer")
 
                     self.check_controls('controls',show['controls'])
                     
@@ -596,11 +603,11 @@ class Validator(AdaptableDialog):
         if not track['menu-vertical-separation'].isdigit(): self.display('f'," Vertical Separation is not 0 or a positive integer")
         if not track['menu-strip-padding'].isdigit(): self.display('f'," Stipple padding is not 0 or a positive integer")    
 
-        if not track['hint-x'].isdigit(): self.display('f',"'Hint x Position' is not 0 or a positive integer")
-        if not track['hint-y'].isdigit(): self.display('f',"'Hint y Position' is not 0 or a positive integer")
+        if not track['hint-x']!='' and not track['hint-x'].isdigit(): self.display('f',"'Hint x Position' is not a positive integer")
+        if not track['hint-y']!='' and not track['hint-y'].isdigit(): self.display('f',"'Hint y Position' is not a positive integer")
 
-        if not track['track-text-x'].isdigit(): self.display('f'," Menu Text x Position is not 0 or a positive integer") 
-        if not track['track-text-y'].isdigit(): self.display('f'," Menu Text y Position is not 0 or a positive integer")
+        if track['track-text-x'] != "" and not track['track-text-x'].isdigit(): self.display('f'," Menu Text x Position is not a positive integer") 
+        if track['track-text-y'] != "" and not track['track-text-y'].isdigit(): self.display('f'," Menu Text y Position is not a positive integer")
 
         if track['menu-icon-mode'] == 'none' and track['menu-text-mode'] == 'none':
             self.display('f'," Icon and Text are both None") 
@@ -818,6 +825,10 @@ class Validator(AdaptableDialog):
         fields = line.split()
         if len(fields) == 0:
             return
+
+        elif fields[0]=='counter':
+            self.check_counters(fields[1:])
+            return
         # OSC command
         elif len(fields)>0 and fields[0][0] =='/':
                 return
@@ -839,6 +850,44 @@ class Validator(AdaptableDialog):
         else:
             self.display('f','Show Control - Incorrect number of fields in: ' + line)
             return
+
+
+    def check_counters(self,fields):
+        if len(fields) < 2:
+            self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+            return          
+        name=fields[0]
+        command=fields[1]
+        
+        if command =='set':
+            if len(fields) < 3:
+                self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+                return          
+
+            value=fields[2]
+            if not value.isdigit():
+                self.display('f','Show Control: value of counter is not a positive integer - ' + ' '.join(fields))
+                return
+
+        elif command in ('inc','dec'):
+            if len(fields) < 3:
+                self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+                return          
+
+            value=fields[2]
+            if not value.isdigit():
+                self.display('f','Show Control: value of counter is not a positive integer - ' + ' '.join(fields))
+                return      
+        
+        elif command =='delete':
+            return
+
+        else:
+            self.display('f','Show Control: illegal counter comand - '+ ' '.join(fields))
+            return      
+
+        return
+
                  
             
 # ***********************************

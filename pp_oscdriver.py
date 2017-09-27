@@ -14,9 +14,10 @@ or run pydoc pyOSC.py. you can also get the docs by opening a python shell and d
 import os
 from pp_utils import Monitor
 from pp_oscconfig import OSCConfig
+from pp_timeofday import TimeOfDay
+
 import threading
 import ConfigParser
-
 import OSC
 class myOSCServer(OSC.OSCServer):
     allow_reuse_address=True
@@ -142,10 +143,10 @@ class OSCDriver(object):
     def prepare_show_command_callback(self,command,args,limit):
         if len(args) == limit:
             if limit !=0:
-                self.mon.sched(self,'Received from OSC: '+ command + ' ' +args[0])
+                self.mon.sched(self,TimeOfDay.now,'Received from OSC: '+ command + ' ' +args[0])
                 self.show_command_callback(command+args[0])
             else:
-                self.mon.sched(self,'Received from OSC: '+ command)
+                self.mon.sched(self,TimeOfDay.now,'Received from OSC: '+ command)
                 self.show_command_callback(command)                
         else:
             self.mon.warn(self,'OSC show command does not have '+limit +' argument - ignoring')  

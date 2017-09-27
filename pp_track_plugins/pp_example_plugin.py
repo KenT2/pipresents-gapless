@@ -10,12 +10,12 @@ Plugins work for all types of show but Liveshows and Artliveshows need special t
 
 API
 ----
-All track plugins must be present in /pipresents/track_plugins. Plugins are organised as Python Classes.
+All track plugins must be present in /pipresents/pp_track_plugins. Plugins are organised as Python Classes.
 The class name must be identical to the name of the file that contains it (without .py)
-The plugin to be used by a track is specified in the xxxxx.cfg file. The path of this file is in the Plugin Config File parameter of a track.
+The plugin to be used by a track is specified in the xxxxx.cfg file. The path of the plugin file is in the Plugin Config File parameter of a track.
 
 Each instance of a Player creates an instance of a Plugin which calls __init__  The plugin class must have the methods
-  __init__, load, draw, show, redraw, and hide.
+  __init__, load, show, redraw, and hide.
 
 __init__(....)
 
@@ -98,22 +98,18 @@ load
     The type of file specified should be compatible with the underlying player (omxplayer etc.)
     So if you wantjust |Tkinter drawing use an audio track
 
-draw(self)
--------------
-    draw allows user code to  draw on the screen (canvas) while the track is showing. Draawing is by use of Tkinter canvas objects.
-    The draw method is executed at the same time as  load which may be sometime before the track is shown hence any object
-    created must have its state set to 'hidden'. 
+show(self)
+-----------
+
+    show() allows user code to  draw on the screen (canvas) while the track is showing. Drawing is by use of Tkinter canvas objects.
+
+    The objects are drawn after other elements of the track are displayed so appear on top. They are displayed immeadiately so their state should be set to normal.
 
     The method must return redraw interval  which is the time in milliseconds after which the redraw method is repetively called.
     If redraw is not to be called then redraw interval should be 0
 
     for more detail see krt_time.py
 
-
-show(self)
--------------
-    show is executed when the track is displayed. In this method all Tkinter canvas objects that were created by draw should have their state set to 
-    It has been included to allow advanced users execute code concident with showing.
 
 redraw(self)
 ---------------
@@ -131,7 +127,7 @@ redraw(self)
 EXAMPLE
 -------------
 An example follows. It demonstrates the principles and is very long as it addresses all show and track type combinations.
-Usually a plugin will be written for a single track type. krt_time.py and krt_image_text.py are shorter examples demistrating file  modification  and drawing .
+Usually a plugin will be written for a single track type. krt_time.py and krt_image_text.py are shorter examples demonstrating file modification  and drawing .
 """
 
 import os
@@ -139,7 +135,7 @@ import time
 from Tkinter import NW
 from PIL import Image, ImageDraw, ImageFont
 
-# the class must have the same name as the file.
+# the class must have the same name as the file without .py
 class pp_example_plugin(object):
 
     # it must have an __init__ with these arguments
@@ -247,38 +243,36 @@ class pp_example_plugin(object):
         return 'normal','',self.modified_file
 
 
-    def draw(self):
 
-        # make a dynamic text string and write it to the Tkinter canvas.
+    def show(self):
+
+        # make a text string and write it to the Tkinter canvas.
         time_text='My Local Time is: ' + time.asctime()
 
-        #  include state='hidden' so the text is not seen until show
-        # assign the object to an instance variable so we can modify it later
+        # assign the object to an instance variable so we can modify and hide it later
         self.plugin_object = self.canvas.create_text(100,100,
                                       anchor=NW,
                                       text=time_text,
                                       fill='white',
                                       font='arial 20 bold',
-                                        state='hidden'
+                                        state='normal'
                                 )
         # and redraw after 500mS.
         return 500
         
-    def show(self):
-        # show the text
-        self.canvas.itemconfig(self.plugin_object,state='normal')
-
 
     def redraw(self):
         # update the text object with the latest time
         time_text='My Local Time is: ' + time.asctime()
         self.canvas.itemconfig(self.plugin_object,text=time_text)
 
+
     def hide(self):
         # called at the end of the track
         # hide and delete the Tkinter canvas objects
         self.canvas.itemconfig(self.plugin_object,state='hidden')
         self.canvas.delete(self.plugin_object)
+        
         # delete the file created when modifying the image as it is no longer of use.
         if self.track_type=='image' and self.liveshow==False:
             os.remove(self.modified_file)

@@ -134,14 +134,16 @@ class RadioButtonShow(Show):
 
    # respond to inputs
     def handle_input_event(self,symbol):
-        # uncomment this and comment next line if you want subshows to have controls but no radiobuttons in the subshow 
-        # Show.base_handle_input_event(self,symbol)
-        # uncomment this and comment next line if you want radiobuttons during subshows but no controls in subshows
-        self.handle_input_event_this_show(symbol)
+        if self.show_params['controls-in-subshows']=='yes':
+            Show.base_handle_input_event(self,symbol)
+        else:
+            self.handle_input_event_this_show(symbol)
 
     def handle_input_event_this_show(self,symbol):
         # for radiobuttonshow the symbolic names are links to play tracks, also a limited number of in-track operations
         # find the first entry in links that matches the symbol and execute its operation
+        self.mon.log(self, self.show_params['show-ref']+ ' Show Id: '+ str(self.show_id)+": received input event: " + symbol)
+
         # print 'radiobuttonshow ',symbol
         found,link_op,link_arg=self.path.find_link(symbol,self.links)
         # print 'input event',symbol,link_op
@@ -221,6 +223,9 @@ class RadioButtonShow(Show):
     def do_first_track(self):
         # get first-track from profile
         self.first_track_ref=self.show_params['first-track-ref']
+        if self.first_track_ref=='':
+            self.mon.err(self,"first-track is blank: ")
+            self.end('error',"first track is blank: " )
 
         # find the track-ref in the medialisst
         index = self.medialist.index_of_track(self.first_track_ref)

@@ -69,22 +69,26 @@ Pi Presents MUST have the latest version of omxplayer and of Raspbian, get this 
 		sudo apt-get update
 		sudo apt-get upgrade
 
-Install required applications 
+Install required packages 
 -----------------------------
-         sudo apt-get install python-pexpect
+
          sudo apt-get install python-imaging
          sudo apt-get install python-imaging-tk
 		 sudo apt-get install unclutter
 		 sudo apt-get install mplayer
 		 sudo apt-get install uzbl
+		 sudo apt-get install python-pexpect
+		 
+Install optional packages
+------------------------------
+		 sudo pip install evdev  (if you are using the input device I/O plugin)
 
-	   
 	   
 Download Pi Presents
 --------------------
 Requirements:
 
-	* must use the latest version of Raspbian Stretch
+	* must use the latest version of Raspbian Stretch with Desktop (not the Lite version)
 	* must be run from the PIXEL desktop.
 	* must be installed and run from user Pi
 
@@ -162,7 +166,7 @@ Lastly you will need to do some manual updating of some of the field values as s
 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Stretch and will not work on Wheezy or Jessie. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
 
 If you want to play videos omxplayer requires 256MB of GPU memory. 
 

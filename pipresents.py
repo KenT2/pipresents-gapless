@@ -36,18 +36,17 @@ from time import sleep
 
 from pp_options import command_options
 from pp_showlist import ShowList
-from pp_validate import Validator
 from pp_showmanager import ShowManager
 from pp_screendriver import ScreenDriver
 from pp_timeofday import TimeOfDay
-from pp_kbddriver import KbdDriver
 from pp_utils import Monitor
 from pp_utils import StopWatch
 from pp_animate import Animate
-from pp_gpiodriver import GPIODriver
 from pp_oscdriver import OSCDriver
 from pp_network import Mailer, Network
 from pp_definitions import PPdefinitions
+from pp_iopluginmanager import IOPluginManager
+from pp_countermanager import CounterManager
 
 class PiPresents(object):
 
@@ -62,8 +61,8 @@ class PiPresents(object):
 
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
-        self.pipresents_issue="1.3.2"
-        self.pipresents_minorissue = '1.3.2a'
+        self.pipresents_issue="1.3.3"
+        self.pipresents_minorissue = '1.3.3a'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -110,9 +109,9 @@ class PiPresents(object):
                             'GapShow','Show','ArtShow',
                             'AudioPlayer','BrowserPlayer','ImagePlayer','MenuPlayer','MessagePlayer','VideoPlayer','Player',
                             'MediaList','LiveList','ShowList',
-                            'PathManager','ControlsManager','ShowManager','PluginManager',
+                            'PathManager','ControlsManager','ShowManager','PluginManager','IOPluginManager',
                             'MplayerDriver','OMXDriver','UZBLDriver',
-                            'KbdDriver','GPIODriver','TimeOfDay','ScreenDriver','Animate','OSCDriver',
+                            'TimeOfDay','ScreenDriver','Animate','OSCDriver','CounterManager',
                             'Network','Mailer'
                             ]
         
@@ -124,7 +123,7 @@ class PiPresents(object):
         Monitor.manager = self.options['manager']
         # print self.options['manager']
         self.mon.newline(3)
-        self.mon.sched (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue + ' at '+time.strftime("%Y-%m-%d %H:%M.%S"))
+        self.mon.sched (self,None, "Pi Presents is starting, Version:"+self.pipresents_minorissue + ' at '+time.strftime("%Y-%m-%d %H:%M.%S"))
         self.mon.log (self, "Pi Presents is starting, Version:"+self.pipresents_minorissue+ ' at '+time.strftime("%Y-%m-%d %H:%M.%S"))
         # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
@@ -149,20 +148,27 @@ class PiPresents(object):
         self.ppio=None
         self.tod=None
         self.animate=None
-        self.gpiodriver=None
+        self.ioplugin_manager=None
         self.oscdriver=None
         self.osc_enabled=False
-        self.gpio_enabled=False
         self.tod_enabled=False
         self.email_enabled=False
 
 
+        
         if os.geteuid() == 0:
             self.mon.err(self,'Do not run Pi Presents with sudo')
             self.end('error','Do not run Pi Presents with sudo')
 
         
         user=os.getenv('USER')
+
+        if user is None:
+            tkMessageBox.showwarning("You must be logged in to run Pi Presents")
+            exit(102)
+
+        if user !='pi':
+            self.mon.warn(self,"You must be logged as pi to use GPIO")
 
         self.mon.log(self,'User is: '+ user)
         # self.mon.log(self,"os.getenv('HOME') -  user home directory (not used): " + os.getenv('HOME')) # does not work
@@ -226,7 +232,7 @@ class PiPresents(object):
         # check profile exists
         self.pp_profile=self.pp_home+self.pp_profile_path
         if os.path.exists(self.pp_profile):
-            self.mon.sched(self,"Running profile: " + self.pp_profile_path)
+            self.mon.sched(self,None,"Running profile: " + self.pp_profile_path)
             self.mon.log(self,"Found Requested profile - pp_profile directory is: " + self.pp_profile)
         else:
             self.mon.err(self,"Failed to find requested profile: "+ self.pp_profile)
@@ -235,10 +241,8 @@ class PiPresents(object):
         self.mon.start_stats(self.options['profile'])
         
         if self.options['verify'] is True:
-            val =Validator()
-            if  val.validate_profile(None,pp_dir,self.pp_home,self.pp_profile,self.pipresents_issue,False) is  False:
-                self.mon.err(self,"Validation Failed")
-                self.end('error','Validation Failed')
+            self.mon.err(self,"Validation option not supported - use the editor")
+            self.end('error','Validation option not supported - use the editor')
 
          
         # initialise and read the showlist in the profile
@@ -342,17 +346,11 @@ class PiPresents(object):
 
                 
 # ****************************************
-# INITIALISE THE INPUT DRIVERS
+# INITIALISE THE TOUCHSCREEN DRIVER
 # ****************************************
 
         # each driver takes a set of inputs, binds them to symboic names
-        # and sets up a callback which returns the symbolic name when an input event occurs/
-
-        # use keyboard driver to bind keys to symbolic names and to set up callback
-        kbd=KbdDriver()
-        if kbd.read(pp_dir,self.pp_home,self.pp_profile) is False:
-            self.end('error','cannot find, or error in keys.cfg')
-        kbd.bind_keys(self.root,self.handle_input_event)
+        # and sets up a callback which returns the symbolic name when an input event occurs
 
         self.sr=ScreenDriver()
         # read the screen click area config file
@@ -376,25 +374,14 @@ class PiPresents(object):
         self.terminate_required=False
         self.exitpipresents_required=False
 
-        # delete omxplayer dbus files
-        # if os.path.exists("/tmp/omxplayerdbus.{}".format(user)):
-            # os.remove("/tmp/omxplayerdbus.{}".format(user))
-        # if os.path.exists("/tmp/omxplayerdbus.{}.pid".format(user)):
-            # os.remove("/tmp/omxplayerdbus.{}.pid".format(user))
-        
-        # kick off GPIO if enabled by command line option
-        self.gpio_enabled=False
-        if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+os.sep+ 'gpio.cfg'):
-            # initialise the GPIO
-            self.gpiodriver=GPIODriver()
-            reason,message=self.gpiodriver.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,50,self.handle_input_event)
-            if reason == 'error':
+        # initilise the I/O plugins by importing their drivers
+        self.ioplugin_manager=IOPluginManager()
+        reason,message=self.ioplugin_manager.init(self.pp_dir,self.pp_profile,self.root,self.handle_input_event)
+        if reason == 'error':
                 self.end('error',message)
-            else:
-                self.gpio_enabled=True
-                # and start polling gpio
-                self.gpiodriver.poll()
-            
+        self.ioplugin_manager.start()
+        
+           
         # kick off animation sequencer
         self.animate = Animate()
         self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)
@@ -426,7 +413,8 @@ class PiPresents(object):
                     self.root.after(1000,self.oscdriver.start_server())
 
         
-        # enable ToD scheduler if schedule exists      
+        # enable ToD scheduler if schedule exists
+        self.tod=TimeOfDay()
         if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):                
             self.tod_enabled = True
         else:
@@ -437,14 +425,19 @@ class PiPresents(object):
         if self.tod_enabled is True and self.network_connected is False:
             self.mon.warn(self,'Network not connected  so Time of Day scheduler may be using the internal clock')
 
+        # init the counter manager
+        self.counter_manager=CounterManager()
+        self.counter_manager.init()
+
+
         # warn about start shows and scheduler
 
         if self.starter_show['start-show']=='' and self.tod_enabled is False:
-            self.mon.sched(self,"No Start Shows in Start Show and no shows scheduled") 
+            self.mon.sched(self,None,"No Start Shows in Start Show and no shows scheduled") 
             self.mon.warn(self,"No Start Shows in Start Show and no shows scheduled")
 
         if self.starter_show['start-show'] !='' and self.tod_enabled is True:
-            self.mon.sched(self,"Start Shows in Start Show and shows scheduled - conflict?") 
+            self.mon.sched(self,None,"Start Shows in Start Show and shows scheduled - conflict?") 
             self.mon.warn(self,"Start Shows in Start Show and shows scheduled - conflict?")
 
         # run the start shows
@@ -452,7 +445,6 @@ class PiPresents(object):
 
         # kick off the time of day scheduler which may run additional shows
         if self.tod_enabled is True:
-            self.tod=TimeOfDay()
             self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
             self.tod.poll()            
 
@@ -488,6 +480,65 @@ class PiPresents(object):
 # *********************
 # User inputs
 # ********************
+
+    def e_osc_handle_output_event(self,line):
+        #jump  out of server thread
+        self.root.after(1, lambda arg=line: self.osc_handle_output_event(arg))
+
+    def  osc_handle_output_event(self,line):
+        self.mon.log(self,"output event received: "+ line)
+        #osc sends output events as a string
+        reason,message,delay,name,param_type,param_values=self.animate.parse_animate_fields(line)
+        if reason == 'error':
+            self.mon.err(self,message)
+            self.end(reason,message)
+        self.handle_output_event(name,param_type,param_values,0)
+
+               
+    def handle_output_event(self,symbol,param_type,param_values,req_time):
+            reason,message=self.ioplugin_manager.handle_output_event(symbol,param_type,param_values,req_time)
+            if reason =='error':
+                self.mon.err(self,message)
+                self.end(reason,message)
+
+
+
+    # all input events call this callback providing a symbolic name.
+    # handle events that affect PP overall, otherwise pass to all active shows
+    def handle_input_event(self,symbol,source):
+        self.mon.log(self,"event received: "+symbol + ' from '+ source)
+        if symbol == 'pp-terminate':
+            self.handle_user_abort()
+            
+        elif symbol == 'pp-shutdown':
+            self.mon.err(self,'pp-shutdown removed in version 1.3.3a, see Release Notes')
+            self.end('error','pp-shutdown removed in version 1.3.3a, see Release Notes')
+
+            
+        elif symbol == 'pp-shutdownnow':
+            # need root.after to grt out of st thread
+            self.root.after(1,self.shutdownnow_pressed)
+            return
+        
+        elif symbol == 'pp-exitpipresents':
+            self.exitpipresents_required=True
+            if self.show_manager.all_shows_exited() is True:
+                # need root.after to grt out of st thread
+                self.root.after(1,self.e_all_shows_ended_callback)
+                return
+            reason,message= self.show_manager.exit_all_shows()
+        else:
+            # pass the input event to all registered shows
+            for show in self.show_manager.shows:
+                show_obj=show[ShowManager.SHOW_OBJ]
+                if show_obj is not None:
+                    show_obj.handle_input_event(symbol)
+
+
+
+    # commands are generaed by tracks and shows
+    # they can open or close shows, generate input events and do special tasks
+    # commands also generate osc outputs to other computers
     # handles one command provided as a line of text
     
     def handle_command(self,command_text,source='',show=''):
@@ -502,6 +553,14 @@ class PiPresents(object):
             return
         
         fields= command_text.split()
+        if fields[0] =='counter':
+            status,message=self.counter_manager.parse_counter_command(fields[1:])
+            if status=='error':
+                self.mon.err(self,message)
+                self.end('error',message)
+            return
+
+                           
         show_command=fields[0]
         if len(fields)>1:
             show_ref=fields[1]
@@ -509,7 +568,7 @@ class PiPresents(object):
             show_ref=''
 
         if show_command in ('open','close'):
-            self.mon.sched(self, command_text + ' received from show:'+show)
+            self.mon.sched(self, TimeOfDay.now,command_text + ' received from show:'+show)
             if self.shutdown_required is False and self.terminate_required is False:
                 reason,message=self.show_manager.control_a_show(show_ref,show_command)
             else:
@@ -531,7 +590,7 @@ class PiPresents(object):
 
         elif show_command == 'shutdownnow':
             # need root.after to get out of st thread
-            self.root.after(1,self.e_shutdown_pressed)
+            self.root.after(1,self.shutdownnow_pressed)
             return
         else:
             reason='error'
@@ -548,91 +607,15 @@ class PiPresents(object):
         elif command == 'off':
             os.system('vcgencmd display_power 0 >/dev/null')           
                       
-    
+    # deal with differnt commands/input events
 
-    def e_all_shows_ended_callback(self):
-        self.all_shows_ended_callback('normal','no shows running')
-
-    def e_shutdown_pressed(self):
-        self.shutdown_pressed('now')
-
-
-    def e_osc_handle_output_event(self,line):
-        #jump  out of server thread
-        self.root.after(1, lambda arg=line: self.osc_handle_output_event(arg))
-
-    def  osc_handle_output_event(self,line):
-        self.mon.log(self,"output event received: "+ line)
-        #osc sends output events as a string
-        reason,message,delay,name,param_type,param_values=self.animate.parse_animate_fields(line)
-        if reason == 'error':
-            self.mon.err(self,message)
-            self.end(reason,message)
-        self.handle_output_event(name,param_type,param_values,0)
-
-               
-    def handle_output_event(self,symbol,param_type,param_values,req_time):
-        if self.gpio_enabled is True:
-            reason,message=self.gpiodriver.handle_output_event(symbol,param_type,param_values,req_time)
-            if reason =='error':
-                self.mon.err(self,message)
-                self.end(reason,message)
+    def shutdownnow_pressed(self):
+        self.shutdown_required=True
+        if self.show_manager.all_shows_exited() is True:
+           self.all_shows_ended_callback('normal','no shows running')
         else:
-            self.mon.warn(self,'GPIO not enabled')
-
-
-    # all input events call this callback with a symbolic name.
-    # handle events that affect PP overall, otherwise pass to all active shows
-    def handle_input_event(self,symbol,source):
-        self.mon.log(self,"event received: "+symbol + ' from '+ source)
-        if symbol == 'pp-terminate':
-            self.handle_user_abort()
-            
-        elif symbol == 'pp-shutdown':
-            self.shutdown_pressed('delay')
-            
-        elif symbol == 'pp-shutdownnow':
-            # need root.after to grt out of st thread
-            self.root.after(1,self.e_shutdown_pressed)
-            return
-        
-        elif symbol == 'pp-exitpipresents':
-            self.exitpipresents_required=True
-            if self.show_manager.all_shows_exited() is True:
-                # need root.after to grt out of st thread
-                self.root.after(1,self.e_all_shows_ended_callback)
-                return
-            reason,message= self.show_manager.exit_all_shows()
-        else:
-            # events for shows affect the show and could cause it to exit.
-            for show in self.show_manager.shows:
-                show_obj=show[ShowManager.SHOW_OBJ]
-                if show_obj is not None:
-                    show_obj.handle_input_event(symbol)
-
-
-
-    def shutdown_pressed(self, when):
-        if when == 'delay':
-            self.root.after(5000,self.on_shutdown_delay)
-        else:
-            self.shutdown_required=True
-            if self.show_manager.all_shows_exited() is True:
-               self.all_shows_ended_callback('normal','no shows running')
-            else:
-                # calls exit method of all shows, results in all_shows_closed_callback
-                self.show_manager.exit_all_shows()           
-
-
-    def on_shutdown_delay(self):
-        # 5 second delay is up, if shutdown button still pressed then shutdown
-        if self.gpiodriver.shutdown_pressed() is True:
-            self.shutdown_required=True
-            if self.show_manager.all_shows_exited() is True:
-               self.all_shows_ended_callback('normal','no shows running')
-            else:
-                # calls exit method of all shows, results in all_shows_closed_callback
-                self.show_manager.exit_all_shows()
+            # calls exit method of all shows, results in all_shows_closed_callback
+            self.show_manager.exit_all_shows()           
 
 
     def handle_sigterm(self,signum,frame):
@@ -660,9 +643,13 @@ class PiPresents(object):
             self.end('killed','killed - no termination of shows required')
 
 
+
 # ******************************
 # Ending Pi Presents after all the showers and players are closed
 # **************************
+
+    def e_all_shows_ended_callback(self):
+        self.all_shows_ended_callback('normal','no shows running')
 
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message):
@@ -682,7 +669,7 @@ class PiPresents(object):
                 subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: Terminated'
                 message = time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
                 self.send_email(reason,subject,message)
-            self.mon.sched(self, "Pi Presents Terminated, au revoir\n")
+            self.mon.sched(self, None,"Pi Presents Terminated, au revoir\n")
             self.mon.log(self, "Pi Presents Terminated, au revoir")
                           
             # close logging files 
@@ -694,7 +681,7 @@ class PiPresents(object):
                 subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: Error'
                 message_text = 'Error message: '+ message + '\n'+ time.strftime("%Y-%m-%d %H:%M") + '\n ' + self.unit + '\n ' + self.interface + '\n ' + self.ip 
                 self.send_email(reason,subject,message_text)   
-            self.mon.sched(self, "Pi Presents closing because of error, sorry\n")
+            self.mon.sched(self,None, "Pi Presents closing because of error, sorry\n")
             self.mon.log(self, "Pi Presents closing because of error, sorry")
                           
             # close logging files 
@@ -702,7 +689,7 @@ class PiPresents(object):
             sys.exit(102)
 
         else:           
-            self.mon.sched(self,"Pi Presents  exiting normally, bye\n")
+            self.mon.sched(self,None,"Pi Presents  exiting normally, bye\n")
             self.mon.log(self,"Pi Presents  exiting normally, bye")
             
             # close logging files 
@@ -713,6 +700,35 @@ class PiPresents(object):
             sys.exit(100)
 
 
+    # tidy up all the peripheral bits of Pi Presents
+    def tidy_up(self):
+        self.handle_monitor_command('on')
+        self.mon.log(self, "Tidying Up")
+        # turn screen blanking back on
+        if self.options['noblank'] is True:
+            call(["xset","s", "on"])
+            call(["xset","s", "+dpms"])
+            
+        # tidy up animation
+        if self.animate is not None:
+            self.animate.terminate()
+
+        # tidy up i/o plugins
+        if self.ioplugin_manager != None:
+            self.ioplugin_manager.terminate()
+
+        if self.osc_enabled is True:
+            self.oscdriver.terminate()
+            
+        # tidy up time of day scheduler
+        if self.tod_enabled is True:
+            self.tod.terminate()
+
+
+
+# *******************************
+# Connecting to network and email
+# *******************************
 
     def init_network(self):
 
@@ -736,7 +752,7 @@ class PiPresents(object):
             return
 
         self.network_connected=True
-        self.mon.sched (self, 'Time after network check is '+ time.strftime("%Y-%m-%d %H:%M.%S"))
+        self.mon.sched (self, None,'Time after network check is '+ time.strftime("%Y-%m-%d %H:%M.%S"))
         self.mon.log (self, 'Time after network check is '+ time.strftime("%Y-%m-%d %H:%M.%S"))
 
         # Get web configuration
@@ -775,6 +791,19 @@ class PiPresents(object):
             self.mon.log (self,'Email Enabled')
 
 
+    def try_connect(self):
+        tries=1
+        while True:
+            success, error = self.mailer.connect()
+            if success is True:
+                return True
+            else:
+                self.mon.log(self,'Failed to connect to email SMTP server ' + str(tries) +  '\n ' +str(error))
+                tries +=1
+                if tries >5:
+                    self.mon.log(self,'Failed to connect to email SMTP server after ' + str(tries))
+                    return False
+
 
     def send_email(self,reason,subject,message):
         if self.try_connect() is False:
@@ -793,50 +822,12 @@ class PiPresents(object):
                 if success is False:
                     self.mon.log(self,'Failed disconnect from email server ' + str(error))
                 return True
-
-
-    def try_connect(self):
-        tries=1
-        while True:
-            success, error = self.mailer.connect()
-            if success is True:
-                return True
-            else:
-                self.mon.log(self,'Failed to connect to email SMTP server ' + str(tries) +  '\n ' +str(error))
-                tries +=1
-                if tries >5:
-                    self.mon.log(self,'Failed to connect to email SMTP server after ' + str(tries))
-                    return False
-
-                
-    
-    # tidy up all the peripheral bits of Pi Presents
-    def tidy_up(self):
-        self.handle_monitor_command('on')
-        self.mon.log(self, "Tidying Up")
-        # turn screen blanking back on
-        if self.options['noblank'] is True:
-            call(["xset","s", "on"])
-            call(["xset","s", "+dpms"])
-            
-        # tidy up animation and gpio
-        if self.animate is not None:
-            self.animate.terminate()
-            
-        if self.gpio_enabled==True:
-            self.gpiodriver.terminate()
-
-        if self.osc_enabled is True:
-            self.oscdriver.terminate()
-            
-        # tidy up time of day scheduler
-        if self.tod_enabled is True:
-            self.tod.terminate()
+              
 
          
 if __name__ == '__main__':
 
-    # wait for environment ariables to stabilize. Required for Jessie autostart
+    # wait for environment variables to stabilize. Required for Jessie autostart
     tries=0
     success=False
     while tries < 40:

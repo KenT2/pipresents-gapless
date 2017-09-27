@@ -1,5 +1,6 @@
 import copy
 from pp_utils import Monitor, parse_rectangle
+from pp_timeofday import TimeOfDay
 
 
 class ShowManager(object):
@@ -159,10 +160,10 @@ class ShowManager(object):
         if reason == 'error':
             return reason,message
         # print 'STARTING TOP LEVEL SHOW',show_canvas
-        self.mon.sched(self,'Starting Show: ' + show_ref  + ' from show: ' + self.show_params['show-ref'])
+        self.mon.sched(self,TimeOfDay.now,'Starting Show: ' + show_ref  + ' from show: ' + self.show_params['show-ref'])
         self.mon.log(self,'Starting Show: ' + show_ref  + ' from: ' + self.show_params['show-ref'])
         if self.show_running(index):
-            self.mon.sched(self,"show already running so ignoring command: "+show_ref)
+            self.mon.sched(self,TimeOfDay.now,"show already running so ignoring command: "+show_ref)
             self.mon.warn(self,"show already running so ignoring command: "+show_ref)
             return 'normal','this concurrent show already running'
         show_obj = self.init_show(index,show,show_canvas)
@@ -184,7 +185,7 @@ class ShowManager(object):
     def _end_play_show(self,index,reason,message):
         show_ref_to_exit =ShowManager.shows[index][ShowManager.SHOW_REF]
         show_to_exit =ShowManager.shows[index][ShowManager.SHOW_OBJ]
-        self.mon.sched(self,'Closed show: ' + show_ref_to_exit)
+        self.mon.sched(self,TimeOfDay.now,'Closed show: ' + show_ref_to_exit)
         self.mon.log(self,'Exited from show: ' + show_ref_to_exit + ' ' + str(index) )
         self.mon.log(self,'Exited with Reason = ' + reason)
         self.mon.trace(self,' Show is: ' + show_ref_to_exit + ' show index ' + str(index))

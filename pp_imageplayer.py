@@ -318,7 +318,9 @@ class ImagePlayer(Player):
                     # print 'window dimensions/centre',window_width,window_height,window_centre_x,window_centre_y
                     # print
                     # original image is larger or , shrink it to fit the screen preserving aspect
-                    ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))                 
+                    # print ppil_image.size
+                    ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))
+                    # print ppil_image.size
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
                     self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,

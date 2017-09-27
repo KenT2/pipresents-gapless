@@ -46,8 +46,8 @@ class PPWebEditor(App):
         # ***************************************
         # INIT
         # ***************************************
-        self.editor_issue="1.3.2"
-        self.force_update=False
+        self.editor_issue="1.3.3"
+        self.force_update= False
 
         # get directory holding the code
         self.editor_dir=sys.path[0]
@@ -205,6 +205,8 @@ class PPWebEditor(App):
 
         track_delete_menu = gui.MenuItem('Delete',width=120, height=30)
         track_delete_menu.set_on_click_listener(self.remove_track)
+        track_copy_menu = gui.MenuItem('Copy',width=120, height=30)
+        track_copy_menu.set_on_click_listener(self.copy_track)
         track_edit_menu = gui.MenuItem( 'Edit',width=120, height=30)
         track_edit_menu.set_on_click_listener(self.m_edit_track)
         track_add_from_dir_menu = gui.MenuItem('Add Directory',width=120, height=30)
@@ -237,6 +239,7 @@ class PPWebEditor(App):
         track_new_menu.append(track_new_menu_menu)
         
         track_menu.append(track_delete_menu)
+        track_menu.append(track_copy_menu)
         track_menu.append(track_edit_menu)
         track_menu.append(track_add_from_dir_menu)
         track_menu.append(track_add_from_file_menu)
@@ -475,7 +478,7 @@ class PPWebEditor(App):
             OKDialog('Open Profile',"Profiles directory not found: " + initial_dir + "<br><br>Hint: Data Home option must end in pp_home").show(self)
             return
         open_existing_profile_dialog = FileSelectionDialog('Open Profile','Select profile',False, initial_dir,allow_folder_selection=True,
-                                                           allow_file_selection=False,
+                                                           allow_file_selection=False, 
                                                            callback=self.open_existing_profile_dialog_confirm) #width=600,height=200,
         # open_existing_profile_dialog.set_on_confirm_value_listener(self.open_existing_profile_dialog_confirm)
         open_existing_profile_dialog.show(self)
@@ -493,14 +496,15 @@ class PPWebEditor(App):
     def open_profile(self,dir_path):
         if self.editor_version()!= self.definitions_version():
             OKDialog('Open Profile','Incorrect version of Editor: '+ self.editor_issue +'<br>Definitions are: '+ PPdefinitions.DEFINITIONS_VERSION_STRING).show(self)
-            return        
+            return
         showlist_file = dir_path + os.sep + "pp_showlist.json"
         #print 'open profile',showlist_file
         if os.path.exists(showlist_file) is False:
             OKDialog('Open Profile',"Not a Profile: " + dir_path).show(self)
             return
         self.pp_profile_dir = dir_path
-        
+        self.pp_select_offset=os.path.relpath(self.pp_profile_dir,self.pp_home_dir+os.sep+"pp_profiles"+self.pp_profiles_offset)
+        # print self.pp_select_offset
         OSCConfig.options_file=self.pp_profile_dir+ os.sep+'pp_io_config'+os.sep+'osc.cfg'
         self.osc_config_file=self.pp_profile_dir+os.sep+'pp_io_config'+os.sep+'osc.cfg'
 
@@ -1023,7 +1027,13 @@ class PPWebEditor(App):
             self.current_medialist.move_down()
             self.refresh_tracks_display()
             self.save_medialist()
-        
+
+    def copy_track(self,widget):
+        if self.current_medialist is not None and self.current_medialist.track_is_selected():
+            self.current_medialist.copy()
+            self.refresh_tracks_display()
+            self.save_medialist()
+            
     def new_track(self,fields,values):
         if self.current_medialist is not None:
             # print '\nfields ', fields
@@ -1098,7 +1108,7 @@ class PPWebEditor(App):
         if self.current_medialist is None: return
         add_tracks_from_dir_dialog = FileSelectionDialog('Add Directory', 'Select Directory',
                                     multiple_selection = False, allow_file_selection=False,
-                                    selection_folder = self.eo.initial_media_dir,calback=self.add_tracks_from_dir_dialog_confirm)
+                                    selection_folder = self.eo.initial_media_dir,callback=self.add_tracks_from_dir_dialog_confirm)
         add_tracks_from_dir_dialog.show(self)
 
 
@@ -1197,9 +1207,10 @@ class PPWebEditor(App):
             if not os.path.exists(self.pp_profile_dir+os.sep+"pp_showlist.json"):
                 self.report.append_line(profile_file+ ' - Not a profile')
             else:
+                self.pp_select_offset=profile_file
                 self.current_showlist=ShowList()
                 self.current_showlist.open_json(self.pp_profile_dir+os.sep+"pp_showlist.json")
-                if self.current_showlist.profile_version() < self.definitions_version():
+                if self.current_showlist.profile_version() < self.definitions_version() or self.force_update is True:
                     self.update_profile()
                     self.report.append_line(profile_file + ' - UPDATED')
                 elif self.current_showlist.profile_version()>self.definitions_version():
@@ -1212,18 +1223,18 @@ class PPWebEditor(App):
 
     def backup_profile(self):
         # make a backup directory for profiles at this level
-        backup_dir=self.pp_home_dir+os.sep+'pp_profiles.bak'+self.pp_profiles_offset
+        backup_dir=self.pp_home_dir+os.sep+'pp_profiles.bak'+os.sep+self.pp_profiles_offset+os.sep+self.pp_select_offset
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir)
 
         #make a directory for this profile
-        if not os.path.exists(backup_dir+os.sep+self.profile_name):
-            os.makedirs(backup_dir+os.sep+self.profile_name)
+        # if not os.path.exists(backup_dir):
+            # os.makedirs(backup_dir+os.sep+self.profile_name)
                 
         for this_file in os.listdir(self.pp_profile_dir):
             if this_file.endswith(".json") and this_file !='schedule.json':
                 from_file=self.pp_profile_dir+os.sep+this_file
-                to_file=backup_dir+os.sep+self.profile_name+os.sep+this_file
+                to_file=backup_dir+os.sep+this_file
                 # print 'backup',from_file,to_file
                 shutil.copy(from_file,to_file)
 
@@ -1541,14 +1552,14 @@ if __name__  ==  "__main__":
     if not os.path.exists(editor_dir+os.sep+"pp_web_editor.py"):
         print "Bad Application Directory"
         exit()
-
-    # wait for network to be available
     network=Network()
-    print 'Waiting for Network'
-    success=network.wait_for_network(10)
-    if success is False:
-        print 'Failed to connect to network after 10 seconds'     
-        exit()   
+    if mode == 'remote':
+        # wait for network to be available
+        print 'Waiting for Network'
+        success=network.wait_for_network(10)
+        if success is False:
+            print 'Failed to connect to network after 10 seconds'     
+            exit()   
 
 
     # check pp_web.cfg
@@ -1560,10 +1571,11 @@ if __name__  ==  "__main__":
 
     print 'Found pp_web.cfg in ', editor_options_file_path
 
-    # get interface and IP details of preferred interface
     network.read_config(editor_options_file_path)
-    interface,ip = network.get_preferred_ip()
-    print 'Network details ' + network.unit + ' ' + interface + ' ' + ip
+    if mode == 'remote':
+        # get interface and IP details of preferred interface
+        interface,ip = network.get_preferred_ip()
+        print 'Network details ' + network.unit + ' ' + interface + ' ' + ip
 
 
     start_browser=False
