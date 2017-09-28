@@ -54,6 +54,11 @@
    "show-text-x": "0", 
    "show-text-y": "0", 
    "title": "artmediashow", 
+   "track-text-colour": "white", 
+   "track-text-font": "Helvetica 20 bold", 
+   "track-text-justify": "left", 
+   "track-text-x": "0", 
+   "track-text-y": "40", 
    "transition": "cut", 
    "type": "artmediashow"
   }
