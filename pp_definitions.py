@@ -624,7 +624,7 @@ class PPdefinitions(object):
                             'freeze-at-start':{'shape':'option-menu','text':'Freeze at Start','must':'no','read-only':'no',
                                        'values':['no','before-first-frame','after-first-frame','']},
                             'freeze-at-end':{'shape':'option-menu','text':'Freeze at End','must':'no','read-only':'no',
-                                       'values':['yes','no']},
+                                       'values':['yes','no','']},
                             'seamless-loop':{'shape':'option-menu','text':'Seamless Loop','must':'no','read-only':'no',
                                        'values':['yes','no']},
                             'show-ref':{'shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
