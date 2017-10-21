@@ -40,8 +40,8 @@ class IOPluginManager(object):
         # print cfgfile,cfgfilepath
         reason,message,config=self._read(cfgfile,cfgfilepath)
         if reason =='error':
-            self.mon.err(self,'Failed to read '+filename + ' ' + message)
-            return 'error','Failed to read '+filename + ' ' + message                
+            self.mon.err(self,'Failed to read '+cfgfile + ' ' + message)
+            return 'error','Failed to read '+cfgfile + ' ' + message                
         if config.has_section('DRIVER') is False:
             self.mon.err(self,'No DRIVER section in '+cfgfilepath)
             return 'error','No DRIVER section in '+cfgfilepath

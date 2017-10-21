@@ -1,5 +1,6 @@
 import time
 import copy
+import csv
 from pp_utils import Monitor
 
 
@@ -102,7 +103,6 @@ class Animate(object):
                 return 'error',message
             if name !='':
                 self.add_event(name,param_type,param_values,delay,tag)
-        # self.print_events()
         return 'normal','events processed'
 
 
@@ -115,7 +115,7 @@ class Animate(object):
         event[Animate.param_values]=param_values
         event[Animate.time]=delay+poll_time   #+1?
         event[Animate.tag]=tag
-        # print 'add event ',event
+        # print '\nadd event ',event
         # find the place in the events list and insert
         # first item in the list is earliest, if two have the same time then last to be added is fired last.
         # events are fired from top of list
@@ -151,9 +151,10 @@ class Animate(object):
 
 
     def print_events(self):
-        print '\nevents list'
+        print 'events list'
         for event in Animate.events:
-            print event
+            print 'EVENT: ',event
+
     
 
     # remove all the events with the same tag, usually a track reference
@@ -175,7 +176,12 @@ class Animate(object):
 
     # [delay],symbol,type,values(one or more)
     def parse_animate_fields(self,line):
-        fields= line.split()
+        if line== '':
+            return 'normal','no fields','','',[],0
+        # split the line using "" for text with spaces
+        for l in csv.reader([line], delimiter=' ', quotechar='"'):
+            fields = l
+
         if len(fields) == 0:
             return 'normal','no fields','','',[],0
             

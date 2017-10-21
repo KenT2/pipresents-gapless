@@ -63,6 +63,7 @@ class WebEditItem(AdaptableDialog):
         
         self.col_row=0
         self.current_col=None
+        self.col_1=None
         # populate the dialog box using the record fields to determine the order
         for field in record_fields:
             # get list of values where required

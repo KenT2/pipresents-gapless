@@ -292,12 +292,12 @@ class OMXDriver(object):
                     # failed for good reason because of exception or process not running caused by end of track
                     return False
                 else:
-                    self.mon.warn(self, '!!!!! repeat unpause ' + str(tries))
+                    # self.mon.warn(self, '!!!!! repeat unpause ' + str(tries))
                     # print self.id,' !!!! repeat unpause ',self.video_position, tries
                     tries +=1
-                    if tries >5:
+                    if tries >200:
                         # print self.id, ' unpause failed for n attempts'                       
-                        self.mon.warn(self,'unpause failed for n attempts')
+                        self.mon.warn(self,'unpause failed for 200 attempts')
                         return False
                     
 

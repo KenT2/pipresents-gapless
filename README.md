@@ -94,7 +94,7 @@ Requirements:
 
 From a terminal window open in your home directory type:
 
-         wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
+         wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz     # -O is a capital Ohhh...
 
 There should now be a directory 'KenT2-pipresents-gapless-xxxx' in your /home/pi directory. Copy or rename the directory to pipresents
 
@@ -120,7 +120,12 @@ From the terminal window type:
 
          python /home/pi/pipresents/pipresents.py -p pp_mediashow_1p3
 		 
-to see a repeating multimedia show.
+to see a repeating multimedia show then:
+
+          python /home/pi/pipresents/pipresents.py -p pp_mediashow_1p3 -f -b
+		  
+to display full screen and to disable screen blanking
+
 
 Now read the manual to try other examples.
 

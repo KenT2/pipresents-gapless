@@ -167,7 +167,7 @@ class ArtShow(Show):
             self.canvas.after(5000,self.remove_list_empty_message)
         else:
             # otherwise load the first track
-            print "!!!!! artshow init first"
+            # print "!!!!! artshow init first"
             # print 'after wait EMPTY'
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
@@ -180,7 +180,7 @@ class ArtShow(Show):
                     track_file=self.medialist.selected_track()['text']
                 else:
                     track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
-                print "!!!!! artshow load first ",track_file
+                # print "!!!!! artshow load first ",track_file
                 self.next_player.load(track_file,
                                       self.loaded_callback,
                                       enable_menu=False)
@@ -321,12 +321,12 @@ class ArtShow(Show):
             self.what_next()
 
         # has content of list been changed (replaced if it has, used for content of livelist)
-        print 'WHAT to load NEXT'
+        # print 'WHAT to load NEXT'
         self.medialist.create_new_livelist()
 
         # print result, self.medialist.new_length(),self.medialist.anon_length()
         if self.medialist.livelist_changed() is True:
-            print 'ITS CHANGED'
+            # print 'ITS CHANGED'
             self.ending_reason='change-medialist'
             self.close_current_and_next()
         else:
@@ -335,7 +335,7 @@ class ArtShow(Show):
             Show.delete_admin_message(self)
             if self.medialist.at_end() is True:
                 self.end_medialist_warning=True
-            print "!!!!! artshow init next "
+            # print "!!!!! artshow init next "
             self.next_player=Show.base_init_selected_player(self,self.medialist.selected_track())
             if self.next_player is None:
                 self.mon.err(self,"Track Type cannot be played by this show: "+self.medialist.selected_track()['type'])
@@ -348,7 +348,7 @@ class ArtShow(Show):
                     track_file=self.medialist.selected_track()['text']
                 else:
                     track_file=Show.base_complete_path(self,self.medialist.selected_track()['location'])
-                print "!!!!! artshow load next ",track_file
+                # print "!!!!! artshow load next ",track_file
                 self.mon.trace(self, track_file)
                 self.next_player.load(track_file,
                                       self.loaded_callback,

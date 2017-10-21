@@ -1,4 +1,12 @@
+version 1.3.3b
+=================
+This version doccuments the I/O plugins API and provides examples
+It fixes a dew bugs
+No changes to the profiles or configuration files required.
+
+
 Version 1.3.3a
+=================
 
 Version 1.3.3a introduce I/O plugins and quiz counters. There is a fix to liveshows and other smaller enhancements and fixes.
 
