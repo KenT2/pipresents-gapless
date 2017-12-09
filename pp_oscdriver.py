@@ -1,6 +1,7 @@
 
 """
-30/12/2016 - fixed missing self.mon.err(
+added source name to loopback and info request
+
 
 Heavily modified from the examples here, with thanks:
 receiving OSC with pyOSC
@@ -18,7 +19,9 @@ from pp_timeofday import TimeOfDay
 
 import threading
 import ConfigParser
-import OSC
+import OSC_plus as OSC
+import socket
+
 class myOSCServer(OSC.OSCServer):
     allow_reuse_address=True
     print_tracebacks = True
@@ -26,12 +29,12 @@ class myOSCServer(OSC.OSCServer):
 class OSCDriver(object):
 
     # executed by main program
-    def  init(self,pp_profile,show_command_callback,input_event_callback,output_event_callback):
+    def  init(self,pp_profile,manager_unit,preferred_interface,my_ip,show_command_callback,input_event_callback,animate_callback):
 
         self.pp_profile=pp_profile
         self.show_command_callback=show_command_callback
         self.input_event_callback=input_event_callback
-        self.output_event_callback=output_event_callback
+        self.animate_callback=animate_callback
 
         self.mon=Monitor()
         config_file=self.pp_profile + os.sep +'pp_io_config'+os.sep+ 'osc.cfg'
@@ -40,99 +43,303 @@ class OSCDriver(object):
             return'error','OSC Configuration file nof found: '+config_file
         
         self.mon.log(self, 'OSC Configuration file found at: '+config_file)        
-        self.options=OSCConfig()
-        # only reads the  data for required unit_type 
-        if self.options.read(config_file) ==False:
+        self.osc_config=OSCConfig()
+        
+        # reads config data 
+        if self.osc_config.read(config_file) ==False:
             return 'error','failed to read osc.cfg'
 
+        # unpack config data and initialise
+
+        if self.osc_config.this_unit_name =='':
+            return 'error','OSC Config -  This Unit has no name'
+        if len(self.osc_config.this_unit_name.split())>1:
+            return 'error','OSC config - This Unit Name not a single word: '+self.osc_config.this_unit_name
+        self.this_unit_name=self.osc_config.this_unit_name
+               
+                 
+        if self.osc_config.this_unit_ip=='':
+            self.this_unit_ip=my_ip
+        else:
+            self.this_unit_ip=self.osc_config.this_unit_ip
+
+        if self.osc_config.slave_enabled == 'yes':
+            if not self.osc_config.listen_port.isdigit():
+                return 'error','OSC Config - Listen port is not a positve number: '+ self.osc_config.listen_port
+            self.listen_port= self.osc_config.listen_port
+
+        if self.osc_config.master_enabled == 'yes':
+            if not self.osc_config.reply_listen_port.isdigit():
+                return 'error','OSC Config - Reply Listen port is not a positve number: '+ self.osc_config.reply_listen_port
+            self.reply_listen_port= self.osc_config.reply_listen_port
+
+            # prepare the list of slaves
+            status,message=self.parse_slaves()
+            if status=='error':
+                return status,message
+             
+
         self.prefix='/pipresents'
-        self.this_unit='/' + self.options.this_unit_name
-        self.this_unit_type = self.options.this_unit_type
+        self.this_unit='/' + self.this_unit_name
+        
+        self.input_server=None
+        self.input_reply_client=None
+        self.input_st=None
+        
+        self.output_client=None
+        self.output_reply_server=None
+        self.output_reply_st=None
 
-        self.reply_client=None
-        self.command_client=None
-        self.client=None
-        self.server=None
 
-        if self.this_unit_type not in ('master','slave','master+slave'):
-            return 'error','OSC config, this unit type not known: '+self.this_unit_type
+        if self.osc_config.slave_enabled == 'yes' and self.osc_config.master_enabled == 'yes' and self.listen_port == self.reply_listen_port:
+            # The two listen ports are the same so use one server for input and output
 
-        if self.this_unit_type in('slave','master+slave'):
-            #start the client that sends replies to controlling unit
-            self.reply_client=OSC.OSCClient()
-            self.mon.log(self, 'sending replies to controller at: '+self.options.controlled_by_ip+':'+self.options.controlled_by_port)
-            self.reply_client.connect((self.options.controlled_by_ip,int(self.options.controlled_by_port)))
-            self.mon.log(self,'sending repiles to: '+ str(self.reply_client))
-            self.client=self.reply_client
+            #start the client that sends commands to the slaves
+            self.output_client=OSC.OSCClient()
+            self.mon.log(self, 'sending commands to slaves and replies to master on: '+self.reply_listen_port)
+
+            #start the input+output reply server
+            self.mon.log(self, 'listen to commands and replies from slave units using: ' + self.this_unit_ip+':'+self.reply_listen_port)
+            self.output_reply_server=myOSCServer((self.this_unit_ip,int(self.reply_listen_port)),self.output_client)
+            self.add_default_handler(self.output_reply_server)
+            self.add_input_handlers(self.output_reply_server)
+            self.add_output_reply_handlers(self.output_reply_server)
+
+            self.input_server=self.output_reply_server
             
-        if self.this_unit_type in ('master','master+slave'):
-            #start the client that sends commands to the controlled unit
-            self.command_client=OSC.OSCClient()
-            self.command_client.connect((self.options.controlled_unit_1_ip,int(self.options.controlled_unit_1_port)))
-            self.mon.log(self, 'sending commands to controled unit at: '+self.options.controlled_unit_1_ip+':'+self.options.controlled_unit_1_port)
-            self.mon.log(self,'sending commands to: '+str(self.command_client))
-            self.client=self.command_client
+        else:
 
-        #start the listener's server
-        self.mon.log(self, 'listen to commands from controlled by unit and replies from controlled units on: ' + self.options.this_unit_ip+':'+self.options.this_unit_port)
-        self.server=myOSCServer((self.options.this_unit_ip,int(self.options.this_unit_port)),self.client)
-        # return_port=int(self.options.controlled_by_port)
-        self.mon.log(self,'listening on: '+str(self.server))
-        self.add_initial_handlers()
+            if self.osc_config.slave_enabled == 'yes':
+                # we want this to be a slave to something else
+
+                # start the client that sends replies to controlling unit
+                self.input_reply_client=OSC.OSCClient()
+                
+                #start the input server
+                self.mon.log(self, 'listening to commands on: ' + self.this_unit_ip+':'+self.listen_port)
+                self.input_server=myOSCServer((self.this_unit_ip,int(self.listen_port)),self.input_reply_client)
+                self.add_default_handler(self.input_server)
+                self.add_input_handlers(self.input_server)
+                print self.pretty_list(self.input_server.getOSCAddressSpace(),'\n')
+                
+            if self.osc_config.master_enabled =='yes':
+                #we want to control other units
+               
+                #start the client that sends commands to the slaves
+                self.output_client=OSC.OSCClient()
+                self.mon.log(self, 'sending commands to slaves on port: '+self.reply_listen_port)
+
+                #start the output reply server
+                self.mon.log(self, 'listen to replies from slave units using: ' + self.this_unit_ip+':'+self.reply_listen_port)
+                self.output_reply_server=myOSCServer((self.this_unit_ip,int(self.reply_listen_port)),self.output_client)
+                self.add_default_handler(self.output_reply_server)
+                self.add_output_reply_handlers(self.output_reply_server)
+        
         return 'normal','osc.cfg read'
 
-    def terminate(self):
-        if self.server != None:
-            self.server.close()
-        self.mon.log(self, 'Waiting for Server-thread to finish')
-        if self.st != None:
-            self.st.join() ##!!!
-        self.mon.log(self,'server thread closed')
-        self.client.close()
 
+    def terminate(self):
+        if self.input_server != None:
+            self.input_server.close()
+        if self.output_reply_server != None:
+            self.output_reply_server.close()
+        self.mon.log(self, 'Waiting for Server threads to finish')
+        if self.input_st != None:
+            self.input_st.join() ##!!!
+        if self.output_reply_st != None:
+            self.output_reply_st.join() ##!!!
+        self.mon.log(self,'server threads closed')
+        if self.input_reply_client !=None:
+            self.input_reply_client.close()
+        if self.output_client !=None:
+            self.output_client.close()
 
 
     def start_server(self):
-        # Start OSCServer
-        self.mon.log(self,'Starting OSCServer')
-        self.st = threading.Thread( target = self.server.serve_forever )
-        self.st.start()
+        # Start input Server
+        self.mon.log(self,'Starting input OSCServer')
+        if self.input_server != None:
+            self.input_st = threading.Thread( target = self.input_server.serve_forever )
+            self.input_st.start()
+
+        # Start output_reply server
+        self.mon.log(self,'Starting output reply OSCServer')
+        if self.output_reply_server != None:
+            self.output_reply_st = threading.Thread( target = self.output_reply_server.serve_forever )
+            self.output_reply_st.start()
+
+    def parse_slaves(self):
+        name_list=self.osc_config.slave_units_name.split()
+        ip_list=self.osc_config.slave_units_ip.split()
+        if len(name_list)==0:
+            return 'error','OSC Config - List of slaves name is empty'
+        if len(name_list) != len(ip_list):
+            return 'error','OSC Config - Lengths of list of slaves name and slaves IP is different'       
+        self.slave_name_list=[]
+        self.slave_ip_list=[]
+        for i, name in enumerate(name_list):
+            self.slave_name_list.append(name)
+            self.slave_ip_list.append(ip_list[i])
+        return 'normal','slaves parsed'
 
 
-    def add_initial_handlers(self):
-        self.server.addMsgHandler('default', self.no_match_handler)        
-        self.server.addMsgHandler(self.prefix+self.this_unit+"/system/server-info", self.server_info_handler)
-        self.server.addMsgHandler(self.prefix+self.this_unit+"/system/loopback", self.loopback_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/open', self.open_show_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/close', self.close_show_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/exitpipresents', self.exitpipresents_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/shutdownnow', self.shutdownnow_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/event', self.input_event_handler)
-        self.server.addMsgHandler(self.prefix+ self.this_unit+'/core/output', self.output_event_handler)
+    def parse_osc_command(self,fields):
+    # send message to slave unit - INTERFACE WITH pipresents
+        if len(fields) <2:
+               return 'error','too few fields in OSC command '+' '.join(fields)
+        to_unit_name=fields[0]
+        show_command=fields[1]
+        # print 'FIELDS ',fields
+        
+        # send an arbitary osc message            
+        if show_command == 'send':
+            if len(fields)>2:
+                osc_address= fields[2]
+                arg_list=[]
+                if len(fields)>3:
+                    arg_list=fields[3:]
+            else:
+                return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
 
+        elif show_command in ('open','close'):
+            if len(fields)==3:
+                osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
+                arg_list= [fields[2]]
+            else:
+                return 'error','OSC - wrong number of fields in '+ ' '.join(fields)
+                
+        elif show_command =='monitor':
+            if fields[2] in ('on','off'):
+                osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
+                arg_list=[fields[2]]
+            else:
+                self.mon.err(self,'OSC - illegal state in '+ show_command + ' '+fields[2])
+        
+        elif show_command =='event':                
+            if len(fields)==3:
+                osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
+                arg_list= [fields[2]]
+
+
+        elif show_command == 'animate':                
+            if len(fields)>2:
+                osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
+                arg_list= fields[2:]
+            else:
+                return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
+            
+        elif show_command in ('exitpipresents','shutdownnow'):
+            if len(fields)==2:
+                osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
+                arg_list= []
+            else:
+                return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
+
+        elif show_command in ('loopback','server-info'):
+            if len(fields)==2:
+                osc_address=self.prefix+'/'+ to_unit_name + '/system/'+ show_command
+                arg_list= []
+            else:
+                return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
+            
+        else:
+            return 'error','OSC - unkown command in '+ ' '.join(fields)
+
+        
+        ip=self.find_ip(to_unit_name,self.slave_name_list,self.slave_ip_list)
+        if ip=='':
+            return 'warn','OSC Unit Name not in the list of slaves: '+ to_unit_name
+        self.sendto(ip,osc_address,arg_list)
+        return 'normal','osc command sent'
+
+
+    def find_ip(self,name,name_list,ip_list):
+        i=0
+        for j in name_list:
+            if j == name:
+                break
+            i=i+1
+            
+        if i==len(name_list):
+            return ''
+        else:
+            return ip_list[i]
+                    
+
+    def sendto(self,ip,osc_address,arg_list):
+        # print ip,osc_address,arg_list
+        if self.output_client is None:
+            self.mon.warn(self,'Master not enabled, ignoring OSC command')
+            return
+        msg = OSC.OSCMessage()
+        # print address
+        msg.setAddress(osc_address)
+        for arg in arg_list:
+            # print arg
+            msg.append(arg)
+            
+        try:
+            self.output_client.sendto(msg,(ip,int(self.reply_listen_port)))
+            self.mon.log(self,'Sent OSC command: '+osc_address+' '+' '.join(arg_list) + ' to '+ ip +':'+self.reply_listen_port)
+        except Exception as e:
+            self.mon.warn(self,'error in client when sending OSC command: '+ str(e))
+
+
+# **************************************
+# Handlers for fallback
+# **************************************
+
+    def add_default_handler(self,server):
+        server.addMsgHandler('default', self.no_match_handler)
 
     def no_match_handler(self,addr, tags, stuff, source):
-        self.mon.warn(self,"no match for osc msg with addr : %s" % addr)
+        text= "No handler for message from %s" % OSC.getUrlStr(source)+'\n'
+        text+= "     %s" % addr+ self.pretty_list(stuff,'')
+        self.mon.warn(self,text)
         return None
 
+# **************************************
+# Handlers for Slave (input)
+# **************************************    
 
+    def add_input_handlers(self,server):
+        server.addMsgHandler(self.prefix + self.this_unit+"/system/server-info", self.server_info_handler)
+        server.addMsgHandler(self.prefix + self.this_unit+"/system/loopback", self.loopback_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/open', self.open_show_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/close', self.close_show_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/exitpipresents', self.exitpipresents_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/shutdownnow', self.shutdownnow_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/event', self.input_event_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/animate', self.animate_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/monitor', self.monitor_handler)
+
+
+    # reply to master unit with name of this unit and commands
     def server_info_handler(self,addr, tags, stuff, source):
-        msg = OSC.OSCMessage(self.prefix+'/'+self.options.controlled_by_name+'/system/server-info-reply')
-        msg.append('Unit: '+ self.options.this_unit_name)
+
+        msg = OSC.OSCMessage(self.prefix+'/system/server-info-reply')
+        msg.append(self.this_unit_name)
+        msg.append(self.input_server.getOSCAddressSpace())
+        self.mon.log(self,'Sent Server Info reply to %s:' % OSC.getUrlStr(source))
         return msg
 
 
+    # reply to master unit with a loopback message
     def loopback_handler(self,addr, tags, stuff, source):
-         # send a reply to the client.
-        msg = OSC.OSCMessage(self.prefix+'/'+self.options.controlled_by_name+'/system/loopback-reply')
+        msg = OSC.OSCMessage(self.prefix+'/system/loopback-reply')
+        self.mon.log(self,'Sent loopback reply to %s:' % OSC.getUrlStr(source))
         return msg
 
-    
+
+ 
     def open_show_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('open ',args,1)
         
     def close_show_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('close ', args,1)
+
+    def monitor_handler(self,address, tags, args, source):
+        self.prepare_show_command_callback('monitor ', args,1)
 
     def exitpipresents_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('exitpipresents',args,0)
@@ -158,79 +365,46 @@ class OSCDriver(object):
             self.mon.warn(self,'OSC input event does not have 1 argument - ignoring')    
 
 
-    def output_event_handler(self,address, tags, args, source):
+    def animate_handler(self,address, tags, args, source):
         if len(args) !=0:
             # delay symbol,param_type,param_values,req_time as a string
             text='0 '
             for arg in args:
                 text= text+ arg + ' '
             text = text + '0'
-            self.output_event_callback(text)
+            print text
+            self.animate_callback(text)
         else:
             self.mon.warn(self,'OSC output event has no arguments - ignoring')      
 
+# **************************************
+# Handlers for Master- replies from slaves (output)
+# **************************************
 
-    #send messages to controlled units
-    # parses the message string into fields and sends - NO error checking
-    def send_command(self,text):
-        self.mon.log(self,'send OSC Command: ' + text )
-        if self.this_unit_type not in ('master','remote','master+slave'):
-            self.mon.warn(self,'Unit is not an OSC Master, ignoring command')
-            return
-        fields=text.split()
-        address = fields[0]
-        # print 'ADDRESS'+address
-        address_fields=address[1:].split('/')
-        if address_fields[0] != 'pipresents':
-            self.mon.warn(self,'prefix is not pipresents: '+address_fields[0])
-        if address_fields[1] != self.options.controlled_unit_1_name:
-             self.mon.warn(self,'not sending OSC to the controlled unit: ' +self.options.controlled_unit_1_name + ' is '+ address_fields[1])
-        arg_list=fields[1:]
-        self.send(address,arg_list)
-
-
-    def send(self,address,arg_list):
-        # print self.command_client
-        msg = OSC.OSCMessage()
-        # print address
-        msg.setAddress(address)
-        for arg in arg_list:
-            # print arg
-            msg.append(arg)
-        self.command_client.send(msg)    
-
-
-
-
-class Options(object):
-
-    def __init__(self,app_dir):
-        self.options_file = app_dir+os.sep+'pp_osc.cfg'
-    
-    
-    def read(self):
-        if os.path.exists(self.options_file):
-            config=ConfigParser.ConfigParser()
-            config.read(self.options_file)
-            
-            # this unit
-            self.this_unit_type = config.get('this-unit','type',0)
-            self.this_unit_name = config.get('this-unit','name',0)
-            self.this_unit_ip=config.get('this-unit','ip',0)
-            self.this_unit_port =  config.get('this-unit','port',0)  #listen on this port for messages and for replies from controlled units
-            #used to send replies to the controlled unit
-            self.controlled_by_ip =  config.get('this-unit','controlled-by-ip',0)
-            self.controlled_by_port= config.get('this-unit','controlled-by-port',0)
-            self.controlled_by_name=config.get('this-unit','controlled-by-name',0)
-            controlled_units=config.get('this-unit','controlled-units',0)
-            # controller1
-            self.controlled_unit_1_ip = config.get('controlled-unit-1','controlled-unit-ip',0)
-            self.controlled_unit_1_port = config.get('controlled-unit-1','controlled-unit-port',0)
-            self.controlled_unit_1_name = config.get('controlled-unit-1','controlled-unit-name',0)
-            return True
-        else:
-            return False
+    # reply handlers do not have the destinatuion unit in the address as they are always sent to the originator
+    def add_output_reply_handlers(self,server):
+        server.addMsgHandler(self.prefix+"/system/server-info-reply", self.server_info_reply_handler)
+        server.addMsgHandler(self.prefix+"/system/loopback-reply", self.loopback_reply_handler)
         
+        
+    # print result of info request from slave unit
+    def server_info_reply_handler(self,addr, tags, stuff, source):
+        self.mon.log(self,'server info reply from slave '+OSC.getUrlStr(source)+ self.pretty_list(stuff,'\n'))
+        print 'Received reply to Server-Info command from slave: ',OSC.getUrlStr(source), self.pretty_list(stuff,'\n')
+        return None
+
+    #print result of info request from slave unit
+    def loopback_reply_handler(self,addr, tags, stuff, source):
+        self.mon.log(self,'server info reply from slave '+OSC.getUrlStr(source)+ self.pretty_list(stuff,'\n'))
+        print 'Received reply to Loopback command from slave: ' + OSC.getUrlStr(source)+ ' '+ self.pretty_list(stuff,'\n')
+        return None
+
+
+    def pretty_list(self,fields, separator):
+        text=' '
+        for field in fields:
+            text += str(field) + separator
+        return text+'\n'
 
 
 
@@ -244,15 +418,15 @@ if __name__ == '__main__':
 
     def show_command_callback(text):
         pass
-        # print 'show control command: '+text
+        print 'show control command: '+text
 
     def input_event_callback(text):
         pass
-        # print 'input event: '+ text
+        print 'input event: '+ text
         
     def output_event_callback(args):
         pass
-        # print 'animate: ' + pretty_list(args)
+        print 'animate: ' + pretty_list(args)
 
 
     od = OSCDriver('/home/pi/pipresents',show_command_callback,input_event_callback,output_event_callback)

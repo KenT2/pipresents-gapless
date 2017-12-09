@@ -32,7 +32,7 @@ from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_web_validate import Validator
 from pp_definitions import PPdefinitions
-from pp_oscwebconfig import OSCConfig,OSCWebEditor, OSCUnitType
+from pp_oscwebconfig import OSCConfig,OSCWebEditor
 
 
 class PPWebEditor(App):
@@ -58,7 +58,6 @@ class PPWebEditor(App):
         self.eo=Options()
         self.eo.init_options(self.editor_dir)
         self.osc_config=OSCConfig()
-        self.osc_ute= OSCUnitType()
       
         # initialise variables
         self.init() 
@@ -258,11 +257,9 @@ class PPWebEditor(App):
         osc_create_menu.set_on_click_listener(self.create_osc)
         osc_edit_menu = gui.MenuItem( 'Edit',width=120, height=30)
         osc_edit_menu.set_on_click_listener(self.edit_osc)
-        osc_delete_menu = gui.MenuItem( 'Delete',width=120, height=30)
-        osc_delete_menu.set_on_click_listener(self.delete_osc)
         osc_menu.append(osc_create_menu)
         osc_menu.append(osc_edit_menu)
-        osc_menu.append(osc_delete_menu)
+
 
         config_menu=gui.MenuItem( 'Config',width=80, height=30)
         config_menu.append(osc_menu)
@@ -444,26 +441,9 @@ class PPWebEditor(App):
         if self.osc_config.read() is False:
             OKDialog('Create OSC','Create an OSC Configuration File first').show(self)
             return
-        self.osc_ute.edit(self.edit_osc_callback)
-        self.osc_ute.show(self)
-
-    def edit_osc_callback(self):
-        # self.osc_ute.hide()
-        # print 'edit callback', OSCConfig.current_unit_type
         self.osc_editor=OSCWebEditor()
-        if OSCConfig.current_unit_type != '':
-            self.osc_editor.edit()
-            self.osc_editor.show(self)
-   
-    def delete_osc(self,widget):
-        if self.pp_profile_dir=='':
-            OKDialog('Delete OSC','Profile must be open to delete an OSC configuration file').show(self)
-            return
-        if self.osc_config.read() is False:
-            OKDialog('Delete OSC','Nothing to Delete').show(self)
-            return
-        self.osc_config.delete()
-        OKDialog('Delete OSC','OSC Configuration Deleted').show(self)        
+        self.osc_editor.edit()
+        self.osc_editor.show(self)
 
 
 

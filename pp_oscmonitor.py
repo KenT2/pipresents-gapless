@@ -1,10 +1,12 @@
 #! /usr/bin/env python
+
 """
 Heavily modified from the examples here, with thanks:
 sending OSC with pyOSC
 https://trac.v2.nl/wiki/pyOSC
 example by www.ixi-audio.net based on pyOSC documentation
 """
+
 from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry,Text
 from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
 import tkFileDialog
@@ -17,7 +19,7 @@ import shutil
 import json
 import copy
 import string
-import OSC
+import OSC_plus as OSC
 import time, threading
 
 from pp_utils import Monitor
@@ -35,8 +37,6 @@ class OSCMonitor(object):
 
     def __init__(self):
     
-        self.editor_issue="1.3"
-
         # get command options
         self.command_options=remote_options()
 
@@ -61,11 +61,23 @@ class OSCMonitor(object):
         self.mon.log (self," OS and separator " + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: code "+sys.path[0])
 
-        self.setup_gui()
+        self.root = Tk()
 
         # initialise OSC config class
         self.osc_config=OSCConfig()
 
+        # read the options and allow their editing
+        self.osc_config_file = self.pp_dir + os.sep + 'pp_config' + os.sep + 'pp_oscmonitor.cfg'
+        self.read_create_osc()
+
+        if self.osc_config.slave_enabled !='yes':
+            self.mon.err(self,'OSC Slave is not enabled in pp_oscmonitor.cfg')
+            exit()
+            
+        #build gui
+        self.setup_gui()
+
+        # initialise
         self.init()
 
         #and start the system
@@ -74,9 +86,10 @@ class OSCMonitor(object):
 
 
     def init(self):
-        # read the options and allow their editing
-        self.osc_config_file = self.pp_dir + os.sep + 'pp_config' + os.sep + 'pp_oscmonitor.cfg'
-        self.read_create_osc()
+        self.desc.set('Listening for Commands from Master on: '+ self.osc_config.this_unit_ip + ':'+self.osc_config.listen_port)
+        self.client=None
+        self.server=None
+        self.st=None
 
 
     def add_status(self,text):
@@ -84,23 +97,37 @@ class OSCMonitor(object):
         self.status_display.see(END)
 
     def run_app(self):
+
+        if self.osc_config.slave_enabled !='yes':
+            self.mon.err(self,'Slave not enabled in oscmonitor.cfg')
+            return
+
+        if self.osc_config.this_unit_ip =='':
+            self.mon.err(self,'IP of own unit must be provided in oscmonitor.cfg')
+            return
+
+        if self.osc_config.listen_port =='':
+            self.mon.err(self,'Listen port must be provided in oscmonitor.cfg')
+            return
+        
         self.client=None
         self.server=None
         self.st=None
+
+
         
         # initialise OSC variables
+
         self.prefix='/pipresents'
         self.this_unit='/' + self.osc_config.this_unit_name
-        self.add_status('this unit is: '+self.this_unit)
-        self.controlled_by_unit='/'+self.osc_config.controlled_by_name
-        self.add_status('controlled by unit : '+self.controlled_by_unit)
-       
+        self.add_status('this unit OSC address is: '+self.this_unit)
+        self.add_status('Listening for Commands from Master on: '+ self.osc_config.this_unit_ip + ':'+self.osc_config.listen_port)
+
+
+
         #connect client for replies then start server to listen for commands
         self.client = OSC.OSCClient()
-        self.add_status('connecting to controlled by unit: '+self.osc_config.controlled_by_ip+':'+self.osc_config.controlled_by_port +' '+self.osc_config.controlled_by_name)
-        self.client.connect((self.osc_config.controlled_by_ip,int(self.osc_config.controlled_by_port)))
-        self.add_status('listening for commands on:'+self.osc_config.this_unit_ip+':'+self.osc_config.this_unit_port)
-        self.init_server(self.osc_config.this_unit_ip,self.osc_config.this_unit_port,self.client)
+        self.init_server(self.osc_config.this_unit_ip,self.osc_config.listen_port,self.client)
         self.add_initial_handlers()
         self.start_server()
 
@@ -121,11 +148,10 @@ class OSCMonitor(object):
     # ***************************************
 
     def init_server(self,ip,port_text,client):
-        self.add_status('Init Server: '+ip+':'+port_text)
+        self.mon.log(self,'Init Server: '+ip+':'+port_text)
         self.server = myOSCServer((ip,int(port_text)),client)
 
     def start_server(self):
-        self.add_status('Start Server')
         self.st = threading.Thread( target = self.server.serve_forever )
         self.st.start()
 
@@ -152,16 +178,26 @@ class OSCMonitor(object):
 
 
     def server_info_handler(self,addr, tags, stuff, source):
-        msg = OSC.OSCMessage(self.prefix+self.controlled_by_unit+'/system/server-info-reply')
-        msg.append('Unit: '+ self.osc_config.this_unit_name)
-        self.add_status('Server Info Request from %s:' % OSC.getUrlStr(source))           
+        # send a reply to the client.         
+        msg = OSC.OSCMessage(self.prefix+'/system/server-info-reply')
+        msg.append(self.osc_config.this_unit_name)
+        msg.append(self.server.getOSCAddressSpace())
+        
+        text= "Message from %s" % OSC.getUrlStr(source)+'\n'
+        text+= "     %s" % addr+ self.pretty_list(stuff)
+        self.add_status(text)
+        self.add_status('Sent reply to Server Info request to %s:' % OSC.getUrlStr(source)+'\n')
         return msg
 
 
     def loopback_handler(self,addr, tags, stuff, source):
-         # send a reply to the client.
-        msg = OSC.OSCMessage(self.prefix+self.controlled_by_unit+'/system/loopback-reply')
-        self.add_status('Loopback Request from %s:' % OSC.getUrlStr(source))
+
+        # send a reply to the client.
+        msg = OSC.OSCMessage(self.prefix+'/system/loopback-reply')
+        
+        text= "Message from %s" % OSC.getUrlStr(source)+'\n'
+        text+= "     %s" % addr+ self.pretty_list(stuff)
+        self.add_status(text +'\n' + 'Sent reply to Loopback request to %s:' % OSC.getUrlStr(source)+'\n')
         return msg      
 
 
@@ -182,6 +218,7 @@ class OSCMonitor(object):
         self.disconnect_client()
         self.close_server()
         self.edit_osc()
+        self.read_create_osc()
         self.init()
         self.add_status('\n\n\nRESTART')
         self.run_app()
@@ -210,7 +247,6 @@ class OSCMonitor(object):
         # set up the gui
  
         # root is the Tkinter root widget
-        self.root = Tk()
         self.root.title("Remote Monitor for Pi Presents")
 
         # self.root.configure(background='grey')
@@ -221,6 +257,7 @@ class OSCMonitor(object):
         self.root.protocol ("WM_DELETE_WINDOW", self.app_exit)
 
         # bind some display fields
+        self.desc=StringVar()
         self.filename = StringVar()
         self.display_show = StringVar()
         self.results = StringVar()
@@ -228,9 +265,6 @@ class OSCMonitor(object):
 
         # define menu
         menubar = Menu(self.root)
-
-        toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='Tools', menu = toolsmenu)
 
         osc_configmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         menubar.add_cascade(label='Options', menu = osc_configmenu)
@@ -243,13 +277,22 @@ class OSCMonitor(object):
          
         self.root.config(menu=menubar)
 
+        # info frame
+        info_frame=Frame(self.root,padx=5,pady=5)
+        info_frame.pack(side=TOP, fill=BOTH, expand=1)
+        info_name = Label(info_frame, text="Slave Unit's Name: "+self.osc_config.this_unit_name,font="arial 12 bold")
+        info_name.pack(side=TOP)
+        info_this_address = Label(info_frame, textvariable=self.desc,font="arial 12 bold")
+        info_this_address.pack(side=TOP)
+
+        
         # status_frame      
         status_frame=Frame(self.root,padx=5,pady=5)
         status_frame.pack(side=TOP, fill=BOTH, expand=1)
-        status_label = Label(status_frame, text="Status",font="arial 12 bold")
+        status_label = Label(status_frame, text="Status:",font="arial 12 bold")
         status_label.pack(side=LEFT)
         scrollbar = Scrollbar(status_frame, orient=VERTICAL)
-        self.status_display=Text(status_frame,height=10, yscrollcommand=scrollbar.set)
+        self.status_display=Text(status_frame,height=20, yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.status_display.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.status_display.pack(side=LEFT,fill=BOTH, expand=1)
@@ -261,7 +304,7 @@ class OSCMonitor(object):
 
     def read_create_osc(self):
         if self.osc_config.read(self.osc_config_file) is False:
-            self.osc_config.create(self.osc_config_file)
+            self.osc_config.create(self.osc_config_file,'slave')
             eosc = OSCEditor(self.root, self.osc_config_file,'slave','Create OSC Monitor Configuration')
             self.osc_config.read(self.osc_config_file)
 

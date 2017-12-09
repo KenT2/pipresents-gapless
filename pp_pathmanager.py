@@ -100,7 +100,7 @@ class PathManager(object):
     def parse_link(self,line,allowed_list):
         fields = line.split()
         if len(fields)<2 or len(fields)>3:
-            return "incorrect number of fields in link",['','','']
+            return "incorrect number of fields in command",['','','']
         symbol=fields[0]
         operation=fields[1]
         if operation in allowed_list or operation[0:4] == 'omx-' or operation[0:6] == 'mplay-'or operation[0:5] == 'uzbl-':

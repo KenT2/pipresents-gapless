@@ -143,6 +143,7 @@ class Network(object):
 
     def __init__(self):
         self.mon=Monitor()
+        self.force_ip=''
 
     def get_ip(self):
         return Network.interface, Network.ip

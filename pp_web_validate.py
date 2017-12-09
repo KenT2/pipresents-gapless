@@ -820,70 +820,104 @@ class Validator(AdaptableDialog):
         lines = text.split("\n")
         for line in lines:
             self.check_show_control_fields(line,v_show_labels)
+            
 
     def check_show_control_fields(self,line,v_show_labels):
         fields = line.split()
         if len(fields) == 0:
             return
-
         elif fields[0]=='counter':
-            self.check_counters(fields[1:])
+            self.check_counters(line,fields[1:])
             return
         # OSC command
-        elif len(fields)>0 and fields[0][0] =='/':
+        elif fields[0] in ('osc','OSC'):
+            if len(fields)<3:
+                self.display('f','Show control - Too few fields in OSC command: ' + line)
                 return
-        elif len(fields)==1:
-            if fields[0] not in ('exitpipresents','shutdownnow'):
+            else:
+                dest=fields[1]
+                self.check_osc(line,dest,fields[2:],v_show_labels)
+            return
+
+        if fields[0] not in ('exitpipresents','shutdownnow','open','close','monitor','event'):
                 self.display('f','Show control - Unknown command in: ' + line)
                 return
-        elif len(fields) == 2:
+            
+        if len(fields)==1:
+            if fields[0] not in ('exitpipresents','shutdownnow'):
+                self.display('f','Show control - Incorrect number of fields in: ' + line)
+                return
+            
+        if len(fields) == 2:
             if fields[0] not in ('open','close','monitor','event'):
-                self.display('f','Show Control - Unknown command in: ' + line)
+                self.display('f','Show Control - Incorrect number of fields: ' + line)
             else:
                 if fields[0] =='monitor' and fields[1] not in ('on','off'):
-                    self.display('f',"Show Control - monitor paramter not on or off: "+ line)
+                    self.display('f',"Show Control - monitor parameter not on or off: "+ line)
                     return
 
                 if fields[0] in ('open','close') and fields[1] not in v_show_labels:
                     self.display('f',"Show Control - cannot find Show Reference: "+ line)
                     return
-        else:
-            self.display('f','Show Control - Incorrect number of fields in: ' + line)
-            return
 
 
-    def check_counters(self,fields):
+
+    def check_osc(self,line,dest,fields,v_show_labels):
+        if fields[0] not in ('exitpipresents','shutdownnow','open','close','monitor','event','send','server-info','loopback','animate'):
+                self.display('f','Show control - Unknown command in: ' + line)
+                return
+            
+        if len(fields)==1:
+            if fields[0] not in ('exitpipresents','shutdownnow','server-info','loopback'):
+                self.display('f','Show control, OSC - Incorrect number of fields in: ' + line)
+                return
+            
+        if len(fields) == 2:
+            if fields[0] not in ('open','close','monitor','event','send'):
+                self.display('f','Show Control, OSC - Incorrect number of fields: ' + line)
+            else:
+                if fields[0] =='monitor' and fields[1] not in ('on','off'):
+                    self.display('f',"Show Control, OSC - monitor parameter not on or off: "+ line)
+                    return
+
+                if fields[0] in ('open','close') and fields[1] not in v_show_labels:
+                    self.display('f',"Show Control,OSC - cannot find Show Reference: "+ line)
+                    return
+
+ 
+
+    def check_counters(self,line,fields):
         if len(fields) < 2:
-            self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+            self.display('f','Show Control too few fields in counter command - ' + ' ' +line)
             return          
         name=fields[0]
         command=fields[1]
         
         if command =='set':
             if len(fields) < 3:
-                self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+                self.display('f','Show Control too few fields in counter command - ' +line)
                 return          
 
             value=fields[2]
             if not value.isdigit():
-                self.display('f','Show Control: value of counter is not a positive integer - ' + ' '.join(fields))
+                self.display('f','Show Control: value of counter is not a positive integer - ' +line)
                 return
 
         elif command in ('inc','dec'):
             if len(fields) < 3:
-                self.display('f','Show Control too few fields in counter command - ' + ' '.join(fields))
+                self.display('f','Show Control too few fields in counter command - '  +line)
                 return          
 
             value=fields[2]
             if not value.isdigit():
-                self.display('f','Show Control: value of counter is not a positive integer - ' + ' '.join(fields))
+                self.display('f','Show Control: value of counter is not a positive integer - ' +line)
                 return      
         
         elif command =='delete':
             return
 
         else:
-            self.display('f','Show Control: illegal counter comand - '+ ' '.join(fields))
+            self.display('f','Show Control: illegal counter comand - ' +line)
             return      
 
         return
@@ -897,10 +931,8 @@ class Validator(AdaptableDialog):
     def check_animate_fields(self,field,line):
         fields= line.split()
         if len(fields) == 0: return
-            
-        if len(fields)>4: self.display('f','Too many fields in: ' + field + ", " + line)
 
-        if len(fields)<4:
+        if len(fields)<3:
             self.display('f','Too few fields in: ' + field + ", " + line)
             return
 
@@ -911,11 +943,16 @@ class Validator(AdaptableDialog):
         # name not checked - done at runtime
 
         out_type = fields[2]
-        if out_type != 'state': self.display('f','Unknownl type in: ' + field + ", " + line)
-        
-        to_state_text=fields[3]
-        if not (to_state_text  in ('on','off')): self.display('f','Unknown parameter in: ' + field + ", " + line)
-        
+
+        if out_type in ('state',):
+            if len(fields) != 4:
+                   self.display('f','wrong number of fields for State: ' + field + ", " + line)
+            else:                   
+                to_state_text=fields[3]
+                if (to_state_text not in ('on','off')): self.display('f','Unknown parameter value in: ' + field + ", " + line)
+        else:
+            self.display('w','Unknown parameter type in: ' + field + ", " + line + ' This could be due to use of a new I/O plugin')
+
         return
     
 

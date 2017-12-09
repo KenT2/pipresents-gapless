@@ -185,29 +185,30 @@ class Animate(object):
         if len(fields) == 0:
             return 'normal','no fields','','',[],0
             
-        elif len(fields) < 4: 
-            return 'error','Wrong number of fields in : '+ line,'','',[],0
+        elif len(fields) < 3: 
+            return 'error','too few fields in : '+ line,'','',[],0
 
         delay_text=fields[0]
-        name=fields[1]
-        param_type=fields[2]
-        start_params = 3
-       
         # check each field
         if  not delay_text.isdigit():
             return 'error','Delay is not an integer in : '+ line,'','',[],0
         else:
             delay=int(delay_text)
+            
+        name=fields[1]
 
-        #only one param type at the moment.
-        if param_type == '':
-            return 'error','blank parameter type in : '+ line,'','',[],0
 
-        params=[]
-        for index in range(start_params, len(fields)):
-            param=fields[index]
-            params.append(param)
-  
+        if len(fields)==2:
+            param_type=''
+            params=[]
+        else:
+            param_type=fields[2]
+            params=[]
+            for index in range(3, len(fields)):
+                param=fields[index]
+                params.append(param)
+    
+        # print 'event parsed OK',delay,name,param_type,params
         return 'normal','event parsed OK',delay,name,param_type,params
         
 

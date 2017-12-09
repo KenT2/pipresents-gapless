@@ -48,5 +48,6 @@ def remote_options():
     """ reads the command line options and returns a dictionary of them"""
     parser = argparse.ArgumentParser(description = 'Pi Presents Remote')
     parser.add_argument( '-d','--debug', nargs='?', default='7', const='15',help='Debug output to terminal window')
+    parser.add_argument( '-o','--home', nargs='?', default="/home/pi", const='',help='Path to pp_home')
     args=parser.parse_args()
     return  vars(args)

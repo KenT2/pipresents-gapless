@@ -18,6 +18,8 @@ class OSCConfig(object):
 
 
     def read(self):
+        self.is_slave='no'
+        self.is_master='no'
         # print 'in read',OSCConfig.options_file
         if os.path.exists(OSCConfig.options_file) is True:
             # reads options from options file
@@ -26,31 +28,18 @@ class OSCConfig(object):
 
             # this unit
             self.this_unit_name = config.get('this-unit','name',0)
-            self.this_unit_ip=config.get('this-unit','ip',0)
-            self.this_unit_port =  config.get('this-unit','port',0)  #listen on this port for messages and for replies from controlled units
-            self.this_unit_type = config.get('this-unit','type')
+            self.this_unit_ip = config.get('this-unit','ip',0)
 
-            if self.this_unit_type in ('master','remote','master+slave'):
-                this_unit_controlled_units = config.get('this-unit','controlled-units',0)
-                # controller1
-                self.controlled_unit_1_ip = config.get('controlled-unit-1','controlled-unit-ip',0)
-                self.controlled_unit_1_port = config.get('controlled-unit-1','controlled-unit-port',0)            
-                self.controlled_unit_1_name = config.get('controlled-unit-1','controlled-unit-name',0)
-                
-            if self.this_unit_type in ('slave','master+slave'):
-                # controlled by
-                self.controlled_by_ip = config.get('this-unit','controlled-by-ip',0)
-                self.controlled_by_port = config.get('this-unit','controlled-by-port',0)            
-                self.controlled_by_name = config.get('this-unit','controlled-by-name',0)
-                
-            if self.this_unit_type == 'remote':
-                self.pp_home_dir =config.get('paths','home',0)
-                self.pp_profiles_offset =config.get('paths','offset',0)
-            OSCConfig.current_unit_type=self.this_unit_type
+            self.slave_enabled= config.get('slave','enabled',0)
+            self.listen_port =  config.get('slave','listen-port',0)  #listen on this port for messages
+
+            self.master_enabled= config.get('master','enabled',0)                                  
+            self.reply_listen_port = config.get('master','reply-listen-port',0)           
+            self.slave_units_name = config.get('master','slave-units-name',0)
+            self.slave_units_ip = config.get('master','slave-units-ip',0)
             return True
         else:
             return False
-
 
 
     def create(self):
@@ -58,36 +47,25 @@ class OSCConfig(object):
         if not os.path.exists(OSCConfig.options_file):
             #print'not exist'
             config=ConfigParser.ConfigParser()
-            config.add_section('this-unit')
-            config.set('this-unit','name','')
-            config.set('this-unit','type','Select')
-            config.set('this-unit','ip','')
-            config.set('this-unit','port','') 
             
-            config.set('this-unit','controlled-by-name','')            
-            config.set('this-unit','controlled-by-ip','')
-            config.set('this-unit','controlled-by-port','')
-            config.set('this-unit','controlled-units','')
-            config.add_section('controlled-unit-1')            
-            config.set('controlled-unit-1','controlled-unit-name','') 
-            config.set('controlled-unit-1','controlled-unit-ip','')
-            config.set('controlled-unit-1','controlled-unit-port','')
+            config.add_section('this-unit')
+            config.set('this-unit','ip','')
+            config.set('this-unit','name','')                
 
-            config.add_section('paths')
-            config.set('paths','offset','')
-            if os.name == 'nt':
-                config.set('paths','home',os.path.expanduser('~')+'\pp_home')
-            else:
-                config.set('paths','home',os.path.expanduser('~')+'/pp_home')
+            config.add_section('slave')
+            config.set('slave','enabled','no')            
+            config.set('slave','listen-port','')
 
-            with open(OSCConfig.options_file, 'wb') as config_file:
+                
+            config.add_section('master')
+            config.set('master','enabled','no')
+            config.set('master','reply-listen-port','') 
+            config.set('master','slave-units-name','')
+            config.set('master','slave-units-ip','')                   
+           
+            with open(self.options_file, 'wb') as config_file:
                 config.write(config_file)
-
-
-
-    def delete(self):
-        os.rename(OSCConfig.options_file,OSCConfig.options_file+'.bak')
-        # OKDialog('OSC Delete','OSC Config file deleted').show(self)        
+       
     
 # *************************************
 # OSC Web EDITOR CLASS
@@ -97,52 +75,42 @@ class OSCWebEditor(AdaptableDialog):
     
 
     def __init__(self, *args):
-        super(OSCWebEditor, self).__init__(width=450,height=600,title='<b>Edit OSC Configuration</b>',
+        super(OSCWebEditor, self).__init__(width=550,height=600,title='<b>Edit OSC Configuration</b>',
                                            confirm_name='OK',cancel_name='Cancel')
 
-        if  OSCConfig.current_unit_type=='remote':
-            e_home_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Pi Presents Data Home',e_home_field,key='e_home')            
+        self.append_field(gui.Label('<b>This Unit</b>',width=250,height=30))
+        e_this_unit_name_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('OSC Name of This Unit:',e_this_unit_name_field,key='e_this_unit_name')       
 
-            e_offset_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Offset for Current Profiles:',e_offset_field,key='e_offset')            
+        e_this_unit_ip_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('IP of This Unit:',e_this_unit_ip_field,key='e_this_unit_ip')
 
-        e_type_field = gui.Label('',width=200,height=30)
-        self.append_field_with_label('Type of this Unit:',e_type_field,key='e_type')            
+        #SLAVE
+        self.append_field(gui.Label('<b>OSC Slave</b>',width=250,height=30))
 
-        e_remote_name_field = gui.TextInput(width=200,height=30)
-        self.append_field_with_label('Name of This Unit:',e_remote_name_field,key='e_remote_name')       
-
-        e_remote_ip_field = gui.TextInput(width=200,height=30)
-        self.append_field_with_label('IP of This Unit:',e_remote_ip_field,key='e_remote_ip')    
+        e_slave_enabled_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('OSC Slave enabled (yes/no):',e_slave_enabled_field,key='e_slave_enabled')  
         
-        e_remote_port_field = gui.TextInput(width=200,height=30)
-        self.append_field_with_label('Listening Port of This Unit:',e_remote_port_field,key='e_remote_port')
+        e_listen_port_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('Port for listening to commands for this Unit',e_listen_port_field,key='e_listen_port')
         
 
-        if  OSCConfig.current_unit_type in ('master','remote','master+slave'):
-            e_controlled_units_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Controlled Units (not used)',e_controlled_units_field,key='e_controlled_units')
+        # MASTER
+        self.append_field(gui.Label('<b>OSC Master</b>',width=250,height=30))
+        
+        e_master_enabled_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('OSC Master enabled (yes/no):',e_master_enabled_field,key='e_master_enabled')  
+        
+        e_reply_listen_port_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('Listen to replies from Slave Unit on Port:',e_reply_listen_port_field,key='e_reply_listen_port')
 
-            e_pipresents_unit_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Name of Controlled Unit',e_pipresents_unit_field,key='e_pipresents_unit')
 
-            e_pipresents_ip_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('IP of Controlled Unit',e_pipresents_ip_field,key='e_pipresents_ip')
+        e_slave_units_name_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('Slave Units OSC Name:',e_slave_units_name_field,key='e_slave_units_name')
 
-            e_pipresents_port_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Listening Port of Controlled Unit',e_pipresents_port_field,key='e_pipresents_port')
-             
-        if  OSCConfig.current_unit_type in('slave','master+slave'):
-            e_controlled_by_unit_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Controlled By Unit',e_controlled_by_unit_field,key='e_controlled_by_unit')
-
-            e_controlled_by_ip_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('IP of Controlled By Unit',e_controlled_by_ip_field,key='e_controlled_by_ip')
-
-            e_controlled_by_port_field = gui.TextInput(width=200,height=30)
-            self.append_field_with_label('Listening Port of Controlled By Unit',e_controlled_by_port_field,key='e_controlled_by_port')
-
+        e_slave_units_ip_field = gui.TextInput(width=250,height=30)
+        self.append_field_with_label('Slave Units IP:',e_slave_units_ip_field,key='e_slave_units_ip')
+        
         return
 
 
@@ -153,41 +121,58 @@ class OSCWebEditor(AdaptableDialog):
         config=ConfigParser.ConfigParser()
         config.read(OSCConfig.options_file)
 
-        if OSCConfig.current_unit_type=='remote':      
-            self.get_field('e_home').set_value(config.get('paths','home',0))
-            self.get_field('e_offset').set_value(config.get('paths','offset',0))
 
-        self.get_field('e_type').set_text(OSCConfig.current_unit_type)
-        self.get_field('e_remote_name').set_value(config.get('this-unit','name',0))
-        self.get_field('e_remote_ip').set_value(config.get('this-unit','ip',0))
-        self.get_field('e_remote_port').set_value(config.get('this-unit','port',0))
+        self.get_field('e_this_unit_name').set_value(config.get('this-unit','name',0))
+        self.get_field('e_this_unit_ip').set_value(config.get('this-unit','ip',0))
+        
+        self.get_field('e_slave_enabled').set_value(config.get('slave','enabled',0))
+        self.get_field('e_listen_port').set_value(config.get('slave','listen-port',0))
 
-        if OSCConfig.current_unit_type in ('master','remote','master+slave'):
-            self.get_field('e_controlled_units').set_value(config.get('this-unit','controlled-units',0))
-            self.get_field('e_pipresents_unit').set_value(config.get('controlled-unit-1','controlled-unit-name',0))
-            self.get_field('e_pipresents_ip').set_value(config.get('controlled-unit-1','controlled-unit-ip',0))
-            self.get_field('e_pipresents_port').set_value(config.get('controlled-unit-1','controlled-unit-port',0))
 
-        if OSCConfig.current_unit_type in ('slave','master+slave'):
-            self.get_field('e_controlled_by_unit').set_value(config.get('this-unit','controlled-by-name',0))
-            self.get_field('e_controlled_by_ip').set_value(config.get('this-unit','controlled-by-ip',0))
-            self.get_field('e_controlled_by_port').set_value(config.get('this-unit','controlled-by-port',0))
+        self.get_field('e_master_enabled').set_value(config.get('master','enabled',0))
+        self.get_field('e_reply_listen_port').set_value(config.get('master','reply-listen-port',0))
+
+
+        self.get_field('e_slave_units_name').set_value(config.get('master','slave-units-name',0))
+        self.get_field('e_slave_units_ip').set_value(config.get('master','slave-units-ip',0))
 
 
 
     def confirm_dialog(self):
-        if OSCConfig.current_unit_type == 'remote':
-            if self.get_field('e_home').get_value().strip() != '':
-                if os.path.exists( self.get_field('e_home').get_value()) is  False:
-                    OKDialog("Pi Presents Remote","Data Home not found").show(self._base_app_instance)
-                    self.hide()
-                    return
-            if self.get_field('e_offset').get_value().strip() != '':
-                if os.path.exists(self.e_home.get()+os.sep+'pp_profiles'+self.get_field('e_offset').get_value()) is  False:
-                    OKDialog("Pi Presents Remote","Current Profles directory not found").show(self._base_app_instance)
-                    self.hide()
-                    return
-        # print 'try save'
+
+        if self.get_field('e_this_unit_name').get_value() =='':
+            OKDialog('OSC Config','This Unit OSC Name must not be blank').show(self._base_app_instance)
+            return
+
+        slave_enabled = self.get_field('e_slave_enabled').get_value().strip()
+        
+        if slave_enabled not in ('yes','no'):
+            OKDialog('OSC Config','Slave Enabled must be yes or no').show(self._base_app_instance)
+            return
+
+        if slave_enabled == 'yes':
+            if not self.get_field('e_listen_port').get_value().isdigit():
+                OKDialog('OSC Config','Listen Port must be a positive integer').show(self._base_app_instance)
+                return
+
+        master_enabled = self.get_field('e_master_enabled').get_value().strip()
+
+        if master_enabled not in ('yes','no'):
+            OKDialog('OSC Config','Master Enabled must be yes or no').show(self._base_app_instance)
+            return
+
+        if master_enabled == 'yes':
+            if not self.get_field('e_reply_listen_port').get_value().isdigit():
+                OKDialog('OSC Config','Reply Listen Port must be a positive integer').show(self._base_app_instance)
+                return
+            
+            if self.get_field('e_slave_units_name').get_value() =='':
+                OKDialog('OSC Config','Slave Units OSC Name must not be blank').show(self._base_app_instance)
+                return
+
+            if self.get_field('e_slave_units_ip').get_value() =='':
+                OKDialog('OSC Config','Slave Units IP must not be blank').show(self._base_app_instance)
+                return
         self.save()
         self.hide()
 
@@ -195,96 +180,27 @@ class OSCWebEditor(AdaptableDialog):
 
 
     def save(self):
-        # print ' in save'
+
         # save the output of the options edit dialog to file
         config=ConfigParser.ConfigParser()
 
-        config.add_section('paths')
-        if OSCConfig.current_unit_type == 'remote':
-            config.set('paths','home',self.get_field('e_home').get_value())
-            config.set('paths','offset',self.get_field('e_offset').get_value())
-        else:
-            config.set('paths','home','')
-            config.set('paths','offset','')
-        
         config.add_section('this-unit')
-        config.set('this-unit','name',self.get_field('e_remote_name').get_value())
-        config.set('this-unit','ip',self.get_field('e_remote_ip').get_value())
-        config.set('this-unit','port',self.get_field('e_remote_port').get_value())
-        config.set('this-unit','type',OSCConfig.current_unit_type)
+        config.set('this-unit','name',self.get_field('e_this_unit_name').get_value())
+        config.set('this-unit','ip',self.get_field('e_this_unit_ip').get_value())
 
-        config.add_section('controlled-unit-1')
-        if OSCConfig.current_unit_type in ('master','remote','master+slave'):
-            config.set('this-unit','controlled-units',self.get_field('e_controlled_units').get_value())
-            config.set('controlled-unit-1','controlled-unit-name',self.get_field('e_pipresents_unit').get_value())
-            config.set('controlled-unit-1','controlled-unit-ip',self.get_field('e_pipresents_ip').get_value())
-            config.set('controlled-unit-1','controlled-unit-port',self.get_field('e_pipresents_port').get_value())
-        else:
-            config.set('this-unit','controlled-units','')
-            config.set('controlled-unit-1','controlled-unit-name','')
-            config.set('controlled-unit-1','controlled-unit-ip','')
-            config.set('controlled-unit-1','controlled-unit-port','')
+        #slave
+        config.add_section('slave')
+        config.set('slave','enabled',self.get_field('e_slave_enabled').get_value())        
+        config.set('slave','listen-port',self.get_field('e_listen_port').get_value())
 
-        if OSCConfig.current_unit_type in ('slave','master+slave'):
-            config.set('this-unit','controlled-by-name',self.get_field('e_controlled_by_unit').get_value())
-            config.set('this-unit','controlled-by-ip',self.get_field('e_controlled_by_ip').get_value())
-            config.set('this-unit','controlled-by-port',self.get_field('e_controlled_by_port').get_value())
-        else:
-            config.set('this-unit','controlled-by-name','')
-            config.set('this-unit','controlled-by-ip','')
-            config.set('this-unit','controlled-by-port','')
+        config.add_section('master')
+        config.set('master','enabled',self.get_field('e_master_enabled').get_value())        
+        config.set('master','reply-listen-port',self.get_field('e_reply_listen_port').get_value())
+        config.set('master','slave-units-name',self.get_field('e_slave_units_name').get_value())
+        config.set('master','slave-units-ip',self.get_field('e_slave_units_ip').get_value())
             
         with open(OSCConfig.options_file, 'wb') as optionsfile:
             config.write(optionsfile)
 
-
-
-# *************************************
-# OSC UNIT TYPE EDITOR CLASS
-# ************************************
-
-class OSCUnitType(AdaptableDialog):
-
-    # define the gui  at initilisation time
-    def __init__(self, *args):
-        super(OSCUnitType, self).__init__(width=500,height=300,title='<b>Select Unit Type</b>',
-                                          confirm_name='OK',cancel_name='Cancel')
-
-        e_current_type_field = gui.Label('',width=200,height=30)
-        self.append_field_with_label('Current Type:',e_current_type_field,key='e_type')
-        e_req_type_field = gui.DropDown(width=200, height=30)
-        c0 = gui.DropDownItem('Select',width=200, height=20)
-        c1 = gui.DropDownItem('master',width=200, height=20)
-        c2 = gui.DropDownItem('slave',width=200, height=20)
-        c3 = gui.DropDownItem('master + slave',width=200, height=20)
-        e_req_type_field.append(c0)
-        e_req_type_field.append(c1)
-        e_req_type_field.append(c2)
-        e_req_type_field.append(c3)
-        self.append_field_with_label('Change Type:',e_req_type_field,key='e_req_type')
-        error_field= gui.Label('',width=400, height=30)
-        self.append_field(error_field,'error')
-        e_req_type_field.set_value(OSCConfig.current_unit_type)
-
-    # populate the gui just before showing it
-    def edit(self,callback):
-        self.callback=callback
-        self.get_field('error').set_text('')
-        self.get_field('e_type').set_text(OSCConfig.current_unit_type)
-        self.get_field('e_req_type').set_value(OSCConfig.current_unit_type)
-
-
-    #called when the user presses the OK button
-    def confirm_dialog(self):
-        req_type=self.get_field('e_req_type').get_value()
-        # print 'confirm uts',req_type
-        if req_type == 'Select':
-            OKDialog('OSC-Select Unit Type','Unit Type not Selected').show(self._base_app_instance)
-            self.get_field('error').set_text('<b>Unit Type not Selected</b>')
-            return
-        OSCConfig.current_unit_type=req_type
-        self.get_field('error').set_text('')
-        self.hide()
-        self.callback()
 
 

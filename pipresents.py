@@ -62,7 +62,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.3"
-        self.pipresents_minorissue = '1.3.3b'
+        self.pipresents_minorissue = '1.3.3c'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -117,6 +117,7 @@ class PiPresents(object):
         
 
         # Monitor.classes=['PiPresents','MediaShow','GapShow','Show','VideoPlayer','Player','OMXDriver']
+        # Monitor.classes=['OSCDriver']
         
         # get global log level from command line
         Monitor.log_level = int(self.options['debug'])
@@ -134,6 +135,13 @@ class PiPresents(object):
 
         self.mon.log(self,'\n'+check_output(["omxplayer", "-v"]))
         self.mon.log(self,'\nGPU Memory: '+check_output(["vcgencmd", "get_mem", "gpu"]))
+
+        if os.geteuid() == 0:
+            print 'Do not run Pi Presents with sudo'
+            self.mon.log(self,'Do not run Pi Presents with sudo')
+            self.mon.finish()
+            sys.exit(102)
+
         
         if "DESKTOP_SESSION" not in os.environ:
             print 'Pi Presents must be run from the Desktop'
@@ -153,13 +161,6 @@ class PiPresents(object):
         self.osc_enabled=False
         self.tod_enabled=False
         self.email_enabled=False
-
-
-        
-        if os.geteuid() == 0:
-            self.mon.err(self,'Do not run Pi Presents with sudo')
-            self.end('error','Do not run Pi Presents with sudo')
-
         
         user=os.getenv('USER')
 
@@ -404,7 +405,9 @@ class PiPresents(object):
         if self.network_connected is True:
             if os.path.exists(self.pp_profile + os.sep + 'pp_io_config'+ os.sep + 'osc.cfg'):
                 self.oscdriver=OSCDriver()
-                reason,message=self.oscdriver.init(self.pp_profile,self.handle_command,self.handle_input_event,self.e_osc_handle_output_event)
+                reason,message=self.oscdriver.init(self.pp_profile,
+                                                   self.unit,self.interface,self.ip,
+                                                   self.handle_command,self.handle_input_event,self.e_osc_handle_animate)
                 if reason == 'error':
                     self.mon.err(self,message)
                     self.end('error',message)
@@ -484,12 +487,12 @@ class PiPresents(object):
 # User inputs
 # ********************
 
-    def e_osc_handle_output_event(self,line):
+    def e_osc_handle_animate(self,line):
         #jump  out of server thread
-        self.root.after(1, lambda arg=line: self.osc_handle_output_event(arg))
+        self.root.after(1, lambda arg=line: self.osc_handle_animate(arg))
 
-    def  osc_handle_output_event(self,line):
-        self.mon.log(self,"output event received: "+ line)
+    def osc_handle_animate(self,line):
+        self.mon.log(self,"animate command received: "+ line)
         #osc sends output events as a string
         reason,message,delay,name,param_type,param_values=self.animate.parse_animate_fields(line)
         if reason == 'error':
@@ -497,7 +500,7 @@ class PiPresents(object):
             self.end(reason,message)
         self.handle_output_event(name,param_type,param_values,0)
 
-               
+    # output events are animate commands       
     def handle_output_event(self,symbol,param_type,param_values,req_time):
             reason,message=self.ioplugin_manager.handle_output_event(symbol,param_type,param_values,req_time)
             if reason =='error':
@@ -550,12 +553,19 @@ class PiPresents(object):
         if command_text.strip()=="":
             return
 
-        if command_text[0]=='/': 
-            if self.osc_enabled is True:
-                self.oscdriver.send_command(command_text)
-            return
-        
         fields= command_text.split()
+
+        if fields[0] in ('osc','OSC'): 
+            if self.osc_enabled is True:
+                status,message=self.oscdriver.parse_osc_command(fields[1:])
+                if status=='warn':
+                    self.mon.warn(self,message)
+                if status=='error':
+                    self.mon.err(self,message)
+                    self.end('error',message)
+                return
+        
+
         if fields[0] =='counter':
             status,message=self.counter_manager.parse_counter_command(fields[1:])
             if status=='error':

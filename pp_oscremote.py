@@ -1,10 +1,12 @@
 #! /usr/bin/env python
+
 """
 Heavily modified from the examples here, with thanks:
 sending OSC with pyOSC
 https://trac.v2.nl/wiki/pyOSC
 example by www.ixi-audio.net based on pyOSC documentation
 """
+
 from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry,Text
 from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W
 import tkFileDialog
@@ -25,7 +27,7 @@ from pp_options import remote_options
 from pp_oscconfig import OSCConfig,OSCEditor
 from pp_showlist import ShowList
 
-import OSC
+import OSC_plus as OSC
 import time, threading
 
 class OSCRemote(object):
@@ -58,12 +60,21 @@ class OSCRemote(object):
         self.mon.log (self," OS and separator " + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: code "+sys.path[0])
 
-        self.setup_gui()
+        self.root = Tk()
 
         # OSC config class
         self.osc_config=OSCConfig()
+        self.osc_config_file = self.pp_dir + os.sep + 'pp_config' + os.sep + 'pp_oscremote.cfg'
+        self.read_create_osc()
 
+        self.setup_gui()
+
+        if self.osc_config.this_unit_ip =='':
+            self.mon.err(self,'IP of own unit must be provided in oscremote.cfg')
+
+      
         self.init()
+
 
         #and start the system
         self.root.after(1000,self.run_app)
@@ -71,12 +82,11 @@ class OSCRemote(object):
 
 
     def init(self):
-        self.osc_config_file = self.pp_dir + os.sep + 'pp_config' + os.sep + 'pp_oscremote.cfg'
-        self.read_create_osc()
-        self.pp_home_dir = self.osc_config.pp_home_dir
-        self.pp_profiles_offset = self.osc_config.pp_profiles_offset
+        #self.osc_config_file = self.pp_dir + os.sep + 'pp_config' + os.sep + 'pp_oscremote.cfg'
+        #self.read_create_osc()
+          
+        self.pp_home_dir = self.command_options['home']+'/pp_home'
         self.mon.log(self,"Data Home from options is "+self.pp_home_dir)
-        self.mon.log(self,"Current Profiles Offset from options is "+self.pp_profiles_offset)
         self.pp_profile_dir=''
 
         self.current_showlist=None
@@ -84,32 +94,39 @@ class OSCRemote(object):
         self.current_show_ref=''
         self.shows_display.delete(0,END)
         self.results.set('')
-
+        self.desc.set('Listening to replies from Slave on: ' + self.osc_config.this_unit_ip + ':' + self.osc_config.reply_listen_port)
         
     def add_status(self,text):
         self.status_display.insert(END,text+'\n')
         self.status_display.see(END)
 
     def run_app(self):
-        self.client=None
-        self.server=None
-        self.st=None
+
+        self.output_client=None
+        self.output_reply_server=None
+        self.output_reply_thread=None
+
+        if self.osc_config.master_enabled !='yes':
+            self.mon.err(self,'OSC Master is not enabled in oscremote.cfg')
+            return
+
+        if self.osc_config.reply_listen_port =='':
+            self.mon.err(self,'Reply Listen port is not set in oscremote.cfg')
+            return
         
-        # initialise OSC variables
+               
         self.prefix='/pipresents'
         self.this_unit='/' + self.osc_config.this_unit_name
-        self.add_status('this unit is: '+self.this_unit)
-        self.controlled_unit='/'+self.osc_config.controlled_unit_1_name
-        self.add_status('controlled unit is: '+self.controlled_unit)
+        self.add_status("This unit's OSC address is: "+self.this_unit)
+        self.slave_unit='/'+self.osc_config.slave_units_name
+        self.add_status('Slave unit OSC address is: '+self.slave_unit)
        
-        #connect client then start server to listen for replies
-        self.init_client()
-        self.add_status('connecting to controlled unit: '+self.osc_config.controlled_unit_1_ip+':'+self.osc_config.controlled_unit_1_port +' '+self.osc_config.controlled_unit_1_name)
-        self.connect_client(self.osc_config.controlled_unit_1_ip,self.osc_config.controlled_unit_1_port)
-        self.add_status('listening for replies on:'+self.osc_config.this_unit_ip+':'+self.osc_config.this_unit_port)
-        self.init_server(self.osc_config.this_unit_ip,self.osc_config.this_unit_port,self.client)
-        self.add_initial_handlers()
-        self.start_server()
+        #connect client sending commands to slave unit then start server to listen for replies
+        self.output_client=self.init_client()
+        self.add_status('Listening for replies from slave on: '+self.osc_config.this_unit_ip + ':' + self.osc_config.reply_listen_port)
+        self.output_reply_server=self.init_server(self.osc_config.this_unit_ip,self.osc_config.reply_listen_port,self.output_client)
+        self.add_output_reply_handlers()
+        self.output_reply_thread=self.start_server(self.output_reply_server)
 
 
 # ***************************************
@@ -164,8 +181,13 @@ class OSCRemote(object):
         self.display_msg_text()
 
 
-    def output(self):
-        self.msg_path= '/core/output'
+    def animate(self):
+        self.msg_path= '/core/animate'
+        self.msg_arg_text=''
+        self.display_msg_text()
+
+    def display_control(self):
+        self.msg_path= '/core/monitor'
         self.msg_arg_text=''
         self.display_msg_text()
 
@@ -183,19 +205,28 @@ class OSCRemote(object):
 
     # and put the created text in the results box in the gui
     def display_msg_text(self):
-        self.results.set(self.prefix+self.controlled_unit+self.msg_path+' '+self.msg_arg_text)
+        self.results.set(self.prefix+self.slave_unit+self.msg_path+' '+self.msg_arg_text)
 
 
-    #calback from the Send button
+    #respond to the Send button
     # parses the message string into fields and sends - NO error checking
     def send_message(self):
+        if self.slave_unit =='/':
+            self.mon.err(self,'slave unit OSC name not set')
+            return
+        if self.osc_config.slave_units_ip=='':
+            self.mon.err(self,'slave unit IP not set')
+            return
         msg_text=self.results.get()
-        self.add_status('Send message:'+msg_text)
-        self.mon.log(self,'send message: ' + msg_text )
+        if msg_text=='':
+            return
         fields=msg_text.split()
-        address = fields[0]
+        osc_address = fields[0]
         arg_list=fields[1:]
-        self.send(address,arg_list)
+        dest=(self.osc_config.slave_units_ip,int(self.osc_config.reply_listen_port))
+        self.add_status('Send message:'+msg_text+ ' to '+ str(dest))
+        self.mon.log(self,'send message: ' + msg_text )
+        self.sendto(self.output_client,dest,osc_address,arg_list)
 
 
     # ***************************************
@@ -203,24 +234,25 @@ class OSCRemote(object):
     # ***************************************
 
     def init_client(self):
-       self.client = OSC.OSCClient()
-
-    def connect_client(self,ip,port):
-        self.mon.log(self,'connect to: '+ip+':'+str(port))
-        self.client.connect( (ip, int(port)) ) 
+       return OSC.OSCClient()
 
 
-    def send(self,address,arg_list):
+    def sendto(self,client,dest, address,arg_list):
         msg = OSC.OSCMessage()
         msg.setAddress(address)
         for arg in arg_list:
             msg.append(arg)
-        self.client.send(msg)    
+        try:
+            client.sendto(msg,dest) 
+        except Exception as e:
+            self.mon.err(self,'error in client when sending OSC command: '+ str(e))
+   
 
 
-    def disconnect_client(self):
-        self.client.close()
-        return
+    def disconnect_client(self,client):
+        if client != None:
+            client.close()
+            return
 
 
     # ***************************************
@@ -229,47 +261,49 @@ class OSCRemote(object):
 
     def init_server(self,ip,port_text,client):
         self.mon.log(self,'Start Server: '+ip+':'+port_text)
-        self.server = OSC.OSCServer((ip,int(port_text)),client)
+        return OSC.OSCServer((ip,int(port_text)),client)
 
-    def start_server(self):
-        self.st = threading.Thread( target = self.server.serve_forever )
-        self.st.start()
+    def start_server(self,server):
+        st = threading.Thread( target = server.serve_forever )
+        st.start()
+        return st
 
-    def close_server(self):
-        if self.server != None:
-            self.server.close()
+    def close_server(self,server,st):
+        if server != None:
+            server.close()
         self.mon.log(self, 'Waiting for Server-thread to finish')
-        if self.st != None:
-            self.st.join() ##!!!
+        if st != None:
+            st.join() ##!!!
         self.mon.log(self,'server thread closed')
 
 
-    def add_initial_handlers(self):
-        self.server.addMsgHandler('default', self.no_match_handler)     
-        self.server.addMsgHandler(self.prefix+self.this_unit+"/system/loopback-reply", self.loopback_reply_handler)
-        self.server.addMsgHandler(self.prefix+self.this_unit+"/system/server-info-reply", self.server_info_reply_handler)
+    def add_output_reply_handlers(self):
+        self.output_reply_server.addMsgHandler('default', self.no_match_handler)     
+        self.output_reply_server.addMsgHandler(self.prefix+"/system/loopback-reply", self.loopback_reply_handler)
+        self.output_reply_server.addMsgHandler(self.prefix+"/system/server-info-reply", self.server_info_reply_handler)
 
     def no_match_handler(self,addr, tags, stuff, source):
-        text=''
-        text+= "no match for new osc msg from %s" % OSC.getUrlStr(source)+'\n'
-        text+= "with addr : %s" % addr+'\n'
-        text+= "typetags %s" % tags+'\n'
-        text+= "data %s" % stuff+'\n'
+        text= "No handler for message from %s" % OSC.getUrlStr(source)+'\n'
+        text+= "     %s" % addr+ self.pretty_list(stuff,'')
         self.add_status(text+'\n')
 
         
     def loopback_reply_handler(self,addr, tags, stuff, source):
-        self.add_status('Loopback reply  received from: '+  self.pretty_list(source))
+        self.add_status('Loopback reply  received from: '+  OSC.getUrlStr(source))
 
 
     def server_info_reply_handler(self,addr, tags, stuff, source):
-        self.add_status('Server Information from: '+  self.pretty_list(source)  + '\n   ' + self.pretty_list(stuff))
+        unit=stuff[0]
+        commands=stuff[1:]
+        self.add_status('Server Information from: '+  OSC.getUrlStr(source))
+        self.add_status('OSC name: '+  unit)
+        self.add_status('Commands:\n'+self.pretty_list(commands,'\n'))
+                        
 
-
-    def pretty_list(self,fields):
+    def pretty_list(self,fields, separator):
         text=' '
         for field in fields:
-            text += str(field) + ' '
+            text += str(field) + separator
         return text
 
 
@@ -278,17 +312,21 @@ class OSCRemote(object):
     # ***************************************
 
     def e_edit_osc(self):
-        self.disconnect_client()
-        self.close_server()
+        self.disconnect_client(self.output_client)
+        self.output_client=None
+        self.close_server(self.output_reply_server,self.output_reply_thread)
+        self.output_reply_server=None
+        self.output_reply_thread=None
         self.edit_osc()
+        self.read_create_osc()
         self.init()
         self.add_status('\n\n\nRESTART')
         self.run_app()
 
 
     def app_exit(self):
-        self.disconnect_client()
-        self.close_server()
+        self.disconnect_client(self.output_client)
+        self.close_server(self.output_reply_server,self.output_reply_thread)
         if self.root is not None:
             self.root.destroy()
         self.mon.finish()
@@ -309,8 +347,8 @@ class OSCRemote(object):
         # set up the gui
  
         # root is the Tkinter root widget
-        self.root = Tk()
-        self.root.title("Remote Control for Pi Presents")
+        self.root.title("OSC Remote Control for Pi Presents")
+        
 
         # self.root.configure(background='grey')
 
@@ -320,6 +358,7 @@ class OSCRemote(object):
         self.root.protocol ("WM_DELETE_WINDOW", self.app_exit)
 
         # bind some display fields
+        self.desc=StringVar()
         self.filename = StringVar()
         self.display_show = StringVar()
         self.results = StringVar()
@@ -332,12 +371,8 @@ class OSCRemote(object):
         profilemenu.add_command(label='Select', command = self.open_existing_profile)
         menubar.add_cascade(label='Profile', menu = profilemenu)
 
-        
-        toolsmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='Tools', menu = toolsmenu)
-
         osc_configmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
-        menubar.add_cascade(label='OSC', menu = osc_configmenu)
+        menubar.add_cascade(label='Options', menu = osc_configmenu)
         osc_configmenu.add_command(label='Edit', command = self.e_edit_osc)
 
         helpmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
@@ -352,6 +387,16 @@ class OSCRemote(object):
         #top frame
         top_frame=Frame(self.root,padx=5,pady=5)
         top_frame.pack(side=TOP)
+
+
+        # output info frame
+        info_frame=Frame(top_frame,padx=5,pady=5)
+        info_frame.pack(side=TOP, fill=BOTH, expand=1)
+        info_name = Label(info_frame, text="Master's Name: "+self.osc_config.this_unit_name,font="arial 12 bold")
+        info_name.pack(side=TOP)
+        info_reply_address = Label(info_frame, textvariable=self.desc,font="arial 12 bold")
+        info_reply_address.pack(side=TOP)
+
         
         results_label = Label(top_frame, text="Message to Send",font="arial 12 bold")
         results_label.pack(side=LEFT)
@@ -416,18 +461,22 @@ class OSCRemote(object):
 
 
         # animate buttons        
-        animate_frame=Frame(right_frame,pady=5)
-        animate_frame.pack(side=TOP)
-        animate_label = Label(animate_frame, text="Control Outputs",
+        others_label_frame=Frame(right_frame,pady=5)
+        others_label_frame.pack(side=TOP)
+        others_label = Label(others_label_frame, text="Others",
                                  font="arial 12 bold")
-        animate_label.pack()
+        others_label.pack()
         
-        animate_frame=Frame(right_frame,pady=5)
-        animate_frame.pack(side=TOP)
+        others_frame=Frame(right_frame,pady=5)
+        others_frame.pack(side=TOP)
                               
-        add_button = Button(animate_frame, width = 5, height = 1, text='Output',
-                            fg='black', command = self.output, bg="light grey")
+        add_button = Button(others_frame, width = 5, height = 1, text='Animate',
+                            fg='black', command = self.animate, bg="light grey")
         add_button.pack(side=LEFT)  
+
+        add_button = Button(others_frame, width = 8, height = 1, text='Monitor on/off',
+                            fg='black', command = self.display_control, bg="light grey")
+        add_button.pack(side=LEFT) 
 
         
         # system buttons        
@@ -483,7 +532,7 @@ class OSCRemote(object):
     # ***************************************
 
     def open_existing_profile(self):
-        initial_dir=self.pp_home_dir+os.sep+"pp_profiles"+self.pp_profiles_offset
+        initial_dir=self.pp_home_dir+os.sep+"pp_profiles"
         if os.path.exists(initial_dir) is False:
             self.mon.err(self,"Profiles directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
             return
@@ -508,9 +557,9 @@ class OSCRemote(object):
             self.app_exit()
         self.current_showlist=ShowList()
         self.current_showlist.open_json(showlist_file)
-        if float(self.current_showlist.sissue()) != float(self.editor_issue):
-            self.mon.err(self,"Version of profile does not match Remote: "+self.editor_issue)
-            self.app_exit()
+        # if float(self.current_showlist.sissue()) != float(self.editor_issue):
+            # self.mon.err(self,"Version of profile does not match Remote: "+self.editor_issue)
+            # self.app_exit()
         self.refresh_shows_display()
 
 
@@ -523,7 +572,7 @@ class OSCRemote(object):
             self.shows_display.see(self.current_showlist.selected_show_index())
 
     def e_select_show(self,event):
-        print 'select show', self.current_showlist.length()
+        # print 'select show', self.current_showlist.length()
         if self.current_showlist is not None and self.current_showlist.length()>0:
             mouse_item_index=int(event.widget.curselection()[0])
             self.current_showlist.select(mouse_item_index)
@@ -539,7 +588,7 @@ class OSCRemote(object):
 
     def read_create_osc(self):
         if self.osc_config.read(self.osc_config_file) is False:
-            self.osc_config.create(self.osc_config_file)
+            self.osc_config.create(self.osc_config_file,'master')
             eosc = OSCEditor(self.root, self.osc_config_file,'remote','Create OSC Remote Configuration')
             self.osc_config.read(self.osc_config_file)
 
