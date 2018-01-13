@@ -1,4 +1,4 @@
-PI PRESENTS  - Version 1.3.3
+PI PRESENTS  - Version 1.3.4
 ============================
 
 Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
@@ -10,7 +10,7 @@ TO UPGRADE FROM VERSION 1.2 [PIPRESENTS-NEXT]
 ============================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then you will need to read the section of the manual on update from 1.2 to 1.3 and Release Notes for all 1.3x versions. Before doing so keep a copy of the current Pi Presents and all the profiles:
 
-TO UPGRADE FROM VERSION 1.3.2 (PIPRESENTS-GAPLESS)
+TO UPGRADE FROM VERSION 1.3.3 (PIPRESENTS-GAPLESS)
 ======================================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then follow the instructions in the Release Notes
 
@@ -51,7 +51,7 @@ Installation
 
 The full manual in English is here https://github.com/KenT2/pipresents-gapless/blob/master/manual.pdf
 
-There is a German version of the manual (version 1.3.2) written by Peter Vasen ( http://www.web-echo.de/ ) you can download it here
+There is a German version of the manual written by Peter Vasen ( http://www.web-echo.de/ ) you can download it here
 
 http://www.web-echo.de/4.html
 
@@ -143,7 +143,7 @@ Rename the existing pipresents directory to old-pipresents
 
 Rename the new directory to pipresents.
 
-Copy pp_editor.cfg, pp_web.cfg, pp_email.cfg, keys.cfg, pp_oscmonitor.cfg, and pp_osc_remote.cfg from the old to new /pipresents/pp_config directory.
+Copy pp_editor.cfg, pp_web.cfg, pp_email.cfg, pp_oscmonitor.cfg, and pp_oscremote.cfg from the old to new /pipresents/pp_config directory.
 
 
 Getting examples for this version.
@@ -161,17 +161,17 @@ There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in the 
 
 Open the directory and move the 'pp_home' directory and its contents to the /home/pi directory.
 
-These examples are compatible with the version of Pi Presents you have just downloaded. In addition you can update profiles from version 1.3.1 or earlier to 1.3.2 by simply opening them in the editor (make a backup copy first):
+These examples are compatible with the version of Pi Presents you have just downloaded. In addition you can update profiles from earlier 1.3.x versions by simply opening them in the editor (make a backup copy first):
 
-In either case you can use the tools>update all menu option to update all profiles in a single directory at once.
+In either case you can use the update>update all menu option to update all profiles in a single directory at once.
 
-Lastly you will need to do some manual updating of some of the field values as specified in  ReleaseNotes.txt. Start at the paragraph in releasenotes.txt that introduces version 1.3.1 and work forwards
+Lastly you will need to do some manual updating of some of the field values as specified in  releasenotes.txt. Start at the paragraph in releasenotes.txt that introduces your previous version and work forwards
 
 
 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Jessie and will not work on Wheezy. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
+Pi Presents was developed on Raspbian using Python 2.7. It is now being developed on Stretch and may not work on Wheezy or Jessie. While it will run on a Pi 1, a Pi2 or Pi3 gives much better performance for the starting of videos and images. 
 
 If you want to play videos omxplayer requires 256MB of GPU memory. 
 
