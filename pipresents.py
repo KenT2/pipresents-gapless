@@ -1,28 +1,16 @@
 #! /usr/bin/env python
 """
-Dec 2015  - added return codes for manager and remove non mon error message when manager
-feb 2016 added statistics logging
-6/2/2016 fixed bug where PP would not exit correctly if shutdown was initiated while in # a show which opened another show at its end.
-26 Feb 2016 - version 1.3.1f
-12 June 2016 - added wait for the environment variables to stabilise. Required for Jessie autostart
-12 June 2016 version 1.3.1g
-2/11/2016 - Display error if Pi Presents is run with sudo
-2/11/2016 - delete omxplayer dbus files from /tmp
-24/11/2016 - remove delete omxplayer dbus files from /tmp
-24/11/2016 = wait for network connection. Warn if no network connection if of Tod scheduler is to be used.
-24/11/2016  - added date and time that PP started to log, also time after connection confirmed.
-27/11/2016 - added email at start and exit on error/abort.
-
 Pi Presents is a toolkit for construcing and deploying multimedia interactive presentations
 on the Raspberry Pi.
 It is aimed at primarily at  musems, exhibitions and galleries
 but has many other applications including digital signage
 
 Version 1.3 [pipresents-gapless]
-Copyright 2012/2013/2014/2015/2016/2017, Ken Thompson
+Copyright 2012/2013/2014/2015/2016/2017/2018, Ken Thompson
 See github for licence conditions
 See readme.md and manual.pdf for instructions.
 """
+
 import os
 import sys
 import signal
@@ -61,8 +49,8 @@ class PiPresents(object):
 
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
-        self.pipresents_issue="1.3.3"
-        self.pipresents_minorissue = '1.3.3c'
+        self.pipresents_issue="1.3.4"
+        self.pipresents_minorissue = '1.3.4a'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -372,6 +360,7 @@ class PiPresents(object):
 # INITIALISE THE APPLICATION AND START
 # ****************************************
         self.shutdown_required=False
+        self.reboot_required=False
         self.terminate_required=False
         self.exitpipresents_required=False
 
@@ -579,13 +568,13 @@ class PiPresents(object):
             show_ref=fields[1]
         else:
             show_ref=''
-
-        if show_command in ('open','close'):
+        if show_command in ('open','close','closeall','openexclusive'):
             self.mon.sched(self, TimeOfDay.now,command_text + ' received from show:'+show)
             if self.shutdown_required is False and self.terminate_required is False:
                 reason,message=self.show_manager.control_a_show(show_ref,show_command)
             else:
                 return
+            
         elif show_command =='monitor':
             self.handle_monitor_command(show_ref)
             return
@@ -605,6 +594,12 @@ class PiPresents(object):
             # need root.after to get out of st thread
             self.root.after(1,self.shutdownnow_pressed)
             return
+
+        elif show_command == 'reboot':
+            # need root.after to get out of st thread
+            self.root.after(1,self.reboot_pressed)
+            return
+        
         else:
             reason='error'
             message = 'command not recognised: '+ show_command
@@ -628,7 +623,15 @@ class PiPresents(object):
            self.all_shows_ended_callback('normal','no shows running')
         else:
             # calls exit method of all shows, results in all_shows_closed_callback
-            self.show_manager.exit_all_shows()           
+            self.show_manager.exit_all_shows()
+
+    def reboot_pressed(self):
+        self.reboot_required=True
+        if self.show_manager.all_shows_exited() is True:
+           self.all_shows_ended_callback('normal','no shows running')
+        else:
+            # calls exit method of all shows, results in all_shows_closed_callback
+            self.show_manager.exit_all_shows() 
 
 
     def handle_sigterm(self,signum,frame):
@@ -667,7 +670,7 @@ class PiPresents(object):
     # callback from ShowManager when all shows have ended
     def all_shows_ended_callback(self,reason,message):
         self.canvas.config(bg=self.starter_show['background-colour'])
-        if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True:
+        if reason in ('killed','error') or self.shutdown_required is True or self.exitpipresents_required is True or self.reboot_required is True:
             self.end(reason,message)
 
     def end(self,reason,message):
@@ -707,6 +710,9 @@ class PiPresents(object):
             
             # close logging files 
             self.mon.finish()
+            if self.reboot_required is True:
+                # print 'REBOOT'
+                call (['sudo','reboot'])
             if self.shutdown_required is True:
                 # print 'SHUTDOWN'
                 call (['sudo','shutdown','now','SHUTTING DOWN'])

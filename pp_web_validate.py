@@ -174,15 +174,29 @@ class Validator(AdaptableDialog):
 
                     
                     if track['type'] == "image":
+                        if track['pause-timeout'] != "" and not track['pause-timeout'].isdigit():
+                            self.display('f',"'Pause Timeout' is not blank or a positive integer")
+                        else:
+                            if track['pause-timeout'] != "" and int(track['pause-timeout']) < 1: self.display('f',"'Pause Timeout' is less than 1")
                         if track['duration'] != "" and not track['duration'].isdigit(): self.display('f',"'Duration' is not blank, 0 or a positive integer")
                         if track['image-rotate'] != "" and not track['image-rotate'].isdigit(): self.display('f',"'Image Rotation' is not blank, 0 or a positive integer")
                         self.check_image_window('track','image-window',track['image-window'])
 
                     if track['type'] == "video":
+                        if track['pause-timeout'] != "" and not track['pause-timeout'].isdigit():
+                            self.display('f',"'Pause Timeout' is not blank or a positive integer")
+                        else:
+                            if track['pause-timeout'] != "" and int(track['pause-timeout']) < 1: self.display('f',"'Pause Timeout' is less than 1")
+
                         self.check_omx_window('track','omx-window',track['omx-window'])
                         self.check_volume('track','omxplayer-volume',track['omx-volume'])
                             
                     if track['type'] == "audio":
+                        if track['pause-timeout'] != "" and not track['pause-timeout'].isdigit():
+                            self.display('f',"'Pause Timeout' is not blank or a positive integer")
+                        else:
+                            if track['pause-timeout'] != "" and int(track['pause-timeout']) < 1: self.display('f',"'Pause Timeout' is less than 1")
+
                         if track['duration'] != '' and not track['duration'].isdigit(): self.display('f',"'Duration' is not 0 or a positive integer")
                         if track['duration'] == '0' : self.display('w',"'Duration' of an audio track is zero")
                         self.check_volume('track','mplayer-volume',track['mplayer-volume'])
@@ -308,6 +322,11 @@ class Validator(AdaptableDialog):
                 
                 
                 if not show['duration'].isdigit(): self.display('f',"'Duration' is not 0 or a positive integer")
+                if show['pause-timeout'] != "" and not show['pause-timeout'].isdigit():
+                    self.display('f',"'Pause Timeout' is not blank or a positive integer")
+                else:
+                    if show['pause-timeout'] != "" and int(show['pause-timeout']) < 1: self.display('f',"'Pause Timeout' is less than 1")
+
                 if not show['image-rotate'].isdigit(): self.display('f',"'Image Rotation' is not 0 or a positive integer")
                 self.check_volume('show','Video Player Volume',show['omx-volume'])
                 self.check_volume('show','Audio Volume',show['mplayer-volume'])
@@ -839,41 +858,41 @@ class Validator(AdaptableDialog):
                 self.check_osc(line,dest,fields[2:],v_show_labels)
             return
 
-        if fields[0] not in ('exitpipresents','shutdownnow','open','close','monitor','event'):
+        if fields[0] not in ('exitpipresents','shutdownnow','reboot','open','openexclusive','close','closeall','monitor','event'):
                 self.display('f','Show control - Unknown command in: ' + line)
                 return
             
         if len(fields)==1:
-            if fields[0] not in ('exitpipresents','shutdownnow'):
+            if fields[0] not in ('exitpipresents','shutdownnow','reboot','closeall'):
                 self.display('f','Show control - Incorrect number of fields in: ' + line)
                 return
             
         if len(fields) == 2:
-            if fields[0] not in ('open','close','monitor','event'):
+            if fields[0] not in ('open','close','monitor','event','openexclusive'):
                 self.display('f','Show Control - Incorrect number of fields: ' + line)
             else:
                 if fields[0] =='monitor' and fields[1] not in ('on','off'):
                     self.display('f',"Show Control - monitor parameter not on or off: "+ line)
                     return
 
-                if fields[0] in ('open','close') and fields[1] not in v_show_labels:
+                if fields[0] in ('open','close','openexclusive') and fields[1] not in v_show_labels:
                     self.display('f',"Show Control - cannot find Show Reference: "+ line)
                     return
 
 
 
     def check_osc(self,line,dest,fields,v_show_labels):
-        if fields[0] not in ('exitpipresents','shutdownnow','open','close','monitor','event','send','server-info','loopback','animate'):
+        if fields[0] not in ('exitpipresents','shutdownnow','reboot','open','close','openexclusive','closeall','monitor','event','send','server-info','loopback','animate'):
                 self.display('f','Show control - Unknown command in: ' + line)
                 return
             
         if len(fields)==1:
-            if fields[0] not in ('exitpipresents','shutdownnow','server-info','loopback'):
+            if fields[0] not in ('exitpipresents','shutdownnow','reboot','closeall','server-info','loopback'):
                 self.display('f','Show control, OSC - Incorrect number of fields in: ' + line)
                 return
             
         if len(fields) == 2:
-            if fields[0] not in ('open','close','monitor','event','send'):
+            if fields[0] not in ('open','close','openexclusive','monitor','event','send'):
                 self.display('f','Show Control, OSC - Incorrect number of fields: ' + line)
             else:
                 if fields[0] =='monitor' and fields[1] not in ('on','off'):

@@ -2,11 +2,6 @@ import os
 from pp_mplayerdriver import MplayerDriver
 from pp_player import Player
 
-"""
-12/6/2016 - audio-other-options read from track or show
-12/6/2016 - add a space to mplayer options
-"""
-
 class AudioPlayer(Player):
     """       
             plays an audio track using mplayer against a coloured backgroud and image
@@ -93,11 +88,22 @@ class AudioPlayer(Player):
         else:
             self.mplayer_other_options= self.show_params['mplayer-other-options']
 
+        if self.track_params['pause-timeout'] != '':
+            pause_timeout_text= self.track_params['pause-timeout']
+        else:
+            pause_timeout_text= self.show_params['pause-timeout']
+
+        if pause_timeout_text.isdigit():
+            self.pause_timeout= int(pause_timeout_text)
+        else:
+            self.pause_timeout=0
+
         # initialise the state and signals      
         self.tick_timer=None
         self.quit_signal=False
         self.play_state='initialised'
         self.waiting=False
+        self.pause_timer=None
 
         
     # LOAD - creates and mplayer instance, loads a track and then pause
@@ -220,6 +226,10 @@ class AudioPlayer(Player):
     def pause_on(self):
         if self.play_state == 'showing' and self.track != '':
             self.mplayer.pause_on()
+            if self.mplayer.paused is True and self.pause_timeout>0:
+                # kick off the pause teimeout timer
+                print "!!pause on"
+                self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
             return True
         else:
             self.mon.log(self,"!<pause on rejected")
@@ -229,6 +239,12 @@ class AudioPlayer(Player):
     def pause_off(self):
         if self.play_state == 'showing' and self.track != '':
             self.mplayer.pause_off()
+            if self.mplayer.paused is False:
+                print "!!pause off"
+                # cancel the pause timer
+                if self.pause_timer != None:
+                    self.canvas.after_cancel(self.pause_timer)
+                    self.pause_timer=None
             return True
         else:
             self.mon.log(self,"!<pause off rejected")
@@ -239,10 +255,26 @@ class AudioPlayer(Player):
     def pause(self):
         if self.play_state == 'showing' and self.track != '':
             self.mplayer.pause()
+            if self.mplayer.paused is True and self.pause_timeout>0:
+                # kick off the pause teimeout timer
+                print "!!toggle pause on"
+                self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
+            else:
+                # cancel the pause timer
+                if self.pause_timer != None:
+                    print "!!toggle pause off"
+                    self.canvas.after_cancel(self.pause_timer)
+                    self.pause_timer=None
             return True
         else:
             self.mon.log(self,"!<pause rejected")
             return False
+
+    def pause_timeout_callback(self):
+        print "!!callback pause off"
+        self.pause_off()
+        self.pause_timer=None
+
         
     # other control when playing, not currently used
     def control(self,char):
@@ -256,6 +288,11 @@ class AudioPlayer(Player):
 
     # respond to normal stop
     def stop(self):
+        # cancel the pause timer
+        if self.pause_timer != None:
+            self.canvas.after_cancel(self.pause_timer)
+            self.pause_timer=None
+ 
         # send signal to stop the track to the state machine
         self.mon.log(self,">stop received")
         if self.play_state in ('starting','showing'):

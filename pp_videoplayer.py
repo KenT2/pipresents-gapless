@@ -77,6 +77,7 @@ class VideoPlayer(Player):
         else:
             freeze_at_end_text= self.show_params['freeze-at-end']
 
+
         if freeze_at_end_text == 'yes':
             self.freeze_at_end_required=True
         else:
@@ -87,12 +88,24 @@ class VideoPlayer(Player):
             self.seamless_loop=' --loop '
         else:
             self.seamless_loop=''
+
+        if self.track_params['pause-timeout'] != '':
+            pause_timeout_text= self.track_params['pause-timeout']
+        else:
+            pause_timeout_text= self.show_params['pause-timeout']
+
+        if pause_timeout_text.isdigit():
+            self.pause_timeout= int(pause_timeout_text)
+        else:
+            self.pause_timeout=0
+            
             
         # initialise video playing state and signals
         self.quit_signal=False
         self.unload_signal=False
         self.play_state='initialised'
         self.frozen_at_end=False
+        self.pause_timer=None
 
     # LOAD - creates and omxplayer instance, loads a track and then pause
     def load(self,track,loaded_callback,enable_menu):  
@@ -208,6 +221,11 @@ class VideoPlayer(Player):
     # respond to normal stop
     def stop(self):
         self.mon.log(self,">stop received from show Id: "+ str(self.show_id))
+        # cancel the pause timer
+        if self.pause_timer != None:
+            self.canvas.after_cancel(self.pause_timer)
+            self.pause_timer=None
+ 
         # send signal to freeze the track - causes either pause or quit depends on freeze at end
         if self.freeze_at_end_required is True:
             if self.play_state == 'showing' and self.frozen_at_end is False:
@@ -251,16 +269,35 @@ class VideoPlayer(Player):
         self.mon.log(self,">toggle pause received from show Id: "+ str(self.show_id))
         if self.play_state  == 'showing' and self.frozen_at_end is False and self.omx.paused_at_start == 'done':
             self.omx.toggle_pause('user')
+            if self.omx.paused is True and self.pause_timeout>0:
+                # kick off the pause teimeout timer
+                print "!!toggle pause on"
+                self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
+            else:
+                # cancel the pause timer
+                if self.pause_timer != None:
+                    print "!!toggle pause off"
+                    self.canvas.after_cancel(self.pause_timer)
+                    self.pause_timer=None
             return True
         else:
             self.mon.log(self,"!<pause rejected " + self.play_state)
             return False
+
+    def pause_timeout_callback(self):
+        print "!!callback pause off"
+        self.pause_off()
+        self.pause_timer=None
 
     # pause on
     def pause_on(self):
         self.mon.log(self,">pause on received from show Id: "+ str(self.show_id))
         if self.play_state  == 'showing' and self.frozen_at_end is False and self.omx.paused_at_start == 'done':
             self.omx.pause_on()
+            if self.omx.paused is True and self.pause_timeout>0:
+                # kick off the pause teimeout timer
+                print "!!pause on"
+                self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
             return True
         else:
             self.mon.log(self,"!<pause on rejected " + self.play_state)
@@ -271,6 +308,12 @@ class VideoPlayer(Player):
         self.mon.log(self,">pause off received from show Id: "+ str(self.show_id))
         if self.play_state  == 'showing' and self.frozen_at_end is False and self.omx.paused_at_start == 'done':
             self.omx.pause_off()
+            if self.omx.paused is False:
+                print "!!pause off"
+                # cancel the pause timer
+                if self.pause_timer != None:
+                    self.canvas.after_cancel(self.pause_timer)
+                    self.pause_timer=None
             return True
         else:
             self.mon.log(self,"!<pause off rejected " + self.play_state)

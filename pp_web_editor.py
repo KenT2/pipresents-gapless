@@ -1,17 +1,5 @@
 #! /usr/bin/env python
 
-"""
-14/11/2016 - automatically find the ip address of the Pi
-1/12/2016 - wait for network before proceeding (for standalone use)
-Convert to latest version of remi
-add profile update from pp_editor
-add command line options for local and native
-do no tnned --forceupdate as 3 tier version numbers are used
-pp_diefinitions and editor now have version numbers
-update now backs up changed files
-update moved files in pp_io_config
-"""
-
 import os
 import sys
 import ConfigParser
@@ -46,7 +34,7 @@ class PPWebEditor(App):
         # ***************************************
         # INIT
         # ***************************************
-        self.editor_issue="1.3.3"
+        self.editor_issue="1.3.4"
         self.force_update= False
 
         # get directory holding the code

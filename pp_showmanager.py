@@ -128,9 +128,27 @@ class ShowManager(object):
             return self.start_show(show_ref)
         elif show_command  == 'close':
             return self.exit_show(show_ref)
+        elif show_command  == 'closeall':
+            return self.exit_all_shows()
+        elif show_command  == 'openexclusive':
+            return self.open_exclusive(show_ref)
         else:
             return 'error','command not recognised '+ show_command
 
+    def open_exclusive(self,show_ref):
+        self.exit_all_shows()
+        self.exclusive_show=show_ref
+        self.wait_for_openexclusive()
+        return 'normal','opened exclusive' 
+
+
+    def wait_for_openexclusive(self):
+        if self.all_shows_exited() is False:
+            ShowManager.canvas.after(1,self.wait_for_openexclusive)
+            return
+        self.start_show(self.exclusive_show)
+          
+            
 
     def exit_all_shows(self):
         for show in ShowManager.shows:

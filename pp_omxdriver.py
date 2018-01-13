@@ -8,17 +8,6 @@ from pp_utils import Monitor
 
 
 """
-12/6/2016 - rewrite to use dbus
-2/11/2016 - connection needs to wait for dbus filemane to be populated
-2/11/2016 - remove busy wait for conection
-24/11/2016 - move pause after load to after first get_position to ensure omxplayer has loaded track before pause
-24/11/2016 - report dbus exception messages in log
-30/11/2016 - pause at start waits until position is not 0 as video has not started until it becomes -ve
-2/12/2016 - make pause glitch tolerant, try again if fails
-3/12/2016 - remove threading to stop pause and unpause for showing happening in wrong order
-5/12/2016 - deal with situation where pause at end happened so late that video finished first
-5/12/2016 - need to send nice-day when stop is received and paused for end as now do not intercept one from omxplayer
-
  omxdriver hides the detail of using the omxplayer command  from videoplayer
  This is meant to be used with videoplayer.py
  Its easy to end up with many copies of omxplayer.bin running if this class is not used with care. use pp_videoplayer.py for a safer interface.
@@ -380,6 +369,23 @@ class OMXDriver(object):
             self.mon.warn(self,'Failed to do pause off - process not running')
             return
 
+    def toggle_pause(self,reason):
+        self.mon.log(self,'toggle pause received '+ reason)
+        if self.is_running():
+            try:
+                self.__iface_player.Action(16)
+                if not self.paused:
+                    self.paused = True
+                else:
+                    self.paused=False
+            except dbus.exceptions.DBusException as ex:
+                self.mon.warn(self,'Failed to toggle pause - dbus exception: {}'.format(ex.get_dbus_message()))
+                return
+        else:
+            self.mon.warn(self,'Failed to toggle pause - process not running')
+            return
+        
+
     def go(self):
         self.mon.log(self,'go received ')
         self.unpause('for go')
@@ -395,22 +401,6 @@ class OMXDriver(object):
         volume = pow(10, millibels / 2000.0);
         self.__iface_props.Volume(volume)
         
-
-    def toggle_pause(self,reason):
-        self.mon.log(self,'toggle pause received '+ reason)
-        if not self.paused:
-            self.paused = True
-        else:
-            self.paused=False
-        if self.is_running():
-            try:
-                self.__iface_player.Action(16)
-            except dbus.exceptions.DBusException as ex:
-                self.mon.warn(self,'Failed to toggle pause - dbus exception: {}'.format(ex.get_dbus_message()))
-                return
-        else:
-            self.mon.warn(self,'Failed to toggle pause - process not running')
-            return
 
 
 

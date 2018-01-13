@@ -201,7 +201,7 @@ class OSCDriver(object):
             else:
                 return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
 
-        elif show_command in ('open','close'):
+        elif show_command in ('open','close','openexclusive'):
             if len(fields)==3:
                 osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
                 arg_list= [fields[2]]
@@ -228,7 +228,7 @@ class OSCDriver(object):
             else:
                 return 'error','OSC - wrong nmber of fields in '+ ' '.join(fields)
             
-        elif show_command in ('exitpipresents','shutdownnow'):
+        elif show_command in ('closeall','exitpipresents','shutdownnow','reboot'):
             if len(fields)==2:
                 osc_address=self.prefix+'/'+ to_unit_name + '/core/'+ show_command
                 arg_list= []
@@ -307,8 +307,11 @@ class OSCDriver(object):
         server.addMsgHandler(self.prefix + self.this_unit+"/system/loopback", self.loopback_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/open', self.open_show_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/close', self.close_show_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/openexclusive', self.openexclusive_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/closeall', self.closeall_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/exitpipresents', self.exitpipresents_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/shutdownnow', self.shutdownnow_handler)
+        server.addMsgHandler(self.prefix+ self.this_unit+'/core/reboot', self.reboot_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/event', self.input_event_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/animate', self.animate_handler)
         server.addMsgHandler(self.prefix+ self.this_unit+'/core/monitor', self.monitor_handler)
@@ -334,15 +337,24 @@ class OSCDriver(object):
  
     def open_show_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('open ',args,1)
+
+    def openexclusive_handler(self,address, tags, args, source):
+        self.prepare_show_command_callback('openexclusive ',args,1)
         
     def close_show_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('close ', args,1)
+
+    def closeall_handler(self,address, tags, args, source):
+        self.prepare_show_command_callback('closeall',args,0)
 
     def monitor_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('monitor ', args,1)
 
     def exitpipresents_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('exitpipresents',args,0)
+
+    def reboot_handler(self,address, tags, args, source):
+        self.prepare_show_command_callback('reboot',args,0)
 
     def shutdownnow_handler(self,address, tags, args, source):
         self.prepare_show_command_callback('shutdownnow',args,0)

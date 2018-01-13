@@ -73,11 +73,24 @@ class ImagePlayer(Player):
         else:
             self.image_rotate= int(self.show_params['image-rotate'].strip())
 
+
+        if self.track_params['pause-timeout'] != '':
+            pause_timeout_text= self.track_params['pause-timeout']
+        else:
+            pause_timeout_text= self.show_params['pause-timeout']
+
+        if pause_timeout_text.isdigit():
+            self.pause_timeout= int(pause_timeout_text)
+        else:
+            self.pause_timeout=0
+
+
+
         self.track_image_obj=None
         self.tk_img=None
-        # krt 28/1/2016
         self.paused=False
         self.pause_text_obj=None
+        self.pause_timer= None
 
         # initialise the state machine
         self.play_state='initialised'    
@@ -184,18 +197,46 @@ class ImagePlayer(Player):
 
       
     def pause(self):
-        if not self.paused:
+        if self.paused is False: 
             self.paused = True
+            if self.pause_timeout>0:
+                # kick off the pause teimeout timer
+                print "!!toggle pause on"
+                self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
         else:
             self.paused=False
+            # cancel the pause timer
+            if self.pause_timer != None:
+                print "!!toggle pause off"
+                self.canvas.after_cancel(self.pause_timer)
+                self.pause_timer=None
+
+
+    def pause_timeout_callback(self):
+        print "!!callback pause off"
+        self.pause_off()
+        self.pause_timer=None
 
     def pause_on(self):
         self.paused = True
+        print "!!pause on"
+        self.pause_timer=self.canvas.after(self.pause_timeout*1000,self.pause_timeout_callback)
+ 
 
     def pause_off(self):
         self.paused = False
+        print "!!pause off"
+        # cancel the pause timer
+        if self.pause_timer != None:
+            self.canvas.after_cancel(self.pause_timer)
+            self.pause_timer=None
+ 
 
     def stop(self):
+        # cancel the pause timer
+        if self.pause_timer != None:
+            self.canvas.after_cancel(self.pause_timer)
+            self.pause_timer=None
         self.quit_signal=True
         
 
