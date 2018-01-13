@@ -899,9 +899,6 @@ class Validator(AdaptableDialog):
                     self.display('f',"Show Control, OSC - monitor parameter not on or off: "+ line)
                     return
 
-                if fields[0] in ('open','close') and fields[1] not in v_show_labels:
-                    self.display('f',"Show Control,OSC - cannot find Show Reference: "+ line)
-                    return
 
  
 
