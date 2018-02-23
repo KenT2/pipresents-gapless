@@ -85,7 +85,7 @@ class Animate(object):
             if event_found is False: break
 
     def send_event(self,name,param_type,param_values,req_time):
-        self.mon.log(self, 'send event '+ name)
+        self.mon.log(self, 'send event '+ name + ' ' + param_type + ' ' + ' '.join(param_values))
         self.event_callback(name,param_type,param_values,req_time)
 
 
@@ -179,7 +179,7 @@ class Animate(object):
         if line== '':
             return 'normal','no fields','','',[],0
         # split the line using "" for text with spaces
-        for l in csv.reader([line], delimiter=' ', quotechar='"'):
+        for l in csv.reader([line], delimiter=' ', skipinitialspace = True,quotechar='"'):
             fields = l
 
         if len(fields) == 0:

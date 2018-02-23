@@ -1,3 +1,15 @@
+CHANGES FOR 1.3.4b 21/02/2018
+============================
+enhanced - values input by I/O plugins are now available to track plugins via get_input() method. See Release Notes.
+enhanced - new serial port I/O plugin
+enhanced - new serial port examples pp_serialcontrol_1p3 and pp_serialdisplay_1p3
+enhanced  - new I2C I/O plugin supporting ADC, DAC, Pimoroni Four Letter PHat and ScrollHD PHat.
+enhanced - new examples for I2C driver pp_i2cioplugin_1p3
+fixed - animation commands now work if there is more than one space between fields
+fixed - pp_kbddriver now can be disabled
+fixed - PP does not crash if time of day scheduler is used with no Start Shows
+
+
 CHANGES FOR 1.3.4a 13/01/2018
 ============================
 enhanced - pause now has a timeout, set in the profile

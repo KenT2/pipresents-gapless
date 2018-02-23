@@ -83,11 +83,21 @@ class IOPluginManager(object):
                 plugin.terminate()
                 self.mon.log(self,'I/O plugin '+entry['title']+ ' terminated')
 
+    def get_input(self,key):
+        for entry in IOPluginManager.plugins:
+            plugin=entry['instance']
+            # print 'trying ',entry['title'],plugin.is_active()
+            if plugin.is_active() is True:
+                found,value = plugin.get_input(key)
+                if found is True:
+                    return found,value
+        # key not found in any plugin
+        return False,None
 
     def handle_output_event(self,name,param_type,param_values,req_time):
         for entry in IOPluginManager.plugins:
-            # print 'trying ',entry['title']
             plugin=entry['instance']
+            # print 'trying ',entry['title'],name,param_type,plugin.is_active()
             if plugin.is_active() is True:
                 reason,message= plugin.handle_output_event(name,param_type,param_values,req_time)
                 if reason == 'error':

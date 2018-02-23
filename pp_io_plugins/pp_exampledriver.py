@@ -74,11 +74,16 @@ class pp_exampledriver(object):
             self.tick_timer=self.widget.after(self.tick_interval*1000,self.start)
 
 
+    # allow track plugins (or anyting else) to access input values
+    def get_input(self,channel):
+            return False, None
+
     # called by main program only                
     def terminate(self):
         if pp_exampledriver.driver_active is True:
             if self.tick_timer is not None:
                 self.widget.after_cancel(self.tick_timer)
+            pp_exampledriver.driver_active = False
 
 
 

@@ -195,6 +195,7 @@ class pp_gpiodriver(object):
                 self.widget.after_cancel(self.button_tick_timer)
             self._reset_outputs()
             self.GPIO.cleanup()
+            pp_gpiodriver.driver_active=False
 
 
 # ************************************************
@@ -257,6 +258,11 @@ class pp_gpiodriver(object):
                     if pin[pp_gpiodriver.REPEAT] != -1:
                         pin[pp_gpiodriver.REPEAT_COUNT]-=1
 
+    def get_input(self,channel):
+            return False, None
+
+
+
 # ************************************************
 # gpio output interface methods
 # these can be called from many classes so need to operate on class variables
@@ -265,7 +271,7 @@ class pp_gpiodriver(object):
     # execute an output event
 
     def handle_output_event(self,name,param_type,param_values,req_time):
-
+        # print 'GPIO handle',name,param_type,param_values
         # does the symbolic name match any output pin
         pin= self._output_pin_of(name)
         if pin  == -1:

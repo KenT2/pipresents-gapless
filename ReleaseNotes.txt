@@ -1,3 +1,12 @@
+version 1.3.4b
+==============
+This version adds a new interface method to I/O plugins which is called by the I/O plugin manager.
+All I/O plugins need to have the following method added:
+
+    # allow track plugins (or anything else) to access input values
+    def get_input(self,channel):
+        return False, None
+
 version 1.3.4a
 ==============
 This version adds a new field to shows and tracks to provide  the value of the paue timeout

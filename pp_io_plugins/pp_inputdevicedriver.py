@@ -144,13 +144,18 @@ class pp_inputdevicedriver(object):
         self.do_buttons()
         self.button_tick_timer=self.widget.after(self.button_tick,self.start)
 
+    # allow track plugins (or anyting else) to access input values
+    def get_input(self,channel):
+            return False, None
+
+
 
     # called by main program only                
     def terminate(self):
         if pp_inputdevicedriver.driver_active is True:
             if self.button_tick_timer is not None:
                 self.widget.after_cancel(self.button_tick_timer)
-
+            pp_inputdevicedriver.driver_active = False
 
 
 # ************************************************

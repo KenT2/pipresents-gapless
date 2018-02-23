@@ -41,11 +41,20 @@ class pp_kbddriver(object):
     def start (self):
         return
 
+    # allow track plugins (or anyting else) to access analog input values
+    def get_input(self,channel):
+            return False, None
+
+
     def terminate(self):
+        pp_kbddriver.driver_active = False
         return
 
     def is_active(self):
-        return pp_kbddriver.is_active
+        return pp_kbddriver.driver_active
+
+    def handle_output_event(self,name,param_type,param_values,req_time):
+        return 'normal','no output methods'
 
 
     # sets up tkinter keyboard events such that any key press

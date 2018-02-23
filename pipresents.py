@@ -20,6 +20,7 @@ import gc
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
+from datetime import datetime
 
 
 from pp_options import command_options
@@ -50,7 +51,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.4"
-        self.pipresents_minorissue = '1.3.4a'
+        self.pipresents_minorissue = '1.3.4b'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -407,10 +408,7 @@ class PiPresents(object):
         
         # enable ToD scheduler if schedule exists
         self.tod=TimeOfDay()
-        if os.path.exists(self.pp_profile + os.sep + 'schedule.json'):                
-            self.tod_enabled = True
-        else:
-            self.tod_enabled=False
+        self.tod_enabled = self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
 
         # warn if the network not available when ToD required
 
@@ -437,7 +435,6 @@ class PiPresents(object):
 
         # kick off the time of day scheduler which may run additional shows
         if self.tod_enabled is True:
-            self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
             self.tod.poll()
 
         # start the I/O plugins input event generation

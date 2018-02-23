@@ -28,7 +28,6 @@ class TimeOfDay(object):
     # executed by main program and by each object using tod
     def __init__(self):
         self.mon=Monitor()
-        TimeOfDay.now=None
 
 
      # executed once from main program  only 
@@ -45,9 +44,13 @@ class TimeOfDay(object):
         self.testing=False
         self.tod_tick=500
         self.tick_timer=None
+        # set time of day for if no schedule
         TimeOfDay.now = datetime.now().replace(microsecond=0)
-        # read the schedule
-        self.schedule=self.open_schedule()
+        # if the schedule exists read the schedule and return True
+        schedule=self.open_schedule()
+        if schedule is None:
+            return False
+        self.schedule=schedule
 
         #create the initial events list
         if 'simulate-time' in self.schedule and self.schedule['simulate-time']=='yes':
@@ -67,6 +70,7 @@ class TimeOfDay(object):
             self.mon.sched(self,TimeOfDay.now,'Testing is OFF, Initial REAL time ' + str(TimeOfDay.now.ctime()))
             # print '\nInitial REAL time',TimeOfDay.now.ctime()
             self.testing=False
+        # print 'init',TimeOfDay.now
         TimeOfDay.last_now = TimeOfDay.now - timedelta(seconds=1)           
         self.build_schedule_for_today(self.schedule)
         self.mon.sched(self,TimeOfDay.now,self.pretty_todays_schedule())
@@ -76,6 +80,7 @@ class TimeOfDay(object):
         # self.print_events_lists()
         # and do exitpipresents or start any show that should be running at start up time
         self.do_catchup()
+        return True
 
 
     def do_catchup(self):
@@ -148,6 +153,7 @@ class TimeOfDay(object):
             self.do_scheduler()
             TimeOfDay.last_now=TimeOfDay.now
             catchup_time+=1
+            # print 'poll',TimeOfDay.now, timedelta(seconds=1)
             TimeOfDay.now = TimeOfDay.now + timedelta(seconds=1)
         # and loop
         if self.testing:
@@ -221,11 +227,15 @@ class TimeOfDay(object):
         # look for the schedule.json file
         # try inside profile
         filename=self.pp_profile+os.sep+"schedule.json"
-        ifile  = open(filename, 'rb')
-        schedule= json.load(ifile)
-        ifile.close()
-        self.mon.log(self,"schedule.json read from "+ filename)
-        return schedule
+        if os.path.exists(filename):
+            ifile  = open(filename, 'rb')
+            schedule= json.load(ifile)
+            ifile.close()
+            self.mon.log(self,"schedule.json read from "+ filename)
+            return schedule
+        else:
+            return None
+        
 
     def build_schedule_for_today(self,schedule):
         # print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
