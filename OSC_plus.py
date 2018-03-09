@@ -500,7 +500,7 @@ class OSCMessage(object):
                 break
             i += 1
         else:
-            raise ValueError("'%s' not in OSCMessage" % str(m))
+            raise ValueError("'%s' not in OSCMessage" % str(val))
         # but more efficient than first calling self.values().index(val),
         # then calling self.items(), which would in turn call self.values() again...
         
@@ -1538,9 +1538,6 @@ class OSCServer(UDPServer):
         self.addMsgHandler(prefix + error_prefix, self.msgPrinter_handler)
         self.addMsgHandler(prefix + '/print', self.msgPrinter_handler)
         
-        if isinstance(self.client, OSCMultiClient):
-            self.addMsgHandler(prefix + '/subscribe', self.subscription_handler)
-            self.addMsgHandler(prefix + '/unsubscribe', self.subscription_handler)
         
     def printErr(self, txt):
         """Writes 'OSCServer: txt' to sys.stderr
@@ -1825,8 +1822,6 @@ class OSCServer(UDPServer):
         If <prefix> is not specified on unsubscription, the subscribed host is unsubscribed if the host and port 
         match the subscription.
         """
-        if not isinstance(self.client, OSCMultiClient):
-            raise OSCServerError("Local %s does not support subsctiptions or message-filtering" % self.client.__class__.__name__)
         
         addr_cmd = addr.split('/')[-1]
         

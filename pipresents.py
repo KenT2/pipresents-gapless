@@ -20,7 +20,7 @@ import gc
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
-from datetime import datetime
+
 
 
 from pp_options import command_options
@@ -33,7 +33,6 @@ from pp_utils import StopWatch
 from pp_animate import Animate
 from pp_oscdriver import OSCDriver
 from pp_network import Mailer, Network
-from pp_definitions import PPdefinitions
 from pp_iopluginmanager import IOPluginManager
 from pp_countermanager import CounterManager
 
@@ -51,7 +50,7 @@ class PiPresents(object):
     def __init__(self):
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.4"
-        self.pipresents_minorissue = '1.3.4b'
+        self.pipresents_minorissue = '1.3.4c'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -119,8 +118,8 @@ class PiPresents(object):
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
 
         # log versions of Raspbian and omxplayer, and GPU Memory
-        with open("/boot/issue.txt") as file:
-            self.mon.log(self,'\nRaspbian: '+file.read())
+        with open("/boot/issue.txt") as ifile:
+            self.mon.log(self,'\nRaspbian: '+ifile.read())
 
         self.mon.log(self,'\n'+check_output(["omxplayer", "-v"]))
         self.mon.log(self,'\nGPU Memory: '+check_output(["vcgencmd", "get_mem", "gpu"]))
@@ -631,7 +630,7 @@ class PiPresents(object):
             self.show_manager.exit_all_shows() 
 
 
-    def handle_sigterm(self,signum,frame):
+    def handle_sigterm(self,signum):
         self.mon.log(self,'SIGTERM received - '+ str(signum))
         self.terminate()
 

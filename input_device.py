@@ -1,7 +1,7 @@
 import evdev
 from select import select
-from Tkinter import Tk, StringVar, Menu,Frame,Label,Button,Scrollbar,Listbox,Entry,Text
-from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,W,NORMAL,DISABLED
+from Tkinter import Tk, StringVar,Frame,Label,Button,Scrollbar,Listbox,Entry,Text
+from Tkinter import Y,END,TOP,BOTH,LEFT,RIGHT,VERTICAL,SINGLE,NONE,NORMAL,DISABLED
 
 class InputDevice(object):
 
@@ -164,5 +164,5 @@ class InputDevice(object):
 
 
 if __name__  ==  "__main__":
-    id = InputDevice()
+    idd = InputDevice()
 
