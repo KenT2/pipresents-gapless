@@ -1,3 +1,8 @@
+CHANGES FOR 1.3.4d 25/03/2018
+============================
+fixed - memory leak when using subshows issue #20
+fixed - minor improvements to some examples
+
 CHANGES FOR 1.3.4c 10/03/2018
 ============================
 enhanced - pp_kbddriver_plus enhances pp_kbddriver by allowing strings to trigger events and to be used by track_plugins

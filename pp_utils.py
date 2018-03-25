@@ -6,8 +6,12 @@ import time
 import datetime
 import sys
 import os
+import gc
 import tkMessageBox
 from Tkinter import NW,N,W,CENTER,LEFT,RIGHT
+# from pympler.tracker import SummaryTracker
+# from pympler import summary, muppy
+# import types
 
 def calculate_text_position(x_text,y_text,x1,y1,centre_x,centre_y,width,height,justify_text):
     if x_text == '':
@@ -153,6 +157,7 @@ class StopWatch(object):
             print text + " " + str(self.end-self.sstart) + " secs"
 
 
+
 class Monitor(object):
 
     delimiter=';'
@@ -174,10 +179,14 @@ class Monitor(object):
     ofile=None
     stats_file=None
     start_time= time.time()
+    tracker=None
+    show_count=0
+    track_count=0
 
 
 # called at start by pipresents
     def init(self):
+        # Monitor.tracker = SummaryTracker()
         if Monitor.ofile is None:
             bufsize=0
             Monitor.ofile=open(Monitor.log_path+ os.sep+'pp_logs' + os.sep + 'pp_log.txt','w',bufsize)
@@ -194,7 +203,22 @@ class Monitor(object):
                 Monitor.stats_file.write('"'+'Date'+sep+'Time'+sep+'Show Type'+sep+'Show Ref'+ sep +'Show Title'+sep
                                      +'Command'+sep+'Track Type'+sep+'Track Ref'+sep+'Track Title'+sep+'Location"\n')
 
- 
+    def leak_diff(self):
+        Monitor.tracker.print_diff()
+
+    def leak_summary(self):
+        all_objects = muppy.get_objects()
+        sum1 = summary.summarize(all_objects)
+        summary.print_(sum1)   
+
+
+    def leak_anal(self):
+        all_objects = muppy.get_objects()
+        my_types = muppy.filter(all_objects, Type=ImagePlayer)
+        print len(my_types)                                    
+        for t in my_types:
+            print t,sys.getrefcount(t)
+            # ,gc.get_referrers(t) 
 
     # CONTROL
 

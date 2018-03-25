@@ -1,3 +1,9 @@
+Version 1.3.4d 25/03/2018
+==============
+This version fixes a long standing memory leak when using subshows. The fix involved the most complex part
+ of PP so I hope I have not introduced other bugs. Please contact me if a previously working application is now broken
+ 
+ 
 version 1.3.4b
 ==============
 This version adds a new interface method to I/O plugins which is called by the I/O plugin manager.

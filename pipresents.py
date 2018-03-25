@@ -20,7 +20,7 @@ import gc
 from Tkinter import Tk, Canvas
 import tkMessageBox
 from time import sleep
-
+# import objgraph
 
 
 from pp_options import command_options
@@ -48,9 +48,10 @@ class PiPresents(object):
 
 
     def __init__(self):
-        gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
+        # gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
+        gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.4"
-        self.pipresents_minorissue = '1.3.4c'
+        self.pipresents_minorissue = '1.3.4d'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -674,8 +675,6 @@ class PiPresents(object):
         if self.root is not None:
             self.root.destroy()
         self.tidy_up()
-        # gc.collect()
-        # print gc.garbage
         if reason == 'killed':
             if self.email_enabled is True and self.mailer.email_on_terminate is True:
                 subject= '[Pi Presents] ' + self.unit + ': PP Exited with reason: Terminated'
@@ -684,8 +683,10 @@ class PiPresents(object):
             self.mon.sched(self, None,"Pi Presents Terminated, au revoir\n")
             self.mon.log(self, "Pi Presents Terminated, au revoir")
                           
-            # close logging files 
+            # close logging files
             self.mon.finish()
+            print 'Uncollectable Garbage',gc.collect()
+            # objgraph.show_backrefs(objgraph.by_type('Monitor'))
             sys.exit(101)
                           
         elif reason == 'error':
@@ -698,6 +699,7 @@ class PiPresents(object):
                           
             # close logging files 
             self.mon.finish()
+            print 'uncollectable garbage',gc.collect()
             sys.exit(102)
 
         else:           
@@ -712,6 +714,7 @@ class PiPresents(object):
             if self.shutdown_required is True:
                 # print 'SHUTDOWN'
                 call (['sudo','shutdown','now','SHUTTING DOWN'])
+            print 'uncollectable garbage',gc.collect()
             sys.exit(100)
 
 

@@ -56,7 +56,8 @@ class Show(object):
         # init things that will then be reinitialised by derived classes
         self.medialist=None
 
-        # set up logging 
+        # set up logging
+        self.leak=False
         self.mon=Monitor()
         self.mon.set_log_level(16)
 
@@ -100,6 +101,8 @@ class Show(object):
               direction_command - 'forward' or 'backward' direction to play a subshow
         """
         # instantiate the arguments
+        if self.leak is True:
+            print 'play show - ',self.show_params['title']
         self.end_callback=end_callback
         self.show_ready_callback=show_ready_callback
         self.parent_kickback_signal=parent_kickback_signal
@@ -121,10 +124,14 @@ class Show(object):
         if self.medialist.open_list(self.medialst_file,self.showlist.profile_version()) is False:
             self.mon.err(self,"Version of medialist different to Pi Presents")
             self.end('error',"Version of medialist different to Pi Presents")
-
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
         if self.show_ready_callback is not None:
             # get the previous player from calling show its stored in current because its going to be shuffled before use
+            
             self.previous_shower, self.current_player=self.show_ready_callback()
+            if self.leak is True:
+                print 'from show_ready_callback, previous shower,current player',self.previous_shower.show_params['title'],self.current_player.track_params['title']
             self.mon.trace(self,' - previous shower and player is ' + self.mon.pretty_inst(self.previous_shower)+ ' ' + self.mon.pretty_inst(self.current_player))
 
 
@@ -149,13 +156,22 @@ class Show(object):
         # callback from begining of a subshow, provide previous player to called show
         # used by show_ready_callback of called show
         # in the case of a menushow last track is always the menu
+        if self.leak is True:
+            print 'subshow ready callback returns',self.show_params['title'],self.previous_player.track_params['title']
         self.mon.trace(self,' -  sends ' + self.mon.pretty_inst(self.previous_player))
         return self,self.previous_player
 
 
     def base_shuffle(self):
+        if self.leak is True:
+            if self.current_player != None:
+                print 'shuffle current player, previous is',self.current_player.track_params['title']
+            else:   
+                print 'shuffle None player'
         self.previous_player=self.current_player
         self.current_player = None
+        if self.leak is True:
+            print 'current_player is None'
         self.mon.trace(self,' - LOOP STARTS WITH current is: ' + self.mon.pretty_inst(self.current_player))
         self.mon.trace(self,'       -  previous is: ' + self.mon.pretty_inst(self.previous_player))
 
@@ -172,7 +188,11 @@ class Show(object):
             else:
                 self.showlist.select(index)
                 selected_show=self.showlist.selected_show()
+                if self.leak is True:
+                    print 'IN ',self.show_params['title']
                 self.shower=self.show_manager.init_subshow(self.show_id,selected_show,self.show_canvas)
+                if self.leak is True:
+                    print '\ninit new subshow',self.shower.show_params['show-ref']
                 self.mon.trace(self,' - show is: ' + self.mon.pretty_inst(self.shower) + ' ' + selected_show['show-ref'])
                 if self.shower is None:
                     self.mon.err(self,"Unknown Show Type: "+ selected_show['type'])
@@ -186,8 +206,9 @@ class Show(object):
         else:
             # dispatch track by type
             self.mon.log(self,self.show_params['show-ref']+ ' '+ str(self.show_id)+ ": Track type is: "+ track_type)
-            
             self.current_player=self.base_init_selected_player(selected_track)
+            if self.leak is True:
+                print '\ninit current player ',self.current_player.track_params['title']
             #menu has no track file
             if selected_track['type']=='menu':
                 track_file=''
@@ -263,6 +284,8 @@ class Show(object):
     # and if necessary close it        
     def base_track_ready_callback(self,enable_show_background):
         self.mon.trace(self,'')
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
         # show the show background done for every track but quick operation
         if enable_show_background is True:
             self.base_show_show_background()
@@ -283,32 +306,56 @@ class Show(object):
                 self.previous_player.close(self._base_closed_callback_previous)
             else:
                 self.mon.trace(self,' - previous is none\n')
+                if self.leak is True:
+                    print 'previous player = None - ', self.previous_player.track_params['title']
                 self.previous_player=None
         self.canvas.update_idletasks( )
 
 
     def _base_closed_callback_previous(self,status,message):
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
         self.mon.trace(self,' -  previous is None  - was: ' + self.mon.pretty_inst(self.previous_player))
+        if self.leak is True:
+            print 'previous player = None - base_closed_callback_previous', self.previous_player.track_params['title']
         self.previous_player=None
-
+        if self.previous_shower!=None:
+            if self.leak is True:
+                print 'previous shower = None - base_closed_callback_previous', self.previous_shower.show_params['title']
+            self.previous_shower=None
+        if self.shower != None:
+            if self.leak is True:
+                print 'shower = None',self.shower.show_params['title']
+            self.shower=None
 
     # used by end_shower to get the last track of the subshow
     def base_end_shower(self):
         self.mon.trace(self,' -  returned back to level: ' +str(self.level))
-        # get the previous subshow and last track it played 
+        # get the previous subshow and last track it played
         self.previous_shower,self.current_player=self.shower.base_subshow_ended_callback()
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
+            print 'got from self.shower.base_subshow_ended_callback',self.previous_shower.show_params['title'],
+            if self.current_player !=None:
+                print self.current_player.track_params['title']
+            else:
+                print ' None'
         if self.previous_shower!= None:
             self.subshow_kickback_signal=self.shower.subshow_kickback_signal
             # print 'get subshow kickback from subshow',self.subshow_kickback_signal
             self.previous_shower.base_withdraw_show_background()
             self.base_show_show_background()
-        self.previous_player=None
         self.mon.trace(self,'- get previous_player from subshow: ' + self.mon.pretty_inst(self.current_player))
-        self.shower=None
+        if self.shower != None:
+            if self.leak is True:
+                print 'shower = None',self.shower.show_params['title']
+            self.shower=None
 
 
     # close or unload the current player when ending the show
     def base_close_or_unload(self):
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
         self.mon.trace(self,self.mon.pretty_inst(self.current_player))
         # need to test for None because player may be made None by subshow lower down the stack for terminate
         if self.current_player is not None:
@@ -325,7 +372,7 @@ class Show(object):
             # current_player is None because closed further down show stack
             self.mon.trace(self,' - show ended with current_player=None because: ' + self.ending_reason)
 
-            # if exiting pipresents then need to close previous show else get memotry leak
+            # if exiting pipresents then need to close previous show else get memory leak
             # if not exiting pipresents the keep previous so it can be closed when showing the next track
             # print 'CURRENT PLAYER IS NONE' ,self.ending_reason
             if self.ending_reason == 'killed':
@@ -351,6 +398,8 @@ class Show(object):
 
     # wait for unloading or closing to complete then end
     def _wait_for_end(self):
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
         self.mon.trace(self, self.mon.pretty_inst(self.current_player))
         if self.current_player is not None:
             self.mon.trace(self,' - play state is ' +self.current_player.get_play_state())
@@ -392,6 +441,8 @@ class Show(object):
                         self.end('normal',"show quit by stop operation")
                     else:
                         self.current_player.hide()
+                        if self.leak is True:
+                            print 'current player == none wait for end',self.current_player.track_params['title']
                         self.current_player=None
                         self.base_close_previous()
                         
@@ -428,9 +479,24 @@ class Show(object):
     def base_subshow_ended_callback(self):
         # called by end_shower of a parent show  to get the last track of the subshow and the subshow
         self.mon.trace(self,' -  returns ' + self.mon.pretty_inst(self.current_player))
-        return self, self.current_player
-
-
+        if self.leak is True:
+            print 'IN ',self.show_params['title']
+            print 'subshow ended callback returns self show,current player',self.show_params['title'],
+        if self.current_player!= None:
+            if self.leak is True:
+                print self.current_player.track_params['title']
+            cp=self.current_player
+            if self.leak is True:
+                print 'current player = None',self.current_player.track_params['title']
+            self.current_player=None
+        else:
+            cp=None
+            if self.leak is True:
+                print 'None'
+        return self,cp
+##        print 'subshow ended callback returns self show,current player',self.show_params['title'],
+##        if self.current_player!=None:print self.current_player.track_params['title']
+##        return self,self.current_player
 # ********************************
 # Respond to external events
 # ********************************
@@ -448,6 +514,8 @@ class Show(object):
             else:
                 self.mon.trace(self,'previous is not showing')
                 self.previous_player.hide()
+                if self.leak is True:
+                    print 'previous player = None - ', self.previous_player.track_params['title']
                 self.previous_player=None
                 self.end(self.ending_reason,'')
         else:
@@ -459,6 +527,8 @@ class Show(object):
     def _base_close_previous_callback(self,status,message):
         self.mon.trace(self, ' -  previous is None  - was ' + self.mon.pretty_inst(self.previous_player))
         self.previous_player.hide()
+        if self.leak is True:
+            print 'previous player = None - ', self.previous_player.track_params['title']
         self.previous_player=None
         self.end(self.ending_reason,'')
 
@@ -498,6 +568,17 @@ class Show(object):
 
     # terminate Pi Presents
     def base_terminate(self):
+        if self.leak is True:
+            print '\nterminate received by ',self.show_params['title']
+            if self.shower!= None:
+                print self.shower.show_params['title']
+            else:
+                print 'self.shower is none'
+            if self.current_player!= None:
+                print self.current_player.track_params['title']
+            else:
+                print 'self.current player is none'        
+
         self.mon.trace(self,'')
         # set signal to stop the show when all  sub-shows and players have ended
         self.terminate_signal=True
