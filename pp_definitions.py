@@ -1,5 +1,5 @@
 class PPdefinitions(object):
-    DEFINITIONS_VERSION_STRING='1.3.4'
+    DEFINITIONS_VERSION_STRING='1.3.5'
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
     VIDEO_FILES= ('Video Files','.asf','.avi','.mpg','.mp4','.mpeg','.m2v','.m1v','.vob','.divx','.xvid','.mov','.m4v','.m2p','.mkv','.m2ts','.ts','.mts','.wmv','.webm')
     AUDIO_FILES=('Audio files','.mp3','.wav','.ogg','.ogm','.wma','.asf','.mp2')
@@ -31,6 +31,8 @@ class PPdefinitions(object):
                 'disable-controls','controls',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
 
             ],
 
@@ -52,7 +54,8 @@ class PPdefinitions(object):
                 'disable-controls','controls',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
-
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
             ],
     
         'mediashow':[
@@ -78,7 +81,8 @@ class PPdefinitions(object):
                     'disable-controls', 'controls',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
-
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
             ],
                  
         'menu':[
@@ -98,7 +102,8 @@ class PPdefinitions(object):
                'disable-controls','controls',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
-
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
             ],
 
         
@@ -125,7 +130,8 @@ class PPdefinitions(object):
                 'disable-controls','controls',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end','show-control-empty','show-control-not-empty',
-
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
             ],
 
 
@@ -147,7 +153,8 @@ class PPdefinitions(object):
                 'disable-controls','links',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
-
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
             ],
         
 
@@ -168,11 +175,19 @@ class PPdefinitions(object):
                 'disable-controls','links',
             'tab-show-control','sep',
                 'show-control-begin','show-control-end',
+            'tab-sched','sep',
+                'sched-everyday','sched-weekday','sched-monthday','sched-specialday',
                     ],
               
             'start':[
-                    'tab-show','sep',  
-                        'type','title','show-ref','background-colour','start-show'
+            'tab-sched','sep',
+                'start-show','sep','sched-enable','sched-everyday','sched-weekday','sched-monthday','sched-specialday',
+            'tab-simulatetime','sep',
+                'simulate-time','sim-year','sim-month','sim-day','sim-hour','sim-minute','sim-second',           
+            'tab-background','sep',  
+                'background-colour',
+            'tab-show','sep',
+                'type','title','start-show-ref',
                     ]
 
              }
@@ -189,7 +204,8 @@ class PPdefinitions(object):
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-start':'no','freeze-at-end':'yes',
                             'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
                             'live-tracks-dir1':'','live-tracks-dir2':'',
-                               'controls':'pp-down down\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':''},
+                               'controls':'pp-down down\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'',
+                               'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''},
 
                 'artmediashow':{'title': 'New ArtMediashow','show-ref':'','show-canvas':'',  'type': 'artmediashow', 'disable-controls':'no','sequence': 'ordered','repeat':'repeat','medialist': '',
                         'show-text':'','show-text-font':'Helvetica 20 bold','show-text-colour':'white','show-text-x':'0','show-text-y':'0','show-text-justify':'left','background-image':'','background-colour':'',
@@ -198,7 +214,8 @@ class PPdefinitions(object):
                          'transition': 'cut', 'duration': '5','pause-timeout':'','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-start':'no','freeze-at-end':'yes',
                                 'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
-                            'controls':'pp-down down\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':''},
+                            'controls':'pp-down down\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'',
+                                'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''},
 
                'hyperlinkshow':{ 'type':'hyperlinkshow','title':'New Hyperlink Show','show-ref':'', 'show-canvas':'', 'medialist':'','debug-path':'no',
                     'links':'','first-track-ref':'','home-track-ref':'','timeout-track-ref':'','disable-controls':'no','show-timeout': '0','track-timeout': '0',
@@ -208,7 +225,8 @@ class PPdefinitions(object):
                              'audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'',
                                  'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-start':'no','freeze-at-end':'yes',
                                  'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
-                                 'show-control-begin':'','show-control-end':''
+                                 'show-control-begin':'','show-control-end':'',
+                                 'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''
                             },
 
     
@@ -221,6 +239,7 @@ class PPdefinitions(object):
                                    'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-start':'no','freeze-at-end':'yes',
                                    'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
                                    'show-control-begin':'','show-control-end':'','controls-in-subshows':'no',
+                                   'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''
                                    },
     
                 'mediashow':{'title': 'New Mediashow','show-ref':'', 'show-canvas':'', 'type': 'mediashow','medialist': '','show-timeout': '0','interval':'0','track-count-limit':'0',
@@ -232,7 +251,8 @@ class PPdefinitions(object):
                             'transition': 'cut', 'duration': '5','pause-timeout':'','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0','mplayer-other-options':'','web-window':'warp 300 300 700 700',
                              'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','freeze-at-start':'no','freeze-at-end':'yes',
                              'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
-                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':''},
+                             'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'',
+                             'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''},
                                      
                 'liveshow':{'title': 'New Liveshow','show-ref':'','show-canvas':'', 'type': 'liveshow','show-timeout': '0','interval':'0','track-count-limit':'0',
                             'disable-controls':'no','trigger-start-type':'start','trigger-start-param':'','trigger-next-type': 'continue','trigger-next-param':'','sequence': 'ordered','repeat': 'repeat','trigger-end-type':            'none', 'trigger-end-param':'','medialist': '',
@@ -244,7 +264,8 @@ class PPdefinitions(object):
                             'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-start':'no','freeze-at-end':'yes',
                             'live-tracks-dir1':'','live-tracks-dir2':'',
                             'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
-                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'','show-control-empty':'','show-control-not-empty':''},
+                            'controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'','show-control-empty':'','show-control-not-empty':'',
+                            'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''},
                 
        
               'menu':{'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '','show-canvas':'',
@@ -254,9 +275,12 @@ class PPdefinitions(object):
                 'transition': 'cut',  'duration': '5','pause-timeout':'','image-window':'original','image-rotate':'0','audio-speaker':'stereo','mplayer-audio':'hdmi','mplayer-volume':'0', 'mplayer-other-options':'',
                         'omx-audio': 'hdmi','omx-volume':'0','omx-window':'warp 300 300 655 500','omx-other-options': '','web-window':'warp 300 300 700 700','freeze-at-start':'no','freeze-at-end':'yes',
                       'track-text-colour':'white','track-text-x':'0','track-text-y':'40','track-text-justify':'left','track-text-font': 'Helvetica 20 bold',
-                        'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':''},    
+                        'disable-controls':'no','controls':'pp-down down\npp-up up\npp-play play\npp-stop stop\npp-pause pause\n','show-control-begin':'','show-control-end':'',
+                      'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''},    
             
-                'start':{'title': 'Start','show-ref':'start', 'type': 'start','background-colour':'#000000','start-show':'','show-control-begin':'','show-control-end':''}
+                'start':{'title': 'Start','start-show-ref':'start', 'type': 'start','background-colour':'#000000','start-show':'','show-ref':'start',
+                         'sched-enable':'no','simulate-time':'no','sim-year':'','sim-month':'','sim-day':'','sim-hour':'','sim-minute':'','sim-second':'',
+                         'sched-everyday':'','sched-weekday':'','sched-monthday':'','sched-specialday':''}
                             
             }
     
@@ -330,6 +354,18 @@ class PPdefinitions(object):
 
                     'repeat':{'shape':'option-menu','text':'Repeat/Single','must':'no','read-only':'no',
                                         'values':['repeat','single-run']},
+                    'sched-enable':{'shape':'entry','text':'Enable Scheduler','must':'no','read-only':'no'},
+                    'simulate-time':{'shape':'entry','text':'Simulated Time','must':'no','read-only':'no'},
+                    'sim-second':{'shape':'entry','text':'Second','must':'no','read-only':'no'},
+                    'sim-minute':{'shape':'entry','text':'Minute','must':'no','read-only':'no'},
+                    'sim-hour':{'shape':'entry','text':'Hour','must':'no','read-only':'no'},
+                    'sim-day':{'shape':'entry','text':'Day','must':'no','read-only':'no'},
+                    'sim-month':{'shape':'entry','text':'Month','must':'no','read-only':'no'},
+                    'sim-year':{'shape':'entry','text':'Year','must':'no','read-only':'no'},
+                    'sched-everyday':{'shape':'text','text':'Every day','must':'no','read-only':'no'},
+                    'sched-weekday':{'shape':'text','text':'Week day','must':'no','read-only':'no'},
+                    'sched-monthday':{'shape':'text','text':'Month day','must':'no','read-only':'no'},
+                    'sched-specialday':{'shape':'text','text':'Special day','must':'no','read-only':'no'},
                     'sequence':{'shape':'option-menu','text':'Sequence','must':'no','read-only':'no',
                                         'values':['ordered','shuffle']},
                     'show-canvas':{'shape':'entry','text':'Show Canvas','must':'no','read-only':'no'},
@@ -337,6 +373,7 @@ class PPdefinitions(object):
                     'show-control-end':{'shape':'text','text':'Show Control at End','must':'no','read-only':'no'},
                     'show-control-empty':{'shape':'text','text':'Show Control on Empty','must':'no','read-only':'no'},
                     'show-control-not-empty':{'shape':'text','text':'Show Control on Not Empty','must':'no','read-only':'no'},
+                    'start-show-ref':{'shape':'entry','text':'Show Reference','must':'no','read-only':'yes'},
                     'show-ref':{'shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
                     'show-text':{'shape':'text','text':'Show Text','must':'no','read-only':'no'},
                     'show-text-font':{'shape':'font','text':'Show Text Font','must':'no','read-only':'no'},
@@ -348,11 +385,14 @@ class PPdefinitions(object):
                     'show-timeout':{'shape':'entry','text':'Show Timeout','must':'no','read-only':'no'},
                     'start-show':{'shape':'entry','text':'Start Shows','must':'no','read-only':'no'},
                     'tab-animation':{'shape':'tab','name':'animation','text':'Animation'},
+                    'tab-background':{'shape':'tab','name':'background','text':'Background'},
                     'tab-child':{'shape':'tab','name':'child','text':'Child Track'},
                     'tab-controls':{'shape':'tab','name':'controls','text':'Controls'},
                     'tab-eggtimer':{'shape':'tab','name':'eggtimer','text':'Egg Timer'},
                     'tab-links':{'shape':'tab','name':'links','text':'Controls'},
                     'tab-notices':{'shape':'tab','name':'notices','text':'Notices'},
+                    'tab-sched':{'shape':'tab','name':'sched','text':'Schedule'},
+                    'tab-simulatetime':{'shape':'tab','name':'schedcontrol','text':'Simulate Time'},
                     'tab-show':{'shape':'tab','name':'show','text':'Show '},
                     'tab-show-control':{'shape':'tab','name':'show-control','text':'Show Control'},
                     'tab-show-text':{'shape':'tab','name':'show-text','text':'Show Background and Text'},
@@ -579,7 +619,7 @@ class PPdefinitions(object):
                                        'values':['none','overlay','right','below']},
                     'menu-strip':{'shape':'option-menu','text':'Stipple Background','must':'no','read-only':'no',
                                        'values':['no','yes']},
-                    'menu-strip-padding':{'shape':'entry','text':'Stipple Background Padding','must':'no','read-only':'no'},
+                    'menu-strip-padding':{'shape':'entry','text':'Stipple Bckgrnd Pddng','must':'no','read-only':'no'},
 
                     'menu-guidelines':{'shape':'option-menu','text':'Guidelines','must':'no','read-only':'no',
                                        'values':['never','auto','always']},

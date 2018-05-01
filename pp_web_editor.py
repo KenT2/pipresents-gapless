@@ -34,7 +34,7 @@ class PPWebEditor(App):
         # ***************************************
         # INIT
         # ***************************************
-        self.editor_issue="1.3.4"
+        self.editor_issue="1.3.5"
         self.force_update= False
 
         # get directory holding the code
@@ -266,23 +266,12 @@ class PPWebEditor(App):
         update_all_menu.set_on_click_listener(self.m_update_all)
         update_menu.append(update_all_menu)
         
-        # schedule menu
-        schedule_menu = gui.MenuItem( 'Schedule',width=80, height=30)  
-        schedule_create_menu = gui.MenuItem( 'Create',width=120, height=30)
-        # schedule_create_menu.set_on_click_listener(self.create_schedule)
-        schedule_edit_menu = gui.MenuItem( 'Edit',width=120, height=30)
-        # schedule_edit_menu.set_on_click_listener(self.edit_schedule)
-        schedule_delete_menu = gui.MenuItem( 'Delete',width=120, height=30)
-        # schedule_delete_menu.set_on_click_listener(self.delete_schedule)
-        schedule_menu.append(schedule_create_menu)
-        schedule_menu.append(schedule_edit_menu)
-        schedule_menu.append(schedule_delete_menu)
+
 
         menu.append(profile_menu)
         menu.append(show_menu)
         menu.append(medialist_menu)
-        menu.append(track_menu)
-        menu.append(schedule_menu)        
+        menu.append(track_menu)      
         menu.append(config_menu)
         menu.append(options_menu)
         menu.append(update_menu)
@@ -751,8 +740,12 @@ class PPWebEditor(App):
             self.edit_show_dialog=WebEditItem("Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs(),
                        self.initial_media_dir,self.pp_home_dir,self.pp_profile_dir,'show',self.finished_edit_show)
             self.edit_show_dialog.show(self)
-            self.edit_show_dialog.show_tab('show')
-
+            show_type=self.current_showlist.selected_show()['type']
+            if show_type=='start':
+                self.edit_show_dialog.show_tab('sched')
+            else:
+                self.edit_show_dialog.show_tab('show')
+                
     def finished_edit_show(self):
         self.save_showlist(self.pp_profile_dir)
         self.refresh_shows_display()

@@ -50,8 +50,8 @@ class PiPresents(object):
     def __init__(self):
         # gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_SAVEALL)
-        self.pipresents_issue="1.3.4"
-        self.pipresents_minorissue = '1.3.4d'
+        self.pipresents_issue="1.3.5"
+        self.pipresents_minorissue = '1.3.5a'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -251,7 +251,7 @@ class PiPresents(object):
 
 
         # get the 'start' show from the showlist
-        index = self.showlist.index_of_show('start')
+        index = self.showlist.index_of_start_show()
         if index >=0:
             self.showlist.select(index)
             self.starter_show=self.showlist.selected_show()
@@ -365,7 +365,7 @@ class PiPresents(object):
         self.terminate_required=False
         self.exitpipresents_required=False
 
-        # initilise the I/O plugins by importing their drivers
+        # initialise the I/O plugins by importing their drivers
         self.ioplugin_manager=IOPluginManager()
         reason,message=self.ioplugin_manager.init(self.pp_dir,self.pp_profile,self.root,self.handle_input_event)
         if reason == 'error':
@@ -406,12 +406,14 @@ class PiPresents(object):
                     self.root.after(1000,self.oscdriver.start_server())
 
         
-        # enable ToD scheduler if schedule exists
+        # initialise ToD scheduler calculating schedule for today
         self.tod=TimeOfDay()
-        self.tod_enabled = self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.root,self.handle_command)
-
+        reason,message,self.tod_enabled = self.tod.init(pp_dir,self.pp_home,self.pp_profile,self.showlist,self.root,self.handle_command)
+        if reason == 'error':
+            self.mon.err(self,message)
+            self.end('error',message)
+            
         # warn if the network not available when ToD required
-
         if self.tod_enabled is True and self.network_connected is False:
             self.mon.warn(self,'Network not connected  so Time of Day scheduler may be using the internal clock')
 
@@ -534,7 +536,7 @@ class PiPresents(object):
     # handles one command provided as a line of text
     
     def handle_command(self,command_text,source='',show=''):
-        # print 'PIPRESENTS ',command_text,source,'from',show
+        # print 'PIPRESENTS ',command_text,'\n   Source',source,'from',show
         self.mon.log(self,"command received: " + command_text)
         if command_text.strip()=="":
             return

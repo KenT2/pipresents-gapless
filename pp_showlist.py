@@ -99,11 +99,19 @@ class ShowList(object):
             else:
                 index= self._selected_show_index-1
             self.select(index)
+
+    def index_of_start_show(self):
+        index = 0
+        for show in self._shows:
+            if show['type'] == 'start':
+                return index
+            index +=1
+        return -1        
     
     def index_of_show(self,wanted_show):
         index = 0
         for show in self._shows:
-            if show['show-ref'] == wanted_show:
+            if show['type']!='start' and show['show-ref'] == wanted_show:
                 return index
             index +=1
         return -1

@@ -1,3 +1,10 @@
+Version 1.3.5a 1/5/2018
+=======================
+This version integrates editing the time of day schedule with the web editor.
+The schedule.json file is no longer used. Keep it temporarily as you will require it to manually populate the profile.
+The schedule is in the schedule tab of each show and of the Start show (pp_core section of schedule.json)
+The content is the same, the primary change to format is that the fields of the time lines are reversed (now 13:50 open)
+
 Version 1.3.4d 25/03/2018
 ==============
 This version fixes a long standing memory leak when using subshows. The fix involved the most complex part

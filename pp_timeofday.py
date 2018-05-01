@@ -31,13 +31,14 @@ class TimeOfDay(object):
 
 
      # executed once from main program  only 
-    def init(self,pp_dir,pp_home,pp_profile,root,callback):
+    def init(self,pp_dir,pp_home,pp_profile,showlist,root,callback):
        
         # instantiate arguments
         TimeOfDay.root=root
         self.pp_dir=pp_dir
         self.pp_home=pp_home
         self.pp_profile=pp_profile
+        self.showlist=showlist
         self.callback=callback
 
         # init variables
@@ -46,23 +47,26 @@ class TimeOfDay(object):
         self.tick_timer=None
         # set time of day for if no schedule
         TimeOfDay.now = datetime.now().replace(microsecond=0)
-        # if the schedule exists read the schedule and return True
-        schedule=self.open_schedule()
-        if schedule is None:
-            return False
-        self.schedule=schedule
+        
+        #  read and error check the schedule
+        reason,message,schedule_enabled=self.read_schedule()
+        if reason == 'error':
+            return 'error',message,False
+        
+        if schedule_enabled is False:
+            return 'normal','',False
 
         #create the initial events list
-        if 'simulate-time' in self.schedule and self.schedule['simulate-time']=='yes':
-            year= int(self.schedule['sim-year'])
-            month= int(self.schedule['sim-month'])
-            day = int(self.schedule['sim-day'])
-            hour= int(self.schedule['sim-hour'])
-            minute= int(self.schedule['sim-minute'])
-            second= int(self.schedule['sim-second'])
+        if self.simulate_time is True:
+            year= int(self.sim_year)
+            month= int(self.sim_month)
+            day = int(self.sim_day)
+            hour= int(self.sim_hour)
+            minute= int(self.sim_minute)
+            second= int(self.sim_second)
             TimeOfDay.now = datetime(day = day, month =month, year=year,hour=hour, minute=minute, second=second)
             self.testing=True
-            # print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
+            print '\nInitial SIMULATED time',TimeOfDay.now.ctime()
             self.mon.sched(self,TimeOfDay.now,'Testing is ON, Initial SIMULATED time ' + str(TimeOfDay.now.ctime()))
         else:
             #get the current date/time only this once
@@ -72,34 +76,27 @@ class TimeOfDay(object):
             self.testing=False
         # print 'init',TimeOfDay.now
         TimeOfDay.last_now = TimeOfDay.now - timedelta(seconds=1)           
-        self.build_schedule_for_today(self.schedule)
+        reason,message=self.build_schedule_for_today()
+        if reason == 'error':
+            return 'error',message,False
         self.mon.sched(self,TimeOfDay.now,self.pretty_todays_schedule())
-        # if self.testing:
-            # self.print_todays_schedule()
+        if self.testing:
+            self.print_todays_schedule()
         self.build_events_lists()
-        # self.print_events_lists()
+        if self.testing:
+            self.print_events_lists()
         # and do exitpipresents or start any show that should be running at start up time
         self.do_catchup()
-        return True
+        return 'normal','',True
 
 
     def do_catchup(self):
             TimeOfDay.scheduler_time=TimeOfDay.now.time()
-            # shutdown or exit if current time is later than time in event list
-            for show_ref in TimeOfDay.events:
-                if show_ref == 'pp_core':
-                    times = TimeOfDay.events[show_ref]
-                    for time_element in reversed(times):
-                        # print 'now', TimeOfDay.scheduler_time, 'time from events', time_element[1], time_element[0]
-                        # got past current time can give up and execute exitpipresents or closedown
-                        if   TimeOfDay.scheduler_time >= time_element[1]:
-                            self.do_event(show_ref,time_element)
-                            return 'exiting'
-
                     
             # do the catchup for each real show in turn
+            # nothing required for start show, all previous events are just ignored.
             for show_ref in TimeOfDay.events:
-                 if show_ref != 'pp_core':
+                 if show_ref != 'start':
                     # print '\n*****',show_ref
                     times = TimeOfDay.events[show_ref]
                     # go through the event list for a show rembering show state until the first future event is found.
@@ -125,12 +122,6 @@ class TimeOfDay(object):
                         self.mon.sched(self,TimeOfDay.now,'Catch up for show: ' + show_ref +' requires '+ last_start_element[0] + ' ' +str(last_start_element[1]))
                         self.do_event(show_ref,last_start_element)
 
-##                    # print 'catchup time match', show_ref
-##                    # now do the inital real time command if time now matches event time
-##                    for time_element in reversed(times):
-##                        if time_element[1]  ==  TimeOfDay.scheduler_time:
-##                            print ' do event  - catchup', TimeOfDay.scheduler_time, 'time from events', time_element[1], time_element[0]
-##                            self.do_event(show_ref,time_element)
             return 'not exiting'        
 
     # called by main program only         
@@ -179,7 +170,10 @@ class TimeOfDay(object):
             # if self.testing:
                 # print 'Its midnight,  today is now', TimeOfDay.now.ctime()
             self.mon.sched(self,TimeOfDay.now,'Its midnight,  today is now ' + str(TimeOfDay.now.ctime()))
-            self.build_schedule_for_today(self.schedule)
+            reason,message=self.build_schedule_for_today()
+            if reason=='error':
+                self.mon.err(self,'system error- illegal time at midnight')
+                return
             self.mon.sched(self,TimeOfDay.now,self.pretty_todays_schedule())
             # if self.testing:
                 # self.print_todays_schedule()
@@ -204,7 +198,10 @@ class TimeOfDay(object):
         self.mon.sched (self,TimeOfDay.now,' ToD Scheduler : '  + time_element[0] +  ' ' +  show_ref + ' required at: ' + time_element[1].isoformat())
         # if self.testing:
             # print 'Event : ' +  time_element[0] + ' ' + show_ref + ' required at: '+ time_element[1].isoformat()
-        self.callback(time_element[0]  + ' ' + show_ref)
+        if show_ref != 'start':
+            self.callback(time_element[0]  + ' ' + show_ref)
+        else:
+            self.callback(time_element[0])            
 
 
 #
@@ -223,21 +220,65 @@ class TimeOfDay(object):
 # Preparing schedule and todays event list
 # ************************************
 
-    def open_schedule(self):
-        # look for the schedule.json file
-        # try inside profile
-        filename=self.pp_profile+os.sep+"schedule.json"
-        if os.path.exists(filename):
-            ifile  = open(filename, 'rb')
-            schedule= json.load(ifile)
-            ifile.close()
-            self.mon.log(self,"schedule.json read from "+ filename)
-            return schedule
+    def read_schedule(self):
+        # get schedule from showlist
+        index = self.showlist.index_of_start_show()
+        self.showlist.select(index)
+        starter_show=self.showlist.selected_show()
+        
+        sched_enabled=starter_show['sched-enable']
+        if sched_enabled != 'yes':
+            return 'normal','',False
+        
+        if starter_show['simulate-time'] == 'yes':
+            self.simulate_time= True
+            
+            self.sim_second=starter_show['sim-second']
+            if not self.sim_second.isdigit():
+                return 'error','Simulate time -  second is not a positive integer '+self.sim_second,False
+            if int(self.sim_second)>59:
+                return 'error','Simulate time - second is out of range '+self.sim_second,False          
+
+            self.sim_minute=starter_show['sim-minute']
+            if not self.sim_minute.isdigit():
+                return 'error','Simulate time - minute is not a positive integer '+self.sim_minute,False
+            if int(self.sim_minute)>59:
+                return 'error','Simulate time -  minute is out of range '+self.sim_minute,False
+
+            self.sim_hour=starter_show['sim-hour']
+            if not self.sim_hour.isdigit():
+                return 'error','Simulate time - hour is not a positive integer '+self.sim_hour,False
+            if int(self.sim_hour)>23:
+                return 'error','Simulate time -  hour is out of range '+self.sim_hour,False
+
+            self.sim_day=starter_show['sim-day']
+            if not self.sim_day.isdigit():
+                return 'error','Simulate time - day is not a positive integer '+self.sim_day,False
+            if int(self.sim_day)>31:
+                return 'error','Simulate time -  day is out of range '+self.sim_day,False        
+
+            self.sim_month=starter_show['sim-month']
+            if not self.sim_month.isdigit():
+                return 'error','Simulate time - month is not a positive integer '+self.sim_month,False
+            if int(self.sim_month)>12:
+                return 'error','Simulate time -  month is out of range '+self.sim_month,False     
+
+            self.sim_year=starter_show['sim-year']
+            if not self.sim_year.isdigit():
+                return 'error','Simulate time - year is not a positive integer '+self.sim_year,False
+            if int(self.sim_year)<2018:
+                return 'error','Simulate time -  year is out of range '+self.sim_year,False     
         else:
-            return None
+            self.simulate_time=False
+
+        return 'normal','',True
+    
+
         
 
-    def build_schedule_for_today(self,schedule):
+        
+
+    def build_schedule_for_today(self):
         # print this_day.year, this_day.month, this_day.day, TimeOfDay.DAYS_OF_WEEK[ this_day.weekday()]
         """
         self.todays_schedule is a dictionary the keys being show-refs.
@@ -248,54 +289,205 @@ class TimeOfDay(object):
 
         """
         self.todays_schedule={}
-        for show in schedule['shows']:
+        for index in range(self.showlist.length()):
+            show= self.showlist.show(index)
+            show_type=show['type']
             show_ref=show['show-ref']
-            if 'everyday' in show:
-                day=show['everyday']
-                # print day['day']
-                times=day['times']
-                for time in times:
-                    self.todays_schedule[show['show-ref']]=copy.deepcopy(day['times'])
+            # print 'looping build ',show_type,show_ref,self.showlist.length()
+            if 'sched-everyday' in show:
+                text=show['sched-everyday']
+                lines=text.splitlines()
+                while len(lines) != 0:
+                    status,message,day_lines,lines=self.get_one_day(lines,show_ref)
+                    if status == 'error':
+                        return 'error',message                    
+                    status,message,days_list,times_list=self.parse_day(day_lines,'everyday',show_ref,show_type)
+                    if status == 'error':
+                        return 'error',message
+                    #print 'everyday ',status,message,days_list,times_list
+                    self.todays_schedule[show['show-ref']]=copy.deepcopy(times_list)
+                    
                 # print '\nafter everyday'
                 # self.print_todays_schedule()
       
 
-            if 'weekday' in show:
-                day=show['weekday']
-                # print day['day']
-                if  TimeOfDay.DAYS_OF_WEEK[ TimeOfDay.now.weekday()] in day['day'] :
-                    # print 'weekday matched', TimeOfDay.DAYS_OF_WEEK[ TimeOfDay.now.weekday()]
-                    times=day['times']
-                    for time in times:
-                        self.todays_schedule[show['show-ref']]=copy.deepcopy(day['times'])
-                # print '\nafter weekday'
-                # self.print_todays_schedule()
+            if 'sched-weekday' in show:
+                text=show['sched-weekday']
+                lines=text.splitlines()
+                while len(lines) != 0:
+                    status,message,day_lines,lines=self.get_one_day(lines,show_ref)
+                    if status == 'error':
+                        return 'error',message
+                    status,message,days_list,times_list=self.parse_day(day_lines,'weekday',show_ref,show_type)
+                    if status == 'error':
+                        return 'error',message
+                    #print 'weekday ',status,message,days_list,times_list
+                    # is current day of the week in list of days in schedule
+                    if  TimeOfDay.DAYS_OF_WEEK[ TimeOfDay.now.weekday()] in days_list:
+                        self.todays_schedule[show['show-ref']]=copy.deepcopy(times_list)
+                        
+                #print '\nafter weekday'
+                #self.print_todays_schedule()
+  
 
+            if 'sched-monthday' in show:
+                text=show['sched-monthday']
+                lines=text.splitlines()
+                while len(lines) != 0:
+                    status,message,day_lines,lines=self.get_one_day(lines,show_ref)
+                    # print 'in monthday',day_lines
+                    if status == 'error':
+                        return 'error',message
+                    status,message,days_list,times_list=self.parse_day(day_lines,'monthday',show_ref,show_type)
+                    if status == 'error':
+                        return 'error',message
+                    #print 'monthday ',status,message,days_list,times_list                
+                    if  TimeOfDay.now.day in map(int,days_list):
+                        self.todays_schedule[show['show-ref']]=copy.deepcopy(times_list)
 
-            if 'monthday' in show:
-                day=show['monthday']
-                # print day['day']
-                if  TimeOfDay.now.day in map(int,day['day']):
-                    # print 'monthday matched', day['day']
-                    times=day['times']
-                    for time in times:
-                        self.todays_schedule[show['show-ref']]=copy.deepcopy(day['times'])
-                # print '\nafter monthday'
-                # self.print_todays_schedule()
+                #print '\nafter monthday'
+                #self.print_todays_schedule()
                      
-            if 'specialday' in show:
-                days=show['specialday']
-               # print days['day']
-                for day in days['day']:
-                    sdate=datetime.strptime(day,'%Y-%m-%d')
-                    if sdate.year == TimeOfDay.now.year and sdate.month==TimeOfDay.now.month and sdate.day == TimeOfDay.now.day:
-                        # print 'special matched', day
-                        times=days['times']
-                        # for time in times:
-                        self.todays_schedule[show['show-ref']]=copy.deepcopy(days['times'])
-                # print '\nafter specialday'
-                # self.print_todays_schedule()                          
+            if 'sched-specialday' in show:
+
+                text=show['sched-specialday']
+                lines=text.splitlines()
+                while len(lines) != 0:
+                    status,message,day_lines,lines=self.get_one_day(lines,show_ref)
+                    if status == 'error':
+                        return 'error',message
+                  
+                    status,message,days_list,times_list=self.parse_day(day_lines,'specialday',show_ref,show_type)
+                    if status == 'error':
+                        return 'error',message
+                    # print 'specialday ',status,message,days_list,times_list                
+                    for day in days_list:
+                        sdate=datetime.strptime(day,'%Y-%m-%d')
+                        if sdate.year == TimeOfDay.now.year and sdate.month==TimeOfDay.now.month and sdate.day == TimeOfDay.now.day:
+                            self.todays_schedule[show['show-ref']]=copy.deepcopy(times_list)
+
+                #print '\nafter specialday'
+                #self.print_todays_schedule()
+        return 'normal',''
+
+    def get_one_day(self,lines,show_ref):
+        this_day=[]
+        left_over=[]
+        #print 'get one day',lines
+        # check first line is day and move tt output
+        #print lines[0]
+        if not lines[0].startswith('day'):
+            return 'error','first line of section is not day ' + lines[0] + ' '+ show_ref,[],[]
+        this_day=[lines[0]]
+        #print ' this day',this_day
+        left_over=lines[1:]
+        # print 'left over',left_over
+        x_left_over=lines[1:]
+        for line in x_left_over:
+            #print 'in loop',line
+            if line.startswith('day'):
+                # print 'one day day',this_day,left_over
+                return 'normal','',this_day,left_over
+            this_day.append(line)
+            left_over=left_over[1:]
+        # print 'one day end',this_day,left_over
+        return 'normal','',this_day,left_over
                 
+    def parse_day(self,lines,section,show_ref,show_type):
+        # text
+        # day monday
+        # open 1:42
+        # close 1:45
+        # returns status,message,list of days,list of time lines
+        print 'lines ',len(lines), section
+        if section == 'everyday':
+            status,message,days_list=self.parse_everyday(lines[0],show_ref)
+        elif section == 'weekday':
+            status,message,days_list=self.parse_weekday(lines[0],show_ref)
+        elif section == 'monthday':
+            # print 'parse_day',lines
+            status,message,days_list=self.parse_monthday(lines[0],show_ref)
+        elif section == 'specialday':
+            status,message,days_list=self.parse_specialday(lines[0],show_ref)
+        else:
+            return 'error','illegal section name '+section + ' '+ show_ref,[],[]
+        if status == 'error':
+            return 'error',message,[],[]
+        if len(lines) >1:
+            time_lines=lines[1:]
+            status,message,times_list=self.parse_time_lines(time_lines,show_ref,show_type)
+            if status =='error':
+                return 'error',message,[],[]
+        else:
+            times_list=[]
+        return 'normal','',days_list,times_list
+
+    def parse_everyday(self,line,show_ref):
+        words=line.split()
+        if words[0]!='day':
+            return 'error','day line does not contain day  '+ line + ' ' + show_ref,[]
+        if words[1] != 'everyday':
+            return 'error','everday line does not contain everyday  '+ show_ref,[]
+        return 'normal','',['everyday']
+       
+
+    def parse_weekday(self,line,show_ref):
+        words=line.split()
+        if words[0]!='day':
+            return 'error','day line does not contain day  ' + line + ' ' + show_ref,[]
+        days=words[1:]
+        for day in days:
+            if day not in TimeOfDay.DAYS_OF_WEEK:
+                return 'error','weekday line has illegal day '+ day + ' '+ show_ref,[]
+        return 'normal','',days
+
+    def parse_monthday(self,line,show_ref):
+        words=line.split()
+        if words[0]!='day':
+            return 'error','day line does not contain day  '+ show_ref,[]
+        days=words[1:]
+        for day in days:
+            if not day.isdigit():
+                return 'error','monthday line has illegal day '+ day + ' '+ show_ref,[]                
+            if int(day) <1 or int(day)>31:
+                return 'error','monthday line has out of range day '+ line+ ' '+ show_ref,[]
+        return 'normal','',days
+
+    def parse_specialday(self,line,show_ref):
+        words=line.split()
+        if words[0]!='day':
+            return 'error','day line does not contain day  '+ show_ref,[]
+        days=words[1:]
+        for day in days:
+            status,message=self.parse_date(day,show_ref)
+            if status == 'error':
+                return 'error',message,''              
+        return 'normal','',days
+
+   
+    def parse_time_lines(self,lines,show_ref,show_type):
+        # lines - list of  lines each with text 'command time'
+        # returns list of lists each being [command, time]
+        time_lines=[]
+        for line in lines:
+            # split line into time,command
+            words=line.split()
+            if len(words)<2:
+                return 'error','time line has wrong length '+ line+ ' '+ show_ref,[]
+            status,message,time_item=self.parse_time(words[0],show_ref)
+            if status== 'error':
+                return 'error',message,[]
+
+            if show_type=='start':
+                command = ' '.join(words[1:])
+                time_lines.append([command,time_item])                
+            else:
+                if words[1] not in ('open','close'):
+                    return 'error','illegal command in '+ line+ ' '+ show_ref,[]
+                time_lines.append([words[1],time_item])
+        return 'normal','',time_lines
+
+
 
     def build_events_lists(self):
         # builds events dictionary from todays_schedule by
@@ -322,7 +514,54 @@ class TimeOfDay(object):
         mins=int(fields[1])
         return time(hour=hours,minute=mins,second=secs)
 
+    def parse_time(self,item,show_ref):        
+        fields=item.split(':')
+        if len(fields) == 0:
+            return 'error','Time field is empty '+ item + ' ' + show_ref, item
+        if len(fields)>3:
+            return 'error','Too many fields in ' + item + ' ' + show_ref, item
+        if len(fields) == 1:
+            seconds=fields[0]
+            minutes='0'
+            hours='0'
+        if len(fields) == 2:
+            seconds=fields[1]
+            minutes=fields[0]
+            hours='0'
+        if len(fields) == 3:
+            seconds=fields[2]
+            minutes=fields[1]
+            hours=fields[0]
+        if not seconds.isdigit() or not  minutes.isdigit() or  not hours.isdigit():
+            return 'error','Fields of  '+ item + ' are not positive integers ' + show_ref,item     
+        if int(minutes)>59:
+            return 'error','Minutes of  '+ item + ' is out of range '+ show_ref,item
+        if int(seconds)>59:
+            return 'error','Seconds of  '+ item + ' is out of range ' +show_ref,item
+        if int(hours)>23:
+            return 'error','Hours of  '+ item + ' is out of range '+ show_ref,item           
+        return 'normal','',item
 
+
+    def parse_date(self,item,show_ref):
+        fields=item.split('-')
+        if len(fields) == 0:
+            return 'error','Date field is empty '+item  + ' '+ show_ref
+        if len(fields)!=3:
+            return 'error','Too many or few fields in date ' + item  + ' ' + show_ref
+        year=fields[0]
+        month=fields[1]
+        day = fields[2]
+        if not year.isdigit() or not  month.isdigit() or  not day.isdigit():
+            return 'error','Fields of  '+ item + ' are not positive integers ' + show_ref    
+        if int(year)<2018:
+            return 'error','Year of  '+ item + ' is out of range '+ show_ref + year
+        if int(month)>12:
+            return 'error','Month of  '+ item + ' is out of range ' +show_ref
+        if int(day)>31:
+            return 'error','Day of  '+ item + ' is out of range '+ show_ref
+        return 'normal',''
+        
 # *********************
 # print for debug
 # *********************
@@ -337,7 +576,7 @@ class TimeOfDay(object):
         return op
 
     def pretty_events_lists(self):
-        op = ' Events list for today'
+        op = ' Task list for today'
         for key in self.events:
             op += '\n' + key
             for show in self.events[key]:
@@ -354,24 +593,13 @@ class TimeOfDay(object):
             print
 
     def print_events_lists(self):
-        print '\nevents list for today'
+        print '\nTask list for today'
         for key in self.events:
             print '\n',key
             for show in self.events[key]:
                 print show[0],show[1].isoformat()
+        print
                 
 
-    def save_schedule(self,filename):
-        """ save a schedule """
-        if filename=="":
-            return False
-        if os.name=='nt':
-            filename = string.replace(filename,'/','\\')
-        else:
-            filename = string.replace(filename,'\\','/')
-        ofile  = open(filename, "wb")
-        json.dump(self.schedule,ofile,sort_keys= False,indent=1)
-        ofile.close()
-        return
             
 
