@@ -1,4 +1,4 @@
-PI PRESENTS  - Version 1.3.4
+PI PRESENTS  - Version 1.3.5
 ============================
 
 Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
@@ -10,7 +10,7 @@ TO UPGRADE FROM VERSION 1.2 [PIPRESENTS-NEXT]
 ============================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then you will need to read the section of the manual on update from 1.2 to 1.3 and Release Notes for all 1.3x versions. Before doing so keep a copy of the current Pi Presents and all the profiles:
 
-TO UPGRADE FROM VERSION 1.3.3 (PIPRESENTS-GAPLESS)
+TO UPGRADE FROM VERSION 1.3.4 (PIPRESENTS-GAPLESS)
 ======================================
 To upgrade follow the instructions in the 'Updating Pi Presents' section below. Then follow the instructions in the Release Notes
 
