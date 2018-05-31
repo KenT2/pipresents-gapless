@@ -622,9 +622,10 @@ class PiPresents(object):
 
     def handle_cec_command(self,command):
         if command == 'on':
-            os.system('echo "on 0" | cec-client –s')
+            os.system('echo "on 0" | cec-client -s')
         elif command == 'standby':
-            os.system('echo "standby 0" | cec-client –s')
+            os.system('echo "standby 0" | cec-client -s')
+
         elif command == 'scan':
             os.system('echo scan | cec-client -s -d 1')
                       
