@@ -89,7 +89,12 @@ class GapShow(Show):
         if reason=='error':
             self.mon.err(self,'Interval has bad time: '+self.show_params['interval'])
             self.end('error','Interval has bad time: '+self.show_params['interval'])
-            
+
+        if self.medialist.anon_length()==0 and self.show_params['type'] not in ('liveshow','artliveshow'):
+            self.mon.err(self,'No anonymous tracks in medialist ')
+            self.end('error','No anonymous tracks in medialist ')
+               
+
         # delete eggtimer started by the parent
         if self.previous_shower is not None:
             self.previous_shower.delete_eggtimer()

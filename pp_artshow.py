@@ -53,6 +53,9 @@ class ArtShow(Show):
         self.mon.trace(self,self.show_params['show-ref'])
         Show.base_play(self,end_callback,show_ready_callback,parent_kickback_signal, level,controls_list)
 
+        if self.medialist.anon_length()==0 and self.show_params['type'] not in ('liveshow','artliveshow'):
+            self.mon.err(self,'No anonymous tracks in medialist ')
+            self.end('error','No anonymous tracks in medialist ')
 
         # get the previous shower and player from calling show
         # Show.base_get_previous_player_from_parent(self)

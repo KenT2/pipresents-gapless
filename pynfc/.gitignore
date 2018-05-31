@@ -1,0 +1,5 @@
+*_wrap.c
+*.so
+build
+*.pyc
+.idea

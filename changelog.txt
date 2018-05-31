@@ -1,3 +1,11 @@
+CHANGES FOR 1.3.5b 31/5/2018
+============================
+enhanced - I/O plugin for PN532 RFID tag reader
+enhanced - cec show control commands to turn TV on/standby
+fixed - crash if there are no anonymous tracks on a medialst.
+fixed - network detection more resilient to peculiar ip route response
+
+
 CHANGES FOR 1.3.5a 1/05/2018
 ============================
 enhanced - use web editor instead of the schedule.json file to edit a schedule

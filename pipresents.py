@@ -51,7 +51,7 @@ class PiPresents(object):
         # gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.5"
-        self.pipresents_minorissue = '1.3.5a'
+        self.pipresents_minorissue = '1.3.5b'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -577,9 +577,15 @@ class PiPresents(object):
         elif show_command =='monitor':
             self.handle_monitor_command(show_ref)
             return
+
+        elif show_command =='cec':
+            self.handle_cec_command(show_ref)
+            return
+        
         elif show_command == 'event':
             self.handle_input_event(show_ref,'Show Control')
             return
+        
         elif show_command == 'exitpipresents':
             self.exitpipresents_required=True
             if self.show_manager.all_shows_exited() is True:
@@ -612,7 +618,15 @@ class PiPresents(object):
         if command == 'on':
             os.system('vcgencmd display_power 1 >/dev/null')
         elif command == 'off':
-            os.system('vcgencmd display_power 0 >/dev/null')           
+            os.system('vcgencmd display_power 0 >/dev/null')
+
+    def handle_cec_command(self,command):
+        if command == 'on':
+            os.system('echo "on 0" | cec-client –s')
+        elif command == 'standby':
+            os.system('echo "standby 0" | cec-client –s')
+        elif command == 'scan':
+            os.system('echo scan | cec-client -s -d 1')
                       
     # deal with differnt commands/input events
 

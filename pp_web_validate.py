@@ -868,11 +868,15 @@ class Validator(AdaptableDialog):
                 return
             
         if len(fields) == 2:
-            if fields[0] not in ('open','close','monitor','event','openexclusive'):
+            if fields[0] not in ('open','close','monitor','cec','event','openexclusive'):
                 self.display('f','Show Control - Incorrect number of fields: ' + line)
             else:
                 if fields[0] =='monitor' and fields[1] not in ('on','off'):
                     self.display('f',"Show Control - monitor parameter not on or off: "+ line)
+                    return
+
+                if fields[0] =='cec' and fields[1] not in ('on','standby','scan'):
+                    self.display('f',"Show Control - monitor parameter not on standby or scan: "+ line)
                     return
 
                 if fields[0] in ('open','close','openexclusive') and fields[1] not in v_show_labels:

@@ -204,7 +204,7 @@ class Network(object):
         for line in ip_lines:
             fields= line.split()
 
-            if fields[0] != 'default':
+            if fields[0] != 'default' and 'src' in fields:
                 interface= fields[fields.index('dev')+1]
                 ip = fields[fields.index('src')+1]
                 interfaces +=1
