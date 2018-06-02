@@ -217,7 +217,7 @@ class pp_gpiodriver(object):
 
                 # linked pin
                 if pin[pp_gpiodriver.LINKED_NAME] != '':
-                    link_pin=self.output_pin_of(pin[pp_gpiodriver.LINKED_NAME])
+                    link_pin=self._output_pin_of(pin[pp_gpiodriver.LINKED_NAME])
                     if link_pin!=-1:
                         self.GPIO.output(link_pin,self.GPIO.input(pin[pp_gpiodriver.PIN]) ^ pin[pp_gpiodriver.LINKED_INVERT])
                     
