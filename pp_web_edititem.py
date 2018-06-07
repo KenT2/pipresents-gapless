@@ -170,7 +170,13 @@ class WebEditItem(AdaptableDialog):
                     for key, value in enumerate(values):
                         item=gui.DropDownItem(value,width=self.field_width,height=25)
                         obj.append(item, key=key)
-                    obj.set_value(self.field_content[field])
+                    content=self.field_content[field]
+                    if self.field_content[field] not in values:
+                        obj.style['color'] = 'red'
+                        content=values[0]
+                    obj.set_value(content)
+                    # print self.field_content[field],obj.get_value(),values
+
 
                 else:
                     print"Uknown shape for: " + field
@@ -226,6 +232,8 @@ class WebEditItem(AdaptableDialog):
 
                 else:
                     self.field_content[field]=str(self.field_objs[field_index].get_value()).strip()
+                    # print field_spec['shape'],field_spec['text']+':  ',self.field_content[field]
+
                     
                 # print field_spec['shape'],field_spec['text']+':  ',self.field_content[field]    
                 field_index +=1

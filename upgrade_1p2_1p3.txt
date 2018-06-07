@@ -1,0 +1,311 @@
+UPGRADING FROM PIPRESENTS-NEXT (V1.2) TO PIPRESENTS-GAPLESS (V1.3)
+7/6/2018
+
+These notes assist with upgrading from pipresents-next to the latest version of pipresents-gapless (version 1.3.5)
+
+pipresents-gapless is an evolutionary change to pipresents-next so much will be familiar. There are however a few fundamental changes which you need to be aware of, these are described in the early sections of this note:
+
+    - a web based editor
+    - changes to the controls in show profiles
+    - I/O plugins which necessite modification to gpio.cfg, screen.cfg and keys.cfg
+    - Mediashow/Liveshow sequencing has changed
+
+I have listed many of the changes to functionality below, mainly those that are required to achieve a running upgraded system. However there are more smaller changes and additions other than those documented here. The best place to find about these is changelog.txt, ReleaseNotes.txt and the manual.pdf
+
+Please contact me with queries or items I should add to this list using the Wordpress contact form or github issues for pipresents-gapless.
+
+
+UPGRADING PI PRESENTS 
+=====================
+
+You must use the latest version of Raspbian. Pi Presents has not been tested on earlier versions.
+
+The dependencies for pipresents-gapless are already installed by pipresents-next (except the optional evdev) so just download the software.
+
+Open a terminal window in the /home/pi directory and type:
+
+         wget https://github.com/KenT2/pipresents-gapless/tarball/master -O - | tar xz
+
+There should now be a directory 'KenT2-pipresents-gapless-xxxx' in the /home/pi directory
+
+Rename the existing pipresents directory to old-pipresents
+
+Rename the new directory to pipresents.
+
+
+Getting examples for Pi Presents Gapless
+----------------------------------------
+
+pp-gapless has many examples in the pipresents-gapless-examples github repository. These include the examples from pipresents-next. To download:
+
+Rename the existing pp_home directory to old_pp_home.
+
+Open a terminal window in your home directory and type:
+
+         wget https://github.com/KenT2/pipresents-gapless-examples/tarball/master -O - | tar xz
+
+There should now be a directory 'KenT2-pipresents-gapless-examples-xxxx' in the /home/pi directory.
+
+Open the directory and move the 'pp_home' directory and its contents to the /home/pi directory.
+
+Having installed the new software and tried the new examples your task is to upgrade your profiles using the enhanced profile editor.
+
+
+AN ENHANCED EDITOR
+==================
+pipresents-gapless has new editor. Run it with python pp_web_editor.py
+
+The editor will appear in a browser. It is very similar to pp-next's editor except the file selection dialog is subtly different:
+    - Click on the directory's text and click OK to open a Profile.
+    - If you have nested profiles click on the directory icon to open a directory.
+    - Ignore the Go button
+
+A bug in the latest Raspbian makes the legacy Epiphany the default browser, the editor will not run correctly on Epiphany. To correct this run Chromium and make it your default browser.
+
+Being a browser based client/server architecture the editor can be used remotely. There is no Windows version of the editor.
+
+
+
+UPGRADING PROFILES
+==================
+
+Take backups before upgrading.
+
+To upgrade a profile open it in the the web based editor, you will be asked to upgrade to the latest version. The editor takes account of the changes in fields of show and track profiles but it will not take account of changes in functionality between the two versions.
+
+After upgrade, if a field with a drop down selection box appears in red it is because the value in pipresents-next is not valid for pipresents-gapless and the first value in the drop-down box has been assumed. Check this is what you require.
+
+ 
+
+CONTROLS
+=========
+
+controls/links terminology
+--------------------------
+In pipresents-next mediashows had controls and hyperlinkshows had links.
+They are actually the same thing and in pp-gapless appear under the Controls tab of a Show or Track.
+
+The text in the Controls Tab associates the symbolic name of an input event with a Command.
+
+
+Inheritance of controls
+-----------------------
+In pipresents-next shows which ran as a result of Show Tracks in the parent show's medialist inherited controls from the parent show. This inheritance is not implemented in pipresents-gapless because it worked only when the two shows had the same set of commands e.g. medishow/menu
+
+In pipresents-gapless every show must have its own set of controls.
+
+
+controls.cfg
+------------
+In pipresents-next profiles could use a default set of controls in /pipresents/pp_home/controls.cfg
+
+This is not so in pp-gapless so you will need to supply a set of controls in the Controls Tab of every show.
+
+The text below is the controls in the default controls.cfg:
+
+pp-down down
+pp-up up
+pp-play play
+pp-stop stop
+pp-pause pause
+
+In pp_audio_1p2 and pp_web_1p2 examples there is a controls.cfg file in the profile to provide additional controls. The content of this should be transferred to the controls field of the mediashow. Remove comments and = signs.
+
+You can delete controls.cfg, it is not used and causes a validation warning.
+
+
+SHOW TRACKS
+===========
+In pipresents-next there were several several specific cases where there were shows within shows - child shows, subshows.
+
+Actually these are special cases of a powerful feature of Pi Presents where any media track (image, audio etc.) could instead be a Show Track allowing a show to be run at that point.
+
+The Show Track specifies the show reference of the show to be run.
+
+Note the change in inheritance rules for controls (decribed above) concerning Show Tracks. In pp-next the controls were inherited by the show in the Show Track, in pp-gapless they are not.
+
+
+
+MEDIASHOW
+=========
+The sequence control of this show has been re-designed, read the manual as it is very different. Some of the more important changes:
+
+repeat/single field
+-------------------
+Interval is no longer a valid value. The conversion selects 'repeat' for this field and shows it in red. Review this particularly if the show is a subshow where single-run is probably required.
+
+'single-shot' is now a special case of repeat'ing mediashow.
+
+'single-run' does a single run of the medialist then closes the show.
+
+trigger
+-------
+The trigger field has been deleted, use 'trigger for start' with the value input instead.
+
+child track
+------------
+In pp-gapless 'child show' has changed to 'child track' as it may be a media track or a show track.
+
+As a consequence, in pipresents-next a fixed name of pp-child-show was used. In pp-gapless the track reference of the child track needs to be specified.
+
+
+pp_presentation_1p2
+-------------------
+This will not work as advertised in pp-gapless. Look at the pp_presentation_1p3 example for how to achieve a similar effect.
+
+Manual progress has been removed. Use tracks with 0 duration instead. Use freeze at end if you do not want videos to auto advance.
+
+LIVESHOW
+========
+Liveshows are now based on the mediashow code so have many additional features. Review its working.
+
+An 'Empty List' track needs to be specified. The content is a track reference (which may be a show track). 
+The Empty List track is displayed when the livelist is empty. The Escape track is used if the Empty List track is a show.
+
+
+
+GPIO
+====
+
+In gapless do not use sudo before the python pipresents.py command. It is not necessary in the latest version of Raspbian and,for other reasons, not allowed.
+
+The -g comand line option is not required. The use of GPIO and other I/O plugins is determined by the presence of configuration files in /pp_io_config directory.
+
+gpio.cfg location
+-----------------
+The gpio.cfg file must be in the profile in the sub-directory /pp_io_config. The editor will move the gpio.cfg file from the profile to the sub-directory /pp_io_config
+
+
+gpio.cfg [DRIVER] section
+-------------------------
+You must add the following section to the start of gpio.cfg:
+
+[DRIVER]
+title = GPIO    
+enabled = yes
+tick-interval = 50
+module= pp_gpiodriver
+
+In presents-gapless there are many I/O plugins,you are not limited to GPIO. The Driver section is required to tell Pi Presents which I/O plugin driver is to be used.
+
+
+gpio.cfg Shutdown Pin
+---------------------
+If you are using pin P1-12 (or any other) to shut down the Pi this section must be changed to:
+
+# shutdown the Rpi after 5 seconds
+# For V 1.3 the 5 second delay is implemented in pp_gpiodriver.py by blank falling-name and zero-name being
+# asserted after delay of repeat*tick-interval = (100*50) mS.
+[P1-12]
+direction = in
+rising-name =
+falling-name = 
+one-name = 
+zero-name = pp-shutdownnow
+repeat = 100
+threshold = 8
+pull-up-down = up
+
+Additional Pins
+---------------
+Pins for 40 pin Pi's will need to be added to gpio.cfg. If not a warning is given.
+
+
+KEYBOARD
+========
+
+keys.cfg  - location
+-----------------
+This file must be in the profile in the sub-directory /pp_io_config.  PP will move the keys.cfg file from the profile to the subfolder /pp_io_config
+
+
+keys.cfg  - Driver Section
+-----------------------
+You must add the following section to the start of keys.cfg 
+
+[DRIVER]
+title = Tkinter Keys    
+enabled = yes
+bind-printing = yes
+module= pp_kbddriver
+
+In presents-gapless there are many I/O plugins, the Tkinter keyboard driver is now an I/O plugin. The Driver section is required to tell Pi Presents which I/O plugin is to be used.
+
+In keys.cfg  pp-exit is now pp-terminate to avoid clashes of terminology
+
+
+MENUSHOW
+========
+
+In pipresents-next the format of a menu was in the Show. In pp-gapless this has been moved to a track in the medialist.
+
+The editor does the conversion automatically, creating a medialist for each show rather than sharing a medialist between shows. The new medialists have the name <show-reference>-menu1p3.json.
+
+The original medialists are retained but are not used.
+
+Converted menu text colour is sometimes black which cannot be seen on a black background
+
+Menu background is now specified in the show not as a menu background track in the medialist. menu background track has been removed.
+
+
+PRE-DEFINED SYMBOLIC NAMES
+==========================
+The 'pp-exit' pre-defined symbolic name is now 'pp-exitpipresents' to avoid clashes of terminology.
+
+
+
+ADMINISTRATIVE TEXT
+===================
+In pipresents-gapless more than one show can be run concurrently, each occupying a different part of the screen. All administrative track text has been moved from resources.cfg to the profile allowing each show to have different messages.
+
+
+IMAGE TRACK
+===========
+A blank location is not allowed by pipresents-gapless
+
+
+ANIMATION
+=========
+Animation commands such as 'out1 on' or 'out1 off' need to be edited to be:
+0 out1 state on
+0 out1 state off
+
+Time delay field is now mandatory and commands have a parameter type and value. For GPIO the parameter type is state and the values on/off. For other I/O plugins they may be different.
+
+
+SHOW CONTROL
+============
+The commands to open and close a show have changed from:
+    'show-ref start' 'show-ref stop' 'pipresents shutdownnow'
+to:
+   open <show-ref>
+   close <show-ref>
+   shutdownnow
+
+
+CLICK AREAS
+===========
+Additional fields are required in screen.cfg to implement images on a button. As a minimum add:
+
+    image =
+
+to each section.
+
+
+TRACK PLUGINS
+=============
+The API of track plugins is different, see release notes and the manual.
+
+The pp_plugin_1p2 example will not run correctly on pipresents-gapless
+
+
+
+TIME OF DAY SCHEDULER
+=====================
+pipresents-gapless has a much enhanced time of day scheduler controlled by the Schedule tab in each Show
+
+The fields in pipresents-next profiles that control time of day have been lost in conversion, and are of no use anyway.
+
+pp_timeofday_1p2 will not function properly after conversion
+
+

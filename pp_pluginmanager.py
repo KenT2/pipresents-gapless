@@ -96,7 +96,8 @@ class PluginManager(object):
         # stop the timer as the stop_plugin may have been called while it is running
         if self.plugin_timer is not None:
             self.canvas.after_cancel(self.plugin_timer)
-        self.plugin.hide()
+        if self.plugin != None:
+            self.plugin.hide()
         self.canvas.update_idletasks()
 
 

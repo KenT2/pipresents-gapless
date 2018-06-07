@@ -1,3 +1,12 @@
+CHANGES FOR 1.3.5c 7/6/2018
+============================
+modified - readme.md ready for gapless to become the stable version
+modified - added upgrade_1p2_1p3.txt containing instructions for upgrade from pp-next to pp-gapless.
+enhanced - web editor, dropdown field values displayed in red if read value is not valid
+fixed - crash if linked pins are used in gpio.cfg
+fixed - crash if I/O plugin .cfg file has errors
+fixed - crash if track plugin is not found.
+
 CHANGES FOR 1.3.5b 31/5/2018
 ============================
 enhanced - I/O plugin for PN532 RFID tag reader

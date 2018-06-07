@@ -51,7 +51,7 @@ class PiPresents(object):
         # gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.5"
-        self.pipresents_minorissue = '1.3.5b'
+        self.pipresents_minorissue = '1.3.5c'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -369,10 +369,10 @@ class PiPresents(object):
         self.ioplugin_manager=IOPluginManager()
         reason,message=self.ioplugin_manager.init(self.pp_dir,self.pp_profile,self.root,self.handle_input_event)
         if reason == 'error':
-                self.end('error',message)
-        # self.ioplugin_manager.start()
+            # self.mon.err(self,message)
+            self.end('error',message)
+
         
-           
         # kick off animation sequencer
         self.animate = Animate()
         self.animate.init(pp_dir,self.pp_home,self.pp_profile,self.canvas,200,self.handle_output_event)

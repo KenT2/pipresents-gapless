@@ -23,7 +23,9 @@ class IOPluginManager(object):
                 if cfgfile in ('screen.cfg','osc.cfg'):
                     continue
                 cfgfilepath = self.pp_profile+os.sep+'pp_io_config'+os.sep+cfgfile
-                self.init_config(cfgfile,cfgfilepath,widget,callback)
+                status,message=self.init_config(cfgfile,cfgfilepath,widget,callback)
+                if status == 'error':
+                    return status,message
 
         #read .cfg file in /pipresents/pp_io_config if file not present in profile then use this one
         for cfgfile in os.listdir(self.pp_dir+os.sep+'pp_io_config'):
@@ -31,7 +33,9 @@ class IOPluginManager(object):
                 continue
             if not os.path.exists(self.pp_profile+os.sep+'pp_io_config'+os.sep+cfgfile):
                 cfgfilepath=self.pp_dir+os.sep+'pp_io_config'+os.sep+cfgfile
-                self.init_config(cfgfile,cfgfilepath,widget,callback)
+                status,message=self.init_config(cfgfile,cfgfilepath,widget,callback)
+                if status == 'error':
+                    return status,message
                  
         # print IOPluginManager.plugins
         return 'normal','I/O Plugins registered'
