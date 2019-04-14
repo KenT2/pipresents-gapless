@@ -1,3 +1,10 @@
+CHANGES FOR 1.3.5d 14/4/2019
+==========================
+fixed - trailing comments delimited by ; not # i keys.cfg, also in example profiles
+fixed - crash when terminating Pi Presents from the Manager
+fixed - crash when exitpipresents is a Show Command in a show.
+fixed - errors in and improvements to the manual
+
 CHANGES FOR 1.3.5c 7/6/2018
 ============================
 modified - readme.md ready for gapless to become the stable version

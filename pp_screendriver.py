@@ -80,7 +80,7 @@ class ScreenDriver(object):
             # image for the button
             if not self.is_in_config(area,'image'):
                 reason='error'
-                message='missing image fields in screen.cfg, see 1.3 release notes'
+                message='missing image fields in screen.cfg'
                 break
             image_name=self.get(area,'image')
             if image_name !='':
