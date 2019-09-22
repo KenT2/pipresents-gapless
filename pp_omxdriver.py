@@ -151,7 +151,7 @@ class OMXDriver(object):
     'after_first_frame' - don't unpause in show, test > -yy large enough so that first frame always shows
     """
     after_first_frame_position = -50000 #microseconds
-    before_first_frame_position = -70000 #microseconds
+    before_first_frame_position = -80000 #microseconds
     
     def _status_loop(self):
             if self.is_running() is False:

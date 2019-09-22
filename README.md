@@ -60,7 +60,7 @@ http://www.web-echo.de/4.html
 Requirements
 -------------
 
-	* must use the latest version of Raspbian Stretch with Desktop (not the Lite version)
+	* must use the latest version of Raspbian Stretch or Buster with Desktop (not the Lite version)
 	* must be run from the PIXEL desktop.
 	* must be installed and run from user Pi
 

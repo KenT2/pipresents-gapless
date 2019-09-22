@@ -1,12 +1,13 @@
 CHANGES FOR 1.3.5e 22/9/2019
 ==========================
-tested - Gapless works on Buster with Pi3 and Pi4????
+tested - Gapless works on Buster with Pi3 and Pi4
 fixed - crash in pp_serialdriver.py I/O plugin
 fixed - videoplayer volume control initialization sets volume to -60 dB
 fixed - crash if format of controls for video track cause an error
 fixed - osc commands are ignored if Pi not connected to LAN instead of reporting error
 fixed - removed debug messages from various places
 fixed - pp_menu_1p4 example, loss of cursor after message track (profile edit)
+fixed - adjusted timing for freeze before start and freeze after start in pp_omxdriver.py
 
 CHANGES FOR 1.3.5d 14/4/2019
 ==========================
