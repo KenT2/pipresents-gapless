@@ -73,7 +73,7 @@ class pp_serialdriver(object):
         for section in self.config.sections():
             if section == 'DRIVER':
                 continue
-            if entry[pp_serialdriver.DIRECTION] == 'none':
+            if self.config.get(section,'direction') == 'none':
                 continue
             entry=copy.deepcopy(pp_serialdriver.TEMPLATE)
             entry[pp_serialdriver.NAME]=self.config.get(section,'name')

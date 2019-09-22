@@ -120,7 +120,7 @@ class OSCDriver(object):
                 self.input_server=myOSCServer((self.this_unit_ip,int(self.listen_port)),self.input_reply_client)
                 self.add_default_handler(self.input_server)
                 self.add_input_handlers(self.input_server)
-                print self.pretty_list(self.input_server.getOSCAddressSpace(),'\n')
+                # print self.pretty_list(self.input_server.getOSCAddressSpace(),'\n')
                 
             if self.osc_config.master_enabled =='yes':
                 #we want to control other units
@@ -384,7 +384,7 @@ class OSCDriver(object):
             for arg in args:
                 text= text+ arg + ' '
             text = text + '0'
-            print text
+            # print text
             self.animate_callback(text)
         else:
             self.mon.warn(self,'OSC output event has no arguments - ignoring')      
