@@ -980,6 +980,9 @@ class FileManager(AdaptableDialog):
         self.callback()
 
     def on_delete_media_button_pressed(self,widget):
+        if self.current_media_name=='':
+            OKDialog('Delete','No File Selected').show(self._base_app_instance )
+            return
         OKCancelDialog('Delete Item','Delete '+self.current_media_name +'<br>Are you sure?',callback=self.on_delete_media_confirm).show(self._base_app_instance)
         return
 
