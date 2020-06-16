@@ -318,17 +318,46 @@ class AudioPlayer(Player):
  
     def start_play_state_machine_show(self):
 
-                
         if self.play_state == 'loaded':
             # initialise all the state machine variables
             self.duration_count = 0
 
-            # select the sound device
-            if self.mplayer_audio != "":
-                if self.mplayer_audio == 'hdmi':
-                    os.system("amixer -q -c 0 cset numid=3 2")
+            # determine which audio system is in use, linux system was introduced in May 2020
+            # The test of .asoundrc does not work if there is a USB sound card plugged in
+            if os.path.exists ('/home/pi/.asoundrc'):        
+                audio_sys='linux'
+            else:
+                audio_sys='pi'
+                
+            #uncomment to force old audio system
+            #audio_sys='pi'
+            
+            if audio_sys=='pi':
+                #print ('old audio',self.mplayer_audio)
+                if self.mplayer_audio != "":
+                    if self.mplayer_audio in ('hdmi','hdmi0'):
+                        os.system("amixer -q -c 0 cset numid=3 2")
+                    elif self.mplayer_audio == 'hdmi1':
+                        os.system("amixer -q -c 0 cset numid=3 3")                    
+                    else:
+                        os.system("amixer -q -c 0 cset numid=3 1") 
+                driver_option=''
+            else:
+                if self.mplayer_audio != "":
+                    if self.mplayer_audio in ('hdmi','hdmi0'):
+                        driver_option=' -ao alsa:device=plughw=b1.0 '
+                    elif self.mplayer_audio == 'hdmi1':
+                        driver_option=' -ao alsa:device=plughw=b2.0 '
+                    elif self.mplayer_audio in ('alsa','USB'):
+                        driver_option=' -ao alsa:device=plughw=Device.0 '
+                    elif self.mplayer_audio == 'local':
+                        driver_option=' -ao alsa:device=plughw=Headphones.0 '
+                    else:
+                        driver_option=''
+                    #print ('new audio',driver_option) 
                 else:
-                    os.system("amixer -q -c 0 cset numid=3 1")   
+                    driver_option=''
+
             # play the track               
             options = ' '+ self.mplayer_other_options + ' '+  self.volume_option + ' -af '+ self.speaker_option + ' '
             if self.track != '':

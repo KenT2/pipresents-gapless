@@ -1,3 +1,8 @@
+CHANGES FOR 1.3.5g 16/6/2020
+============================
+fixed - audio track audio device selection now works with the Raspbian release of May 2020, in addition to earlier releases.(see release notes)
+
+
 CHANGES FOR 1.3.5f 1/4/2020
 ==========================
 fixed - In pp_manager.py from the profile>manage or media>manage menus
