@@ -1,3 +1,9 @@
+CHANGES FOR 1.3.5h 2/1/2021
+============================
+fixed - audio track audio device selection now works with the Raspbian release of DEC 2020, in addition to earlier releases.(see release notes)
+fixed - the previous version did not set the audio device from the profile.
+
+
 CHANGES FOR 1.3.5g 16/6/2020
 ============================
 fixed - audio track audio device selection now works with the Raspbian release of May 2020, in addition to earlier releases.(see release notes)

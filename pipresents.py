@@ -35,6 +35,7 @@ from pp_oscdriver import OSCDriver
 from pp_network import Mailer, Network
 from pp_iopluginmanager import IOPluginManager
 from pp_countermanager import CounterManager
+from pp_audiomanager import AudioManager
 
 class PiPresents(object):
 
@@ -51,7 +52,7 @@ class PiPresents(object):
         # gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS|gc.DEBUG_SAVEALL)
         gc.set_debug(gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_SAVEALL)
         self.pipresents_issue="1.3.5"
-        self.pipresents_minorissue = '1.3.5g'
+        self.pipresents_minorissue = '1.3.5h'
         # position and size of window without -f command line option
         self.nonfull_window_width = 0.45 # proportion of width
         self.nonfull_window_height= 0.7 # proportion of height
@@ -365,11 +366,18 @@ class PiPresents(object):
         self.terminate_required=False
         self.exitpipresents_required=False
 
+        #initialise the Audio manager
+        self.audiomanager=AudioManager()
+        status,message=self.audiomanager.init(self.pp_dir)
+        if status == 'error':
+            self.mon.err(self,message)
+            self.end('error',message) 
+
         # initialise the I/O plugins by importing their drivers
         self.ioplugin_manager=IOPluginManager()
         reason,message=self.ioplugin_manager.init(self.pp_dir,self.pp_profile,self.root,self.handle_input_event)
         if reason == 'error':
-            # self.mon.err(self,message)
+            self.mon.err(self,message)
             self.end('error',message)
 
         
