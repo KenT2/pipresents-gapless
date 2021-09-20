@@ -79,8 +79,8 @@ Pi Presents MUST have the latest version of omxplayer and of Raspbian, get this 
 
 Install required packages 
 -----------------------------
-         sudo apt-get install python-imaging
-         sudo apt-get install python-imaging-tk
+         sudo apt-get install python-pil
+         sudo apt-get install python-pil.imagetk
          sudo apt-get install unclutter
          sudo apt-get install mplayer
          sudo apt-get install uzbl
