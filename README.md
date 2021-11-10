@@ -64,6 +64,10 @@ Requirements
 	* must be run from the PIXEL desktop.
 	* must be installed and run from user Pi
 
+NOTE: PI PRESENTS DOES NOT WORK WITH BULLSEYE WHICH IS THE VERSION OF THE OS THAT IS ON THE RASPBERRY PI WEBSITE AND INSTALLED BY THE IMAGER. BUSTER CAN BE OBTAINED FROM HERE:
+
+https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/
+
 
 Set the GPU Memory size to 256MB
 ---------------------------------
