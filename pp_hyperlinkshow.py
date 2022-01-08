@@ -269,6 +269,7 @@ class HyperlinkShow(Show):
 
     def track_timeout_callback(self):
         self.mon.trace(self, 'goto ' + self.timeout_track_ref)
+        self.next_track_signal=True
         self.next_track_op='goto'
         self.next_track_arg=self.timeout_track_ref
         self.what_next_after_showing()

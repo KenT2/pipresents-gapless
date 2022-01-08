@@ -63,10 +63,10 @@ Requirements
 	* must use the latest version of Raspbian Stretch or Buster with Desktop (not the Lite version)
 	* must be run from the PIXEL desktop.
 	* must be installed and run from user Pi
+	
+	NOTE: PI PRESENTS DOES NOT WORK WITH BULLSEYE WHICH IS THE LATEST VERSION OF THE OS. INSTEAD USE THE LEGACY VERSION BASED ON BUSTER THAT CAN BE OBTAINED USING THE IMAGER OR CAN BE DOWNLOADED FROM HERE:
 
-NOTE: PI PRESENTS DOES NOT WORK WITH BULLSEYE WHICH IS THE VERSION OF THE OS THAT IS ON THE RASPBERRY PI WEBSITE AND INSTALLED BY THE IMAGER. BUSTER CAN BE OBTAINED FROM HERE:
-
-https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/
+https://www.raspberrypi.com/software/operating-systems/#raspberry-pi-os-legacy
 
 
 Set the GPU Memory size to 256MB
@@ -83,12 +83,12 @@ Pi Presents MUST have the latest version of omxplayer and of Raspbian, get this 
 
 Install required packages 
 -----------------------------
-         sudo apt-get install python-imaging
-         sudo apt-get install python-imaging-tk
+         sudo apt-get install python-pil (may already be installed)
+         sudo apt-get install python-pil.imagetk
          sudo apt-get install unclutter
          sudo apt-get install mplayer
          sudo apt-get install uzbl
-         sudo apt-get install python-pexpect
+         sudo apt-get install python-pexpect (may already be installed)
 		 
 Install optional packages
 ------------------------------

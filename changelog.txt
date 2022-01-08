@@ -1,3 +1,10 @@
+CHANGES FOR 1.3.5i 8/1/2022
+============================
+fixed  - bug in pp_hyperlinkshow.py when using track timeout
+fixed - pp_hyperlinkshow_1p3 example show timeout and track timeout values incorrect.
+readme - updated to use Raspberry Pi OS (Legacy)
+
+
 CHANGES FOR 1.3.5h 2/1/2021
 ============================
 fixed - audio track audio device selection now works with the Raspbian release of DEC 2020, in addition to earlier releases.(see release notes)
