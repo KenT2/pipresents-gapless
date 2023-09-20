@@ -4,7 +4,7 @@ PI PRESENTS  - Version 1.3.5
 Diese Readme-Datei hat Peter Vasen ins Deutsche übersetzt. Klicken Sie hier 
 http://www.web-echo.de/4.html
 
-This repository contains the stable version Pi Presents. The version  will not be developed further other than bug and compatibility fixes.
+This version is being retired. It will not have any further updates. RPi OS Buster, which it requires, will soon be retired. Use Pi Presents KMS which works on RPi OS Bullseye. 
 
 
 TO INSTALL PIPRESENTS-GAPLESS
